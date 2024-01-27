@@ -3,14 +3,10 @@
 #pragma once
 
 #include "Modules/ModuleInterface.h"
-#include "Stats/Stats.h"
 
 #if WITH_EDITOR
 class IGameplayCamerasLiveEditManager;
 #endif
-
-DECLARE_STATS_GROUP(TEXT("Camera System Evaluation"), STATGROUP_CameraSystem, STATCAT_Advanced)
-DECLARE_STATS_GROUP(TEXT("Camera Animation Evaluation"), STATGROUP_CameraAnimation, STATCAT_Advanced)
 
 class IGameplayCamerasModule : public IModuleInterface
 {
