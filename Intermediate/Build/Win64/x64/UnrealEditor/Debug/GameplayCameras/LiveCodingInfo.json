@@ -1,0 +1,21 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.GameplayCameras.cpp.obj": [
+			"GameplayCameras.init.gen.cpp.obj",
+			"LegacyCameraShake.gen.cpp.obj",
+			"CameraAnimationCameraModifier.cpp.obj",
+			"CompositeCameraShakePattern.cpp.obj",
+			"DefaultCameraShakeBase.cpp.obj",
+			"GameplayCamerasModule.cpp.obj",
+			"GameplayCamerasSubsystem.cpp.obj",
+			"LegacyCameraShake.cpp.obj",
+			"PerlinNoiseCameraShakePattern.cpp.obj",
+			"SimpleCameraShakePattern.cpp.obj",
+			"CameraShakeStateTests.cpp.obj",
+			"CameraShakeTestObjects.cpp.obj",
+			"CameraShakeTests.cpp.obj",
+			"WaveOscillatorCameraShakePattern.cpp.obj"
+		]
+	}
+}

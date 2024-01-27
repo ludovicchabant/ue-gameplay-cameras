@@ -1,0 +1,32 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\private\\core\\cameraevaluationcontextstack.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\p4\\fnmain\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.cpp20.h.pch",
+        "Includes": [
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\gameplaycameras\\definitions.gameplaycameras.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameraevaluationcontextstack.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameraasset.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameramodetransition.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameramodetransition.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameraasset.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameradirector.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameradirector.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameraevaluationcontext.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameranode.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\camerainstantiableobject.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\camerainstantiableobject.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\camerapose.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\camerapose.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameranodechildrenview.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameranode.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameraevaluationcontext.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameraruntimeinstantiator.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\camerasystemevaluator.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\camerasystemevaluator.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

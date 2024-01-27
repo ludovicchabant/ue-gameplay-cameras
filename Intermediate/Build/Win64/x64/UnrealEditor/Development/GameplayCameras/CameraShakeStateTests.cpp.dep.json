@@ -1,0 +1,13 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\private\\tests\\camerashakestatetests.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\p4\\fnmain\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.cpp20.h.pch",
+        "Includes": [
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\gameplaycameras\\definitions.gameplaycameras.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

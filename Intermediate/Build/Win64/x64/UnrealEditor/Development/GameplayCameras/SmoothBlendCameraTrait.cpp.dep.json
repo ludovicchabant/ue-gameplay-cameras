@@ -1,0 +1,26 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\private\\traits\\blends\\smoothblendcameratrait.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\p4\\fnmain\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.cpp20.h.pch",
+        "Includes": [
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\gameplaycameras\\definitions.gameplaycameras.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\traits\\blends\\smoothblendcameratrait.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\traits\\blends\\simpleblendcameratrait.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\blendcameratrait.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameratrait.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\camerapose.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\camerapose.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameratraitchildrenview.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameratrait.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\blendcameratrait.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\simpleblendcameratrait.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\smoothblendcameratrait.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\math\\interpolation.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\smoothblendcameratrait.gen.cpp"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

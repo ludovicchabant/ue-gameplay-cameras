@@ -1,0 +1,21 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\private\\core\\blendcameranode.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\p4\\fnmain\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.cpp20.h.pch",
+        "Includes": [
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\gameplaycameras\\definitions.gameplaycameras.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\blendcameranode.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameranode.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\camerapose.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\camerapose.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\core\\cameranodechildrenview.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\cameranode.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\blendcameranode.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\blendcameranode.gen.cpp"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

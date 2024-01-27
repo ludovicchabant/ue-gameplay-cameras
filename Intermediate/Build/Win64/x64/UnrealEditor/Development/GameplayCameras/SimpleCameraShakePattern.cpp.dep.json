@@ -1,0 +1,16 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\private\\shakes\\simplecamerashakepattern.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\p4\\fnmain\\engine\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\engine\\sharedpch.engine.cpp20.h.pch",
+        "Includes": [
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\gameplaycameras\\definitions.gameplaycameras.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\source\\gameplaycameras\\public\\shakes\\simplecamerashakepattern.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\simplecamerashakepattern.generated.h",
+            "d:\\p4\\fnmain\\engine\\plugins\\cameras\\gameplaycameras\\intermediate\\build\\win64\\unrealeditor\\inc\\gameplaycameras\\uht\\simplecamerashakepattern.gen.cpp"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

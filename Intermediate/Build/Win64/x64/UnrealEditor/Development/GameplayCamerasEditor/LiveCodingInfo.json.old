@@ -1,0 +1,18 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.GameplayCamerasEditor.cpp.obj": [
+			"GameplayCamerasEditor.init.gen.cpp.obj",
+			"AssetDefinition_CameraAsset.cpp.obj",
+			"AssetDefinition_CameraMode.cpp.obj",
+			"CameraAssetFactory.cpp.obj",
+			"CameraModeFactory.cpp.obj",
+			"GameplayCamerasEditorModule.cpp.obj",
+			"GameplayCamerasEditorSettings.cpp.obj",
+			"GameplayCamerasEditorStyle.cpp.obj",
+			"CameraAssetEditorToolkit.cpp.obj",
+			"CameraModeEditorToolkit.cpp.obj",
+			"GameplayCamerasLiveEditManager.cpp.obj"
+		]
+	}
+}
