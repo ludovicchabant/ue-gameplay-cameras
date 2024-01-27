@@ -95,6 +95,7 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	for (FCameraModeEntry& Entry : Entries)
 	{
 		FCameraNodeRunParams CurParams(Params);
+		CurParams.EvaluationContext = Entry.EvaluationContext;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
 		FCameraNodeRunResult& CurResult(Entry.Result);
@@ -151,6 +152,7 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
 
 		FCameraNodeRunParams CurParams(Params);
+		CurParams.EvaluationContext = Entry.EvaluationContext;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
