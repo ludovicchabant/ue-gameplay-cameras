@@ -18,6 +18,11 @@ FCameraNodeChildrenView UCameraNode::GetChildren()
 	return OnGetChildren();
 }
 
+void UCameraNode::Reset(const FCameraNodeResetParams& Params)
+{
+	OnReset(Params);
+}
+
 void UCameraNode::Run(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
 {
 	if (bIsEnabled)
@@ -32,10 +37,7 @@ void UCameraNode::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyC
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 	
-	if (!bIsInstantiated)
-	{
-		FCameraRuntimeInstantiator::ForwardPropertyChange(this, PropertyChangedEvent);
-	}
+	FCameraRuntimeInstantiator::ForwardPropertyChange(this, PropertyChangedEvent);
 }
 
 #endif

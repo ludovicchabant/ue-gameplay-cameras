@@ -72,6 +72,7 @@ void UDefaultRootCameraNode::OnActivateCameraMode(const FActivateCameraModeParam
 	if (ensure(TargetStack))
 	{
 		FBlendStackCameraPushParams PushParams;
+		PushParams.Evaluator = Params.Evaluator;
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraMode = Params.CameraMode;
 		TargetStack->Push(PushParams);

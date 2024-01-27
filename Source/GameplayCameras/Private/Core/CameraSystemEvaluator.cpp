@@ -18,13 +18,14 @@ UCameraSystemEvaluator::UCameraSystemEvaluator(const FObjectInitializer& ObjectI
 {
 	RootNode = ObjectInit.CreateDefaultSubobject<UDefaultRootCameraNode>(this, TEXT("RootNode"));
 
-	ContextStack.SetInstantiationOuter(this);
+	ContextStack.Initialize(this);
 }
 
 void UCameraSystemEvaluator::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
 {
 	UCameraSystemEvaluator* TypedThis = CastChecked<UCameraSystemEvaluator>(InThis);
 	TypedThis->ContextStack.AddReferencedObjects(Collector);
+	TypedThis->Instantiator.AddReferencedObjects(Collector);
 }
 
 void UCameraSystemEvaluator::PushEvaluationContext(UCameraEvaluationContext* EvaluationContext)
@@ -69,6 +70,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		if (DirectorResult.ActiveCameraModes.Num() == 1)
 		{
 			FActivateCameraModeParams CameraModeParams;
+			CameraModeParams.Evaluator = this;
 			CameraModeParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
 			CameraModeParams.CameraMode = DirectorResult.ActiveCameraModes[0];
 			RootNode->ActivateCameraMode(CameraModeParams);
@@ -77,6 +79,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 	// Run the root camera node.
 	FCameraNodeRunParams NodeParams;
+	NodeParams.Evaluator = this;
 	NodeParams.DeltaTime = Params.DeltaTime;
 
 	RootNodeResult.Reset();
@@ -94,5 +97,10 @@ void UCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.Location = CameraPose.GetLocation();
 	DesiredView.Rotation = CameraPose.GetRotation();
 	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
+}
+
+FCameraRuntimeInstantiator& UCameraSystemEvaluator::GetRuntimeInstantiator()
+{
+	return Instantiator;
 }
 

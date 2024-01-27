@@ -17,6 +17,9 @@ struct FCameraModeTransition;
  */
 struct FBlendStackCameraPushParams
 {
+	/** The evaluator currently running.*/
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+
 	/** The evaluation context within which a camera mode's node tree should run. */
 	TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 

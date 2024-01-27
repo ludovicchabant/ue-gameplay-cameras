@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraInstantiableObject.h"
 #include "Core/CameraPose.h"
 #include "Core/CameraNodeChildrenView.h"
 #include "CoreTypes.h"
@@ -9,11 +10,15 @@
 
 #include "CameraNode.generated.h"
 
+class UCameraSystemEvaluator;
+
 /**
  * Parameter structure for running a camera node.
  */
 struct FCameraNodeRunParams
 {
+	/** The evaluation running this evaluation.*/
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 	/** The time interval for the evaluation. */
 	float DeltaTime = 0.f;
 	/** Whether this is the first evaluation of this camera node hierarchy. */
@@ -36,11 +41,23 @@ struct FCameraNodeRunResult
 	void Reset();
 };
 
+UENUM()
+enum class ECameraNodeFlags
+{
+	None = 0,
+	RequiresReset = 1
+};
+ENUM_CLASS_FLAGS(ECameraNodeFlags);
+
+struct FCameraNodeResetParams
+{
+};
+
 /**
  * The base class for a camera node.
  */
 UCLASS(Abstract, DefaultToInstanced, EditInlineNew, MinimalAPI)
-class UCameraNode : public UObject
+class UCameraNode : public UCameraInstantiableObject
 {
 	GENERATED_BODY()
 
@@ -49,22 +66,25 @@ public:
 	/** Get the list of children under this node. */
 	FCameraNodeChildrenView GetChildren();
 
+	/** Get the flags for this node. */
+	ECameraNodeFlags GetNodeFlags() const { return Flags; }
+
+	/** Resets this node. */
+	void Reset(const FCameraNodeResetParams& Params);
+
 	/** Run this node. */
 	void Run(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult);
 
-public:
-
-	// Internal API
-
-	/** Whether this node was instantiated from a source node. */
-	bool GetIsInstantiated() const { return bIsInstantiated; }
-	/** Flag this node as being instantiated from a source node. */
-	void SetIsInstantiated(bool bInValue = true) { bIsInstantiated = bInValue; }
-
 protected:
+
+	/** Sets the flags for this node. Should only be called once during construction. */
+	void SetNodeFlags(ECameraNodeFlags InFlags) { Flags = InFlags; }
 
 	/** Get the list of children under this node. */
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
+
+	/** Resets this node. */
+	virtual void OnReset(const FCameraNodeResetParams& Params) {}
 
 	/** Run this node. */
 	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) {}
@@ -83,6 +103,7 @@ public:
 
 private:
 
-	bool bIsInstantiated = false;
+	/** The flags for this node. Should only be set once during construction. */
+	ECameraNodeFlags Flags = ECameraNodeFlags::None;
 };
 

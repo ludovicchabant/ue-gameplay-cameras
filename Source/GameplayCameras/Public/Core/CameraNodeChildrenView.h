@@ -101,36 +101,51 @@ public:
 
 	// Range iteration
 
-	struct FIterator
+	struct FBaseIterator
 	{
 		const FCameraNodeChildrenView* Owner;
 		int32 Index;
-
-		FORCEINLINE FIterator& operator++()
-		{
-			++Index;
-			return *this;
-		}
 
 		FORCEINLINE UCameraNode* operator*()
 		{
 			return (*Owner)[Index];
 		}
 
-		FORCEINLINE bool operator== (const FIterator& Other) const
+		FORCEINLINE bool operator== (const FBaseIterator& Other) const
 		{
 			return Owner == Other.Owner
 				&& Index == Other.Index;
 		}
 
-		FORCEINLINE bool operator!= (const FIterator& Other) const
+		FORCEINLINE bool operator!= (const FBaseIterator& Other) const
 		{
 			return !(*this == Other);
 		}
 	};
 
+	struct FIterator : FBaseIterator
+	{
+		FORCEINLINE FIterator& operator++()
+		{
+			++Index;
+			return *this;
+		}
+	};
+
 	FORCEINLINE FIterator begin() const { return FIterator{ this, 0 }; }
 	FORCEINLINE FIterator end() const { return FIterator{ this, Num() }; }
+
+	struct FReverseIterator : FBaseIterator
+	{
+		FORCEINLINE FReverseIterator& operator++()
+		{
+			--Index;
+			return *this;
+		}
+	};
+
+	FORCEINLINE FReverseIterator rbegin() const { return FReverseIterator{ this, Num() - 1 }; }
+	FORCEINLINE FReverseIterator rend() const { return FReverseIterator{ this, -1 }; }
 
 private:
 

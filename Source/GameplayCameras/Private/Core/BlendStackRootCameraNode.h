@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraNode.h"
+#include "Core/CameraNodeTreeCache.h"
 
 #include "BlendStackRootCameraNode.generated.h"
 
@@ -19,12 +20,24 @@ class UBlendStackRootCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	/** Initialize this node. */
+	void Initialize(UBlendCameraNode* InBlend, UCameraNode* InRootNode);
+
+	/** Gets the blend node. */
+	UBlendCameraNode* GetBlend() const { return Blend; }
+
+	/** Gets the root of the camera mode. */
+	UCameraNode* GetRootNode() const { return RootNode; }
+
 protected:
 
 	virtual FCameraNodeChildrenView OnGetChildren() override;
+	virtual void OnReset(const FCameraNodeResetParams& Params) override;
 	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
 
-public:
+private:
 
 	/** The blend to use on the camera mode. */
 	UPROPERTY()
@@ -33,5 +46,8 @@ public:
 	/** The root of the instantied camera node tree. */
 	UPROPERTY()
 	TObjectPtr<UCameraNode> RootNode;
+
+	/** Node cache for the hierarchy below the root node. */
+	FCameraNodeTreeCache TreeCache;
 };
 

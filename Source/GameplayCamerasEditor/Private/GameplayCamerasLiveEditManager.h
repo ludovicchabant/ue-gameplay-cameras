@@ -5,31 +5,29 @@
 #include "IGameplayCamerasLiveEditManager.h"
 
 #include "CoreTypes.h"
-#include "UObject/GCObject.h"
 #include "UObject/WeakObjectPtr.h"
 
-class FGameplayCamerasLiveEditManager 
-	: public IGameplayCamerasLiveEditManager
-	, public FGCObject
+class FGameplayCamerasLiveEditManager : public IGameplayCamerasLiveEditManager
 {
 public:
 
-	virtual void RegisterInstantiatedObjects(const TMap<UObject*, UObject*> InstantiatedObjects) override;
+	FGameplayCamerasLiveEditManager();
 
+	/** Clean-up any invalid entries in the map of known instantiated objects. */
+	void CleanUp();
+
+public:
+
+	// IGameplayCamerasLiveEditManager interface
+	virtual void RegisterInstantiatedObjects(const TMap<UObject*, UObject*> InstantiatedObjects) override;
 	virtual void ForwardPropertyChange(const UObject* Object, const FPropertyChangedEvent& PropertyChangedEvent) override;
 
 private:
 
-	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
-	virtual FString GetReferencerName() const override;
-
-	void ForwardPropertyChange(const UObject* SourceObject, UObject* InstantiatedObject, const FPropertyChangedEvent& PropertyChangedEvent);
-
-private:
 	struct FInstantiationInfo
 	{
 		TArray<TWeakObjectPtr<>> InstantiatedObjects;
 	};
-	TMap<TObjectPtr<const UObject>, FInstantiationInfo> Instantiations;
+	TMap<TWeakObjectPtr<UObject>, FInstantiationInfo> Instantiations;
 };
 

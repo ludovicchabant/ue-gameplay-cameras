@@ -18,6 +18,7 @@ struct FCameraRuntimeInstantiationParams
 {
 	UObject* InstantiationOuter = nullptr;
 	FName InstantiationName = NAME_None;
+	bool bAllowRecyling = false;
 };
 
 /**
@@ -31,26 +32,40 @@ public:
 	 * Instantiates a tree of camera nodes by cloning it, and keeping track of the relationship between
 	 * the clones and their source assets.
 	 */
-	static UCameraNode* InstantiateCameraNodeTree(const UCameraNode* InRootNode, const FCameraRuntimeInstantiationParams& Params);
+	UCameraNode* InstantiateCameraNodeTree(const UCameraNode* InRootNode, const FCameraRuntimeInstantiationParams& Params);
 
 	/** 
 	 * Instantiates a camera directory by cloning it, and keeping track of the relationship between
 	 * the clone and its source asset.
 	 */
-	static UCameraDirector* InstantiateCameraDirector(const UCameraDirector* InCameraDirector, const FCameraRuntimeInstantiationParams& Params);
+	UCameraDirector* InstantiateCameraDirector(const UCameraDirector* InCameraDirector, const FCameraRuntimeInstantiationParams& Params);
+
+	/**
+	 * Release the root of an instantiated object hierarchy, for potential recycling later.
+	 */
+	void RecycleInstantiatedObject(const UObject* InSourceObject, UObject* InstantiatedObject);
 
 	/**
 	 * Take a property change applied on a source object and try to replicate it on any related instantiated objects.
 	 */
 	static void ForwardPropertyChange(const UObject* Object, const FPropertyChangedEvent& PropertyChangedEvent);
 
+public:
+
+	// Internal API.
+	void AddReferencedObjects(FReferenceCollector& Collector);
+
 private:
 
-	static UObject* InstantiateObject(const UObject* InSource, const FCameraRuntimeInstantiationParams& Params);
 	static IGameplayCamerasModule& GetGameplayCamerasModule();
+
+	UObject* InstantiateObject(const UObject* InSource, const FCameraRuntimeInstantiationParams& Params);
 
 private:
 
 	static IGameplayCamerasModule* GameplayCamerasModule;
+
+	using FObjectPool = TArray<TObjectPtr<UObject>>; //, TInlineAllocator<4>>;
+	TMap<TWeakObjectPtr<const UObject>, FObjectPool> InstantiationPool;
 };
 

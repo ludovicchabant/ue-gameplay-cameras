@@ -84,14 +84,23 @@ private:
 
 		IGameplayCamerasModule& CamerasModule = FModuleManager::LoadModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 		CamerasModule.SetLiveEditManager(LiveEditManager);
+
+		FCoreUObjectDelegates::GetPostGarbageCollect().AddRaw(this, &FGameplayCamerasEditorModule::OnPostGarbageCollection);
 	}
 
 	void TeardownLiveEditManager()
 	{
+		FCoreUObjectDelegates::GetPostGarbageCollect().RemoveAll(this);
+
 		IGameplayCamerasModule& CamerasModule = FModuleManager::LoadModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 		CamerasModule.SetLiveEditManager(nullptr);
 
 		LiveEditManager.Reset();
+	}
+	
+	void OnPostGarbageCollection()
+	{
+		LiveEditManager->CleanUp();
 	}
 
 private:

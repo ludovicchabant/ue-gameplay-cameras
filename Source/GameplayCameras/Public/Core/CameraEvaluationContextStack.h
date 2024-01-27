@@ -48,7 +48,7 @@ public:
 public:
 
 	// Internal API
-	void SetInstantiationOuter(UObject* InInstantiationOuter);
+	void Initialize(UCameraSystemEvaluator* InEvaluator);
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
@@ -59,8 +59,10 @@ private:
 		TObjectPtr<UCameraDirector> CameraDirector;
 	};
 
+	/** The entries in the stack. */
 	TArray<FContextEntry> Entries;
 
-	TWeakObjectPtr<> InstantiationOuter;
+	/** The owner evaluator. */
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 };
 

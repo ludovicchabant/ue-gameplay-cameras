@@ -8,6 +8,7 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraMode.h"
 #include "Core/CameraRuntimeInstantiator.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackCameraNode)
@@ -30,26 +31,33 @@ void UBlendStackCameraNode::Push(const FBlendStackCameraPushParams& Params)
 	// Create the new root node. Instantiated objects will go inside it.
 	UBlendStackRootCameraNode* EntryRootNode = NewObject<UBlendStackRootCameraNode>(this, NAME_None);
 
-	FCameraRuntimeInstantiationParams InstParams;
-	InstParams.InstantiationOuter = EntryRootNode;
-
 	// Instantiate the camera mode's node tree.
-	UCameraNode* ModeRootNode = FCameraRuntimeInstantiator::InstantiateCameraNodeTree(
-			Params.CameraMode->RootNode, InstParams);
-	EntryRootNode->RootNode = ModeRootNode;
+	FCameraRuntimeInstantiationParams NodeTreeInstParams;
+	NodeTreeInstParams.InstantiationOuter = EntryRootNode;
+	NodeTreeInstParams.bAllowRecyling = true;
+
+	FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
+	UCameraNode* ModeRootNode = Instantiator.InstantiateCameraNodeTree(Params.CameraMode->RootNode, NodeTreeInstParams);
 
 	// Find a transition and instantiate its blend. If not transition is found,
 	// make a camera cut transition.
+	UBlendCameraNode* Blend = nullptr;
 	if (const FCameraModeTransition* Transition = FindTransition(Params))
 	{
+		FCameraRuntimeInstantiationParams BlendInstParams;
+		BlendInstParams.InstantiationOuter = EntryRootNode;
+		// No recycling on the blend.
+
 		UBlendCameraNode* ModeBlend = CastChecked<UBlendCameraNode>(
-				FCameraRuntimeInstantiator::InstantiateCameraNodeTree(Transition->Blend, InstParams));
-		EntryRootNode->Blend = ModeBlend;
+				Instantiator.InstantiateCameraNodeTree(Transition->Blend, BlendInstParams));
+		Blend = ModeBlend;
 	}
 	else
 	{
-		EntryRootNode->Blend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
+		Blend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
 	}
+
+	EntryRootNode->Initialize(Blend, ModeRootNode);
 
 	// Make a new entry and add it to the stack.
 	FCameraModeEntry NewEntry;
@@ -86,8 +94,7 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	// Start by evaluating all the root nodes in the stack.
 	for (FCameraModeEntry& Entry : Entries)
 	{
-		FCameraNodeRunParams CurParams;
-		CurParams.DeltaTime = Params.DeltaTime;
+		FCameraNodeRunParams CurParams(Params);
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
 		FCameraNodeRunResult& CurResult(Entry.Result);
@@ -143,14 +150,13 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 
 		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
 
-		FCameraNodeRunParams CurParams;
-		CurParams.DeltaTime = Params.DeltaTime;
+		FCameraNodeRunParams CurParams(Params);
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
 		FCameraNodeBlendResult BlendResult(OutResult);
 
-		UBlendCameraNode* EntryBlend = Entry.RootNode->Blend;
+		UBlendCameraNode* EntryBlend = Entry.RootNode->GetBlend();
 		if (EntryBlend)
 		{
 			EntryBlend->BlendResults(BlendParams, BlendResult);
@@ -175,7 +181,23 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	// Pop out camera modes that have been blended out.
 	if (bAutoPop && PopEntriesBelow != INDEX_NONE)
 	{
-		Entries.RemoveAt(0, PopEntriesBelow, EAllowShrinking::No);
+		FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
+		for (int32 Index = 0; Index < PopEntriesBelow; ++Index)
+		{
+			FCameraModeEntry& Entry = Entries[0];
+			if (!Entry.bIsFrozen)
+			{
+				// Recycle the camera mode's node hierarchy if possible.
+				// Reset all nodes in it so they are back to their default state, ready to be
+				// re-used later.
+				TObjectPtr<const UCameraNode> OriginalRootNode = Entry.OriginalCameraMode->RootNode;
+				TObjectPtr<UCameraNode> RecycledRootNode = Entry.RootNode->GetRootNode();
+				Entry.RootNode->Reset(FCameraNodeResetParams());
+
+				Instantiator.RecycleInstantiatedObject(OriginalRootNode, RecycledRootNode);
+			}
+			Entries.RemoveAt(0);
+		}
 	}
 
 	// Reset first frame flags.

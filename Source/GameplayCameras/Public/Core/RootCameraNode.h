@@ -30,6 +30,9 @@ ENUM_CLASS_FLAGS(ECameraModeLayer)
  */
 struct FActivateCameraModeParams
 {
+	/** The evaluator currently running.*/
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+
 	/** The evaluation context in which the camera mode runs. */
 	TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 

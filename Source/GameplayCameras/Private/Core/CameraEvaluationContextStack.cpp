@@ -35,6 +35,8 @@ bool FCameraEvaluationContextStack::HasContext(UCameraEvaluationContext* Context
 
 void FCameraEvaluationContextStack::PushContext(UCameraEvaluationContext* Context)
 {
+	checkf(Evaluator, TEXT("Can't push context when no evaluator is set! Did you call Initialize?"));
+
 	// If we're pushing an existing context, move it to the top.
 	const int32 ExistingIndex = Entries.IndexOfByPredicate(
 			[Context](const FContextEntry& Entry) { return Entry.WeakContext == Context; });
@@ -51,14 +53,14 @@ void FCameraEvaluationContextStack::PushContext(UCameraEvaluationContext* Contex
 
 	// Instantiate the camera director.
 	FCameraRuntimeInstantiationParams InstParams;
-	InstParams.InstantiationOuter = InstantiationOuter.Get();
+	InstParams.InstantiationOuter = Evaluator;
 	if (!InstParams.InstantiationOuter)
 	{
 		InstParams.InstantiationOuter = GetTransientPackage();
 	}
 
 	const UCameraDirector* OriginalCameraDirector = Context->GetCameraAsset()->CameraDirector;
-	UCameraDirector* NewCameraDirector = FCameraRuntimeInstantiator::InstantiateCameraDirector(
+	UCameraDirector* NewCameraDirector = Evaluator->GetRuntimeInstantiator().InstantiateCameraDirector(
 			OriginalCameraDirector, InstParams);
 	
 	// Add an entry in the stack.
@@ -80,9 +82,9 @@ void FCameraEvaluationContextStack::PopContext()
 	Entries.Pop();
 }
 
-void FCameraEvaluationContextStack::SetInstantiationOuter(UObject* InInstantiationOuter)
+void FCameraEvaluationContextStack::Initialize(UCameraSystemEvaluator* InEvaluator)
 {
-	InstantiationOuter = InInstantiationOuter;
+	Evaluator = InEvaluator;
 }
 
 void FCameraEvaluationContextStack::AddReferencedObjects(FReferenceCollector& Collector)
