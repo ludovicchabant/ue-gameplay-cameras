@@ -1,8 +1,0 @@
-{
-	"BuildId": "f95e0501-e63f-47ee-b741-67db5bc62a80",
-	"Modules": 
-	{
-		"GameplayCameras": "UnrealEditor-GameplayCameras.dll",
-		"GameplayCamerasEditor": "UnrealEditor-GameplayCamerasEditor.dll"
-	}
-}
