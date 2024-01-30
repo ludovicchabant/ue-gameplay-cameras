@@ -48,9 +48,18 @@ UENUM()
 enum class ECameraNodeFlags
 {
 	None = 0,
-	RequiresReset = 1
+	RequiresInitialize = 1 << 0,
+	RequiresReset = 1 << 1
 };
 ENUM_CLASS_FLAGS(ECameraNodeFlags);
+
+struct FCameraNodeInitializeParams
+{
+	/** The evaluation running this evaluation. */
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+};
 
 struct FCameraNodeResetParams
 {
@@ -72,6 +81,8 @@ public:
 	/** Get the flags for this node. */
 	ECameraNodeFlags GetNodeFlags() const { return Flags; }
 
+	void Initialize(const FCameraNodeInitializeParams& Params);
+
 	/** Resets this node. */
 	void Reset(const FCameraNodeResetParams& Params);
 
@@ -85,6 +96,8 @@ protected:
 
 	/** Get the list of children under this node. */
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
+
+	virtual void OnInitialize(const FCameraNodeInitializeParams& Params) {}
 
 	/** Resets this node. */
 	virtual void OnReset(const FCameraNodeResetParams& Params) {}

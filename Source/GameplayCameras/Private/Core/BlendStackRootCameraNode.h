@@ -23,7 +23,7 @@ class UBlendStackRootCameraNode : public UCameraNode
 public:
 
 	/** Initialize this node. */
-	void Initialize(UBlendCameraNode* InBlend, UCameraNode* InRootNode);
+	void FinishBuilding(UBlendCameraNode* InBlend, UCameraNode* InRootNode);
 
 	/** Gets the blend node. */
 	UBlendCameraNode* GetBlend() const { return Blend; }
@@ -34,6 +34,7 @@ public:
 protected:
 
 	virtual FCameraNodeChildrenView OnGetChildren() override;
+	virtual void OnInitialize(const FCameraNodeInitializeParams& Params) override;
 	virtual void OnReset(const FCameraNodeResetParams& Params) override;
 	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
 

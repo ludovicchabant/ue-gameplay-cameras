@@ -30,34 +30,40 @@ void UBlendStackCameraNode::Push(const FBlendStackCameraPushParams& Params)
 
 	// Create the new root node. Instantiated objects will go inside it.
 	UBlendStackRootCameraNode* EntryRootNode = NewObject<UBlendStackRootCameraNode>(this, NAME_None);
-
-	// Instantiate the camera mode's node tree.
-	FCameraRuntimeInstantiationParams NodeTreeInstParams;
-	NodeTreeInstParams.InstantiationOuter = EntryRootNode;
-	NodeTreeInstParams.bAllowRecyling = true;
-
-	FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
-	UCameraNode* ModeRootNode = Instantiator.InstantiateCameraNodeTree(Params.CameraMode->RootNode, NodeTreeInstParams);
-
-	// Find a transition and instantiate its blend. If not transition is found,
-	// make a camera cut transition.
-	UBlendCameraNode* Blend = nullptr;
-	if (const FCameraModeTransition* Transition = FindTransition(Params))
 	{
-		FCameraRuntimeInstantiationParams BlendInstParams;
-		BlendInstParams.InstantiationOuter = EntryRootNode;
-		// No recycling on the blend.
+		// Instantiate the camera mode's node tree.
+		FCameraRuntimeInstantiationParams NodeTreeInstParams;
+		NodeTreeInstParams.InstantiationOuter = EntryRootNode;
+		NodeTreeInstParams.bAllowRecyling = true;
 
-		UBlendCameraNode* ModeBlend = CastChecked<UBlendCameraNode>(
-				Instantiator.InstantiateCameraNodeTree(Transition->Blend, BlendInstParams));
-		Blend = ModeBlend;
-	}
-	else
-	{
-		Blend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
+		FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
+		UCameraNode* ModeRootNode = Instantiator.InstantiateCameraNodeTree(Params.CameraMode->RootNode, NodeTreeInstParams);
+
+		// Find a transition and instantiate its blend. If not transition is found,
+		// make a camera cut transition.
+		UBlendCameraNode* Blend = nullptr;
+		if (const FCameraModeTransition* Transition = FindTransition(Params))
+		{
+			FCameraRuntimeInstantiationParams BlendInstParams;
+			BlendInstParams.InstantiationOuter = EntryRootNode;
+			// No recycling on the blend.
+
+			UBlendCameraNode* ModeBlend = CastChecked<UBlendCameraNode>(
+					Instantiator.InstantiateCameraNodeTree(Transition->Blend, BlendInstParams));
+			Blend = ModeBlend;
+		}
+		else
+		{
+			Blend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
+		}
+
+		EntryRootNode->FinishBuilding(Blend, ModeRootNode);
 	}
 
-	EntryRootNode->Initialize(Blend, ModeRootNode);
+	FCameraNodeInitializeParams InitParams;
+	InitParams.EvaluationContext = Params.EvaluationContext;
+	InitParams.Evaluator = Params.Evaluator;
+	EntryRootNode->Initialize(InitParams);
 
 	// Make a new entry and add it to the stack.
 	FCameraModeEntry NewEntry;

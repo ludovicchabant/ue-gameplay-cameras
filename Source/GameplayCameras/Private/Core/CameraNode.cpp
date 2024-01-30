@@ -18,6 +18,11 @@ FCameraNodeChildrenView UCameraNode::GetChildren()
 	return OnGetChildren();
 }
 
+void UCameraNode::Initialize(const FCameraNodeInitializeParams& Params)
+{
+	OnInitialize(Params);
+}
+
 void UCameraNode::Reset(const FCameraNodeResetParams& Params)
 {
 	OnReset(Params);

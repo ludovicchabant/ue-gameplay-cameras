@@ -7,7 +7,7 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 
-void UBlendStackRootCameraNode::Initialize(UBlendCameraNode* InBlend, UCameraNode* InRootNode)
+void UBlendStackRootCameraNode::FinishBuilding(UBlendCameraNode* InBlend, UCameraNode* InRootNode)
 {
 	Blend = InBlend;
 	RootNode = InRootNode;
@@ -20,9 +20,16 @@ FCameraNodeChildrenView UBlendStackRootCameraNode::OnGetChildren()
 	return FCameraNodeChildrenView({ Blend, RootNode });
 }
 
+void UBlendStackRootCameraNode::OnInitialize(const FCameraNodeInitializeParams& Params)
+{
+	TreeCache.ForEachNode(ECameraNodeFlags::RequiresInitialize, 
+			[Params](UCameraNode* Node) { Node->Initialize(Params); });
+}
+
 void UBlendStackRootCameraNode::OnReset(const FCameraNodeResetParams& Params)
 {
-	TreeCache.ForEachNode(ECameraNodeFlags::RequiresReset, [Params](UCameraNode* Node) { Node->Reset(Params); });
+	TreeCache.ForEachNode(ECameraNodeFlags::RequiresReset, 
+			[Params](UCameraNode* Node) { Node->Reset(Params); });
 }
 
 void UBlendStackRootCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
