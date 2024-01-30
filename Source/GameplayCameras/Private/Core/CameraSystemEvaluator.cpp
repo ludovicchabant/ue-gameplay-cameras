@@ -7,6 +7,7 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraMode.h"
 #include "Core/DefaultRootCameraNode.h"
+#include "GameplayCameras.h"
 #include "IGameplayCamerasModule.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraSystemEvaluator)

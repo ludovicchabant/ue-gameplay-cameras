@@ -6,7 +6,11 @@
 #include "CameraAnimationCameraModifier.h"
 #include "CameraAnimationSequencePlayer.h"
 #include "Features/IModularFeatures.h"
+#include "GameplayCameras.h"
+#include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
+
+DEFINE_LOG_CATEGORY(LogCameraSystem);
 
 IGameplayCamerasModule& IGameplayCamerasModule::Get()
 {

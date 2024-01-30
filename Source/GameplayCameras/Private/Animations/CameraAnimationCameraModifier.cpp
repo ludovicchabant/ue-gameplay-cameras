@@ -8,6 +8,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
+#include "GameplayCameras.h"
 #include "IGameplayCamerasModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/Object.h"
