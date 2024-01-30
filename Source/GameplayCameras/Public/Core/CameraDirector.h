@@ -19,7 +19,7 @@ struct FCameraDirectorRunParams
 	float DeltaTime = 0.f;
 
 	/** The context in which this director runs. */
-	const UCameraEvaluationContext* OwnerContext = nullptr;
+	TObjectPtr<const UCameraEvaluationContext> OwnerContext;
 };
 
 /**

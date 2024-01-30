@@ -94,8 +94,15 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	// Start by evaluating all the root nodes in the stack.
 	for (FCameraModeEntry& Entry : Entries)
 	{
+		const UCameraEvaluationContext* CurContext = Entry.EvaluationContext.Get();
+		if (UNLIKELY(CurContext == nullptr))
+		{
+			Entry.Result.bIsValid = false;
+			continue;
+		}
+
 		FCameraNodeRunParams CurParams(Params);
-		CurParams.EvaluationContext = Entry.EvaluationContext;
+		CurParams.EvaluationContext = CurContext;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
 		FCameraNodeRunResult& CurResult(Entry.Result);
@@ -104,12 +111,6 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 		{
 			// If the context in which this camera mode runs doesn't have a valid result,
 			// skip it.
-			const UCameraEvaluationContext* CurContext = Entry.EvaluationContext.Get();
-			if (UNLIKELY(CurContext == nullptr))
-			{
-				CurResult.bIsValid = false;
-				continue;
-			}
 			const FCameraNodeRunResult& ContextResult(CurContext->GetInitialResult());
 			if (UNLIKELY(!ContextResult.bIsValid))
 			{
@@ -152,7 +153,7 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
 
 		FCameraNodeRunParams CurParams(Params);
-		CurParams.EvaluationContext = Entry.EvaluationContext;
+		CurParams.EvaluationContext = Entry.EvaluationContext.Get();
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 

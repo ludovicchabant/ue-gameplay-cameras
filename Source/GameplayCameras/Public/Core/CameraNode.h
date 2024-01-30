@@ -21,7 +21,7 @@ struct FCameraNodeRunParams
 	/** The evaluation running this evaluation. */
 	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
-	TObjectPtr<UCameraEvaluationContext> EvaluationContext;
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 	/** The time interval for the evaluation. */
 	float DeltaTime = 0.f;
 	/** Whether this is the first evaluation of this camera node hierarchy. */

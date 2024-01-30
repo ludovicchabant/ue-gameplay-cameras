@@ -34,7 +34,7 @@ struct FActivateCameraModeParams
 	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 
 	/** The evaluation context in which the camera mode runs. */
-	TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 
 	/** The source camera mode asset that will be instantiated. */
 	TObjectPtr<const UCameraMode> CameraMode;

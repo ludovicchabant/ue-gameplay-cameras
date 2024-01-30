@@ -21,7 +21,7 @@ struct FBlendStackCameraPushParams
 	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 
 	/** The evaluation context within which a camera mode's node tree should run. */
-	TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 
 	/** The source camera mode asset to instantiate and push on the blend stack. */
 	TObjectPtr<const UCameraMode> CameraMode;
