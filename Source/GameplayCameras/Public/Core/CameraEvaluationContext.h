@@ -4,7 +4,7 @@
 
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
-#include "Core/CameraNode.h"
+#include "Core/CameraNodeEvaluator.h"
 
 #include "CameraEvaluationContext.generated.h"
 
@@ -26,7 +26,7 @@ public:
 	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
 	/** Gets the initial evaluation result for all camera modes in this context. */
-	const FCameraNodeRunResult& GetInitialResult() const { return InitialResult; }
+	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
 protected:
 
@@ -35,6 +35,6 @@ protected:
 	TObjectPtr<UCameraAsset> CameraAsset;
 
 	/** The initial result for all camera modes in this context. */
-	FCameraNodeRunResult InitialResult;
+	FCameraNodeEvaluationResult InitialResult;
 };
 

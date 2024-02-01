@@ -1,0 +1,159 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Core/CameraObjectRtti.h"
+#include "Core/CameraPose.h"
+#include "Core/ObjectChildrenView.h"
+#include "CoreTypes.h"
+#include "UObject/ObjectPtr.h"
+
+class FReferenceCollector;
+class FCameraNodeEvaluator;
+class UCameraEvaluationContext;
+class UCameraNode;
+class UCameraSystemEvaluator;
+struct FCameraNodeEvaluatorBuilder;
+
+/**
+ * Parameter structure for running a camera node evaluator.
+ */
+struct FCameraNodeEvaluationParams
+{
+	/** The evaluation running this evaluation. */
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	/** The time interval for the evaluation. */
+	float DeltaTime = 0.f;
+	/** Whether this is the first evaluation of this camera node hierarchy. */
+	bool bIsFirstFrame = false;
+};
+
+/**
+ * Input/output result structure for running a camera node evaluator.
+ */
+struct FCameraNodeEvaluationResult
+{
+	/** The camera pose. */
+	FCameraPose CameraPose;
+	/** Whether the current frame is a camera cut. */
+	bool bIsCameraCut = false;
+	/** Whether this result is valid. */
+	bool bIsValid = false;
+
+	/** Reset this result to its default (non-valid) state. */
+	void Reset();
+};
+
+/**
+ * Structure for initializing a camera node evaluator.
+ */
+struct FCameraNodeEvaluatorInitializeParams
+{
+	/** The evaluation running this evaluation. */
+	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	/** Builder object for building children evaluators. */
+	FCameraNodeEvaluatorBuilder* Builder = nullptr;
+
+	/** Builds an evaluator for the given camera node. */
+	FCameraNodeEvaluator* BuildEvaluator(const UCameraNode* InNode) const;
+
+	/** Builds an evaluator for the given camera node, and down-cast it to the given type. */
+	template<typename EvaluatorType>
+	EvaluatorType* BuildEvaluatorAs(const UCameraNode* InNode) const;
+};
+
+/** View on a camera node evaluator's children. */
+using FCameraNodeEvaluatorChildrenView = TObjectChildrenView<FCameraNodeEvaluator*>;
+
+/**
+ * Base class for objects responsible for running a camera node.
+ */
+class FCameraNodeEvaluator
+{
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(FCameraNodeEvaluator)
+
+public:
+
+	FCameraNodeEvaluator();
+	virtual ~FCameraNodeEvaluator() {}
+
+	/** Initialize this evaluator. */
+	void Initialize(const FCameraNodeEvaluatorInitializeParams& Params);
+
+	/** Get the list of children under this evaluator. */
+	FCameraNodeEvaluatorChildrenView GetChildren();
+
+	/** Run this evaluator. */
+	void Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+
+	/** Collect referenced UObjects. */
+	void AddReferencedObjects(FReferenceCollector& Collector);
+
+	/** Get the camera node. */
+	template<typename CameraNodeType>
+	const CameraNodeType* GetCameraNodeAs() const
+	{
+		return Cast<CameraNodeType>(PrivateCameraNode);
+	}
+
+	// Internal API.
+	void SetPrivateCameraNode(TObjectPtr<const UCameraNode> InCameraNode);
+
+protected:
+
+	/** Initialize this evaluator. */
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) {}
+
+	/** Get the list of children under this evaluator. */
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
+
+	/** Run this evaluator. */
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+
+	/** Collect referenced UObjects. */
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+
+private:
+
+	/** The camera node to run. */
+	TObjectPtr<const UCameraNode> PrivateCameraNode;
+};
+
+// Utility macros for declaring and defining camera node evaluators.
+//
+#define UE_DECLARE_CAMERA_NODE_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraNodeEvaluator)
+
+#define UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+
+#define UE_DEFINE_CAMERA_NODE_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
+
+/** Utility base class for camera node evaluators of a specific camera node type. */
+template<typename CameraNodeType>
+class TCameraNodeEvaluator : public FCameraNodeEvaluator
+{
+public:
+
+	/** Gets the camera node. */
+	const CameraNodeType* GetCameraNode() const
+	{
+		return GetCameraNodeAs<CameraNodeType>();
+	}
+
+	friend CameraNodeType;
+};
+
+template<typename EvaluatorType>
+EvaluatorType* FCameraNodeEvaluatorInitializeParams::BuildEvaluatorAs(const UCameraNode* InNode) const
+{
+	FCameraNodeEvaluator* NewEvaluator = BuildEvaluator(InNode);
+	check(NewEvaluator);
+	return NewEvaluator->CastThisChecked<EvaluatorType>();
+}
+

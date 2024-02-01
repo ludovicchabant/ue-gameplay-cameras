@@ -4,14 +4,24 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(PopBlendCameraNode)
 
-void UPopBlendCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+class FPopBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
+{
+	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(FPopBlendCameraNodeEvaluator)
+protected:
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) override;
+};
+
+UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FPopBlendCameraNodeEvaluator)
+
+void FPopBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 }
 
-void UPopBlendCameraNode::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
+void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
-	const FCameraNodeRunResult& ChildResult(Params.ChildResult);
-	FCameraNodeRunResult& BlendedResult(OutResult.BlendedResult);
+	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
+	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);
 	
 	BlendedResult.CameraPose.OverrideChanged(ChildResult.CameraPose);
 	if (ChildResult.bIsCameraCut || Params.ChildParams.bIsFirstFrame)
@@ -21,5 +31,10 @@ void UPopBlendCameraNode::OnBlendResults(const FCameraNodeBlendParams& Params, F
 
 	OutResult.bIsBlendFull = true;
 	OutResult.bIsBlendFinished = true;
+}
+
+FCameraNodeEvaluatorPtr UPopBlendCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
+{
+	return Builder.BuildEvaluator<FPopBlendCameraNodeEvaluator>();
 }
 

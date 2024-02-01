@@ -4,7 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendCameraNode)
 
-void UBlendCameraNode::BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendCameraNodeEvaluator)
+
+void FBlendCameraNodeEvaluator::BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
 	OnBlendResults(Params, OutResult);
 }

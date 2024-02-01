@@ -4,6 +4,7 @@
 
 #include "Camera/CameraTypes.h"
 #include "Core/CameraAsset.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraMode.h"
 #include "Core/DefaultRootCameraNode.h"
@@ -19,14 +20,25 @@ UCameraSystemEvaluator::UCameraSystemEvaluator(const FObjectInitializer& ObjectI
 {
 	RootNode = ObjectInit.CreateDefaultSubobject<UDefaultRootCameraNode>(this, TEXT("RootNode"));
 
-	ContextStack.Initialize(this);
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		ContextStack.Initialize(this);
+
+		FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+		BuildParams.Evaluator = this;
+		BuildParams.RootCameraNode = RootNode;
+		RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
+	}
 }
 
 void UCameraSystemEvaluator::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
 {
 	UCameraSystemEvaluator* TypedThis = CastChecked<UCameraSystemEvaluator>(InThis);
 	TypedThis->ContextStack.AddReferencedObjects(Collector);
-	TypedThis->Instantiator.AddReferencedObjects(Collector);
+	if (TypedThis->RootEvaluator)
+	{
+		TypedThis->RootEvaluator->AddReferencedObjects(Collector);
+	}
 }
 
 void UCameraSystemEvaluator::PushEvaluationContext(UCameraEvaluationContext* EvaluationContext)
@@ -57,16 +69,16 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 	}
 
 	// Run the camera director, and activate any camera mode(s) it returns to us.
-	UCameraDirector* ActiveDirector = ActiveContextInfo.CameraDirector;
-	if (ActiveDirector)
+	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContextInfo.Evaluator;
+	if (ActiveDirectorEvaluator)
 	{
-		FCameraDirectorRunParams DirectorParams;
+		FCameraDirectorEvaluationParams DirectorParams;
 		DirectorParams.DeltaTime = Params.DeltaTime;
 		DirectorParams.OwnerContext = ActiveContextInfo.EvaluationContext;
 
-		FCameraDirectorRunResult DirectorResult;
+		FCameraDirectorEvaluationResult DirectorResult;
 
-		ActiveDirector->Run(DirectorParams, DirectorResult);
+		ActiveDirectorEvaluator->Run(DirectorParams, DirectorResult);
 
 		if (DirectorResult.ActiveCameraModes.Num() == 1)
 		{
@@ -74,18 +86,18 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 			CameraModeParams.Evaluator = this;
 			CameraModeParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
 			CameraModeParams.CameraMode = DirectorResult.ActiveCameraModes[0];
-			RootNode->ActivateCameraMode(CameraModeParams);
+			RootEvaluator->ActivateCameraMode(CameraModeParams);
 		}
 	}
 
 	// Run the root camera node.
-	FCameraNodeRunParams NodeParams;
+	FCameraNodeEvaluationParams NodeParams;
 	NodeParams.Evaluator = this;
 	NodeParams.DeltaTime = Params.DeltaTime;
 
 	RootNodeResult.Reset();
 
-	RootNode->Run(NodeParams, RootNodeResult);
+	RootEvaluator->Run(NodeParams, RootNodeResult);
 
 	Result.CameraPose = RootNodeResult.CameraPose;
 	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
@@ -98,10 +110,5 @@ void UCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.Location = CameraPose.GetLocation();
 	DesiredView.Rotation = CameraPose.GetRotation();
 	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
-}
-
-FCameraRuntimeInstantiator& UCameraSystemEvaluator::GetRuntimeInstantiator()
-{
-	return Instantiator;
 }
 

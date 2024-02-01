@@ -6,7 +6,7 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RootCameraNode)
 
-void URootCameraNode::ActivateCameraMode(const FActivateCameraModeParams& Params)
+void FRootCameraNodeEvaluator::ActivateCameraMode(const FActivateCameraModeParams& Params)
 {
 	OnActivateCameraMode(Params);
 }

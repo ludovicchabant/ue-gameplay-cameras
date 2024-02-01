@@ -3,11 +3,13 @@
 #pragma once
 
 #include "Core/CameraNode.h"
+#include "Core/CameraNodeEvaluator.h"
 
 #include "RootCameraNode.generated.h"
 
 class UCameraEvaluationContext;
 class UCameraMode;
+class UCameraSystemEvaluator;
 
 /**
  * Defines evaluation layers for camera modes.
@@ -51,7 +53,13 @@ UCLASS(MinimalAPI, Abstract)
 class URootCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
+};
 
+/**
+ * Base class for the evaluator of a root camera node.
+ */
+class FRootCameraNodeEvaluator : public FCameraNodeEvaluator
+{
 public:
 
 	/** Activates a camera mode. */

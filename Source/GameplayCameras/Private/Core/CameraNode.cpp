@@ -2,47 +2,26 @@
 
 #include "Core/CameraNode.h"
 
-#include "Core/CameraRuntimeInstantiator.h"
+#include "Core/CameraNodeEvaluator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNode)
 
-void FCameraNodeRunResult::Reset()
+void FCameraNodeEvaluationResult::Reset()
 {
 	CameraPose.Reset();
 	bIsCameraCut = false;
 	bIsValid = false;
 }
 
-FCameraNodeChildrenView UCameraNode::GetChildren()
+FCameraNodeEvaluatorAllocationInfo UCameraNode::GetEvaluatorInfo() const
 {
-	return OnGetChildren();
+	return OnGetEvaluatorInfo();
 }
 
-void UCameraNode::Initialize(const FCameraNodeInitializeParams& Params)
+FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
-	OnInitialize(Params);
+	FCameraNodeEvaluator* NewEvaluator = OnBuildEvaluator(Builder);
+	NewEvaluator->SetPrivateCameraNode(this);
+	return NewEvaluator;
 }
 
-void UCameraNode::Reset(const FCameraNodeResetParams& Params)
-{
-	OnReset(Params);
-}
-
-void UCameraNode::Run(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
-{
-	if (bIsEnabled)
-	{
-		OnRun(Params, OutResult);
-	}
-}
-
-#if WITH_EDITOR
-
-void UCameraNode::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-	
-	FCameraRuntimeInstantiator::ForwardPropertyChange(this, PropertyChangedEvent);
-}
-
-#endif

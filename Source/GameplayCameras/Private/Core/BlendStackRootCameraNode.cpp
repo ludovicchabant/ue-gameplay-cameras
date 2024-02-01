@@ -7,40 +7,43 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 
-void UBlendStackRootCameraNode::FinishBuilding(UBlendCameraNode* InBlend, UCameraNode* InRootNode)
+FCameraNodeEvaluatorPtr UBlendStackRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
-	Blend = InBlend;
-	RootNode = InRootNode;
-
-	TreeCache.Build(RootNode);
+	return Builder.BuildEvaluator<FBlendStackRootCameraNodeEvaluator>();
 }
 
-FCameraNodeChildrenView UBlendStackRootCameraNode::OnGetChildren()
-{
-	return FCameraNodeChildrenView({ Blend, RootNode });
-}
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackRootCameraNodeEvaluator)
 
-void UBlendStackRootCameraNode::OnInitialize(const FCameraNodeInitializeParams& Params)
+FCameraNodeEvaluatorChildrenView FBlendStackRootCameraNodeEvaluator::OnGetChildren()
 {
-	TreeCache.ForEachNode(ECameraNodeFlags::RequiresInitialize, 
-			[Params](UCameraNode* Node) { Node->Initialize(Params); });
-}
-
-void UBlendStackRootCameraNode::OnReset(const FCameraNodeResetParams& Params)
-{
-	TreeCache.ForEachNode(ECameraNodeFlags::RequiresReset, 
-			[Params](UCameraNode* Node) { Node->Reset(Params); });
-}
-
-void UBlendStackRootCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
-{
-	if (Blend)
+	FCameraNodeEvaluatorChildrenView Children;
+	if (BlendEvaluator)
 	{
-		Blend->Run(Params, OutResult);
+		Children.Add(BlendEvaluator);
 	}
-	if (RootNode)
+	if (RootEvaluator)
 	{
-		RootNode->Run(Params, OutResult);
+		Children.Add(RootEvaluator);
+	}
+	return Children;
+}
+
+void FBlendStackRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+{
+	const UBlendStackRootCameraNode* RootNode = GetCameraNodeAs<UBlendStackRootCameraNode>();
+	BlendEvaluator = Params.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(RootNode->Blend);
+	RootEvaluator = Params.BuildEvaluator(RootNode->RootNode);
+}
+
+void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	if (BlendEvaluator)
+	{
+		BlendEvaluator->Run(Params, OutResult);
+	}
+	if (RootEvaluator)
+	{
+		RootEvaluator->Run(Params, OutResult);
 	}
 }
 

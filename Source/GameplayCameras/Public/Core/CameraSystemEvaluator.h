@@ -5,13 +5,15 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraEvaluationContextStack.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraPose.h"
-#include "Core/CameraRuntimeInstantiator.h"
 #include "CoreTypes.h"
 #include "UObject/GCObject.h"
 
 #include "CameraSystemEvaluator.generated.h"
 
+class FRootCameraNodeEvaluator;
 class UCameraDirector;
 class UCameraEvaluationContext;
 class UCameraMode;
@@ -73,11 +75,6 @@ public:
 
 public:
 
-	/** Gets the runtime instantiator for this evaluator. */
-	FCameraRuntimeInstantiator& GetRuntimeInstantiator();
-
-public:
-
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
 private:
@@ -89,13 +86,16 @@ private:
 	/** The stack of active evaluation context. */
 	FCameraEvaluationContextStack ContextStack;
 
+	/** Storage buffer for the root evaluator. */
+	FCameraNodeEvaluatorStorage RootEvaluatorStorage;
+
+	/** The root evaluator. */
+	FRootCameraNodeEvaluator* RootEvaluator;
+
 	/** The current result of the root camera node. */
-	FCameraNodeRunResult RootNodeResult;
+	FCameraNodeEvaluationResult RootNodeResult;
 
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationUpdateResult Result;
-
-	/** The instantiator for runtime objects. */
-	FCameraRuntimeInstantiator Instantiator;
 };
 

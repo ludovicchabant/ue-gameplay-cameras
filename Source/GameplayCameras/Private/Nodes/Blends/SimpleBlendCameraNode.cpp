@@ -4,17 +4,19 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SimpleBlendCameraNode)
 
-void USimpleBlendCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleBlendCameraNodeEvaluator)
+
+void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	FSimpleBlendCameraNodeRunResult FactorResult;
+	FSimpleBlendCameraNodeEvaluationResult FactorResult;
 	OnComputeBlendFactor(Params, FactorResult);
 	BlendFactor = FactorResult.BlendFactor;
 }
 
-void USimpleBlendCameraNode::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
+void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
-	const FCameraNodeRunResult& ChildResult(Params.ChildResult);
-	FCameraNodeRunResult& BlendedResult(OutResult.BlendedResult);
+	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
+	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);
 
 	BlendedResult.CameraPose.LerpChanged(
 			ChildResult.CameraPose, 
@@ -34,15 +36,24 @@ void USimpleBlendCameraNode::OnBlendResults(const FCameraNodeBlendParams& Params
 	OutResult.bIsBlendFinished = bIsBlendFinished;
 }
 
-void USimpleFixedTimeBlendCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleFixedTimeBlendCameraNodeEvaluator)
+
+void FSimpleFixedTimeBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	const USimpleFixedTimeBlendCameraNode* BlendNode = GetCameraNodeAs<USimpleFixedTimeBlendCameraNode>();
 	CurrentTime += Params.DeltaTime;
-	if (CurrentTime >= BlendTime)
+	if (CurrentTime >= BlendNode->BlendTime)
 	{
-		CurrentTime = BlendTime;
+		CurrentTime = BlendNode->BlendTime;
 		SetBlendFinished();
 	}
 
-	Super::OnRun(Params, OutResult);
+	FSimpleBlendCameraNodeEvaluator::OnRun(Params, OutResult);
+}
+
+float FSimpleFixedTimeBlendCameraNodeEvaluator::GetTimeFactor() const
+{
+	const USimpleFixedTimeBlendCameraNode* BlendNode = GetCameraNodeAs<USimpleFixedTimeBlendCameraNode>();
+	return CurrentTime / BlendNode->BlendTime;
 }
 

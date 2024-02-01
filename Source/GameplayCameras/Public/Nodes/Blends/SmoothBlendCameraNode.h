@@ -26,7 +26,7 @@ class USmoothBlendCameraNode : public USimpleFixedTimeBlendCameraNode
 
 protected:
 
-	virtual void OnComputeBlendFactor(const FCameraNodeRunParams& Params, FSimpleBlendCameraNodeRunResult& OutResult) override;
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 	
 public:
 

@@ -17,7 +17,8 @@ class UOffsetCameraNode : public UCameraNode
 
 protected:
 
-	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
+	// UCameraNode interface.
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 public:
 

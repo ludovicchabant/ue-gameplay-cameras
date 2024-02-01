@@ -3,8 +3,10 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "UObject/WeakObjectPtr.h"
 
+class FCameraDirectorEvaluator;
 class UCameraAsset;
 class UCameraDirector;
 class UCameraEvaluationContext;
@@ -17,7 +19,9 @@ struct FCameraEvaluationContextInfo
 	UCameraEvaluationContext* EvaluationContext = nullptr;
 
 	/** The instantiated camera director running in this context. */
-	UCameraDirector* CameraDirector = nullptr;
+	const UCameraDirector* CameraDirector = nullptr;
+
+	FCameraDirectorEvaluator* Evaluator = nullptr;
 
 	/** Returns whether this structure has a valid context and director. */
 	bool IsValid() const { return EvaluationContext && CameraDirector; }
@@ -56,7 +60,9 @@ private:
 	struct FContextEntry
 	{
 		TWeakObjectPtr<UCameraEvaluationContext> WeakContext;
-		TObjectPtr<UCameraDirector> CameraDirector;
+		TObjectPtr<const UCameraDirector> CameraDirector;
+		FCameraDirectorEvaluatorStorage EvaluatorStorage;
+		FCameraDirectorEvaluator* Evaluator = nullptr;
 	};
 
 	/** The entries in the stack. */

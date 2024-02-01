@@ -4,16 +4,29 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SingleCameraDirector)
 
+class FSingleCameraDirectorEvaluator : public FCameraDirectorEvaluator
+{
+	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(FSingleCameraDirectorEvaluator)
+protected:
+	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override
+	{
+		const USingleCameraDirector* SingleDirector = GetCameraDirectorAs<USingleCameraDirector>();
+		if (SingleDirector->CameraMode)
+		{
+			OutResult.ActiveCameraModes.Add(SingleDirector->CameraMode);
+		}
+	}
+};
+
+UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(FSingleCameraDirectorEvaluator)
+
 USingleCameraDirector::USingleCameraDirector(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
 }
 
-void USingleCameraDirector::OnRun(const FCameraDirectorRunParams& Params, FCameraDirectorRunResult& OutResult)
+FCameraDirectorEvaluator* USingleCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
 {
-	if (CameraMode)
-	{
-		OutResult.ActiveCameraModes.Add(CameraMode);
-	}
+	return Builder.BuildEvaluator<FSingleCameraDirectorEvaluator>();
 }
 

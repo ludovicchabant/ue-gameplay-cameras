@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Core/CameraNode.h"
-#include "Math/CriticalDamper.h"
 #include "Nodes/CameraNodeTypes.h"
 
 #include "DampenPositionCameraNode.generated.h"
@@ -22,26 +21,21 @@ public:
 
 protected:
 
-	virtual void OnInitialize(const FCameraNodeInitializeParams& Params) override;
-	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
+	// UCameraNode interface.
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 public:
 
+	/** Damping factor for forward/backward camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
 	float ForwardDampingFactor = 0.f;
 
+	/** Damping factor for left/right camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
 	float LateralDampingFactor = 0.f;
 
+	/** Damping factor for up/down camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
 	float VerticalDampingFactor = 0.f;
-
-private:
-
-	FCriticalDamper ForwardDamper;
-	FCriticalDamper LateralDamper;
-	FCriticalDamper VerticalDamper;
-
-	FVector3d PreviousLocation;
 };
 

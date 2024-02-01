@@ -3,9 +3,12 @@
 #pragma once
 
 #include "Core/CameraNode.h"
+#include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraNodeEvaluatorStorage.h"
 
 #include "BlendStackCameraNode.generated.h"
 
+class FBlendStackRootCameraNodeEvaluator;
 class UBlendStackRootCameraNode;
 class UCameraAsset;
 class UCameraEvaluationContext;
@@ -35,26 +38,10 @@ class UBlendStackCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
-public:
-
-	/** Push a new camera mode onto the blend stack. */
-	void Push(const FBlendStackCameraPushParams& Params);
-
-public:
-
-	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
-
 protected:
 
 	// UCameraNode interface
-	virtual FCameraNodeChildrenView OnGetChildren() override;
-	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
-
-	const FCameraModeTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
-	const FCameraModeTransition* FindTransition(
-			TArrayView<const FCameraModeTransition> Transitions, 
-			const UCameraMode* FromCameraMode, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
-			const UCameraMode* ToCameraMode, const UCameraAsset* ToCameraAsset) const;
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 public:
 
@@ -70,19 +57,54 @@ public:
 	 */
 	UPROPERTY()
 	bool bBlendFirstCameraMode = false;
+};
+
+/**
+ * Evaluator for a blend stack camera node.
+ */
+class FBlendStackCameraNodeEvaluator : public TCameraNodeEvaluator<UBlendStackCameraNode>
+{
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
+
+public:
+
+	/** Push a new camera mode onto the blend stack. */
+	void Push(const FBlendStackCameraPushParams& Params);
+
+protected:
+
+	// FCameraNodeEvaluator interface
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+	// Utility functions for finding an appropriate transition.
+	const FCameraModeTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
+	const FCameraModeTransition* FindTransition(
+			TArrayView<const FCameraModeTransition> Transitions, 
+			const UCameraMode* FromCameraMode, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
+			const UCameraMode* ToCameraMode, const UCameraAsset* ToCameraAsset) const;
 
 protected:
 
 	struct FCameraModeEntry
 	{
+		/** Evaluation context in which this entry runs. */
 		TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
-		TObjectPtr<const UCameraMode> OriginalCameraMode;
-		TObjectPtr<UBlendStackRootCameraNode> RootNode;
-		FCameraNodeRunResult Result;
+		/** The camera mode asset that this entry runs. */
+		TObjectPtr<const UCameraMode> CameraMode;
+		/** Storage buffer for all evaluators in this node tree. */
+		FCameraNodeEvaluatorStorage EvaluatorStorage;
+		/** Root evaluator. */
+		FBlendStackRootCameraNodeEvaluator* RootEvaluator = nullptr;
+		/** Result for this node tree. */
+		FCameraNodeEvaluationResult Result;
+		/** Whether this is the first frame this entry runs. */
 		bool bIsFirstFrame = false;
+		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
 	};
 
+	/** Entries in the blend stack. */
 	TArray<FCameraModeEntry> Entries;
 };
 

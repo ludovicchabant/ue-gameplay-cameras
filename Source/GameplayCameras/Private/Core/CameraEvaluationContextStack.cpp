@@ -4,8 +4,8 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
-#include "Core/CameraRuntimeInstantiator.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "UObject/Package.h"
 
@@ -15,7 +15,7 @@ FCameraEvaluationContextInfo FCameraEvaluationContextStack::GetActiveContext() c
 	{
 		if (UCameraEvaluationContext* Context = Entry.WeakContext.Get())
 		{
-			return FCameraEvaluationContextInfo{ Context, Entry.CameraDirector };
+			return FCameraEvaluationContextInfo{ Context, Entry.CameraDirector, Entry.Evaluator };
 		}
 	}
 	return FCameraEvaluationContextInfo();
@@ -44,30 +44,24 @@ void FCameraEvaluationContextStack::PushContext(UCameraEvaluationContext* Contex
 	{
 		if (ExistingIndex < Entries.Num() - 1)
 		{
-			const FContextEntry EntryCopy(Entries[ExistingIndex]);
+			FContextEntry EntryCopy(MoveTemp(Entries[ExistingIndex]));
 			Entries.RemoveAt(ExistingIndex);
-			Entries.Add(EntryCopy);
+			Entries.Add(MoveTemp(EntryCopy));
 		}
 		return;
 	}
 
-	// Instantiate the camera director.
-	FCameraRuntimeInstantiationParams InstParams;
-	InstParams.InstantiationOuter = Evaluator;
-	if (!InstParams.InstantiationOuter)
-	{
-		InstParams.InstantiationOuter = GetTransientPackage();
-	}
-
-	const UCameraDirector* OriginalCameraDirector = Context->GetCameraAsset()->CameraDirector;
-	UCameraDirector* NewCameraDirector = Evaluator->GetRuntimeInstantiator().InstantiateCameraDirector(
-			OriginalCameraDirector, InstParams);
-	
-	// Add an entry in the stack.
+	// Make a new entry and build the director evaluator using the entry's storage.
 	FContextEntry NewEntry;
+
+	FCameraDirectorEvaluatorBuilder Builder(NewEntry.EvaluatorStorage);
+	const UCameraDirector* CameraDirector = Context->GetCameraAsset()->CameraDirector;
+	FCameraDirectorEvaluator* DirectorEvaluator = CameraDirector->BuildEvaluator(Builder);
+	
 	NewEntry.WeakContext = Context;
-	NewEntry.CameraDirector = NewCameraDirector;
-	Entries.Push(NewEntry);
+	NewEntry.CameraDirector = CameraDirector;
+	NewEntry.Evaluator = DirectorEvaluator;
+	Entries.Push(MoveTemp(NewEntry));
 }
 
 bool FCameraEvaluationContextStack::RemoveContext(UCameraEvaluationContext* Context)

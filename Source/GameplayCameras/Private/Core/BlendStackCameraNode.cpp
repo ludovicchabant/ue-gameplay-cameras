@@ -7,13 +7,19 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraMode.h"
-#include "Core/CameraRuntimeInstantiator.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackCameraNode)
 
-void UBlendStackCameraNode::Push(const FBlendStackCameraPushParams& Params)
+FCameraNodeEvaluatorPtr UBlendStackCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
+{
+	return Builder.BuildEvaluator<FBlendStackCameraNodeEvaluator>();
+}
+
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
+
+void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
 {
 	if (!Entries.IsEmpty())
 	{
@@ -21,82 +27,70 @@ void UBlendStackCameraNode::Push(const FBlendStackCameraPushParams& Params)
 		// active camera mode.
 		const FCameraModeEntry& TopEntry(Entries.Top());
 		if (!TopEntry.bIsFrozen
-				&& TopEntry.OriginalCameraMode == Params.CameraMode
+				&& TopEntry.CameraMode == Params.CameraMode
 				&& TopEntry.EvaluationContext == Params.EvaluationContext)
 		{
 			return;
 		}
 	}
 
-	// Create the new root node. Instantiated objects will go inside it.
-	UBlendStackRootCameraNode* EntryRootNode = NewObject<UBlendStackRootCameraNode>(this, NAME_None);
+	// Create the new root node to wrap the new camera mode's root node, and the specific
+	// blend node for this transition.
+	// We need to const-cast here to be able to use our own blend stack node as the outer
+	// of the new node.
+	UObject* Outer = const_cast<UObject*>((UObject*)GetCameraNode());
+	UBlendStackRootCameraNode* EntryRootNode = NewObject<UBlendStackRootCameraNode>(Outer, NAME_None);
 	{
-		// Instantiate the camera mode's node tree.
-		FCameraRuntimeInstantiationParams NodeTreeInstParams;
-		NodeTreeInstParams.InstantiationOuter = EntryRootNode;
-		NodeTreeInstParams.bAllowRecyling = true;
+		UCameraNode* ModeRootNode = Params.CameraMode->RootNode;
+		EntryRootNode->RootNode = ModeRootNode;
 
-		FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
-		UCameraNode* ModeRootNode = Instantiator.InstantiateCameraNodeTree(Params.CameraMode->RootNode, NodeTreeInstParams);
-
-		// Find a transition and instantiate its blend. If not transition is found,
+		// Find a transition and use its blend. If no transition is found,
 		// make a camera cut transition.
-		UBlendCameraNode* Blend = nullptr;
+		UBlendCameraNode* ModeBlend = nullptr;
 		if (const FCameraModeTransition* Transition = FindTransition(Params))
 		{
-			FCameraRuntimeInstantiationParams BlendInstParams;
-			BlendInstParams.InstantiationOuter = EntryRootNode;
-			// No recycling on the blend.
-
-			UBlendCameraNode* ModeBlend = CastChecked<UBlendCameraNode>(
-					Instantiator.InstantiateCameraNodeTree(Transition->Blend, BlendInstParams));
-			Blend = ModeBlend;
+			ModeBlend = Transition->Blend;
 		}
 		else
 		{
-			Blend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
+			ModeBlend = NewObject<UPopBlendCameraNode>(EntryRootNode, NAME_None);
 		}
-
-		EntryRootNode->FinishBuilding(Blend, ModeRootNode);
+		EntryRootNode->Blend = ModeBlend;
 	}
 
-	FCameraNodeInitializeParams InitParams;
-	InitParams.EvaluationContext = Params.EvaluationContext;
-	InitParams.Evaluator = Params.Evaluator;
-	EntryRootNode->Initialize(InitParams);
-
-	// Make a new entry and add it to the stack.
+	// Make the new stack entry, and use its storage buffer to build the tree of evaluators.
 	FCameraModeEntry NewEntry;
+
+	FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+	BuildParams.RootCameraNode = EntryRootNode;
+	BuildParams.Evaluator = Params.Evaluator;
+	BuildParams.EvaluationContext = Params.EvaluationContext;
+	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
+
 	NewEntry.EvaluationContext = Params.EvaluationContext;
-	NewEntry.OriginalCameraMode = Params.CameraMode;
-	NewEntry.RootNode = EntryRootNode;
+	NewEntry.CameraMode = Params.CameraMode;
+	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
 	NewEntry.bIsFirstFrame = true;
 
+	// Important: we need to move the new entry here because copying evaluator storage
+	// is disabled.
 	Entries.Add(MoveTemp(NewEntry));
 }
 
-void UBlendStackCameraNode::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
+FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 {
-	UBlendStackCameraNode* TypedThis = CastChecked<UBlendStackCameraNode>(InThis);
-	for (FCameraModeEntry& Entry : TypedThis->Entries)
-	{
-		Collector.AddReferencedObject(Entry.OriginalCameraMode);
-		Collector.AddReferencedObject(Entry.RootNode);
-	}
-}
-
-FCameraNodeChildrenView UBlendStackCameraNode::OnGetChildren()
-{
-	FCameraNodeChildrenView View;
+	FCameraNodeEvaluatorChildrenView View;
 	for (FCameraModeEntry& Entry : Entries)
 	{
-		View.Add(Entry.RootNode);
+		View.Add(Entry.RootEvaluator);
 	}
 	return View;
 }
 
-void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
+
 	// Start by evaluating all the root nodes in the stack.
 	for (FCameraModeEntry& Entry : Entries)
 	{
@@ -107,17 +101,17 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 			continue;
 		}
 
-		FCameraNodeRunParams CurParams(Params);
+		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = CurContext;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
-		FCameraNodeRunResult& CurResult(Entry.Result);
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
 		if (!Entry.bIsFrozen)
 		{
 			// If the context in which this camera mode runs doesn't have a valid result,
 			// skip it.
-			const FCameraNodeRunResult& ContextResult(CurContext->GetInitialResult());
+			const FCameraNodeEvaluationResult& ContextResult(CurContext->GetInitialResult());
 			if (UNLIKELY(!ContextResult.bIsValid))
 			{
 				CurResult.bIsValid = false;
@@ -134,12 +128,12 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 			CurResult.bIsValid = true;
 
 			// Run the camera mode!
-			Entry.RootNode->Run(CurParams, CurResult);
+			Entry.RootEvaluator->Run(CurParams, CurResult);
 		}
 		else
 		{
 			// Only evaluate the blend via the root node.
-			Entry.RootNode->Run(CurParams, CurResult);
+			Entry.RootEvaluator->Run(CurParams, CurResult);
 		}
 	}
 
@@ -150,7 +144,7 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	int32 PopEntriesBelow = INDEX_NONE;
 	for (FCameraModeEntry& Entry : Entries)
 	{
-		FCameraNodeRunResult& CurResult(Entry.Result);
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 		if (UNLIKELY(!CurResult.bIsValid))
 		{
 			continue;
@@ -158,17 +152,17 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 
 		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
 
-		FCameraNodeRunParams CurParams(Params);
+		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = Entry.EvaluationContext.Get();
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
 		FCameraNodeBlendResult BlendResult(OutResult);
 
-		UBlendCameraNode* EntryBlend = Entry.RootNode->GetBlend();
-		if (EntryBlend)
+		FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+		if (EntryBlendEvaluator)
 		{
-			EntryBlend->BlendResults(BlendParams, BlendResult);
+			EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
 
 			if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
 			{
@@ -188,23 +182,10 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	}
 
 	// Pop out camera modes that have been blended out.
-	if (bAutoPop && PopEntriesBelow != INDEX_NONE)
+	if (BlendStackNode->bAutoPop && PopEntriesBelow != INDEX_NONE)
 	{
-		FCameraRuntimeInstantiator& Instantiator = Params.Evaluator->GetRuntimeInstantiator();
 		for (int32 Index = 0; Index < PopEntriesBelow; ++Index)
 		{
-			FCameraModeEntry& Entry = Entries[0];
-			if (!Entry.bIsFrozen)
-			{
-				// Recycle the camera mode's node hierarchy if possible.
-				// Reset all nodes in it so they are back to their default state, ready to be
-				// re-used later.
-				TObjectPtr<const UCameraNode> OriginalRootNode = Entry.OriginalCameraMode->RootNode;
-				TObjectPtr<UCameraNode> RecycledRootNode = Entry.RootNode->GetRootNode();
-				Entry.RootNode->Reset(FCameraNodeResetParams());
-
-				Instantiator.RecycleInstantiatedObject(OriginalRootNode, RecycledRootNode);
-			}
 			Entries.RemoveAt(0);
 		}
 	}
@@ -216,8 +197,10 @@ void UBlendStackCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNod
 	}
 }
 
-const FCameraModeTransition* UBlendStackCameraNode::FindTransition(const FBlendStackCameraPushParams& Params) const
+const FCameraModeTransition* FBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
 {
+	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
+
 	const UCameraEvaluationContext* ToContext = Params.EvaluationContext.Get();
 	const UCameraAsset* ToCameraAsset = ToContext ? ToContext->GetCameraAsset() : nullptr;
 	const UCameraMode* ToCameraMode = Params.CameraMode;
@@ -235,7 +218,7 @@ const FCameraModeTransition* UBlendStackCameraNode::FindTransition(const FBlendS
 
 		const UCameraEvaluationContext* FromContext = TopEntry.EvaluationContext.Get();
 		const UCameraAsset* FromCameraAsset = FromContext ? FromContext->GetCameraAsset() : nullptr;
-		const UCameraMode* FromCameraMode = TopEntry.OriginalCameraMode;
+		const UCameraMode* FromCameraMode = TopEntry.CameraMode;
 
 		if (!TopEntry.bIsFrozen)
 		{
@@ -286,7 +269,7 @@ const FCameraModeTransition* UBlendStackCameraNode::FindTransition(const FBlendS
 			}
 		}
 	}
-	else if (bBlendFirstCameraMode)
+	else if (BlendStackNode->bBlendFirstCameraMode)
 	{
 		return FindTransition(
 				ToCameraMode->EnterTransitions,
@@ -297,7 +280,7 @@ const FCameraModeTransition* UBlendStackCameraNode::FindTransition(const FBlendS
 	return nullptr;
 }
 
-const FCameraModeTransition* UBlendStackCameraNode::FindTransition(
+const FCameraModeTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 			TArrayView<const FCameraModeTransition> Transitions, 
 			const UCameraMode* FromCameraMode, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraMode* ToCameraMode, const UCameraAsset* ToCameraAsset) const

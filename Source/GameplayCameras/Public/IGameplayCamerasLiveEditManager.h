@@ -16,18 +16,5 @@ class IGameplayCamerasLiveEditManager : public TSharedFromThis<IGameplayCamerasL
 public:
 
 	virtual ~IGameplayCamerasLiveEditManager() {}
-
-	/**
-	 * Register a new set of instantiated objects.
-	 *
-	 * @param InstantiatedObjects  A mapping between a source object and an instantiated object.
-	 */
-	virtual void RegisterInstantiatedObjects(const TMap<UObject*, UObject*> InstantiatedObjects) = 0;
-
-	/**
-	 * Request that a property change on the given source object should be replicated on any
-	 * known related instantied objects.
-	 */
-	virtual void ForwardPropertyChange(const UObject* Object, const FPropertyChangedEvent& PropertyChangedEvent) = 0;
 };
 

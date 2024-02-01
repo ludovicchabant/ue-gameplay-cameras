@@ -100,7 +100,6 @@ private:
 	
 	void OnPostGarbageCollection()
 	{
-		LiveEditManager->CleanUp();
 	}
 
 private:

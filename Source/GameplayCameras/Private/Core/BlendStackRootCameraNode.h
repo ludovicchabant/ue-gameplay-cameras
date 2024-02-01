@@ -3,10 +3,11 @@
 #pragma once
 
 #include "Core/CameraNode.h"
-#include "Core/CameraNodeTreeCache.h"
+#include "Core/CameraNodeEvaluator.h"
 
 #include "BlendStackRootCameraNode.generated.h"
 
+class FBlendCameraNodeEvaluator;
 class UBlendCameraNode;
 class UCameraMode;
 
@@ -20,25 +21,12 @@ class UBlendStackRootCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
-public:
-
-	/** Initialize this node. */
-	void FinishBuilding(UBlendCameraNode* InBlend, UCameraNode* InRootNode);
-
-	/** Gets the blend node. */
-	UBlendCameraNode* GetBlend() const { return Blend; }
-
-	/** Gets the root of the camera mode. */
-	UCameraNode* GetRootNode() const { return RootNode; }
-
 protected:
 
-	virtual FCameraNodeChildrenView OnGetChildren() override;
-	virtual void OnInitialize(const FCameraNodeInitializeParams& Params) override;
-	virtual void OnReset(const FCameraNodeResetParams& Params) override;
-	virtual void OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult) override;
+	// UCameraNode interface.
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
-private:
+public:
 
 	/** The blend to use on the camera mode. */
 	UPROPERTY()
@@ -47,8 +35,30 @@ private:
 	/** The root of the instantied camera node tree. */
 	UPROPERTY()
 	TObjectPtr<UCameraNode> RootNode;
+};
 
-	/** Node cache for the hierarchy below the root node. */
-	FCameraNodeTreeCache TreeCache;
+/**
+ * Evaluator for the blend stack entry root node.
+ */
+class FBlendStackRootCameraNodeEvaluator : public FCameraNodeEvaluator
+{
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackRootCameraNodeEvaluator)
+
+public:
+
+	FBlendCameraNodeEvaluator* GetBlendEvaluator() const { return BlendEvaluator; }
+	FCameraNodeEvaluator* GetRootEvaluator() const { return RootEvaluator; }
+
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	FBlendCameraNodeEvaluator* BlendEvaluator = nullptr;
+	FCameraNodeEvaluator* RootEvaluator = nullptr;
 };
 

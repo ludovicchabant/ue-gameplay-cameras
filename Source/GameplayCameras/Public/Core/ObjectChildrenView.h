@@ -5,53 +5,53 @@
 #include "Containers/Array.h"
 #include "Containers/ArrayView.h"
 #include "Misc/TVariant.h"
+#include "Templates/UnrealTypeTraits.h"
 #include "UObject/ObjectPtr.h"
 
 #include <initializer_list>
 
-class UCameraNode;
-
 /**
- * Structure that describes a list of camera node children.
+ * Structure that describes a list of children of an object.
  *
- * This structure can either provide a TArrayView<> on an existing container of camera node children,
+ * This structure can either provide a TArrayView<> on an existing container of children,
  * or store within itself a list of arbitrary camera node children.
  */
-struct FCameraNodeChildrenView
+template<typename ChildType>
+struct TObjectChildrenView
 {
 public:
 
-	using FArrayView = TArrayView<TObjectPtr<UCameraNode>>;
-	using FArray = TArray<TObjectPtr<UCameraNode>, TInlineAllocator<4>>;
+	using FArrayView = TArrayView<ChildType>;
+	using FArray = TArray<ChildType, TInlineAllocator<4>>;
 
 	/** An empty view. */
-	FCameraNodeChildrenView()
+	TObjectChildrenView()
 	{
 	}
 
 	/** Sets the view to the given TArrayView<>. */
-	FCameraNodeChildrenView(FArrayView&& InArrayView)
+	TObjectChildrenView(FArrayView&& InArrayView)
 	{
-		Storage.Set<FArrayView>(MoveTemp(InArrayView));
+		Storage.template Set<FArrayView>(MoveTemp(InArrayView));
 	}
 
 	/** Sets the view to pointer storage and adds the given list of children pointers. */
-	FCameraNodeChildrenView(std::initializer_list<TObjectPtr<UCameraNode>> InChildren)
+	TObjectChildrenView(std::initializer_list<ChildType> InChildren)
 	{
-		Storage.Set<FArray>(FArray(InChildren));
+		Storage.template Set<FArray>(FArray(InChildren));
 	}
 
 	/**
 	 * Sets the view to pointer storage (if not already done) and adds the given
 	 * pointer to the list.
 	 */
-	void Add(TObjectPtr<UCameraNode> InChild)
+	void Add(typename TCallTraits<ChildType>::ParamType InChild)
 	{
-		if (Storage.GetIndex() != FStorage::IndexOfType<FArray>())
+		if (Storage.GetIndex() != FStorage::template IndexOfType<FArray>())
 		{
-			Storage.Set<FArray>(FArray());
+			Storage.template Set<FArray>(FArray());
 		}
-		FArray& Array = Storage.Get<FArray>();
+		FArray& Array = Storage.template Get<FArray>();
 		Array.Add(InChild);
 	}
 
@@ -60,10 +60,10 @@ public:
 	{
 		switch (Storage.GetIndex())
 		{
-			case FStorage::IndexOfType<FArrayView>():
-				return Storage.Get<FArrayView>().IsEmpty();
-			case FStorage::IndexOfType<FArray>():
-				return Storage.Get<FArray>().IsEmpty();
+			case FStorage::template IndexOfType<FArrayView>():
+				return Storage.template Get<FArrayView>().IsEmpty();
+			case FStorage::template IndexOfType<FArray>():
+				return Storage.template Get<FArray>().IsEmpty();
 			default:
 				return true;
 		}
@@ -74,24 +74,24 @@ public:
 	{
 		switch (Storage.GetIndex())
 		{
-			case FStorage::IndexOfType<FArrayView>():
-				return Storage.Get<FArrayView>().Num();
-			case FStorage::IndexOfType<FArray>():
-				return Storage.Get<FArray>().Num();
+			case FStorage::template IndexOfType<FArrayView>():
+				return Storage.template Get<FArrayView>().Num();
+			case FStorage::template IndexOfType<FArray>():
+				return Storage.template Get<FArray>().Num();
 			default:
 				return 0;
 		}
 	}
 
 	/** Gets the i'th child. */
-	UCameraNode* operator[](int32 Index) const
+	ChildType operator[](int32 Index) const
 	{
 		switch (Storage.GetIndex())
 		{
-			case FStorage::IndexOfType<FArrayView>():
-				return Storage.Get<FArrayView>()[Index].Get();
-			case FStorage::IndexOfType<FArray>():
-				return Storage.Get<FArray>()[Index].Get();
+			case FStorage::template IndexOfType<FArrayView>():
+				return Storage.template Get<FArrayView>()[Index];
+			case FStorage::template IndexOfType<FArray>():
+				return Storage.template Get<FArray>()[Index];
 			default:
 				return nullptr;
 		}
@@ -103,10 +103,10 @@ public:
 
 	struct FBaseIterator
 	{
-		const FCameraNodeChildrenView* Owner;
+		const TObjectChildrenView* Owner;
 		int32 Index;
 
-		FORCEINLINE UCameraNode* operator*()
+		FORCEINLINE ChildType operator*()
 		{
 			return (*Owner)[Index];
 		}
@@ -127,7 +127,7 @@ public:
 	{
 		FORCEINLINE FIterator& operator++()
 		{
-			++Index;
+			++FBaseIterator::Index;
 			return *this;
 		}
 	};
@@ -139,7 +139,7 @@ public:
 	{
 		FORCEINLINE FReverseIterator& operator++()
 		{
-			--Index;
+			--FBaseIterator::Index;
 			return *this;
 		}
 	};

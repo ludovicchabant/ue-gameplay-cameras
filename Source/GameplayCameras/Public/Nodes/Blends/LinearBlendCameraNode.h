@@ -14,6 +14,8 @@ class ULinearBlendCameraNode : public USimpleFixedTimeBlendCameraNode
 {
 	GENERATED_BODY()
 
-	virtual void OnComputeBlendFactor(const FCameraNodeRunParams& Params, FSimpleBlendCameraNodeRunResult& OutResult) override;
+protected:
+
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 };
 

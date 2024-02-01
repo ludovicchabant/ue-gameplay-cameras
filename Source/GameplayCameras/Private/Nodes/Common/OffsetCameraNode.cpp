@@ -7,26 +7,38 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OffsetCameraNode)
 
-void UOffsetCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+class FOffsetCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	FVector3d LocalOffset = Offset;
-	switch(OffsetSpace)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
+
+protected:
+
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+};
+
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
+
+void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
+	FVector3d LocalOffset = OffsetNode->Offset;
+	switch(OffsetNode->OffsetSpace)
 	{
 		case ECameraNodeSpace::CameraPose:
 		default:
 			{
 				const FRotator3d Rotation = OutResult.CameraPose.GetRotation();
-				LocalOffset = Rotation.RotateVector(Offset);
+				LocalOffset = Rotation.RotateVector(LocalOffset);
 			}
 			break;
 		case ECameraNodeSpace::Context:
 			if (Params.EvaluationContext)
 			{ 
-				const FCameraNodeRunResult& InitialResult = Params.EvaluationContext->GetInitialResult();
+				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
 				ensureMsgf(InitialResult.bIsValid,
 						TEXT("OffsetCameraNode: using invalid context result as offset space!"));
 				const FRotator3d Rotation = InitialResult.CameraPose.GetRotation();
-				LocalOffset = Rotation.RotateVector(Offset);
+				LocalOffset = Rotation.RotateVector(LocalOffset);
 			}
 			else
 			{
@@ -43,5 +55,10 @@ void UOffsetCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRun
 
 	const FVector3d Location = OutResult.CameraPose.GetLocation();
 	OutResult.CameraPose.SetLocation(Location + LocalOffset);
+}
+
+FCameraNodeEvaluatorPtr UOffsetCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
+{
+	return Builder.BuildEvaluator<FOffsetCameraNodeEvaluator>();
 }
 

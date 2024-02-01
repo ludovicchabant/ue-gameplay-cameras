@@ -3,33 +3,51 @@
 #include "Nodes/Common/DampenPositionCameraNode.h"
 
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraNodeEvaluator.h"
 #include "GameplayCameras.h"
+#include "Math/CriticalDamper.h"
 #include "Templates/Tuple.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DampenPositionCameraNode)
 
-UDampenPositionCameraNode::UDampenPositionCameraNode(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
+class FDampenPositionCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	SetNodeFlags(ECameraNodeFlags::RequiresInitialize);
-}
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
 
-void UDampenPositionCameraNode::OnInitialize(const FCameraNodeInitializeParams& Params)
+protected:
+
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	FCriticalDamper ForwardDamper;
+	FCriticalDamper LateralDamper;
+	FCriticalDamper VerticalDamper;
+
+	FVector3d PreviousLocation;
+};
+
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
+
+void FDampenPositionCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
-	ForwardDamper.SetW0(ForwardDampingFactor);
+	const UDampenPositionCameraNode* DampenNode = GetCameraNodeAs<UDampenPositionCameraNode>();
+
+	ForwardDamper.SetW0(DampenNode->ForwardDampingFactor);
 	ForwardDamper.Reset(0, 0);
 
-	LateralDamper.SetW0(LateralDampingFactor);
+	LateralDamper.SetW0(DampenNode->LateralDampingFactor);
 	LateralDamper.Reset(0, 0);
 
-	VerticalDamper.SetW0(VerticalDampingFactor);
+	VerticalDamper.SetW0(DampenNode->VerticalDampingFactor);
 	VerticalDamper.Reset(0, 0);
 
-	const FCameraNodeRunResult& InitialResult = Params.EvaluationContext->GetInitialResult();
+	const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
 	PreviousLocation = InitialResult.CameraPose.GetLocation();
 }
 
-void UDampenPositionCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	// We want the dampen the given camera position, which means it's trying
 	// to converge towards the one given in the result (which we set as our 
@@ -77,5 +95,15 @@ void UDampenPositionCameraNode::OnRun(const FCameraNodeRunParams& Params, FCamer
 	PreviousLocation = NextLocation;
 
 	OutResult.CameraPose.SetLocation(NextLocation);
+}
+
+UDampenPositionCameraNode::UDampenPositionCameraNode(const FObjectInitializer& ObjectInit)
+	: Super(ObjectInit)
+{
+}
+
+FCameraNodeEvaluatorPtr UDampenPositionCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
+{
+	return Builder.BuildEvaluator<FDampenPositionCameraNodeEvaluator>();
 }
 

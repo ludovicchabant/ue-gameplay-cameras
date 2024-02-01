@@ -20,7 +20,8 @@ public:
 
 protected:
 
-	virtual void OnRun(const FCameraDirectorRunParams& Params, FCameraDirectorRunResult& OutResult) override;
+	// UCameraDirector interface.
+	virtual FCameraDirectorEvaluator* OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const override;
 
 public:
 

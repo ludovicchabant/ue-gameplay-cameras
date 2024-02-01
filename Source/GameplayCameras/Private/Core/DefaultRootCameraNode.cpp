@@ -34,38 +34,52 @@ UDefaultRootCameraNode::UDefaultRootCameraNode(const FObjectInitializer& ObjectI
 	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), false, true);
 }
 
-FCameraNodeChildrenView UDefaultRootCameraNode::OnGetChildren()
+FCameraNodeEvaluatorPtr UDefaultRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
-	return FCameraNodeChildrenView({ BaseLayer, MainLayer, GlobalLayer, VisualLayer });
+	return Builder.BuildEvaluator<FDefaultRootCameraNodeEvaluator>();
 }
 
-void UDefaultRootCameraNode::OnRun(const FCameraNodeRunParams& Params, FCameraNodeRunResult& OutResult)
+UE_DEFINE_CAMERA_NODE_EVALUATOR(FDefaultRootCameraNodeEvaluator)
+
+void FDefaultRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+{
+	const UDefaultRootCameraNode* Data = GetCameraNodeAs<UDefaultRootCameraNode>();
+	BaseLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->BaseLayer);
+	MainLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->MainLayer);
+	GlobalLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->GlobalLayer);
+	VisualLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->VisualLayer);
+}
+
+FCameraNodeEvaluatorChildrenView FDefaultRootCameraNodeEvaluator::OnGetChildren()
+{
+	return FCameraNodeEvaluatorChildrenView({ BaseLayer, MainLayer, GlobalLayer, VisualLayer });
+}
+
+
+void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	BaseLayer->Run(Params, OutResult);
-
 	MainLayer->Run(Params, OutResult);
-
 	GlobalLayer->Run(Params, OutResult);
-
 	VisualLayer->Run(Params, OutResult);
 }
 
-void UDefaultRootCameraNode::OnActivateCameraMode(const FActivateCameraModeParams& Params)
+void FDefaultRootCameraNodeEvaluator::OnActivateCameraMode(const FActivateCameraModeParams& Params)
 {
-	UBlendStackCameraNode* TargetStack = nullptr;
+	FBlendStackCameraNodeEvaluator* TargetStack = nullptr;
 	switch (Params.Layer)
 	{
 		case ECameraModeLayer::Base:
-			TargetStack = CastChecked<UBlendStackCameraNode>(BaseLayer);
+			TargetStack = BaseLayer;
 			break;
 		case ECameraModeLayer::Main:
-			TargetStack = CastChecked<UBlendStackCameraNode>(MainLayer);
+			TargetStack = MainLayer;
 			break;
 		case ECameraModeLayer::Global:
-			TargetStack = CastChecked<UBlendStackCameraNode>(GlobalLayer);
+			TargetStack = GlobalLayer;
 			break;
 		case ECameraModeLayer::Visual:
-			TargetStack = CastChecked<UBlendStackCameraNode>(VisualLayer);
+			TargetStack = VisualLayer;
 			break;
 	}
 
