@@ -1,0 +1,256 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Containers/Map.h"
+#include "Containers/Set.h"
+#include "Core/CameraVariableTableFwd.h"
+#include "CoreTypes.h"
+#include "Misc/EnumClassFlags.h"
+#include "Templates/UnrealTypeTraits.h"
+#include "UObject/NameTypes.h"
+
+template<typename ValueType>
+struct TCameraVariableTraits;
+
+template<typename ValueType>
+struct TCameraVariableInterpolation;
+
+/**
+ * A structure that keeps track of which variables have been processed in a
+ * camera variable table.
+ */
+struct FCameraVariableTableFlags
+{
+	/** The list of processed variable IDs. */
+	TSet<uint32> VariableIds;
+};
+
+/**
+ * The camera variable table is a container for a collection of arbitrary values
+ * of various types. Only certain basic types are supported (most primitive types).
+ * 
+ * This table serves both as an implementation of the usual "blackboard" design, where
+ * gameplay systems can push any appropriate values into the camera system, and as a
+ * place for camera node evaluators to stash various things.
+ *
+ * The main function of the variable table is that it is blended along with the camera
+ * rig it belongs to. Any matching values between to blended tables with be themselves
+ * blended, except for values flagged as "private".
+ *
+ * Internally, the variable table is allocated as one continuous block of memory, plus
+ * a map of metadata keyed by variable ID. A variable ID can be anything, but will
+ * generally be the hash of the variable name.
+ */
+class FCameraVariableTable
+{
+public:
+
+	FCameraVariableTable();
+	FCameraVariableTable(FCameraVariableTable&& Other);
+	FCameraVariableTable& operator=(FCameraVariableTable&& Other);
+	~FCameraVariableTable();
+
+	FCameraVariableTable(const FCameraVariableTable&) = delete;
+	FCameraVariableTable& operator=(const FCameraVariableTable&) = delete;
+
+	/** Initializes the variable table so that it fits the provided allocation info. */
+	void Initialize(const FCameraVariableTableAllocationInfo& AllocationInfo);
+
+	/** Adds a variable to the table.
+	 *
+	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
+	 * the allocation information needed for a table, and initialize it once. */
+	void AddVariable(const FCameraVariableDefinition& VariableDefinition);
+
+public:
+
+	// Getter methods.
+
+	template<typename ValueType>
+	const ValueType* FindValue(uint32 VariableId) const;
+
+	template<typename ValueType>
+	const ValueType& GetValue(uint32 VariableId) const;
+
+	template<typename ValueType>
+	ValueType GetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType DefaultValue) const;
+
+	template<typename ValueType>
+	bool TryGetValue(uint32 VariableId, ValueType& OutValue) const;
+
+	bool ContainsValue(uint32 VariableId) const;
+
+public:
+
+	// Setter methods.
+	
+	template<typename ValueType>
+	void SetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value);
+
+	template<typename ValueType>
+	bool TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value);
+
+public:
+
+	// Interpolation.
+	
+	void OverrideChanged(const FCameraVariableTable& OtherTable);
+	void OverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+
+	void LerpChanged(const FCameraVariableTable& ToTable, float Factor);
+	void LerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+
+public:
+
+	// Lower level API.
+
+	bool IsValueWritten(uint32 VariableId) const;
+	void UnsetValue(uint32 VariableId);
+	void UnsetAllValues();
+
+	bool IsValueWrittenThisFrame(uint32 VariableId) const;
+	void ResetAllWrittenThisFrame();
+
+private:
+
+	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, uint32& OutSizeOf, uint32& OutAlignOf);
+
+	void ReallocateBuffer(uint32 NewCapacity);
+
+	template<typename ValueType>
+	bool CheckVariableType(ECameraVariableType InType)
+	{
+		ensure(TCameraVariableTraits<ValueType>::Type == InType);
+	}
+
+	void InternalOverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+	void InternalLerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+
+private:
+
+	enum class EEntryFlags : uint8
+	{
+		None = 0,
+		Private = 1 << 0,
+		Written = 1 << 1,
+		WrittenThisFrame = 1 << 2
+	};
+	FRIEND_ENUM_CLASS_FLAGS(EEntryFlags)
+
+	struct FEntry
+	{
+		uint32 Id;
+		ECameraVariableType Type;
+		uint32 Offset;
+		mutable EEntryFlags Flags;
+#if WITH_EDITORONLY_DATA
+		FString DebugName;
+#endif
+	};
+
+	TMap<uint32, FEntry> Entries;
+
+	uint8* Memory = nullptr;
+	uint32 Capacity = 0;
+	uint32 Used = 0;
+
+	template<typename T>
+	friend struct TCameraVariableInterpolation;
+};
+
+ENUM_CLASS_FLAGS(FCameraVariableTable::EEntryFlags)
+
+template<typename ValueType>
+const ValueType* FCameraVariableTable::FindValue(uint32 VariableId) const
+{
+	if (const FEntry* Entry = Entries.Find(VariableId))
+	{
+		CheckVariableType<ValueType>(Entry->Type);
+		return reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+	}
+	return nullptr;
+}
+
+template<typename ValueType>
+const ValueType& FCameraVariableTable::GetValue(uint32 VariableId) const
+{
+	const FEntry& Entry = Entries.FindChecked(VariableId);
+	CheckVariableType<ValueType>(Entry.Type);
+	return reinterpret_cast<ValueType*>(Memory + Entry.Offset);
+}
+
+template<typename ValueType>
+ValueType FCameraVariableTable::GetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType DefaultValue) const
+{
+	if (const ValueType* Value = FindValue<ValueType>(VariableId))
+	{
+		return *Value;
+	}
+	return DefaultValue;
+}
+
+template<typename ValueType>
+bool FCameraVariableTable::TryGetValue(uint32 VariableId, ValueType& OutValue) const
+{
+	if (const ValueType* Value = FindValue<ValueType>(VariableId))
+	{
+		OutValue = *Value;
+		return true;
+	}
+	return false;
+}
+
+template<typename ValueType>
+void FCameraVariableTable::SetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
+{
+	const FEntry& Entry = Entries.FindChecked(VariableId);
+	CheckVariableType<ValueType>(Entry.Type);
+	ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry.Offset);
+	*ValuePtr = Value;
+}
+
+template<typename ValueType>
+bool FCameraVariableTable::TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
+{
+	if (const FEntry* Entry = Entries.Find(VariableId))
+	{
+		CheckVariableType<ValueType>(Entry->Type);
+		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		return true;
+	}
+	return false;
+}
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+	template<>\
+	struct TCameraVariableTraits<ValueType>\
+	{\
+		ECameraVariableType Type = ECameraVariableType::ValueName;\
+	};
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+template<typename ValueType>
+struct TCameraVariableInterpolation
+{
+	using ValueParam = typename TCallTraits<ValueType>::ParamType;
+	static ValueType Interpolate(const FCameraVariableTable::FEntry& TableEntry, ValueParam From, ValueParam To, float Factor)
+	{
+		return FMath::LerpStable(From, To, Factor);
+	}
+};
+
+template<typename T>
+struct TCameraVariableInterpolation<UE::Math::TTransform<T>>
+{
+	using ValueType = UE::Math::TTransform<T>;
+	using ValueParam = typename TCallTraits<ValueType>::ParamType;
+	static ValueType Interpolate(const FCameraVariableTable::FEntry& TableEntry, ValueParam From, ValueParam To, float Factor)
+	{
+		ValueType Result(From);
+		Result.BlendWith(To, Factor);
+		return Result;
+	}
+};
+

@@ -4,6 +4,7 @@
 
 #include "Core/CameraObjectRtti.h"
 #include "Core/CameraPose.h"
+#include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
@@ -37,6 +38,10 @@ struct FCameraNodeEvaluationResult
 {
 	/** The camera pose. */
 	FCameraPose CameraPose;
+
+	/** The variable table. */
+	FCameraVariableTable VariableTable;
+
 	/** Whether the current frame is a camera cut. */
 	bool bIsCameraCut = false;
 	/** Whether this result is valid. */

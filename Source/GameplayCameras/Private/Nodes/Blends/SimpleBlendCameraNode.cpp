@@ -25,6 +25,8 @@ void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParam
 			false,
 			BlendedResult.CameraPose.GetChangedFlags());
 
+	BlendedResult.VariableTable.LerpChanged(ChildResult.VariableTable, BlendFactor);
+
 	// If we have even a fraction of a camera cut, we need to make the
 	// whole result into a camera cut.
 	if (BlendFactor > 0.f && ChildResult.bIsCameraCut)
