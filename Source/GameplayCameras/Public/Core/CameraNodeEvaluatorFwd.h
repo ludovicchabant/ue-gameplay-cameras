@@ -4,6 +4,8 @@
 
 #include "CoreTypes.h"
 
+#include "CameraNodeEvaluatorFwd.generated.h"
+
 class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
 struct FCameraNodeEvaluatorBuilder;
@@ -11,9 +13,15 @@ struct FCameraNodeEvaluatorBuilder;
 using FCameraNodeEvaluatorPtr = FCameraNodeEvaluator*;
 
 /** Allocation information for a node evaluator. */
+USTRUCT()
 struct FCameraNodeEvaluatorAllocationInfo
 {
+	GENERATED_BODY()
+
+	UPROPERTY()
 	int16 Sizeof = 0;
+
+	UPROPERTY()
 	int16 Alignof = 0;
 };
 

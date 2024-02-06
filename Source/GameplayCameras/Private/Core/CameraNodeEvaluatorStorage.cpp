@@ -44,10 +44,10 @@ FCameraNodeEvaluatorTreeAllocationInfo FCameraNodeEvaluatorStorage::ComputeTreeI
 	{
 		if (UCameraNode* CurNode = Cast<UCameraNode>(Object))
 		{
-			FCameraNodeEvaluatorAllocationInfo CurInfo = CurNode->GetEvaluatorInfo();
+			FCameraNodeAllocationInfo CurInfo = CurNode->GetAllocationInfo();
 
-			MaxAlignment = FMath::Max(MaxAlignment, CurInfo.Alignof);
-			MaxSize = Align(MaxSize, CurInfo.Alignof) + CurInfo.Sizeof;
+			MaxAlignment = FMath::Max(MaxAlignment, CurInfo.EvaluatorInfo.Alignof);
+			MaxSize = Align(MaxSize, CurInfo.EvaluatorInfo.Alignof) + CurInfo.EvaluatorInfo.Sizeof;
 		}
 		return true; // Keep iterating.
 	});

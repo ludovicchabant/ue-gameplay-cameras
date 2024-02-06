@@ -13,9 +13,9 @@ void FCameraNodeEvaluationResult::Reset()
 	bIsValid = false;
 }
 
-FCameraNodeEvaluatorAllocationInfo UCameraNode::GetEvaluatorInfo() const
+FCameraNodeAllocationInfo UCameraNode::GetAllocationInfo() const
 {
-	return OnGetEvaluatorInfo();
+	return OnGetAllocationInfo();
 }
 
 FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
