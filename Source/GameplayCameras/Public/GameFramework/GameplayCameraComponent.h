@@ -75,7 +75,7 @@ public:
 
 	UGameplayCameraComponentEvaluationContext(const FObjectInitializer& ObjectInit);
 
-	void Initialize(UGameplayCameraComponent* Owner);
+	void Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController);
 	void Update(UGameplayCameraComponent* Owner);
 };
 

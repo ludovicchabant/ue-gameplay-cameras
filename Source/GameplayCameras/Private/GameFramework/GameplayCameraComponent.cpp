@@ -68,7 +68,7 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 	if (EvaluationContext == nullptr)
 	{
 		EvaluationContext = NewObject<UGameplayCameraComponentEvaluationContext>(this, TEXT("EvaluationContext"));
-		EvaluationContext->Initialize(this);
+		EvaluationContext->Initialize(this, PlayerController);
 	}
 
 	UCameraSystemEvaluator* Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
@@ -141,8 +141,9 @@ UGameplayCameraComponentEvaluationContext::UGameplayCameraComponentEvaluationCon
 {
 }
 
-void UGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner)
+void UGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController)
 {
+	PlayerController = InPlayerController;
 	CameraAsset = Owner->Camera;
 }
 

@@ -9,6 +9,7 @@
 #include "CameraEvaluationContext.generated.h"
 
 class UCameraAsset;
+class APlayerController;
 
 /**
  * Base class for providing a context to running camera modes.
@@ -22,6 +23,12 @@ public:
 
 	UCameraEvaluationContext(const FObjectInitializer& ObjectInit);
 
+	/**
+	 * Gets the player controller (if any) in control of the cameras running inside
+	 * of this evaluation context.
+	 */
+	APlayerController* GetPlayerController() const { return PlayerController; }
+
 	/** Gets the camera asset that is hosted in this context. */
 	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
@@ -29,6 +36,13 @@ public:
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
 protected:
+
+	/**
+	 * The player controller (if any) in control of the cameras running inside
+	 * of this evaluation context.
+	 */
+	UPROPERTY()
+	TObjectPtr<APlayerController> PlayerController;
 
 	/** The camera asset hosted in this context. */
 	UPROPERTY()
