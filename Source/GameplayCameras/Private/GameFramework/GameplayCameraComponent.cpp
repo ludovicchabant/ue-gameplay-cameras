@@ -34,6 +34,11 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 
 void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
 {
+	if (ActivatedForPlayerIndex >= 0)
+	{
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!ensure(World))
 	{
@@ -48,8 +53,35 @@ void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
 		if (APlayerController* PlayerController = It->Get())
 		{
 			ActivateCamera(PlayerController);
+			ActivatedForPlayerIndex = PlayerIndex;
 		}
 	}
+}
+
+void UGameplayCameraComponent::DeactivateCamera()
+{
+	if (ActivatedForPlayerIndex < 0)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return;
+	}
+
+	if (ensure(ActivatedForPlayerIndex < World->GetNumPlayerControllers()))
+	{
+		FConstPlayerControllerIterator It = World->GetPlayerControllerIterator();
+		It += ActivatedForPlayerIndex;
+		if (APlayerController* PlayerController = It->Get())
+		{
+			DeactivateCamera(PlayerController);
+		}
+	}
+
+	ActivatedForPlayerIndex = INDEX_NONE;
 }
 
 void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerController)
@@ -75,6 +107,28 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 	Evaluator->PushEvaluationContext(EvaluationContext);
 
 	Activate();
+}
+
+void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerController)
+{
+	if (!ensure(PlayerController && PlayerController->PlayerCameraManager))
+	{
+		return;
+	}
+	
+	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
+	if (!ensure(CameraSystem))
+	{
+		return;
+	}
+
+	if (EvaluationContext != nullptr)
+	{
+		UCameraSystemEvaluator* Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
+		Evaluator->RemoveEvaluationContext(EvaluationContext);
+	}
+
+	Deactivate();
 }
 
 void UGameplayCameraComponent::OnRegister()

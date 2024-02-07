@@ -28,6 +28,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void ActivateCamera(int32 PlayerIndex = 0);
 
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API void DeactivateCamera();
+
 public:
 
 	// UActorComponent interface
@@ -38,6 +41,7 @@ public:
 private:
 
 	void ActivateCamera(APlayerController* PlayerController);
+	void DeactivateCamera(APlayerController* PlayerController);
 
 #if WITH_EDITORONLY_DATA
 
@@ -64,6 +68,10 @@ protected:
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
 
 #endif	// WITH_EDITORONLY_DATA
+	
+private:
+
+	int32 ActivatedForPlayerIndex = INDEX_NONE;
 };
 
 UCLASS(MinimalAPI)
