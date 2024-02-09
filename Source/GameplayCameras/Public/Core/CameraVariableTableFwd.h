@@ -51,7 +51,7 @@ struct FCameraVariableDefinition
 	uint32 VariableId = 0;
 
 	UPROPERTY()
-	ECameraVariableType VariableType;
+	ECameraVariableType VariableType = ECameraVariableType::Boolean;
 
 	UPROPERTY()
 	bool bIsPrivate = false;
