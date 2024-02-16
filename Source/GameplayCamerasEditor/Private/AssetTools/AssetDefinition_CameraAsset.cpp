@@ -7,13 +7,13 @@
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/IToolkit.h"
 
-#define LOCTEXT_NAMESPACE "AssetTypeActions"
+#define LOCTEXT_NAMESPACE "AssetDefinition_CameraAsset"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AssetDefinition_CameraAsset)
 
 FText UAssetDefinition_CameraAsset::GetAssetDisplayName() const
 {
-	return NSLOCTEXT("AssetTypeActions", "AssetTypeActions_CameraAsset", "Camera Asset");
+	return LOCTEXT("AssetDisplayName", "Camera Asset");
 }
 
 FLinearColor UAssetDefinition_CameraAsset::GetAssetColor() const
@@ -28,7 +28,7 @@ TSoftClassPtr<UObject> UAssetDefinition_CameraAsset::GetAssetClass() const
 
 TConstArrayView<FAssetCategoryPath> UAssetDefinition_CameraAsset::GetAssetCategories() const
 {
-	static const auto Categories = { EAssetCategoryPaths::Gameplay };
+	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay, LOCTEXT("AssetSubCategory", "Cameras")) };
 	return Categories;
 }
 
