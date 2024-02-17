@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Toolkits/CameraAssetEditorToolkit.h"
+#include "Toolkits/CameraModeAssetEditorToolkit.h"
 
-#include "AssetTools/CameraAssetEditor.h"
-#include "Core/CameraAsset.h"
+#include "AssetTools/CameraModeAssetEditor.h"
+#include "Core/CameraMode.h"
 #include "EditorModeManager.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "IMessageLogListing.h"
@@ -13,15 +13,15 @@
 #include "PropertyEditorModule.h"
 #include "Widgets/Docking/SDockTab.h"
 
-#define LOCTEXT_NAMESPACE "CameraAssetEditorToolkit"
+#define LOCTEXT_NAMESPACE "CameraModeAssetEditorToolkit"
 
-const FName FCameraAssetEditorToolkit::DetailsViewTabId(TEXT("CameraAssetEditor_DetailsView"));
+const FName FCameraModeAssetEditorToolkit::DetailsViewTabId(TEXT("CameraModeAssetEditor_DetailsView"));
 
-FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwningAssetEditor)
+FCameraModeAssetEditorToolkit::FCameraModeAssetEditorToolkit(UCameraModeAssetEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
 {
 	// Override base class default layout.
-	StandaloneDefaultLayout = FTabManager::NewLayout("CameraAssetEditor_Layout")
+	StandaloneDefaultLayout = FTabManager::NewLayout("CameraModeAssetEditor_Layout")
 		->AddArea
 		(
 			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
@@ -38,22 +38,22 @@ FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwnin
 		);
 }
 
-FCameraAssetEditorToolkit::~FCameraAssetEditorToolkit()
+FCameraModeAssetEditorToolkit::~FCameraModeAssetEditorToolkit()
 {
 }
 
-void FCameraAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+void FCameraModeAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
-	InTabManager->RegisterTabSpawner(DetailsViewTabId, FOnSpawnTab::CreateSP(this, &FCameraAssetEditorToolkit::SpawnTab_Details))
+	InTabManager->RegisterTabSpawner(DetailsViewTabId, FOnSpawnTab::CreateSP(this, &FCameraModeAssetEditorToolkit::SpawnTab_Details))
 		.SetDisplayName(LOCTEXT("Details", "Details"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
 }
 
-void FCameraAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+void FCameraModeAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
@@ -61,7 +61,7 @@ void FCameraAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManag
 	InTabManager->UnregisterTabSpawner(DetailsViewTabId);
 }
 
-void FCameraAssetEditorToolkit::CreateWidgets()
+void FCameraModeAssetEditorToolkit::CreateWidgets()
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	// ...no up-call...
@@ -83,31 +83,31 @@ void FCameraAssetEditorToolkit::CreateWidgets()
 	LogOptions.bShowFilters = false;
 	LogOptions.bAllowClear = false;
 	LogOptions.MaxPageCount = 1;
-	StatsListing = MessageLogModule.CreateLogListing("CameraAssetEditorStats", LogOptions);
+	StatsListing = MessageLogModule.CreateLogListing("CameraModeAssetEditorStats", LogOptions);
 
 	Stats = MessageLogModule.CreateLogListingWidget(StatsListing.ToSharedRef());}
 
-void FCameraAssetEditorToolkit::PostInitAssetEditor()
+void FCameraModeAssetEditorToolkit::PostInitAssetEditor()
 {
 }
 
-FText FCameraAssetEditorToolkit::GetBaseToolkitName() const
+FText FCameraModeAssetEditorToolkit::GetBaseToolkitName() const
 {
-	return LOCTEXT("AppLabel", "Camera Asset");
+	return LOCTEXT("AppLabel", "Camera Mode Asset");
 }
 
-FName FCameraAssetEditorToolkit::GetToolkitFName() const
+FName FCameraModeAssetEditorToolkit::GetToolkitFName() const
 {
-	static FName SequencerName("CameraAssetEditor");
+	static FName SequencerName("CameraModeAssetEditor");
 	return SequencerName;
 }
 
-FString FCameraAssetEditorToolkit::GetWorldCentricTabPrefix() const
+FString FCameraModeAssetEditorToolkit::GetWorldCentricTabPrefix() const
 {
-	return LOCTEXT("WorldCentricTabPrefix", "Camera Asset ").ToString();
+	return LOCTEXT("WorldCentricTabPrefix", "Camera Mode Asset ").ToString();
 }
 
-FLinearColor FCameraAssetEditorToolkit::GetWorldCentricTabColorScale() const
+FLinearColor FCameraModeAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
 	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
 }

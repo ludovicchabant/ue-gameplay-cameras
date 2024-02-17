@@ -7,9 +7,11 @@
 #include "IGameplayCamerasEditorModule.h"
 #include "ISettingsModule.h"
 #include "Modules/ModuleManager.h"
+#include "AssetTools/CameraAssetEditor.h"
+#include "AssetTools/CameraModeAssetEditor.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
-#include "Toolkits/CameraModeEditorToolkit.h"
+#include "Toolkits/CameraModeAssetEditorToolkit.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
@@ -37,18 +39,20 @@ public:
 		TeardownLiveEditManager();
 	}
 
-	virtual TSharedRef<ICameraAssetEditorToolkit> CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) override
+	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) override
 	{
-		TSharedRef<FCameraAssetEditorToolkit> Toolkit = MakeShareable(new FCameraAssetEditorToolkit(FGameplayCamerasEditorStyle::Get()));
-		Toolkit->Initialize(Mode, InitToolkitHost, CameraAsset);
-		return Toolkit;
+		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		UCameraAssetEditor* AssetEditor = NewObject<UCameraAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
+		AssetEditor->Initialize(CameraAsset);
+		return AssetEditor;
 	}
 
-	virtual TSharedRef<ICameraModeEditorToolkit> CreateCameraModeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraMode* CameraMode) override
+	virtual UCameraModeAssetEditor* CreateCameraModeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraMode* CameraMode) override
 	{
-		TSharedRef<FCameraModeEditorToolkit> Toolkit = MakeShareable(new FCameraModeEditorToolkit(FGameplayCamerasEditorStyle::Get()));
-		Toolkit->Initialize(Mode, InitToolkitHost, CameraMode);
-		return Toolkit;
+		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		UCameraModeAssetEditor* AssetEditor = NewObject<UCameraModeAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
+		AssetEditor->Initialize(CameraMode);
+		return AssetEditor;
 	}
 
 private:
