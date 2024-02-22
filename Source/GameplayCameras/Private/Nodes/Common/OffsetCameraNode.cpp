@@ -3,6 +3,7 @@
 #include "Nodes/Common/OffsetCameraNode.h"
 
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraParameterReader.h"
 #include "GameplayCameras.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OffsetCameraNode)
@@ -13,15 +14,27 @@ class FOffsetCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	FCameraParameterReader<FVector3d> OffsetReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
 
-void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+void FOffsetCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
 	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
-	FVector3d LocalOffset = OffsetNode->Offset;
+	OffsetReader.Initialize(OffsetNode->Offset);
+}
+
+void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	FVector3d LocalOffset = OffsetReader.Get(OutResult.VariableTable);
+
+	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
 	switch(OffsetNode->OffsetSpace)
 	{
 		case ECameraNodeSpace::CameraPose:

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraNode.h"
+#include "Core/CameraParameters.h"
 #include "Nodes/CameraNodeTypes.h"
 
 #include "OffsetCameraNode.generated.h"
@@ -24,7 +25,7 @@ public:
 
 	/** The offset to apply to the camera, in local space. */
 	UPROPERTY(EditAnywhere, Category=Common)
-	FVector3d Offset;
+	FVector3dCameraParameter Offset;
 
 	/** The space in which to apply the offset. */
 	UPROPERTY(EditAnywhere, Category=Common)
