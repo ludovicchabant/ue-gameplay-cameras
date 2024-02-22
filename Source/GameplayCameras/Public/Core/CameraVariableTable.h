@@ -116,13 +116,13 @@ private:
 
 	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, uint32& OutSizeOf, uint32& OutAlignOf);
 
-	void ReallocateBuffer(uint32 NewCapacity);
-
 	template<typename ValueType>
-	bool CheckVariableType(ECameraVariableType InType)
+	static bool CheckVariableType(ECameraVariableType InType)
 	{
 		return ensure(TCameraVariableTraits<ValueType>::Type == InType);
 	}
+
+	void ReallocateBuffer(uint32 NewCapacity);
 
 	void InternalOverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 	void InternalLerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
@@ -226,7 +226,7 @@ bool FCameraVariableTable::TrySetValue(uint32 VariableId, typename TCallTraits<V
 	template<>\
 	struct TCameraVariableTraits<ValueType>\
 	{\
-		ECameraVariableType Type = ECameraVariableType::ValueName;\
+		static const ECameraVariableType Type = ECameraVariableType::ValueName;\
 	};
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
