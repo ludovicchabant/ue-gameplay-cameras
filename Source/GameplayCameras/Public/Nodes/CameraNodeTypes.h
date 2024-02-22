@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "CameraNodeTypes.generated.h"
 
 /**
  * Defines what space a camera node should operate in.
