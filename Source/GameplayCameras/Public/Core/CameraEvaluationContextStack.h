@@ -7,20 +7,21 @@
 #include "UObject/WeakObjectPtr.h"
 
 class FCameraDirectorEvaluator;
+class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 class UCameraAsset;
 class UCameraDirector;
-class UCameraEvaluationContext;
-class UCameraSystemEvaluator;
 
 /** Information about a running camera evaluation context. */
 struct FCameraEvaluationContextInfo
 {
 	/** The evaluation context. */
-	UCameraEvaluationContext* EvaluationContext = nullptr;
+	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
 
 	/** The instantiated camera director running in this context. */
-	const UCameraDirector* CameraDirector = nullptr;
+	TObjectPtr<const UCameraDirector> CameraDirector;
 
+	/** The evaluator for the running camera director. */
 	FCameraDirectorEvaluator* Evaluator = nullptr;
 
 	/** Returns whether this structure has a valid context and director. */
@@ -38,13 +39,13 @@ public:
 	FCameraEvaluationContextInfo GetActiveContext() const;
 
 	/** Returns whether the given context exists in the stack. */
-	bool HasContext(UCameraEvaluationContext* Context) const;
+	bool HasContext(TSharedRef<FCameraEvaluationContext> Context) const;
 
 	/** Push a new context on the stack and instantiate its director. */
-	void PushContext(UCameraEvaluationContext* Context);
+	void PushContext(TSharedRef<FCameraEvaluationContext> Context);
 
 	/** Remove an existing context from the stack. */
-	bool RemoveContext(UCameraEvaluationContext* Context);
+	bool RemoveContext(TSharedRef<FCameraEvaluationContext> Context);
 
 	/** Pop the active (top) context. */
 	void PopContext();
@@ -52,14 +53,14 @@ public:
 public:
 
 	// Internal API
-	void Initialize(UCameraSystemEvaluator* InEvaluator);
+	void Initialize(TSharedRef<FCameraSystemEvaluator> InEvaluator);
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
 
 	struct FContextEntry
 	{
-		TWeakObjectPtr<UCameraEvaluationContext> WeakContext;
+		TWeakPtr<FCameraEvaluationContext> WeakContext;
 		TObjectPtr<const UCameraDirector> CameraDirector;
 		FCameraDirectorEvaluatorStorage EvaluatorStorage;
 		FCameraDirectorEvaluator* Evaluator = nullptr;
@@ -69,6 +70,6 @@ private:
 	TArray<FContextEntry> Entries;
 
 	/** The owner evaluator. */
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 };
 

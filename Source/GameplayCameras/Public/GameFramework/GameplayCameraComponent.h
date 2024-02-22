@@ -10,8 +10,8 @@
 
 #include "GameplayCameraComponent.generated.h"
 
+class FGameplayCameraComponentEvaluationContext;
 class UCameraAsset;
-class UGameplayCameraComponentEvaluationContext;
 
 /**
  * A component that can run a camera asset inside its own camera evaluation context.
@@ -56,8 +56,7 @@ public:
 
 protected:
 
-	UPROPERTY(Transient)
-	TObjectPtr<UGameplayCameraComponentEvaluationContext> EvaluationContext;
+	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
 	
 #if WITH_EDITORONLY_DATA
 
@@ -74,14 +73,14 @@ private:
 	int32 ActivatedForPlayerIndex = INDEX_NONE;
 };
 
-UCLASS(MinimalAPI)
-class UGameplayCameraComponentEvaluationContext : public UCameraEvaluationContext
+/**
+ * Evaluation context for the gameplay camera component.
+ */
+class FGameplayCameraComponentEvaluationContext : public FCameraEvaluationContext
 {
-	GENERATED_BODY()
+	UE_DECLARE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
 
 public:
-
-	UGameplayCameraComponentEvaluationContext(const FObjectInitializer& ObjectInit);
 
 	void Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController);
 	void Update(UGameplayCameraComponent* Owner);

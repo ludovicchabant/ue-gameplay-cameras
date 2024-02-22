@@ -10,7 +10,7 @@
 
 #include "GameplayCameraSystemComponent.generated.h"
 
-class UCameraSystemEvaluator;
+class FCameraSystemEvaluator;
 class UCameraRigAsset;
 struct FMinimalViewInfo;
 
@@ -26,8 +26,7 @@ public:
 
 	UGameplayCameraSystemComponent(const FObjectInitializer& ObjectInit);
 
-	UFUNCTION(BlueprintGetter)
-	UCameraSystemEvaluator* GetCameraSystemEvaluator() { return Evaluator; }
+	TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator() { return Evaluator; }
 
 	GAMEPLAYCAMERAS_API void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView);
 
@@ -42,6 +41,9 @@ public:
 #if WITH_EDITOR
 	virtual bool GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut) override;
 #endif  // WITH_EDITOR
+	
+	// UObject interface
+	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
 public:
 
@@ -51,8 +53,7 @@ public:
 
 private:
 	
-	UPROPERTY(Instanced, Transient)
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 
 #if WITH_EDITORONLY_DATA
 

@@ -9,16 +9,26 @@
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraPose.h"
 #include "CoreTypes.h"
+#include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
-#include "CameraSystemEvaluator.generated.h"
-
+class FCameraEvaluationContext;
 class FRootCameraNodeEvaluator;
 class UCameraDirector;
-class UCameraEvaluationContext;
 class UCameraRigAsset;
 class URootCameraNode;
 struct FMinimalViewInfo;
+
+/**
+ * Parameter structure for initializing a new camera system evaluator.
+ */
+struct FCameraSystemEvaluatorCreateParams
+{
+	TObjectPtr<UObject> Owner;
+
+	using FRootNodeFactory = TFunction<URootCameraNode*()>;
+	FRootNodeFactory RootNodeFactory;
+};
 
 /**
  * Parameter structure for updating the camera system.
@@ -47,21 +57,24 @@ struct FCameraSystemEvaluationUpdateResult
 /**
  * The main camera system evaluator class.
  */
-UCLASS(MinimalAPI)
-class UCameraSystemEvaluator : public UObject
+class FCameraSystemEvaluator : public TSharedFromThis<FCameraSystemEvaluator>
 {
-	GENERATED_BODY()
-
 public:
 
-	UCameraSystemEvaluator(const FObjectInitializer& ObjectInit);
+	/** Builds a new camera system. Initialize must be called before the system is used. */
+	FCameraSystemEvaluator();
+
+	/** Initializes the camera system. */
+	void Initialize(TObjectPtr<UObject> InOwner = nullptr);
+	/** Initializes the camera system. */
+	void Initialize(const FCameraSystemEvaluatorCreateParams& Params);
 
 public:
 
 	/** Push a new evaluation context on the stack. */
-	void PushEvaluationContext(UCameraEvaluationContext* EvaluationContext);
+	void PushEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
 	/** Remove an existing evaluation context from the stack. */
-	void RemoveEvaluationContext(UCameraEvaluationContext* EvaluationContext);
+	void RemoveEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
 	/** Pop the active (top) evaluation context from the stack. */
 	void PopEvaluationContext();
 
@@ -75,12 +88,11 @@ public:
 
 public:
 
-	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
+	void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
 
 	/** The root camera node. */
-	UPROPERTY()
 	TObjectPtr<URootCameraNode> RootNode;
 
 	/** The stack of active evaluation context. */

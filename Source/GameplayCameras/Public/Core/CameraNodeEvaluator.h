@@ -9,11 +9,11 @@
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 
-class FReferenceCollector;
+class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
-class UCameraEvaluationContext;
+class FCameraSystemEvaluator;
+class FReferenceCollector;
 class UCameraNode;
-class UCameraSystemEvaluator;
 struct FCameraNodeEvaluatorBuilder;
 
 /**
@@ -22,9 +22,9 @@ struct FCameraNodeEvaluatorBuilder;
 struct FCameraNodeEvaluationParams
 {
 	/** The evaluation running this evaluation. */
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
-	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** The time interval for the evaluation. */
 	float DeltaTime = 0.f;
 	/** Whether this is the first evaluation of this camera node hierarchy. */
@@ -57,9 +57,9 @@ struct FCameraNodeEvaluationResult
 struct FCameraNodeEvaluatorInitializeParams
 {
 	/** The evaluation running this evaluation. */
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
-	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** Builder object for building children evaluators. */
 	FCameraNodeEvaluatorBuilder* Builder = nullptr;
 
@@ -104,6 +104,8 @@ public:
 	{
 		return Cast<CameraNodeType>(PrivateCameraNode);
 	}
+
+public:
 
 	// Internal API.
 	void SetPrivateCameraNode(TObjectPtr<const UCameraNode> InCameraNode);

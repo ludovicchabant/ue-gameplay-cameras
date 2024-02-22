@@ -13,7 +13,7 @@ FCameraEvaluationContextInfo FCameraEvaluationContextStack::GetActiveContext() c
 {
 	for (const FContextEntry& Entry : ReverseIterate(Entries))
 	{
-		if (UCameraEvaluationContext* Context = Entry.WeakContext.Get())
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
 		{
 			return FCameraEvaluationContextInfo{ Context, Entry.CameraDirector, Entry.Evaluator };
 		}
@@ -21,11 +21,11 @@ FCameraEvaluationContextInfo FCameraEvaluationContextStack::GetActiveContext() c
 	return FCameraEvaluationContextInfo();
 }
 
-bool FCameraEvaluationContextStack::HasContext(UCameraEvaluationContext* Context) const
+bool FCameraEvaluationContextStack::HasContext(TSharedRef<FCameraEvaluationContext> Context) const
 {
 	for (const FContextEntry& Entry : ReverseIterate(Entries))
 	{
-		if (Context == Entry.WeakContext.Get())
+		if (Context == Entry.WeakContext)
 		{
 			return true;
 		}
@@ -33,7 +33,7 @@ bool FCameraEvaluationContextStack::HasContext(UCameraEvaluationContext* Context
 	return false;
 }
 
-void FCameraEvaluationContextStack::PushContext(UCameraEvaluationContext* Context)
+void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationContext> Context)
 {
 	checkf(Evaluator, TEXT("Can't push context when no evaluator is set! Did you call Initialize?"));
 
@@ -64,7 +64,7 @@ void FCameraEvaluationContextStack::PushContext(UCameraEvaluationContext* Contex
 	Entries.Push(MoveTemp(NewEntry));
 }
 
-bool FCameraEvaluationContextStack::RemoveContext(UCameraEvaluationContext* Context)
+bool FCameraEvaluationContextStack::RemoveContext(TSharedRef<FCameraEvaluationContext> Context)
 {
 	const int32 NumRemoved = Entries.RemoveAll(
 			[Context](FContextEntry& Entry) { return Entry.WeakContext == Context; });
@@ -76,7 +76,7 @@ void FCameraEvaluationContextStack::PopContext()
 	Entries.Pop();
 }
 
-void FCameraEvaluationContextStack::Initialize(UCameraSystemEvaluator* InEvaluator)
+void FCameraEvaluationContextStack::Initialize(TSharedRef<FCameraSystemEvaluator> InEvaluator)
 {
 	Evaluator = InEvaluator;
 }

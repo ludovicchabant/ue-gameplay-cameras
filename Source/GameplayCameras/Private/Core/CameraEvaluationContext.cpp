@@ -2,10 +2,13 @@
 
 #include "Core/CameraEvaluationContext.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraEvaluationContext)
+UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraEvaluationContext)
 
-UCameraEvaluationContext::UCameraEvaluationContext(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
+FCameraEvaluationContext::FCameraEvaluationContext()
+{
+}
+
+FCameraEvaluationContext::~FCameraEvaluationContext()
 {
 }
 

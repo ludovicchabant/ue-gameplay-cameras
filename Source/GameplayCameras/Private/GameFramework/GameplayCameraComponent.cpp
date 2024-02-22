@@ -97,14 +97,14 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 		return;
 	}
 
-	if (EvaluationContext == nullptr)
+	if (!EvaluationContext.IsValid())
 	{
-		EvaluationContext = NewObject<UGameplayCameraComponentEvaluationContext>(this, TEXT("EvaluationContext"));
+		EvaluationContext = MakeShared<FGameplayCameraComponentEvaluationContext>();
 		EvaluationContext->Initialize(this, PlayerController);
 	}
 
-	UCameraSystemEvaluator* Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
-	Evaluator->PushEvaluationContext(EvaluationContext);
+	TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
+	Evaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
 
 	Activate();
 }
@@ -122,10 +122,10 @@ void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerControl
 		return;
 	}
 
-	if (EvaluationContext != nullptr)
+	if (EvaluationContext.IsValid())
 	{
-		UCameraSystemEvaluator* Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
-		Evaluator->RemoveEvaluationContext(EvaluationContext);
+		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
+		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 	}
 
 	Deactivate();
@@ -190,18 +190,15 @@ void UGameplayCameraComponent::UpdatePreviewMeshTransform()
 
 #endif
 
-UGameplayCameraComponentEvaluationContext::UGameplayCameraComponentEvaluationContext(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
-{
-}
+UE_DEFINE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
 
-void UGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController)
+void FGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController)
 {
 	PlayerController = InPlayerController;
 	CameraAsset = Owner->Camera;
 }
 
-void UGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent* Owner)
+void FGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent* Owner)
 {
 	const FTransform& OwnerTransform = Owner->GetComponentTransform();
 	InitialResult.CameraPose.SetTransform(OwnerTransform);

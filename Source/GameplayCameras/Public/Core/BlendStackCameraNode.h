@@ -11,9 +11,10 @@
 #include "BlendStackCameraNode.generated.h"
 
 class FBlendStackRootCameraNodeEvaluator;
+class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 class UBlendStackRootCameraNode;
 class UCameraAsset;
-class UCameraEvaluationContext;
 class UCameraRigAsset;
 struct FCameraRigTransition;
 
@@ -23,10 +24,10 @@ struct FCameraRigTransition;
 struct FBlendStackCameraPushParams
 {
 	/** The evaluator currently running.*/
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 
 	/** The evaluation context within which a camera rig's node tree should run. */
-	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
 	/** The source camera rig asset to instantiate and push on the blend stack. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
@@ -83,6 +84,7 @@ protected:
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
 
 #if WITH_EDITOR
 	// IGameplayCamerasLiveEditListener interface
@@ -103,7 +105,7 @@ protected:
 	struct FCameraRigEntry
 	{
 		/** Evaluation context in which this entry runs. */
-		TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+		TWeakPtr<const FCameraEvaluationContext> EvaluationContext;
 		/** The camera rig asset that this entry runs. */
 		TObjectPtr<const UCameraRigAsset> CameraRig;
 		/** The root node. */
@@ -124,7 +126,7 @@ protected:
 	};
 
 	/** The camera system evaluator running this node. */
-	TObjectPtr<UCameraSystemEvaluator> OwningEvaluator;
+	TSharedPtr<FCameraSystemEvaluator> OwningEvaluator;
 
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;

@@ -8,13 +8,13 @@
 #include "Math/UnrealMathUtility.h"
 #include "UObject/ObjectPtr.h"
 
+class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
+class FCameraSystemEvaluator;
 class FReferenceCollector;
-class UCameraEvaluationContext;
 class UCameraRigAsset;
 class UCameraNode;
-class UCameraSystemEvaluator;
 
 /** Allocation information for an entire tree of node evaluators. */
 struct FCameraNodeEvaluatorTreeAllocationInfo
@@ -29,9 +29,9 @@ struct FCameraNodeEvaluatorTreeBuilderParams
 	/** The root node of the tree. */
 	TObjectPtr<const UCameraNode> RootCameraNode;
 	/** The evaluator running this evaluation. */
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
-	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** An optional allocation information to optimize storage. */
 	FCameraNodeEvaluatorTreeAllocationInfo* AllocationInfo = nullptr;
 };

@@ -10,53 +10,75 @@
 #include "Core/DefaultRootCameraNode.h"
 #include "GameplayCameras.h"
 #include "IGameplayCamerasModule.h"
-
-#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraSystemEvaluator)
+#include "UObject/Package.h"
+#include "UObject/UObjectGlobals.h"
 
 DECLARE_CYCLE_STAT(TEXT("Camera System Eval"), CameraSystemEval_Total, STATGROUP_CameraSystem);
 
-UCameraSystemEvaluator::UCameraSystemEvaluator(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
+FCameraSystemEvaluator::FCameraSystemEvaluator()
 {
-	RootNode = ObjectInit.CreateDefaultSubobject<UDefaultRootCameraNode>(this, TEXT("RootNode"));
+}
 
-	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+void FCameraSystemEvaluator::Initialize(TObjectPtr<UObject> InOwner)
+{
+	FCameraSystemEvaluatorCreateParams Params;
+	Params.Owner = InOwner;
+	Initialize(Params);
+}
+
+void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams& Params)
+{
+	UObject* Owner = Params.Owner;
+	if (!Owner)
 	{
-		ContextStack.Initialize(this);
+		Owner = GetTransientPackage();
+	}
 
-		FCameraNodeEvaluatorTreeBuilderParams BuildParams;
-		BuildParams.Evaluator = this;
-		BuildParams.RootCameraNode = RootNode;
-		RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
+	if (Params.RootNodeFactory)
+	{
+		RootNode = Params.RootNodeFactory();
+	}
+	else
+	{
+		RootNode = NewObject<UDefaultRootCameraNode>(Owner, TEXT("RootNode"));
+	}
+
+	TSharedRef<FCameraSystemEvaluator> This(SharedThis(this));
+
+	ContextStack.Initialize(This);
+
+	FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+	BuildParams.Evaluator = This;
+	BuildParams.RootCameraNode = RootNode;
+	RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
+}
+
+void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	Collector.AddReferencedObject(RootNode);
+	ContextStack.AddReferencedObjects(Collector);
+	if (RootEvaluator)
+	{
+		RootEvaluator->AddReferencedObjects(Collector);
 	}
 }
 
-void UCameraSystemEvaluator::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
-{
-	UCameraSystemEvaluator* TypedThis = CastChecked<UCameraSystemEvaluator>(InThis);
-	TypedThis->ContextStack.AddReferencedObjects(Collector);
-	if (TypedThis->RootEvaluator)
-	{
-		TypedThis->RootEvaluator->AddReferencedObjects(Collector);
-	}
-}
-
-void UCameraSystemEvaluator::PushEvaluationContext(UCameraEvaluationContext* EvaluationContext)
+void FCameraSystemEvaluator::PushEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext)
 {
 	ContextStack.PushContext(EvaluationContext);
 }
 
-void UCameraSystemEvaluator::RemoveEvaluationContext(UCameraEvaluationContext* EvaluationContext)
+void FCameraSystemEvaluator::RemoveEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext)
 {
 	ContextStack.RemoveContext(EvaluationContext);
 }
 
-void UCameraSystemEvaluator::PopEvaluationContext()
+void FCameraSystemEvaluator::PopEvaluationContext()
 {
 	ContextStack.PopContext();
 }
 
-void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& Params)
+void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& Params)
 {
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
@@ -67,6 +89,8 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		Result.bIsValid = false;
 		return;
 	}
+
+	TSharedPtr<FCameraSystemEvaluator> This(SharedThis(this));
 
 	// Run the camera director, and activate any camera rig(s) it returns to us.
 	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContextInfo.Evaluator;
@@ -83,7 +107,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		if (DirectorResult.ActiveCameraRigs.Num() == 1)
 		{
 			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.Evaluator = this;
+			CameraRigParams.Evaluator = This;
 			CameraRigParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
 			CameraRigParams.CameraRig = DirectorResult.ActiveCameraRigs[0];
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
@@ -92,7 +116,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 	// Run the root camera node.
 	FCameraNodeEvaluationParams NodeParams;
-	NodeParams.Evaluator = this;
+	NodeParams.Evaluator = This;
 	NodeParams.DeltaTime = Params.DeltaTime;
 
 	RootNodeResult.Reset();
@@ -104,7 +128,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 	Result.bIsValid = true;
 }
 
-void UCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)
+void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)
 {
 	const FCameraPose& CameraPose = Result.CameraPose;
 	DesiredView.Location = CameraPose.GetLocation();

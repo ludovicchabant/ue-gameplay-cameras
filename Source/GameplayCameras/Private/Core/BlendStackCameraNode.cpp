@@ -113,8 +113,8 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 	// Start by evaluating all the root nodes in the stack.
 	for (FCameraRigEntry& Entry : Entries)
 	{
-		const UCameraEvaluationContext* CurContext = Entry.EvaluationContext.Get();
-		if (UNLIKELY(CurContext == nullptr))
+		TSharedPtr<const FCameraEvaluationContext> CurContext = Entry.EvaluationContext.Pin();
+		if (UNLIKELY(!CurContext.IsValid()))
 		{
 			Entry.Result.bIsValid = false;
 			continue;
@@ -172,7 +172,7 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
 
 		FCameraNodeEvaluationParams CurParams(Params);
-		CurParams.EvaluationContext = Entry.EvaluationContext.Get();
+		CurParams.EvaluationContext = Entry.EvaluationContext.Pin();
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
@@ -233,7 +233,7 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 {
 	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
 
-	const UCameraEvaluationContext* ToContext = Params.EvaluationContext.Get();
+	TSharedPtr<const FCameraEvaluationContext> ToContext = Params.EvaluationContext;
 	const UCameraAsset* ToCameraAsset = ToContext ? ToContext->GetCameraAsset() : nullptr;
 	const UCameraRigAsset* ToCameraRig = Params.CameraRig;
 
@@ -248,7 +248,7 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 		// Start by looking at exit transitions on the last active (top) camera rig.
 		const FCameraRigEntry& TopEntry = Entries.Top();
 
-		const UCameraEvaluationContext* FromContext = TopEntry.EvaluationContext.Get();
+		TSharedPtr<const FCameraEvaluationContext> FromContext = TopEntry.EvaluationContext.Pin();
 		const UCameraAsset* FromCameraAsset = FromContext ? FromContext->GetCameraAsset() : nullptr;
 		const UCameraRigAsset* FromCameraRig = TopEntry.CameraRig;
 
@@ -345,6 +345,15 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 	return nullptr;
 }
 
+void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
+{
+	for (FCameraRigEntry& Entry : Entries)
+	{
+		Collector.AddReferencedObject(Entry.CameraRig);
+		Collector.AddReferencedObject(Entry.RootNode);
+	}
+}
+
 #if WITH_EDITOR
 
 void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent)
@@ -367,7 +376,7 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 			FCameraNodeEvaluatorTreeBuilderParams BuildParams;
 			BuildParams.RootCameraNode = Entry.RootNode;
 			BuildParams.Evaluator = OwningEvaluator;
-			BuildParams.EvaluationContext = Entry.EvaluationContext.Get();
+			BuildParams.EvaluationContext = Entry.EvaluationContext.Pin();
 			FCameraNodeEvaluator* RootEvaluator = Entry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
 
 			Entry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();

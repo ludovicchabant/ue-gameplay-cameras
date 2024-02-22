@@ -7,9 +7,9 @@
 
 #include "RootCameraNode.generated.h"
 
-class UCameraEvaluationContext;
+class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 class UCameraRigAsset;
-class UCameraSystemEvaluator;
 
 /**
  * Defines evaluation layers for camera rigs.
@@ -33,10 +33,10 @@ ENUM_CLASS_FLAGS(ECameraRigLayer)
 struct FActivateCameraRigParams
 {
 	/** The evaluator currently running.*/
-	TObjectPtr<UCameraSystemEvaluator> Evaluator;
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 
 	/** The evaluation context in which the camera rig runs. */
-	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
 	/** The source camera rig asset that will be instantiated. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;

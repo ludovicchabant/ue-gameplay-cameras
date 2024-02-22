@@ -28,8 +28,6 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 		PreviewMesh = EditorCameraMesh.Object;
 	}
 #endif  // WITH_EDITORONLY_DATA
-
-	Evaluator = ObjectInit.CreateDefaultSubobject<UCameraSystemEvaluator>(this, "CameraSystemEvaluator");
 }
 
 void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
@@ -43,6 +41,12 @@ void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalView
 
 void UGameplayCameraSystemComponent::OnRegister()
 {
+	if (!Evaluator.IsValid())
+	{
+		Evaluator = MakeShared<FCameraSystemEvaluator>();
+		Evaluator->Initialize(this);
+	}
+
 #if WITH_EDITORONLY_DATA
 	if (PreviewMesh && !PreviewMeshComponent)
 	{
@@ -91,6 +95,15 @@ bool UGameplayCameraSystemComponent::GetEditorPreviewInfo(float DeltaTime, FMini
 }
 
 #endif  // WITH_EDITOR
+
+void UGameplayCameraSystemComponent::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
+{
+	UGameplayCameraSystemComponent* TypedThis = CastChecked<UGameplayCameraSystemComponent>(InThis);
+	if (TypedThis->Evaluator.IsValid())
+	{
+		TypedThis->Evaluator->AddReferencedObjects(Collector);
+	}
+}
 
 void UGameplayCameraSystemComponent::OnBecomeViewTarget()
 {

@@ -5,8 +5,8 @@
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 #include "Core/CameraNodeEvaluator.h"
-
-#include "CameraEvaluationContext.generated.h"
+#include "Core/CameraObjectRtti.h"
+#include "Templates/SharedPointer.h"
 
 class UCameraAsset;
 class APlayerController;
@@ -14,14 +14,17 @@ class APlayerController;
 /**
  * Base class for providing a context to running camera rigs.
  */
-UCLASS(MinimalAPI)
-class UCameraEvaluationContext : public UObject
+class FCameraEvaluationContext : public TSharedFromThis<FCameraEvaluationContext>
 {
-	GENERATED_BODY()
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(FCameraEvaluationContext)
 
 public:
 
-	UCameraEvaluationContext(const FObjectInitializer& ObjectInit);
+	/** Constructs an evaluation context. */
+	FCameraEvaluationContext();
+
+	/** Destroys this evaluation context. */
+	virtual ~FCameraEvaluationContext();
 
 	/**
 	 * Gets the player controller (if any) in control of the cameras running inside
@@ -35,20 +38,33 @@ public:
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
+public:
+
+	void AddReferencedObjects(FReferenceCollector& Collector);
+
 protected:
 
 	/**
 	 * The player controller (if any) in control of the cameras running inside
 	 * of this evaluation context.
 	 */
-	UPROPERTY()
 	TObjectPtr<APlayerController> PlayerController;
 
 	/** The camera asset hosted in this context. */
-	UPROPERTY()
 	TObjectPtr<UCameraAsset> CameraAsset;
 
 	/** The initial result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult InitialResult;
 };
+
+// Utility macros for declaring and defining camera evaluation contexts.
+//
+#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraEvaluationContext)
+
+#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT_EX(ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+
+#define UE_DEFINE_CAMERA_EVALUATION_CONTEXT(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
 

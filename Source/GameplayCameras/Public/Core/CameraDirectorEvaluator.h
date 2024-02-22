@@ -9,8 +9,8 @@
 
 class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
+class FCameraEvaluationContext;
 class UCameraDirector;
-class UCameraEvaluationContext;
 class UCameraRigAsset;
 
 /**
@@ -22,7 +22,7 @@ struct FCameraDirectorEvaluationParams
 	float DeltaTime = 0.f;
 
 	/** The context in which this director runs. */
-	TObjectPtr<const UCameraEvaluationContext> OwnerContext;
+	TSharedPtr<const FCameraEvaluationContext> OwnerContext;
 };
 
 /**
