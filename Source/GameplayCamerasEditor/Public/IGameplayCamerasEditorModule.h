@@ -20,7 +20,11 @@ public:
 
 	static const FName GameplayCamerasEditorAppIdentifier;
 
+	static const FName CameraModeAssetEditorToolBarName;
+
 	virtual ~IGameplayCamerasEditorModule() = default;
+
+public:
 
 	/** Creates an editor for the given camera asset */
 	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) = 0;

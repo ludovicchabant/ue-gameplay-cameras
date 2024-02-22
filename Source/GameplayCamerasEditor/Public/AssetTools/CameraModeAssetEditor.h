@@ -21,6 +21,8 @@ public:
 
 	void Initialize(TObjectPtr<UCameraMode> InCameraModeAsset);
 
+	UCameraMode* GetCameraModeAsset() const { return CameraModeAsset; }
+
 public:
 
 	// UAssetEditor interface

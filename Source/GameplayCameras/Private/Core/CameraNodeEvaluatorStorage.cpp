@@ -17,23 +17,22 @@ FCameraNodeEvaluatorStorage::FCameraNodeEvaluatorStorage(FCameraNodeEvaluatorSto
 	EvaluatorInfos = MoveTemp(Other.EvaluatorInfos);
 }
 
-FCameraNodeEvaluatorStorage::~FCameraNodeEvaluatorStorage()
+FCameraNodeEvaluatorStorage& FCameraNodeEvaluatorStorage::operator=(FCameraNodeEvaluatorStorage&& Other)
 {
-	for (FEvaluatorInfo& EvaluatorInfo : EvaluatorInfos)
+	if (ensure(this != &Other))
 	{
-		FCameraNodeEvaluator* Evaluator(EvaluatorInfo.Ptr);
-		Evaluator->~FCameraNodeEvaluator();
+		Allocations = MoveTemp(Other.Allocations);
+		EvaluatorInfos = MoveTemp(Other.EvaluatorInfos);
 	}
-	EvaluatorInfos.Reset();
-
-	for (FAllocation& Allocation : Allocations)
-	{
-		FMemory::Free(Allocation.Memory);
-	}
-	Allocations.Reset();
+	return *this;
 }
 
-FCameraNodeEvaluatorTreeAllocationInfo FCameraNodeEvaluatorStorage::ComputeTreeInfo(const UCameraMode* CameraMode) const
+FCameraNodeEvaluatorStorage::~FCameraNodeEvaluatorStorage()
+{
+	DestroyEvaluatorTree(true);
+}
+
+FCameraNodeEvaluatorTreeAllocationInfo FCameraNodeEvaluatorStorage::ComputeTreeInfo(const UCameraMode* CameraMode)
 {
 	int16 MaxSize = 0;
 	int16 MaxAlignment = 0;
@@ -78,5 +77,31 @@ FCameraNodeEvaluatorPtr FCameraNodeEvaluatorStorage::BuildEvaluatorTree(const FC
 	FCameraNodeEvaluatorPtr RootEvaluator = InitParams.BuildEvaluator(Params.RootCameraNode);
 
 	return RootEvaluator;
+}
+
+void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(bool bFreeAllocations)
+{
+	for (FEvaluatorInfo& EvaluatorInfo : EvaluatorInfos)
+	{
+		FCameraNodeEvaluator* Evaluator(EvaluatorInfo.Ptr);
+		Evaluator->~FCameraNodeEvaluator();
+	}
+	EvaluatorInfos.Reset();
+
+	if (bFreeAllocations)
+	{
+		for (FAllocation& Allocation : Allocations)
+		{
+			FMemory::Free(Allocation.Memory);
+		}
+		Allocations.Reset();
+	}
+	else
+	{
+		for (FAllocation& Allocation : Allocations)
+		{
+			Allocation.Used = 0;
+		}
+	}
 }
 

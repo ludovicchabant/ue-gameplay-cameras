@@ -2,20 +2,24 @@
 
 #include "GameplayCamerasEditorSettings.h"
 
-#include "GameplayCamerasLiveEditManager.h"
-#include "IGameplayCamerasModule.h"
-#include "IGameplayCamerasEditorModule.h"
-#include "ISettingsModule.h"
-#include "Modules/ModuleManager.h"
 #include "AssetTools/CameraAssetEditor.h"
 #include "AssetTools/CameraModeAssetEditor.h"
+#include "Commands/CameraAssetEditorCommands.h"
+#include "Commands/CameraModeAssetEditorCommands.h"
+#include "GameplayCamerasLiveEditManager.h"
+#include "IGameplayCamerasEditorModule.h"
+#include "IGameplayCamerasModule.h"
+#include "ISettingsModule.h"
+#include "Modules/ModuleManager.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "ToolMenus.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/CameraModeAssetEditorToolkit.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
 const FName IGameplayCamerasEditorModule::GameplayCamerasEditorAppIdentifier("GameplayCamerasEditorApp");
+const FName IGameplayCamerasEditorModule::CameraModeAssetEditorToolBarName("CameraModeAssetEditor.ToolBar");
 
 /**
  * Implements the FGameplayCamerasEditor module.
@@ -31,10 +35,18 @@ public:
 	{
 		RegisterSettings();
 		InitializeLiveEditManager();
+
+		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
+					this, &FGameplayCamerasEditorModule::RegisterMenus));
 	}
 
 	virtual void ShutdownModule() override
 	{
+		UToolMenus::UnRegisterStartupCallback(this);
+
+		FCameraAssetEditorCommands::Unregister();
+		FCameraModeAssetEditorCommands::Unregister();
+
 		UnregisterSettings();
 		TeardownLiveEditManager();
 	}
@@ -80,6 +92,12 @@ private:
 			SettingsModule->UnregisterSettings("Project", "Plugins", "GameplayCamerasEditor");
 			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "GameplayCamerasEditor");
 		}
+	}
+
+	void RegisterMenus()
+	{
+		FCameraAssetEditorCommands::Register();
+		FCameraModeAssetEditorCommands::Register();	
 	}
 
 	void InitializeLiveEditManager()

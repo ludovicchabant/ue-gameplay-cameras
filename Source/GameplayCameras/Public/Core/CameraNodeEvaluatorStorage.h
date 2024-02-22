@@ -45,6 +45,7 @@ public:
 
 	FCameraNodeEvaluatorStorage();
 	FCameraNodeEvaluatorStorage(FCameraNodeEvaluatorStorage&& Other);
+	FCameraNodeEvaluatorStorage& operator=(FCameraNodeEvaluatorStorage&& Other);
 	~FCameraNodeEvaluatorStorage();
 
 	FCameraNodeEvaluatorStorage(const FCameraNodeEvaluatorStorage&) = delete;
@@ -53,9 +54,12 @@ public:
 public:
 
 	/** Compute allocation information for the given tree of camera nodes. */
-	FCameraNodeEvaluatorTreeAllocationInfo ComputeTreeInfo(const UCameraMode* CameraMode) const;
+	static FCameraNodeEvaluatorTreeAllocationInfo ComputeTreeInfo(const UCameraMode* CameraMode);
+
 	/** Build the tree of evaluators for the given tree of camera nodes. */
 	FCameraNodeEvaluatorPtr BuildEvaluatorTree(const FCameraNodeEvaluatorTreeBuilderParams& Params);
+	/** Destroy any allocated evaluators. */
+	void DestroyEvaluatorTree(bool bFreeAllocations = false);
 
 private:
 

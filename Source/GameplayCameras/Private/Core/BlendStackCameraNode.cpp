@@ -8,6 +8,9 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraMode.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "IGameplayCamerasModule.h"
+#include "IGameplayCamerasLiveEditManager.h"
+#include "Modules/ModuleManager.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackCameraNode)
@@ -69,8 +72,19 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 
 	NewEntry.EvaluationContext = Params.EvaluationContext;
 	NewEntry.CameraMode = Params.CameraMode;
+	NewEntry.RootNode = EntryRootNode;
 	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
 	NewEntry.bIsFirstFrame = true;
+
+#if WITH_EDITOR
+	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
+	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+	Params.CameraMode->GatherPackages(NewEntry.ListenedPackages);
+	for (const UPackage* ListenPackage : NewEntry.ListenedPackages)
+	{
+		LiveEditManager->AddListener(ListenPackage, this);
+	}
+#endif  // WITH_EDITOR
 
 	// Important: we need to move the new entry here because copying evaluator storage
 	// is disabled.
@@ -85,6 +99,11 @@ FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 		View.Add(Entry.RootEvaluator);
 	}
 	return View;
+}
+
+void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+{
+	OwningEvaluator = Params.Evaluator;
 }
 
 void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -184,8 +203,21 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 	// Pop out camera modes that have been blended out.
 	if (BlendStackNode->bAutoPop && PopEntriesBelow != INDEX_NONE)
 	{
+#if WITH_EDITOR
+		IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
+		TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+#endif  // WITH_EDITOR
+
 		for (int32 Index = 0; Index < PopEntriesBelow; ++Index)
 		{
+#if WITH_EDITOR
+			const FCameraModeEntry& FirstEntry = Entries[0];
+			for (const UPackage* ListenPackage : FirstEntry.ListenedPackages)
+			{
+				LiveEditManager->RemoveListener(ListenPackage, this);
+			}
+#endif  // WITH_EDITOR
+
 			Entries.RemoveAt(0);
 		}
 	}
@@ -312,4 +344,39 @@ const FCameraModeTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 
 	return nullptr;
 }
+
+#if WITH_EDITOR
+
+void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent)
+{
+	for (FCameraModeEntry& Entry : Entries)
+	{
+		const bool bRebuildEntry = Entry.ListenedPackages.Contains(BuildEvent.AssetPackage);
+		if (bRebuildEntry)
+		{
+			Entry.EvaluatorStorage.DestroyEvaluatorTree();
+
+			// Re-assign the root node in case the camera mode's root was changed.
+			Entry.RootNode->RootNode = Entry.CameraMode->RootNode;
+
+			// Remove the blend on the root node, since we don't want the reloaded camera mode to re-blend-in
+			// for no good reason.
+			Entry.RootNode->Blend = nullptr;
+
+			// Rebuild the evaluator tree.
+			FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+			BuildParams.RootCameraNode = Entry.RootNode;
+			BuildParams.Evaluator = OwningEvaluator;
+			BuildParams.EvaluationContext = Entry.EvaluationContext.Get();
+			FCameraNodeEvaluator* RootEvaluator = Entry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
+
+			Entry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
+
+			// This is the first frame for this new hierarchy of evaluators.
+			Entry.bIsFirstFrame = true;
+		}
+	}
+}
+
+#endif  // WITH_EDITOR
 

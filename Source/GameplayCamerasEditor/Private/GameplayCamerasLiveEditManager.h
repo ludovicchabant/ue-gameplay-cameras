@@ -7,10 +7,29 @@
 #include "CoreTypes.h"
 #include "UObject/WeakObjectPtr.h"
 
+class UPackage;
+
 class FGameplayCamerasLiveEditManager : public IGameplayCamerasLiveEditManager
 {
 public:
 
 	FGameplayCamerasLiveEditManager();
+
+public:
+
+	// IGameplayCamerasLiveEditManager interface
+	virtual void NotifyPostBuildAsset(const UPackage* InAssetPackage) const override;
+	virtual void AddListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
+	virtual void RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
+
+private:
+
+	void RemoveGarbage();
+
+private:
+
+	using FListenerArray = TArray<IGameplayCamerasLiveEditListener*>;
+	using FListenerMap = TMap<TWeakObjectPtr<const UPackage>, FListenerArray>;
+	FListenerMap ListenerMap;
 };
 

@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "Core/CameraMode.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
+#include "IGameplayCamerasLiveEditListener.h"
 
 #include "BlendStackCameraNode.generated.h"
 
@@ -62,7 +64,11 @@ public:
 /**
  * Evaluator for a blend stack camera node.
  */
-class FBlendStackCameraNodeEvaluator : public TCameraNodeEvaluator<UBlendStackCameraNode>
+class FBlendStackCameraNodeEvaluator 
+	: public TCameraNodeEvaluator<UBlendStackCameraNode>
+#if WITH_EDITOR
+	, public IGameplayCamerasLiveEditListener
+#endif
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
@@ -75,7 +81,15 @@ protected:
 
 	// FCameraNodeEvaluator interface
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+#if WITH_EDITOR
+	// IGameplayCamerasLiveEditListener interface
+	virtual void OnPostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent) override;
+#endif
+
+protected:
 
 	// Utility functions for finding an appropriate transition.
 	const FCameraModeTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
@@ -92,6 +106,8 @@ protected:
 		TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 		/** The camera mode asset that this entry runs. */
 		TObjectPtr<const UCameraMode> CameraMode;
+		/** The root node. */
+		TObjectPtr<UBlendStackRootCameraNode> RootNode;
 		/** Storage buffer for all evaluators in this node tree. */
 		FCameraNodeEvaluatorStorage EvaluatorStorage;
 		/** Root evaluator. */
@@ -102,7 +118,13 @@ protected:
 		bool bIsFirstFrame = false;
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
+#if WITH_EDITOR
+		FCameraModePackages ListenedPackages;
+#endif  // WITH_EDITOR
 	};
+
+	/** The camera system evaluator running this node. */
+	TObjectPtr<UCameraSystemEvaluator> OwningEvaluator;
 
 	/** Entries in the blend stack. */
 	TArray<FCameraModeEntry> Entries;
