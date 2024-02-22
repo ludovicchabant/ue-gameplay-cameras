@@ -4,6 +4,7 @@
 
 #include "Core/CameraNodeEvaluatorBuilder.h"
 #include "Core/CameraVariableTableFwd.h"
+#include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
 #include "UObject/Object.h"
 
@@ -24,6 +25,9 @@ struct FCameraNodeAllocationInfo
 	FCameraVariableTableAllocationInfo VariableTableInfo;
 };
 
+/** View on a camera node's children. */
+using FCameraNodeChildrenView = TObjectChildrenView<TObjectPtr<UCameraNode>>;
+
 /**
  * The base class for a camera node.
  */
@@ -34,6 +38,9 @@ class UCameraNode : public UObject
 
 public:
 
+	/** Get the list of children under this node. */
+	FCameraNodeChildrenView GetChildren();
+
 	/** Gets optional info about this node's required allocations at runtime. */
 	FCameraNodeAllocationInfo GetAllocationInfo() const;
 
@@ -41,6 +48,9 @@ public:
 	FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
 
 protected:
+
+	/** Get the list of children under this node. */
+	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
 
 	/** Gets optional info about this node's required allocations at runtime. */
 	virtual FCameraNodeAllocationInfo OnGetAllocationInfo() const { return FCameraNodeAllocationInfo(); }

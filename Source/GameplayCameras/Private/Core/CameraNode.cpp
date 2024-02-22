@@ -13,6 +13,11 @@ void FCameraNodeEvaluationResult::Reset()
 	bIsValid = false;
 }
 
+FCameraNodeChildrenView UCameraNode::GetChildren()
+{
+	return OnGetChildren();
+}
+
 FCameraNodeAllocationInfo UCameraNode::GetAllocationInfo() const
 {
 	return OnGetAllocationInfo();

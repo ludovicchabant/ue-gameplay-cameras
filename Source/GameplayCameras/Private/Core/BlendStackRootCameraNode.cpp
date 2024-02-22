@@ -7,6 +7,20 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 
+FCameraNodeChildrenView UBlendStackRootCameraNode::OnGetChildren()
+{
+	FCameraNodeChildrenView Children;
+	if (Blend)
+	{
+		Children.Add(Blend);
+	}
+	if (RootNode)
+	{
+		Children.Add(RootNode);
+	}
+	return Children;
+}
+
 FCameraNodeEvaluatorPtr UBlendStackRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
 	return Builder.BuildEvaluator<FBlendStackRootCameraNodeEvaluator>();

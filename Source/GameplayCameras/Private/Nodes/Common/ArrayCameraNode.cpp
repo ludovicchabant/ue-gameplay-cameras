@@ -52,6 +52,11 @@ void FArrayCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params,
 	}
 }
 
+FCameraNodeChildrenView UArrayCameraNode::OnGetChildren()
+{
+	return FCameraNodeChildrenView(Children);
+}
+
 FCameraNodeEvaluatorPtr UArrayCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
 	return Builder.BuildEvaluator<FArrayCameraNodeEvaluator>();

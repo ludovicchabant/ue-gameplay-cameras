@@ -18,6 +18,7 @@ class UArrayCameraNode : public UCameraNode
 protected:
 
 	// UCameraNode interface.
+	virtual FCameraNodeChildrenView OnGetChildren() override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 public:
