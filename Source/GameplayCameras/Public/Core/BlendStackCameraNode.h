@@ -130,5 +130,9 @@ protected:
 
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;
+
+#if WITH_EDITOR
+	TMap<const UPackage*, int32> AllListenedPackages;
+#endif  // WITH_EDITOR
 };
 

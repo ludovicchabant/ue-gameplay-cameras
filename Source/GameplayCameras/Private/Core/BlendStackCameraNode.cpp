@@ -82,7 +82,12 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	Params.CameraRig->GatherPackages(NewEntry.ListenedPackages);
 	for (const UPackage* ListenPackage : NewEntry.ListenedPackages)
 	{
-		LiveEditManager->AddListener(ListenPackage, this);
+		int32& NumListens = AllListenedPackages.FindOrAdd(ListenPackage, 0);
+		if (NumListens == 0)
+		{
+			LiveEditManager->AddListener(ListenPackage, this);
+		}
+		++NumListens;
 	}
 #endif  // WITH_EDITOR
 
@@ -214,7 +219,16 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			const FCameraRigEntry& FirstEntry = Entries[0];
 			for (const UPackage* ListenPackage : FirstEntry.ListenedPackages)
 			{
-				LiveEditManager->RemoveListener(ListenPackage, this);
+				int32* NumListens = AllListenedPackages.Find(ListenPackage);
+				if (ensure(NumListens))
+				{
+					--(*NumListens);
+					if (*NumListens == 0)
+					{
+						LiveEditManager->RemoveListener(ListenPackage, this);
+						AllListenedPackages.Remove(ListenPackage);
+					}
+				}
 			}
 #endif  // WITH_EDITOR
 
