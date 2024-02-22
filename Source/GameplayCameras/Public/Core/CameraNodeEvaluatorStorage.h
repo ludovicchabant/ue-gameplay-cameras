@@ -8,13 +8,17 @@
 #include "Math/UnrealMathUtility.h"
 #include "UObject/ObjectPtr.h"
 
+class FReferenceCollector;
+class UCameraRigAsset;
+class UCameraNode;
+
+namespace UE::Cameras
+{
+
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
 class FCameraSystemEvaluator;
-class FReferenceCollector;
-class UCameraRigAsset;
-class UCameraNode;
 
 /** Allocation information for an entire tree of node evaluators. */
 struct FCameraNodeEvaluatorTreeAllocationInfo
@@ -132,4 +136,6 @@ EvaluatorType* FCameraNodeEvaluatorStorage::BuildEvaluator(ArgTypes&&... InArgs)
 
 	return NewEvaluator;
 }
+
+}  // namespace UE::Cameras
 

@@ -6,12 +6,17 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNode)
 
+namespace UE::Cameras
+{
+
 void FCameraNodeEvaluationResult::Reset()
 {
 	CameraPose.Reset();
 	bIsCameraCut = false;
 	bIsValid = false;
 }
+
+}  // namespace UE::Cameras
 
 FCameraNodeChildrenView UCameraNode::GetChildren()
 {
@@ -25,6 +30,7 @@ FCameraNodeAllocationInfo UCameraNode::GetAllocationInfo() const
 
 FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	FCameraNodeEvaluator* NewEvaluator = OnBuildEvaluator(Builder);
 	NewEvaluator->SetPrivateCameraNode(this);
 	return NewEvaluator;

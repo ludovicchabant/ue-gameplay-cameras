@@ -32,6 +32,8 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 
 void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
 {
+	using namespace UE::Cameras;
+
 	FCameraSystemEvaluationUpdateParams UpdateParams;
 	UpdateParams.DeltaTime = DeltaTime;
 	Evaluator->Update(UpdateParams);
@@ -41,6 +43,8 @@ void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalView
 
 void UGameplayCameraSystemComponent::OnRegister()
 {
+	using namespace UE::Cameras;
+
 	if (!Evaluator.IsValid())
 	{
 		Evaluator = MakeShared<FCameraSystemEvaluator>();

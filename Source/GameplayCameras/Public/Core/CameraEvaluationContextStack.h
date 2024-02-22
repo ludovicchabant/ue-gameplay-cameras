@@ -6,11 +6,15 @@
 #include "Core/CameraDirectorEvaluator.h"
 #include "UObject/WeakObjectPtr.h"
 
+class UCameraAsset;
+class UCameraDirector;
+
+namespace UE::Cameras
+{
+
 class FCameraDirectorEvaluator;
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
-class UCameraAsset;
-class UCameraDirector;
 
 /** Information about a running camera evaluation context. */
 struct FCameraEvaluationContextInfo
@@ -72,4 +76,6 @@ private:
 	/** The owner evaluator. */
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 };
+
+}  // namespace UE::Cameras
 

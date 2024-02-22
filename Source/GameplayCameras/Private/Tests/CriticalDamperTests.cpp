@@ -9,6 +9,8 @@
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGameplayCamerasCriticalDamperTest, "System.Engine.GameplayCameras.CriticalDamper", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FGameplayCamerasCriticalDamperTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
+
 	{
 		FCriticalDamper Damper(10.f);
 		float Test = Damper.Update(0, 1.f);

@@ -4,6 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LinearBlendCameraNode)
 
+namespace UE::Cameras
+{
+
 class FLinearBlendCameraNodeEvaluator : public FSimpleFixedTimeBlendCameraNodeEvaluator
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(FLinearBlendCameraNodeEvaluator, FSimpleFixedTimeBlendCameraNodeEvaluator)
@@ -19,8 +22,11 @@ void FLinearBlendCameraNodeEvaluator::OnComputeBlendFactor(const FCameraNodeEval
 	OutResult.BlendFactor = FMath::Lerp(0.f, 1.f, GetTimeFactor());
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeEvaluatorPtr ULinearBlendCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FLinearBlendCameraNodeEvaluator>();
 }
 

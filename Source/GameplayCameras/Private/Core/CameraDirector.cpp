@@ -4,8 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraDirector)
 
-FCameraDirectorEvaluator* UCameraDirector::BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
+FCameraDirectorEvaluatorPtr UCameraDirector::BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	FCameraDirectorEvaluator* NewEvaluator = OnBuildEvaluator(Builder);
 	NewEvaluator->SetPrivateCameraDirector(this);
 	return NewEvaluator;

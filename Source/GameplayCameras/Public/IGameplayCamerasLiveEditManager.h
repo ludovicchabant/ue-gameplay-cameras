@@ -2,13 +2,17 @@
 
 #pragma once
 
-#if WITH_EDITOR
-
 #include "CoreTypes.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/UnrealType.h"
 
 class UPackage;
+
+namespace UE::Cameras
+{
+
+#if WITH_EDITOR
+
 class IGameplayCamerasLiveEditListener;
 
 /**
@@ -30,4 +34,6 @@ public:
 };
 
 #endif  // WITH_EDITOR
+
+}  // namespace UE::Cameras
 

@@ -15,6 +15,9 @@
 
 DECLARE_CYCLE_STAT(TEXT("Camera System Eval"), CameraSystemEval_Total, STATGROUP_CameraSystem);
 
+namespace UE::Cameras
+{
+
 FCameraSystemEvaluator::FCameraSystemEvaluator()
 {
 }
@@ -135,4 +138,6 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.Rotation = CameraPose.GetRotation();
 	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
 }
+
+}  // namespace UE::Cameras
 

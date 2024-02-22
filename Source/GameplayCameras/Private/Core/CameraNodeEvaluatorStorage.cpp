@@ -7,6 +7,9 @@
 #include "Core/CameraRigAsset.h"
 #include "UObject/Package.h"
 
+namespace UE::Cameras
+{
+
 FCameraNodeEvaluatorStorage::FCameraNodeEvaluatorStorage()
 {
 }
@@ -104,4 +107,6 @@ void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(bool bFreeAllocations)
 		}
 	}
 }
+
+}  // namespace UE::Cameras
 

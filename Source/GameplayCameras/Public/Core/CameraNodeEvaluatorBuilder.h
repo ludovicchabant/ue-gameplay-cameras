@@ -4,6 +4,9 @@
 
 #include "Core/CameraNodeEvaluatorStorage.h"
 
+namespace UE::Cameras
+{
+
 /** Structure for building camera node evaluators. */
 struct FCameraNodeEvaluatorBuilder
 {
@@ -27,4 +30,6 @@ EvaluatorType* FCameraNodeEvaluatorBuilder::BuildEvaluator(ArgTypes&&... InArgs)
 {
 	return Storage.BuildEvaluator<EvaluatorType>(Forward<ArgTypes>(InArgs)...);
 }
+
+}  // namespace UE::Cameras
 

@@ -6,11 +6,17 @@
 
 #include "CameraNodeEvaluatorFwd.generated.h"
 
+namespace UE::Cameras
+{
+
 class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
 struct FCameraNodeEvaluatorBuilder;
 
-using FCameraNodeEvaluatorPtr = FCameraNodeEvaluator*;
+}  // namespace UE::Cameras
+
+// Typedef to avoid having to deal with namespaces in UCameraNode subclasses.
+using FCameraNodeEvaluatorPtr = UE::Cameras::FCameraNodeEvaluator*;
 
 /** Allocation information for a node evaluator. */
 USTRUCT()

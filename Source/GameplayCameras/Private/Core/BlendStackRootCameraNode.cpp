@@ -23,8 +23,12 @@ FCameraNodeChildrenView UBlendStackRootCameraNode::OnGetChildren()
 
 FCameraNodeEvaluatorPtr UBlendStackRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FBlendStackRootCameraNodeEvaluator>();
 }
+
+namespace UE::Cameras
+{
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackRootCameraNodeEvaluator)
 
@@ -60,4 +64,6 @@ void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 		RootEvaluator->Run(Params, OutResult);
 	}
 }
+
+}  // namespace UE::Cameras
 

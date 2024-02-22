@@ -10,8 +10,14 @@
 
 #include "GameplayCameraComponent.generated.h"
 
-class FGameplayCameraComponentEvaluationContext;
 class UCameraAsset;
+
+namespace UE::Cameras
+{
+
+class FGameplayCameraComponentEvaluationContext;
+
+}  // namespace UE::Cameras
 
 /**
  * A component that can run a camera asset inside its own camera evaluation context.
@@ -56,6 +62,8 @@ public:
 
 protected:
 
+	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
+
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
 	
 #if WITH_EDITORONLY_DATA
@@ -73,6 +81,9 @@ private:
 	int32 ActivatedForPlayerIndex = INDEX_NONE;
 };
 
+namespace UE::Cameras
+{
+
 /**
  * Evaluation context for the gameplay camera component.
  */
@@ -85,4 +96,6 @@ public:
 	void Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController);
 	void Update(UGameplayCameraComponent* Owner);
 };
+
+}  // namespace UE::Cameras
 

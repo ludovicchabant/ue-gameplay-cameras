@@ -5,7 +5,10 @@
 #include "HAL/UnrealMemory.h"
 #include "Math/UnrealMath.h"
 
-namespace UE::Cameras::Private
+namespace UE::Cameras
+{
+
+namespace Private
 {
 
 static const FString GUnavailableVariableDebugName(TEXT("<no debug info>"));
@@ -20,7 +23,7 @@ bool IsVariableInMask(uint32 VariableId, const FCameraVariableTableFlags* InMask
 	return true;
 }
 
-}  // namespace UE::Cameras::Private
+}  // namespace Private
 
 FCameraVariableTable::FCameraVariableTable()
 {
@@ -388,4 +391,6 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 		}
 	}
 }
+
+}  // namespace UE::Cameras
 

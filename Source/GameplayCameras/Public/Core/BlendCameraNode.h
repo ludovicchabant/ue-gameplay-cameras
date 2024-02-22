@@ -8,6 +8,18 @@
 #include "BlendCameraNode.generated.h"
 
 /**
+ * Base class for blend camera nodes.
+ */
+UCLASS(MinimalAPI)
+class UBlendCameraNode : public UCameraNode
+{
+	GENERATED_BODY()
+};
+
+namespace UE::Cameras
+{
+
+/**
  * Parameter struct for blending camera node tree results.
  */
 struct FCameraNodeBlendParams
@@ -45,15 +57,6 @@ struct FCameraNodeBlendResult
 };
 
 /**
- * Base class for blend camera nodes.
- */
-UCLASS(MinimalAPI)
-class UBlendCameraNode : public UCameraNode
-{
-	GENERATED_BODY()
-};
-
-/**
  * Base evaluator class for blend camera nodes.
  */
 class FBlendCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -71,13 +74,15 @@ protected:
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) {}
 };
 
+}  // namespace UE::Cameras
+
 // Macros for declaring and defining new blend node evaluators. They are the same
 // as the base ones for generic node evaluators, but the first one prevents you
 // from having to specify FBlendCameraNodeEvaluator as the base class, which saves
 // a little bit of typing.
 //
 #define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(ClassName)\
-	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, FBlendCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, ::UE::Cameras::FBlendCameraNodeEvaluator)
 
 #define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)\
 	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)

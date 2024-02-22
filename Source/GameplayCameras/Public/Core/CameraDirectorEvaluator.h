@@ -7,11 +7,15 @@
 #include "Templates/UniquePtr.h"
 #include "UObject/ObjectPtr.h"
 
+class UCameraDirector;
+class UCameraRigAsset;
+
+namespace UE::Cameras
+{
+
 class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
 class FCameraEvaluationContext;
-class UCameraDirector;
-class UCameraRigAsset;
 
 /**
  * Parameter structure for running a camera director.
@@ -110,17 +114,6 @@ private:
 	TObjectPtr<const UCameraDirector> PrivateCameraDirector;
 };
 
-// Utility macros for declaring and defining camera director evaluators.
-//
-#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraDirectorEvaluator)
-
-#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR_EX(ClassName, BaseClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
-
-#define UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
-
 template<typename EvaluatorType, typename ...ArgTypes>
 EvaluatorType* FCameraDirectorEvaluatorBuilder::BuildEvaluator(ArgTypes&&... InArgs)
 {
@@ -135,4 +128,20 @@ EvaluatorType* FCameraDirectorEvaluatorStorage::BuildEvaluator(ArgTypes&&... InA
 	Evaluator = MakeShared<EvaluatorType>(Forward<ArgTypes>(InArgs)...);
 	return Evaluator->CastThisChecked<EvaluatorType>();
 }
+
+}  // namespace UE::Cameras
+
+// Typedef to avoid having to deal with namespaces in UCameraNode subclasses.
+using FCameraDirectorEvaluatorPtr = UE::Cameras::FCameraDirectorEvaluator*;
+
+// Utility macros for declaring and defining camera director evaluators.
+//
+#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, ::UE::Cameras::FCameraDirectorEvaluator)
+
+#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR_EX(ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+
+#define UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
 

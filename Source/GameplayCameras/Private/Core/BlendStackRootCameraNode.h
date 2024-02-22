@@ -7,7 +7,6 @@
 
 #include "BlendStackRootCameraNode.generated.h"
 
-class FBlendCameraNodeEvaluator;
 class UBlendCameraNode;
 class UCameraRigAsset;
 
@@ -38,6 +37,11 @@ public:
 	TObjectPtr<UCameraNode> RootNode;
 };
 
+namespace UE::Cameras
+{
+
+class FBlendCameraNodeEvaluator;
+
 /**
  * Evaluator for the blend stack entry root node.
  */
@@ -62,4 +66,6 @@ private:
 	FBlendCameraNodeEvaluator* BlendEvaluator = nullptr;
 	FCameraNodeEvaluator* RootEvaluator = nullptr;
 };
+
+}  // namespace UE::Cameras
 

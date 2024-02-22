@@ -9,6 +9,9 @@
 
 class UPackage;
 
+namespace UE::Cameras
+{
+
 class FGameplayCamerasLiveEditManager : public IGameplayCamerasLiveEditManager
 {
 public:
@@ -32,4 +35,6 @@ private:
 	using FListenerMap = TMap<TWeakObjectPtr<const UPackage>, FListenerArray>;
 	FListenerMap ListenerMap;
 };
+
+}  // namespace UE::Cameras
 

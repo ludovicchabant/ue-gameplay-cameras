@@ -7,8 +7,6 @@
 
 #include "RootCameraNode.generated.h"
 
-class FCameraEvaluationContext;
-class FCameraSystemEvaluator;
 class UCameraRigAsset;
 
 /**
@@ -26,6 +24,22 @@ enum class ECameraRigLayer
 	User2
 };
 ENUM_CLASS_FLAGS(ECameraRigLayer)
+
+/**
+ * The base class for a camera node that can act as the root of the
+ * camera system evaluation.
+ */
+UCLASS(MinimalAPI, Abstract)
+class URootCameraNode : public UCameraNode
+{
+	GENERATED_BODY()
+};
+
+namespace UE::Cameras
+{
+
+class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 
 /**
  * Parameter structure for activating a new camera rig.
@@ -46,16 +60,6 @@ struct FActivateCameraRigParams
 };
 
 /**
- * The base class for a camera node that can act as the root of the
- * camera system evaluation.
- */
-UCLASS(MinimalAPI, Abstract)
-class URootCameraNode : public UCameraNode
-{
-	GENERATED_BODY()
-};
-
-/**
  * Base class for the evaluator of a root camera node.
  */
 class FRootCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -70,4 +74,6 @@ private:
 	/** Activates a camera rig. */
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
 };
+
+}  // namespace UE::Cameras
 

@@ -86,6 +86,8 @@ void UGameplayCameraComponent::DeactivateCamera()
 
 void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerController)
 {
+	using namespace UE::Cameras;
+
 	if (!ensure(PlayerController && PlayerController->PlayerCameraManager))
 	{
 		return;
@@ -111,6 +113,8 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 
 void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerController)
 {
+	using namespace UE::Cameras;
+
 	if (!ensure(PlayerController && PlayerController->PlayerCameraManager))
 	{
 		return;
@@ -190,6 +194,9 @@ void UGameplayCameraComponent::UpdatePreviewMeshTransform()
 
 #endif
 
+namespace UE::Cameras
+{
+
 UE_DEFINE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
 
 void FGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController)
@@ -204,6 +211,8 @@ void FGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent*
 	InitialResult.CameraPose.SetTransform(OwnerTransform);
 	InitialResult.bIsValid = true;
 }
+
+}  // namespace UE::Cameras
 
 #undef LOCTEXT_NAMESPACE
 

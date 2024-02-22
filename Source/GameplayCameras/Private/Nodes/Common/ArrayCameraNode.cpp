@@ -6,6 +6,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ArrayCameraNode)
 
+namespace UE::Cameras
+{
+
 class FArrayCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FArrayCameraNodeEvaluator)
@@ -52,6 +55,8 @@ void FArrayCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params,
 	}
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeChildrenView UArrayCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView(Children);
@@ -59,6 +64,7 @@ FCameraNodeChildrenView UArrayCameraNode::OnGetChildren()
 
 FCameraNodeEvaluatorPtr UArrayCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FArrayCameraNodeEvaluator>();
 }
 

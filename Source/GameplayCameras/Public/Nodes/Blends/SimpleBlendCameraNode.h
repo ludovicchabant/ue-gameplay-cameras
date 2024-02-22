@@ -7,14 +7,6 @@
 #include "SimpleBlendCameraNode.generated.h"
 
 /**
- * Result structure for defining a simple scalar-factor-based blend.
- */
-struct FSimpleBlendCameraNodeEvaluationResult
-{
-	float BlendFactor = 0.f;
-};
-
-/**
  * Base class for a blend camera node that uses a simple scalar factor.
  */
 UCLASS(MinimalAPI, Abstract)
@@ -36,6 +28,17 @@ public:
 	/** Duration of the blend. */
 	UPROPERTY(EditAnywhere, Category=Blending)
 	float BlendTime = 1.f;
+};
+
+namespace UE::Cameras
+{
+
+/**
+ * Result structure for defining a simple scalar-factor-based blend.
+ */
+struct FSimpleBlendCameraNodeEvaluationResult
+{
+	float BlendFactor = 0.f;
 };
 
 class FSimpleBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
@@ -76,4 +79,6 @@ private:
 
 	float CurrentTime = 0.f;
 };
+
+}  // namespace UE::Cameras
 

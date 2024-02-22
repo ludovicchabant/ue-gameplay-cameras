@@ -9,11 +9,15 @@
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 
+class FReferenceCollector;
+class UCameraNode;
+
+namespace UE::Cameras
+{
+
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraSystemEvaluator;
-class FReferenceCollector;
-class UCameraNode;
 struct FCameraNodeEvaluatorBuilder;
 
 /**
@@ -130,17 +134,6 @@ private:
 	TObjectPtr<const UCameraNode> PrivateCameraNode;
 };
 
-// Utility macros for declaring and defining camera node evaluators.
-//
-#define UE_DECLARE_CAMERA_NODE_EVALUATOR(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraNodeEvaluator)
-
-#define UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
-
-#define UE_DEFINE_CAMERA_NODE_EVALUATOR(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
-
 /** Utility base class for camera node evaluators of a specific camera node type. */
 template<typename CameraNodeType>
 class TCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -163,4 +156,17 @@ EvaluatorType* FCameraNodeEvaluatorInitializeParams::BuildEvaluatorAs(const UCam
 	check(NewEvaluator);
 	return NewEvaluator->CastThisChecked<EvaluatorType>();
 }
+
+}  // namespace UE::Cameras
+
+// Utility macros for declaring and defining camera node evaluators.
+//
+#define UE_DECLARE_CAMERA_NODE_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraNodeEvaluator)
+
+#define UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+
+#define UE_DEFINE_CAMERA_NODE_EVALUATOR(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
 

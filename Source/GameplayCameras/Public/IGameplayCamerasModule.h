@@ -5,13 +5,19 @@
 #include "Modules/ModuleInterface.h"
 #include "Templates/SharedPointer.h"
 
+namespace UE::Cameras
+{
+
 #if WITH_EDITOR
 class IGameplayCamerasLiveEditManager;
 #endif
 
+}  // namespace UE::Cameras
+
 class IGameplayCamerasModule : public IModuleInterface
 {
 public:
+
 	/**
 	 * Singleton-like access to ICameraModule
 	 *
@@ -20,6 +26,8 @@ public:
 	static IGameplayCamerasModule& Get();
 
 #if WITH_EDITOR
+	using IGameplayCamerasLiveEditManager = UE::Cameras::IGameplayCamerasLiveEditManager;
+
 	/**
 	 * Gets the live edit manager.
 	 */

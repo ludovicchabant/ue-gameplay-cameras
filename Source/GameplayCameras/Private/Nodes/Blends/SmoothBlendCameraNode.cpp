@@ -6,6 +6,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SmoothBlendCameraNode)
 
+namespace UE::Cameras
+{
+
 class FSmoothBlendCameraNodeEvaluator : public FSimpleFixedTimeBlendCameraNodeEvaluator
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(FSmoothBlendCameraNodeEvaluator, FSimpleFixedTimeBlendCameraNodeEvaluator)
@@ -35,8 +38,11 @@ void FSmoothBlendCameraNodeEvaluator::OnComputeBlendFactor(const FCameraNodeEval
 	}
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeEvaluatorPtr USmoothBlendCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FSmoothBlendCameraNodeEvaluator>();
 }
 

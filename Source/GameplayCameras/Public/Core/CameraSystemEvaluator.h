@@ -12,12 +12,16 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
-class FCameraEvaluationContext;
-class FRootCameraNodeEvaluator;
 class UCameraDirector;
 class UCameraRigAsset;
 class URootCameraNode;
 struct FMinimalViewInfo;
+
+namespace UE::Cameras
+{
+
+class FCameraEvaluationContext;
+class FRootCameraNodeEvaluator;
 
 /**
  * Parameter structure for initializing a new camera system evaluator.
@@ -110,4 +114,6 @@ private:
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationUpdateResult Result;
 };
+
+}  // namespace UE::Cameras
 

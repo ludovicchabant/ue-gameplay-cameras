@@ -6,6 +6,9 @@
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
+namespace UE::Cameras
+{
+
 FGameplayCamerasLiveEditManager::FGameplayCamerasLiveEditManager()
 {
 }
@@ -60,4 +63,6 @@ void FGameplayCamerasLiveEditManager::RemoveGarbage()
 		}
 	}
 }
+
+}  // namespace UE::Cameras
 

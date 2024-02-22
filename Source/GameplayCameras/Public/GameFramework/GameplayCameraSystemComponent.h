@@ -10,9 +10,15 @@
 
 #include "GameplayCameraSystemComponent.generated.h"
 
-class FCameraSystemEvaluator;
 class UCameraRigAsset;
 struct FMinimalViewInfo;
+
+namespace UE::Cameras
+{
+
+class FCameraSystemEvaluator;
+
+}  // namespace UE::Cameras
 
 /**
  * A component that hosts a camera system.
@@ -23,6 +29,8 @@ class UGameplayCameraSystemComponent : public USceneComponent
 	GENERATED_BODY()
 
 public:
+
+	using FCameraSystemEvaluator = UE::Cameras::FCameraSystemEvaluator;
 
 	UGameplayCameraSystemComponent(const FObjectInitializer& ObjectInit);
 

@@ -10,28 +10,19 @@
 
 #include "BlendStackCameraNode.generated.h"
 
-class FBlendStackRootCameraNodeEvaluator;
-class FCameraEvaluationContext;
-class FCameraSystemEvaluator;
+struct FCameraRigTransition;
 class UBlendStackRootCameraNode;
 class UCameraAsset;
 class UCameraRigAsset;
-struct FCameraRigTransition;
 
-/**
- * Parameter structure for pushing a camera rig onto a blend stack.
- */
-struct FBlendStackCameraPushParams
+namespace UE::Cameras
 {
-	/** The evaluator currently running.*/
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 
-	/** The evaluation context within which a camera rig's node tree should run. */
-	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+class FBlendStackRootCameraNodeEvaluator;
+class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 
-	/** The source camera rig asset to instantiate and push on the blend stack. */
-	TObjectPtr<const UCameraRigAsset> CameraRig;
-};
+}  // namespace UE::Cameras
 
 /**
  * A blend stack implemented as a camera node.
@@ -60,6 +51,24 @@ public:
 	 */
 	UPROPERTY()
 	bool bBlendFirstCameraRig = false;
+};
+
+namespace UE::Cameras
+{
+
+/**
+ * Parameter structure for pushing a camera rig onto a blend stack.
+ */
+struct FBlendStackCameraPushParams
+{
+	/** The evaluator currently running.*/
+	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+
+	/** The evaluation context within which a camera rig's node tree should run. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset to instantiate and push on the blend stack. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
 };
 
 /**
@@ -135,4 +144,6 @@ protected:
 	TMap<const UPackage*, int32> AllListenedPackages;
 #endif  // WITH_EDITOR
 };
+
+}  // namespace UE::Cameras
 

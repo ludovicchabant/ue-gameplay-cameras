@@ -7,11 +7,17 @@
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
 
-class IGameplayCamerasLiveEditManager;
 class IMessageLogListing;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
 class SWidget;
+
+namespace UE::Cameras
+{
+
+class IGameplayCamerasLiveEditManager;
+
+}  // namespace UE::Cameras
 
 /**
  * Editor toolkit for a camera rig asset.
@@ -78,6 +84,6 @@ private:
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 
 	/** Live edit manager for updating the assets in the runtime */
-	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;
+	TSharedPtr<UE::Cameras::IGameplayCamerasLiveEditManager> LiveEditManager;
 };
 

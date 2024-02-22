@@ -9,6 +9,9 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "UObject/Package.h"
 
+namespace UE::Cameras
+{
+
 FCameraEvaluationContextInfo FCameraEvaluationContextStack::GetActiveContext() const
 {
 	for (const FContextEntry& Entry : ReverseIterate(Entries))
@@ -88,4 +91,6 @@ void FCameraEvaluationContextStack::AddReferencedObjects(FReferenceCollector& Co
 		Collector.AddReferencedObject(Entry.CameraDirector);
 	}
 }
+
+}  // namespace UE::Cameras
 

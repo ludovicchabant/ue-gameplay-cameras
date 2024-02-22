@@ -4,6 +4,9 @@
 
 #include "Core/CameraDirector.h"
 
+namespace UE::Cameras
+{
+
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraDirectorEvaluator)
 
 FCameraDirectorEvaluator::FCameraDirectorEvaluator()
@@ -19,4 +22,6 @@ void FCameraDirectorEvaluator::SetPrivateCameraDirector(TObjectPtr<const UCamera
 {
 	PrivateCameraDirector = InCameraDirector;
 }
+
+}  // namespace UE::Cameras
 

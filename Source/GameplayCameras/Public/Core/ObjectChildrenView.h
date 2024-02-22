@@ -10,6 +10,9 @@
 
 #include <initializer_list>
 
+namespace UE::Cameras
+{
+
 /**
  * Structure that describes a list of children of an object.
  *
@@ -152,4 +155,6 @@ private:
 	using FStorage = TVariant<FArrayView, FArray>;
 	FStorage Storage;
 };
+
+}  // namespace UE::Cameras
 

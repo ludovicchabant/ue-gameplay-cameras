@@ -36,8 +36,12 @@ UDefaultRootCameraNode::UDefaultRootCameraNode(const FObjectInitializer& ObjectI
 
 FCameraNodeEvaluatorPtr UDefaultRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FDefaultRootCameraNodeEvaluator>();
 }
+
+namespace UE::Cameras
+{
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FDefaultRootCameraNodeEvaluator)
 
@@ -92,4 +96,6 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		TargetStack->Push(PushParams);
 	}
 }
+
+}  // namespace UE::Cameras
 

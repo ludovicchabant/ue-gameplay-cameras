@@ -9,6 +9,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BoomArmCameraNode)
 
+namespace UE::Cameras
+{
+
 class FBoomArmCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
@@ -52,8 +55,11 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 	OutResult.CameraPose.SetTransform(FinalTransform);
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeEvaluatorPtr UBoomArmCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FBoomArmCameraNodeEvaluator>();
 }
 

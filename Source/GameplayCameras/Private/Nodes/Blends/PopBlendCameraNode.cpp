@@ -4,6 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(PopBlendCameraNode)
 
+namespace UE::Cameras
+{
+
 class FPopBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(FPopBlendCameraNodeEvaluator)
@@ -33,8 +36,11 @@ void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& 
 	OutResult.bIsBlendFinished = true;
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeEvaluatorPtr UPopBlendCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FPopBlendCameraNodeEvaluator>();
 }
 

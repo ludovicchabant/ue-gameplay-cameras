@@ -18,12 +18,14 @@ class UCameraDirector : public UObject
 
 public:
 
+	using FCameraDirectorEvaluatorBuilder = UE::Cameras::FCameraDirectorEvaluatorBuilder;
+
 	/** Build the evaluator for this director. */
-	FCameraDirectorEvaluator* BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const;
+	FCameraDirectorEvaluatorPtr BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const;
 
 protected:
 
 	/** Build the evaluator for this director. */
-	virtual FCameraDirectorEvaluator* OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const { return nullptr; }
+	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const { return nullptr; }
 };
 

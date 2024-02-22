@@ -5,6 +5,9 @@
 #include "Core/CameraNode.h"
 #include "UObject/UObjectGlobals.h"
 
+namespace UE::Cameras
+{
+
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraNodeEvaluator)
 
 FCameraNodeEvaluator* FCameraNodeEvaluatorInitializeParams::BuildEvaluator(const UCameraNode* InNode) const
@@ -58,4 +61,6 @@ void FCameraNodeEvaluator::Run(const FCameraNodeEvaluationParams& Params, FCamer
 		OnRun(Params, OutResult);
 	}
 }
+
+}  // namespace UE::Cameras
 

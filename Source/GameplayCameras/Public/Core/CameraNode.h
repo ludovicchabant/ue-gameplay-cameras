@@ -26,7 +26,7 @@ struct FCameraNodeAllocationInfo
 };
 
 /** View on a camera node's children. */
-using FCameraNodeChildrenView = TObjectChildrenView<TObjectPtr<UCameraNode>>;
+using FCameraNodeChildrenView = UE::Cameras::TObjectChildrenView<TObjectPtr<UCameraNode>>;
 
 /**
  * The base class for a camera node.
@@ -37,6 +37,8 @@ class UCameraNode : public UObject
 	GENERATED_BODY()
 
 public:
+	
+	using FCameraNodeEvaluatorBuilder = UE::Cameras::FCameraNodeEvaluatorBuilder;
 
 	/** Get the list of children under this node. */
 	FCameraNodeChildrenView GetChildren();

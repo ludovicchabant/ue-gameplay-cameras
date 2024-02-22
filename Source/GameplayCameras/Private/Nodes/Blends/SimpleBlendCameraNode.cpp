@@ -4,6 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SimpleBlendCameraNode)
 
+namespace UE::Cameras
+{
+
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleBlendCameraNodeEvaluator)
 
 void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -58,4 +61,6 @@ float FSimpleFixedTimeBlendCameraNodeEvaluator::GetTimeFactor() const
 	const USimpleFixedTimeBlendCameraNode* BlendNode = GetCameraNodeAs<USimpleFixedTimeBlendCameraNode>();
 	return CurrentTime / BlendNode->BlendTime;
 }
+
+}  // namespace UE::Cameras
 

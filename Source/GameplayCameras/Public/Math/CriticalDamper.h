@@ -2,7 +2,10 @@
 
 #pragma once
 
-#include "CriticalDamper.generated.h"
+#include "CoreTypes.h"
+
+namespace UE::Cameras
+{
 
 /**
  * Implements a critically damped spring-mass system.
@@ -28,11 +31,8 @@
  * - See the math notes in the corresponding cpp file for details about the
  *   algorithm and its implementation.
  */
-USTRUCT()
 struct FCriticalDamper
 {
-	GENERATED_BODY()
-
 public:
 
 	FCriticalDamper();
@@ -100,13 +100,12 @@ private:
 private:
 
 	/** Angular frequency of the oscillator. */
-	UPROPERTY()
 	float W0;
 	/** Initial position of the spring-mass system, aka the previous frame's position. */
-	UPROPERTY()
 	float X0;
 	/** Initial velocity of the spring-mass system, aka the previous frame's velocity. */
-	UPROPERTY()
 	float X0Derivative;
 };
+
+}  // namespace UE::Cameras
 

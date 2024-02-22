@@ -17,8 +17,12 @@
 
 FCameraNodeEvaluatorPtr UBlendStackCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FBlendStackCameraNodeEvaluator>();
 }
+
+namespace UE::Cameras
+{
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
@@ -402,4 +406,6 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 }
 
 #endif  // WITH_EDITOR
+
+}  // namespace UE::Cameras
 

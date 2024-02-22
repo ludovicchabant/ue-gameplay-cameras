@@ -6,6 +6,9 @@
 #include "CoreTypes.h"
 #include "Templates/UnrealTypeTraits.h"
 
+namespace UE::Cameras
+{
+
 template<typename ValueType>
 class FCameraParameterReader
 {
@@ -69,4 +72,6 @@ private:
 	/** The ID of the variable driving the parameter, if any. */
 	uint32 VariableId = 0;
 };
+
+}  // namespace UE::Cameras
 

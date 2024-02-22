@@ -10,6 +10,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DampenPositionCameraNode)
 
+namespace UE::Cameras
+{
+
 class FDampenPositionCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
@@ -104,6 +107,8 @@ void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	OutResult.CameraPose.SetLocation(NextLocation);
 }
 
+}  // namespace UE::Cameras
+
 UDampenPositionCameraNode::UDampenPositionCameraNode(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
@@ -111,6 +116,7 @@ UDampenPositionCameraNode::UDampenPositionCameraNode(const FObjectInitializer& O
 
 FCameraNodeEvaluatorPtr UDampenPositionCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FDampenPositionCameraNodeEvaluator>();
 }
 

@@ -11,6 +11,9 @@
 class UCameraAsset;
 class APlayerController;
 
+namespace UE::Cameras
+{
+
 /**
  * Base class for providing a context to running camera rigs.
  */
@@ -57,10 +60,12 @@ protected:
 	FCameraNodeEvaluationResult InitialResult;
 };
 
+}  // namespace UE::Cameras
+
 // Utility macros for declaring and defining camera evaluation contexts.
 //
 #define UE_DECLARE_CAMERA_EVALUATION_CONTEXT(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, FCameraEvaluationContext)
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, ::UE::Cameras::FCameraEvaluationContext)
 
 #define UE_DECLARE_CAMERA_EVALUATION_CONTEXT_EX(ClassName, BaseClassName)\
 	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)

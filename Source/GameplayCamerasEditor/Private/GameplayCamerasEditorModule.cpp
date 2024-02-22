@@ -102,6 +102,8 @@ private:
 
 	void InitializeLiveEditManager()
 	{
+		using namespace UE::Cameras;
+
 		LiveEditManager = MakeShared<FGameplayCamerasLiveEditManager>();
 
 		IGameplayCamerasModule& CamerasModule = FModuleManager::LoadModuleChecked<IGameplayCamerasModule>("GameplayCameras");
@@ -126,7 +128,7 @@ private:
 
 private:
 
-	TSharedPtr<FGameplayCamerasLiveEditManager> LiveEditManager;
+	TSharedPtr<UE::Cameras::FGameplayCamerasLiveEditManager> LiveEditManager;
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasEditorModule, GameplayCamerasEditor);

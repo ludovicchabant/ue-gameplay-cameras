@@ -8,6 +8,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OffsetCameraNode)
 
+namespace UE::Cameras
+{
+
 class FOffsetCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
@@ -70,8 +73,11 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 	OutResult.CameraPose.SetLocation(Location + LocalOffset);
 }
 
+}  // namespace UE::Cameras
+
 FCameraNodeEvaluatorPtr UOffsetCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
+	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FOffsetCameraNodeEvaluator>();
 }
 

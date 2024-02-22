@@ -7,7 +7,6 @@
 #include "DefaultRootCameraNode.generated.h"
 
 class UBlendStackCameraNode;
-class FBlendStackCameraNodeEvaluator;
 
 /**
  * The default implementation of a root camera node.
@@ -40,6 +39,11 @@ public:
 	TObjectPtr<UBlendStackCameraNode> VisualLayer;
 };
 
+namespace UE::Cameras
+{
+
+class FBlendStackCameraNodeEvaluator;
+
 /**
  * Evaluator for the default root camera node.
  */
@@ -62,4 +66,6 @@ private:
 	FBlendStackCameraNodeEvaluator* GlobalLayer;
 	FBlendStackCameraNodeEvaluator* VisualLayer;
 };
+
+}  // namespace UE::Cameras
 

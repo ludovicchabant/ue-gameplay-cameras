@@ -10,6 +10,9 @@
 #include "Templates/UnrealTypeTraits.h"
 #include "UObject/NameTypes.h"
 
+namespace UE::Cameras
+{
+
 template<typename ValueType>
 struct TCameraVariableTraits;
 
@@ -253,4 +256,6 @@ struct TCameraVariableInterpolation<UE::Math::TTransform<T>>
 		return Result;
 	}
 };
+
+}  // namespace UE::Cameras
 
