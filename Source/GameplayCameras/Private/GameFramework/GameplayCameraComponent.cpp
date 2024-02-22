@@ -34,9 +34,9 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 
 void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
 {
-	if (ActivatedForPlayerIndex >= 0)
+	if (ActivatedForPlayerIndex >= 0 && ActivatedForPlayerIndex != PlayerIndex)
 	{
-		return;
+		DeactivateCamera();
 	}
 
 	UWorld* World = GetWorld();
