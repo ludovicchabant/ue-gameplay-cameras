@@ -9,11 +9,11 @@
 
 class FBlendCameraNodeEvaluator;
 class UBlendCameraNode;
-class UCameraMode;
+class UCameraRigAsset;
 
 /**
- * Root camera node for running a camera mode in a blend stack.
- * This camera node wraps both the camera mode's root node, and the
+ * Root camera node for running a camera rig in a blend stack.
+ * This camera node wraps both the camera rig's root node, and the
  * blend node used to blend it.
  */
 UCLASS(MinimalAPI)
@@ -29,7 +29,7 @@ protected:
 
 public:
 
-	/** The blend to use on the camera mode. */
+	/** The blend to use on the camera rig. */
 	UPROPERTY()
 	TObjectPtr<UBlendCameraNode> Blend;
 

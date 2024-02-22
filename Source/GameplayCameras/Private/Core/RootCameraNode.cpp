@@ -2,12 +2,12 @@
 
 #include "Core/RootCameraNode.h"
 
-#include "Core/CameraMode.h"
+#include "Core/CameraRigAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RootCameraNode)
 
-void FRootCameraNodeEvaluator::ActivateCameraMode(const FActivateCameraModeParams& Params)
+void FRootCameraNodeEvaluator::ActivateCameraRig(const FActivateCameraRigParams& Params)
 {
-	OnActivateCameraMode(Params);
+	OnActivateCameraRig(Params);
 }
 

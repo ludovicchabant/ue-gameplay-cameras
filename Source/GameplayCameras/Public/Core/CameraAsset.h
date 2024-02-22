@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Core/CameraModeTransition.h"
+#include "Core/CameraRigTransition.h"
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 
@@ -24,13 +24,13 @@ public:
 	UPROPERTY(Instanced, EditAnywhere, Category=Director)
 	TObjectPtr<UCameraDirector> CameraDirector;
 
-	/** A list of default enter transitions for all the camera modes in this asset. */
+	/** A list of default enter transitions for all the camera rigs in this asset. */
 	UPROPERTY(EditAnywhere, Category=Blending)
-	TArray<FCameraModeTransition> EnterTransitions;
+	TArray<FCameraRigTransition> EnterTransitions;
 
-	/** A list of default exit transitions for all the camera modes in this asset. */
+	/** A list of default exit transitions for all the camera rigs in this asset. */
 	UPROPERTY(EditAnywhere, Category=Blending)
-	TArray<FCameraModeTransition> ExitTransitions;
+	TArray<FCameraRigTransition> ExitTransitions;
 };
 
 

@@ -11,7 +11,7 @@
 #include "GameplayCameraSystemComponent.generated.h"
 
 class UCameraSystemEvaluator;
-class UCameraMode;
+class UCameraRigAsset;
 struct FMinimalViewInfo;
 
 /**

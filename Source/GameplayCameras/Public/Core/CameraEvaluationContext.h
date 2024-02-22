@@ -12,7 +12,7 @@ class UCameraAsset;
 class APlayerController;
 
 /**
- * Base class for providing a context to running camera modes.
+ * Base class for providing a context to running camera rigs.
  */
 UCLASS(MinimalAPI)
 class UCameraEvaluationContext : public UObject
@@ -32,7 +32,7 @@ public:
 	/** Gets the camera asset that is hosted in this context. */
 	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
-	/** Gets the initial evaluation result for all camera modes in this context. */
+	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
 protected:
@@ -48,7 +48,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UCameraAsset> CameraAsset;
 
-	/** The initial result for all camera modes in this context. */
+	/** The initial result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult InitialResult;
 };
 

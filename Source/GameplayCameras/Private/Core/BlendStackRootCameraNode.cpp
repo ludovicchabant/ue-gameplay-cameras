@@ -3,7 +3,7 @@
 #include "Core/BlendStackRootCameraNode.h"
 
 #include "Core/BlendCameraNode.h"
-#include "Core/CameraMode.h"
+#include "Core/CameraRigAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 

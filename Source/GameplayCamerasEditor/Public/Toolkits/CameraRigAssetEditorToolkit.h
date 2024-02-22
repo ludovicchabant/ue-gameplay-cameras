@@ -9,22 +9,22 @@
 
 class IGameplayCamerasLiveEditManager;
 class IMessageLogListing;
-class UCameraMode;
-class UCameraModeAssetEditor;
+class UCameraRigAsset;
+class UCameraRigAssetEditor;
 class SWidget;
 
 /**
- * Editor toolkit for a camera mode asset.
+ * Editor toolkit for a camera rig asset.
  */
-class FCameraModeAssetEditorToolkit 
+class FCameraRigAssetEditorToolkit 
 	: public FBaseAssetToolkit
 	, public FGCObject
 	, public FNotifyHook
 {
 public:
 
-	FCameraModeAssetEditorToolkit(UCameraModeAssetEditor* InOwningAssetEditor);
-	~FCameraModeAssetEditorToolkit();
+	FCameraRigAssetEditorToolkit(UCameraRigAssetEditor* InOwningAssetEditor);
+	~FCameraRigAssetEditorToolkit();
 
 protected:
 
@@ -44,11 +44,11 @@ protected:
 	// FGCObject interface
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override
 	{
-		Collector.AddReferencedObject(CameraModeAsset);
+		Collector.AddReferencedObject(CameraRigAsset);
 	}
 	virtual FString GetReferencerName() const override
 	{
-		return TEXT("FCameraModeAssetEditorToolkit");
+		return TEXT("FCameraRigAssetEditorToolkit");
 	}
 
 	// FNotifyHook interface
@@ -75,7 +75,7 @@ private:
 	TSharedPtr<IMessageLogListing> StatsListing;
 
 	/** The asset being edited */
-	TObjectPtr<UCameraMode> CameraModeAsset;
+	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 
 	/** Live edit manager for updating the assets in the runtime */
 	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;

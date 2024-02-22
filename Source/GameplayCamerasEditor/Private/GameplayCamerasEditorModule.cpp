@@ -3,9 +3,9 @@
 #include "GameplayCamerasEditorSettings.h"
 
 #include "AssetTools/CameraAssetEditor.h"
-#include "AssetTools/CameraModeAssetEditor.h"
+#include "AssetTools/CameraRigAssetEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
-#include "Commands/CameraModeAssetEditorCommands.h"
+#include "Commands/CameraRigAssetEditorCommands.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
@@ -14,12 +14,12 @@
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
-#include "Toolkits/CameraModeAssetEditorToolkit.h"
+#include "Toolkits/CameraRigAssetEditorToolkit.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
 const FName IGameplayCamerasEditorModule::GameplayCamerasEditorAppIdentifier("GameplayCamerasEditorApp");
-const FName IGameplayCamerasEditorModule::CameraModeAssetEditorToolBarName("CameraModeAssetEditor.ToolBar");
+const FName IGameplayCamerasEditorModule::CameraRigAssetEditorToolBarName("CameraRigAssetEditor.ToolBar");
 
 /**
  * Implements the FGameplayCamerasEditor module.
@@ -45,7 +45,7 @@ public:
 		UToolMenus::UnRegisterStartupCallback(this);
 
 		FCameraAssetEditorCommands::Unregister();
-		FCameraModeAssetEditorCommands::Unregister();
+		FCameraRigAssetEditorCommands::Unregister();
 
 		UnregisterSettings();
 		TeardownLiveEditManager();
@@ -59,11 +59,11 @@ public:
 		return AssetEditor;
 	}
 
-	virtual UCameraModeAssetEditor* CreateCameraModeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraMode* CameraMode) override
+	virtual UCameraRigAssetEditor* CreateCameraRigEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraRigAsset* CameraRig) override
 	{
 		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-		UCameraModeAssetEditor* AssetEditor = NewObject<UCameraModeAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
-		AssetEditor->Initialize(CameraMode);
+		UCameraRigAssetEditor* AssetEditor = NewObject<UCameraRigAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
+		AssetEditor->Initialize(CameraRig);
 		return AssetEditor;
 	}
 
@@ -97,7 +97,7 @@ private:
 	void RegisterMenus()
 	{
 		FCameraAssetEditorCommands::Register();
-		FCameraModeAssetEditorCommands::Register();	
+		FCameraRigAssetEditorCommands::Register();	
 	}
 
 	void InitializeLiveEditManager()

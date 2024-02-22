@@ -16,7 +16,7 @@
 class FRootCameraNodeEvaluator;
 class UCameraDirector;
 class UCameraEvaluationContext;
-class UCameraMode;
+class UCameraRigAsset;
 class URootCameraNode;
 struct FMinimalViewInfo;
 

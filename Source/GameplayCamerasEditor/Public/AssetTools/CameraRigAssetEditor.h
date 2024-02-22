@@ -4,24 +4,24 @@
 
 #include "Tools/UAssetEditor.h"
 
-#include "CameraModeAssetEditor.generated.h"
+#include "CameraRigAssetEditor.generated.h"
 
 class FBaseAssetToolkit;
-class UCameraMode;
+class UCameraRigAsset;
 
 /**
- * Editor for a camera mode asset.
+ * Editor for a camera rig asset.
  */
 UCLASS(Transient)
-class UCameraModeAssetEditor : public UAssetEditor
+class UCameraRigAssetEditor : public UAssetEditor
 {
 	GENERATED_BODY()
 
 public:
 
-	void Initialize(TObjectPtr<UCameraMode> InCameraModeAsset);
+	void Initialize(TObjectPtr<UCameraRigAsset> InCameraRigAsset);
 
-	UCameraMode* GetCameraModeAsset() const { return CameraModeAsset; }
+	UCameraRigAsset* GetCameraRigAsset() const { return CameraRigAsset; }
 
 public:
 
@@ -31,6 +31,6 @@ public:
 
 private:
 
-	TObjectPtr<UCameraMode> CameraModeAsset;
+	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 };
 

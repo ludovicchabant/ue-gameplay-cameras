@@ -11,7 +11,7 @@ class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
 class UCameraDirector;
 class UCameraEvaluationContext;
-class UCameraMode;
+class UCameraRigAsset;
 
 /**
  * Parameter structure for running a camera director.
@@ -30,8 +30,8 @@ struct FCameraDirectorEvaluationParams
  */
 struct FCameraDirectorEvaluationResult
 {
-	/** The camera mode(s) that the director says should be active this frame. */
-	TArray<TObjectPtr<const UCameraMode>, TInlineAllocator<2>> ActiveCameraModes;
+	/** The camera rig(s) that the director says should be active this frame. */
+	TArray<TObjectPtr<const UCameraRigAsset>, TInlineAllocator<2>> ActiveCameraRigs;
 };
 
 /**
@@ -84,7 +84,7 @@ public:
 	FCameraDirectorEvaluator();
 	virtual ~FCameraDirectorEvaluator() {}
 	
-	/** Runs the camera director to determine what camera mode(s) should be active this frame. */
+	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
 
 	/** Gets the camera director. */
@@ -101,7 +101,7 @@ public:
 
 protected:
 
-	/** Runs the camera director to determine what camera mode(s) should be active this frame. */
+	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) {}
 
 private:

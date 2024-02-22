@@ -8,8 +8,8 @@
 
 class UCameraAsset;
 class UCameraAssetEditor;
-class UCameraMode;
-class UCameraModeAssetEditor;
+class UCameraRigAsset;
+class UCameraRigAssetEditor;
 
 /**
  * The gameplay cameras editor module.
@@ -20,7 +20,7 @@ public:
 
 	static const FName GameplayCamerasEditorAppIdentifier;
 
-	static const FName CameraModeAssetEditorToolBarName;
+	static const FName CameraRigAssetEditorToolBarName;
 
 	virtual ~IGameplayCamerasEditorModule() = default;
 
@@ -29,7 +29,7 @@ public:
 	/** Creates an editor for the given camera asset */
 	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) = 0;
 
-	/** Creates an editor for the given camera mode asset */
-	virtual UCameraModeAssetEditor* CreateCameraModeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraMode* CameraMode) = 0;
+	/** Creates an editor for the given camera rig asset */
+	virtual UCameraRigAssetEditor* CreateCameraRigEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraRigAsset* CameraRig) = 0;
 };
 

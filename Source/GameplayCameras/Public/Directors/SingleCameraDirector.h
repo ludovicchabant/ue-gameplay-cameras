@@ -7,7 +7,7 @@
 #include "SingleCameraDirector.generated.h"
 
 /**
- * A simple camera director that only ever returns one single camera mode.
+ * A simple camera director that only ever returns one single camera rig.
  */
 UCLASS(EditInlineNew)
 class USingleCameraDirector : public UCameraDirector
@@ -25,8 +25,8 @@ protected:
 
 public:
 
-	/** The camera mode to run every frame. */
+	/** The camera rig to run every frame. */
 	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UCameraMode> CameraMode;
+	TObjectPtr<UCameraRigAsset> CameraRig;
 };
 

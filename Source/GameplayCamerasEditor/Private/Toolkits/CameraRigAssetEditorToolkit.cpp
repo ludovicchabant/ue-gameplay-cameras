@@ -1,14 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Toolkits/CameraModeAssetEditorToolkit.h"
+#include "Toolkits/CameraRigAssetEditorToolkit.h"
 
-#include "AssetTools/CameraModeAssetEditor.h"
-#include "Commands/CameraModeAssetEditorCommands.h"
-#include "Core/CameraMode.h"
+#include "AssetTools/CameraRigAssetEditor.h"
+#include "Commands/CameraRigAssetEditorCommands.h"
+#include "Core/CameraRigAsset.h"
 #include "EditorModeManager.h"
 #include "Framework/Docking/LayoutExtender.h"
-#include "IGameplayCamerasModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
+#include "IGameplayCamerasModule.h"
 #include "IMessageLogListing.h"
 #include "MessageLogInitializationOptions.h"
 #include "MessageLogModule.h"
@@ -16,17 +16,17 @@
 #include "PropertyEditorModule.h"
 #include "Widgets/Docking/SDockTab.h"
 
-#define LOCTEXT_NAMESPACE "CameraModeAssetEditorToolkit"
+#define LOCTEXT_NAMESPACE "CameraRigAssetEditorToolkit"
 
-const FName FCameraModeAssetEditorToolkit::DetailsViewTabId(TEXT("CameraModeAssetEditor_DetailsView"));
+const FName FCameraRigAssetEditorToolkit::DetailsViewTabId(TEXT("CameraRigAssetEditor_DetailsView"));
 
-FCameraModeAssetEditorToolkit::FCameraModeAssetEditorToolkit(UCameraModeAssetEditor* InOwningAssetEditor)
+FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UCameraRigAssetEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
 	, CommandBindings(new FUICommandList())
-	, CameraModeAsset(InOwningAssetEditor->GetCameraModeAsset())
+	, CameraRigAsset(InOwningAssetEditor->GetCameraRigAsset())
 {
 	// Override base class default layout.
-	StandaloneDefaultLayout = FTabManager::NewLayout("CameraModeAssetEditor_Layout")
+	StandaloneDefaultLayout = FTabManager::NewLayout("CameraRigAssetEditor_Layout")
 		->AddArea
 		(
 			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
@@ -43,22 +43,22 @@ FCameraModeAssetEditorToolkit::FCameraModeAssetEditorToolkit(UCameraModeAssetEdi
 		);
 }
 
-FCameraModeAssetEditorToolkit::~FCameraModeAssetEditorToolkit()
+FCameraRigAssetEditorToolkit::~FCameraRigAssetEditorToolkit()
 {
 }
 
-void FCameraModeAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
-	InTabManager->RegisterTabSpawner(DetailsViewTabId, FOnSpawnTab::CreateSP(this, &FCameraModeAssetEditorToolkit::SpawnTab_Details))
+	InTabManager->RegisterTabSpawner(DetailsViewTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_Details))
 		.SetDisplayName(LOCTEXT("Details", "Details"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
 }
 
-void FCameraModeAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+void FCameraRigAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
@@ -66,7 +66,7 @@ void FCameraModeAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabM
 	InTabManager->UnregisterTabSpawner(DetailsViewTabId);
 }
 
-void FCameraModeAssetEditorToolkit::CreateWidgets()
+void FCameraRigAssetEditorToolkit::CreateWidgets()
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	// ...no up-call...
@@ -89,19 +89,19 @@ void FCameraModeAssetEditorToolkit::CreateWidgets()
 	LogOptions.bShowFilters = false;
 	LogOptions.bAllowClear = false;
 	LogOptions.MaxPageCount = 1;
-	StatsListing = MessageLogModule.CreateLogListing("CameraModeAssetEditorStats", LogOptions);
+	StatsListing = MessageLogModule.CreateLogListing("CameraRigAssetEditorStats", LogOptions);
 
 	Stats = MessageLogModule.CreateLogListingWidget(StatsListing.ToSharedRef());
 }
 
-void FCameraModeAssetEditorToolkit::RegisterToolbar()
+void FCameraRigAssetEditorToolkit::RegisterToolbar()
 {
 	FName ParentName;
 	const FName MenuName = GetToolMenuToolbarName(ParentName);
 	UToolMenus* ToolMenus = UToolMenus::Get();
 	if (!ToolMenus->IsMenuRegistered(MenuName))
 	{
-		const FCameraModeAssetEditorCommands& Commands = FCameraModeAssetEditorCommands::Get();
+		const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
 
 		FToolMenuOwnerScoped ToolMenuOwnerScope(this);
 
@@ -111,14 +111,14 @@ void FCameraModeAssetEditorToolkit::RegisterToolbar()
 		FToolMenuSection& ToolBarSection = ToolBarMenu->FindOrAddSection("Build");
 		FToolMenuEntry BuildButton = FToolMenuEntry::InitToolBarButton(Commands.Build);
 		BuildButton.Icon = TAttribute<FSlateIcon>(
-				SharedThis(this), &FCameraModeAssetEditorToolkit::GetBuildButtonIcon);
+				SharedThis(this), &FCameraRigAssetEditorToolkit::GetBuildButtonIcon);
 		BuildButton.ToolTip = TAttribute<FText>(
-				SharedThis(this), &FCameraModeAssetEditorToolkit::GetBuildButtonTooltip);
+				SharedThis(this), &FCameraRigAssetEditorToolkit::GetBuildButtonTooltip);
 		ToolBarSection.AddEntry(BuildButton);
 	}
 }
 
-FSlateIcon FCameraModeAssetEditorToolkit::GetBuildButtonIcon() const
+FSlateIcon FCameraRigAssetEditorToolkit::GetBuildButtonIcon() const
 {
 	static const FName BuildStatusBackground("Blueprint.CompileStatus.Background");
 	static const FName BuildStatusUnknown("Blueprint.CompileStatus.Overlay.Unknown");
@@ -126,88 +126,88 @@ FSlateIcon FCameraModeAssetEditorToolkit::GetBuildButtonIcon() const
 	static const FName BuildStatusGood("Blueprint.CompileStatus.Overlay.Good");
 	static const FName BuildStatusWarning("Blueprint.CompileStatus.Overlay.Warning");
 
-	switch (CameraModeAsset->BuildStatus)
+	switch (CameraRigAsset->BuildStatus)
 	{
 		default:
-		case ECameraModeBuildStatus::Dirty:
+		case ECameraRigBuildStatus::Dirty:
 			return FSlateIcon(
 					FAppStyle::GetAppStyleSetName(), BuildStatusBackground, 
 					NAME_None, BuildStatusUnknown);
-		case ECameraModeBuildStatus::WithErrors:
+		case ECameraRigBuildStatus::WithErrors:
 			return FSlateIcon(
 					FAppStyle::GetAppStyleSetName(), BuildStatusBackground, 
 					NAME_None, BuildStatusError);
-		case ECameraModeBuildStatus::Clean:
+		case ECameraRigBuildStatus::Clean:
 			return FSlateIcon(
 					FAppStyle::GetAppStyleSetName(), BuildStatusBackground, 
 					NAME_None, BuildStatusGood);
-		case ECameraModeBuildStatus::CleanWithWarnings:
+		case ECameraRigBuildStatus::CleanWithWarnings:
 			return FSlateIcon(
 					FAppStyle::GetAppStyleSetName(), BuildStatusBackground, 
 					NAME_None, BuildStatusWarning);
 	}
 }
 
-FText FCameraModeAssetEditorToolkit::GetBuildButtonTooltip() const
+FText FCameraRigAssetEditorToolkit::GetBuildButtonTooltip() const
 {
-	switch (CameraModeAsset->BuildStatus)
+	switch (CameraRigAsset->BuildStatus)
 	{
 		default:
-		case ECameraModeBuildStatus::Dirty:
+		case ECameraRigBuildStatus::Dirty:
 			return LOCTEXT("BuildButtonStatusDirty", "Dirty or unknown, should rebuild");
-		case ECameraModeBuildStatus::WithErrors:
+		case ECameraRigBuildStatus::WithErrors:
 			return LOCTEXT("BuildButtonStatusWithErrors", "There were errors during the build, see the log window for details");
-		case ECameraModeBuildStatus::Clean:
+		case ECameraRigBuildStatus::Clean:
 			return LOCTEXT("BuildButtonStatusClean", "Good to go");
-		case ECameraModeBuildStatus::CleanWithWarnings:
+		case ECameraRigBuildStatus::CleanWithWarnings:
 			return LOCTEXT("BuildButtonStatusCleanWithWarnings", "There were warnings during the build, see the log window for details");
 	}
 }
 
-void FCameraModeAssetEditorToolkit::PostInitAssetEditor()
+void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 {
-	const FCameraModeAssetEditorCommands& Commands = FCameraModeAssetEditorCommands::Get();
+	const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
 
 	ToolkitCommands->MapAction(
 		Commands.Build,
-		FExecuteAction::CreateSP(this, &FCameraModeAssetEditorToolkit::OnBuild));
+		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkit::OnBuild));
 
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 }
 
-FText FCameraModeAssetEditorToolkit::GetBaseToolkitName() const
+FText FCameraRigAssetEditorToolkit::GetBaseToolkitName() const
 {
-	return LOCTEXT("AppLabel", "Camera Mode Asset");
+	return LOCTEXT("AppLabel", "Camera Rig Asset");
 }
 
-FName FCameraModeAssetEditorToolkit::GetToolkitFName() const
+FName FCameraRigAssetEditorToolkit::GetToolkitFName() const
 {
-	static FName SequencerName("CameraModeAssetEditor");
+	static FName SequencerName("CameraRigAssetEditor");
 	return SequencerName;
 }
 
-FString FCameraModeAssetEditorToolkit::GetWorldCentricTabPrefix() const
+FString FCameraRigAssetEditorToolkit::GetWorldCentricTabPrefix() const
 {
-	return LOCTEXT("WorldCentricTabPrefix", "Camera Mode Asset ").ToString();
+	return LOCTEXT("WorldCentricTabPrefix", "Camera Rig Asset ").ToString();
 }
 
-FLinearColor FCameraModeAssetEditorToolkit::GetWorldCentricTabColorScale() const
+FLinearColor FCameraRigAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
 	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
 }
 
-void FCameraModeAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
+void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
 {
-	CameraModeAsset->BuildStatus = ECameraModeBuildStatus::Dirty;
+	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
 }
 
-void FCameraModeAssetEditorToolkit::OnBuild()
+void FCameraRigAssetEditorToolkit::OnBuild()
 {
-	CameraModeAsset->BuildStatus = ECameraModeBuildStatus::Clean;
+	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Clean;
 
-	FCameraModePackages BuiltPackages;
-	CameraModeAsset->GatherPackages(BuiltPackages);
+	FCameraRigPackages BuiltPackages;
+	CameraRigAsset->GatherPackages(BuiltPackages);
 
 	for (const UPackage* BuiltPackage : BuiltPackages)
 	{

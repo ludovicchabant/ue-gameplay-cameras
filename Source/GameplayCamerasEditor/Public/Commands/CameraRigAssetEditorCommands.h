@@ -9,11 +9,11 @@ class FUICommandInfo;
 class UClass;
 struct FInputChord;
 
-class FCameraModeAssetEditorCommands : public TCommands<FCameraModeAssetEditorCommands>
+class FCameraRigAssetEditorCommands : public TCommands<FCameraRigAssetEditorCommands>
 {
 public:
 
-	FCameraModeAssetEditorCommands();
+	FCameraRigAssetEditorCommands();
 
 	virtual void RegisterCommands() override;
 	

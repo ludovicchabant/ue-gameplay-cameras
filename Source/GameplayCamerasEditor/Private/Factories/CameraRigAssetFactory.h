@@ -4,19 +4,19 @@
 
 #include "Factories/Factory.h"
 
-#include "CameraModeFactory.generated.h"
+#include "CameraRigAssetFactory.generated.h"
 
-class UCameraMode;
+class UCameraRigAsset;
 
 /**
- * Implements a factory for UCameraMode objects.
+ * Implements a factory for UCameraRigAsset objects.
  */
 UCLASS(hidecategories=Object)
-class UCameraModeFactory : public UFactory
+class UCameraRigAssetFactory : public UFactory
 {
 	GENERATED_BODY()
 
-	UCameraModeFactory(const FObjectInitializer& ObjectInitializer);
+	UCameraRigAssetFactory(const FObjectInitializer& ObjectInitializer);
 
 	// UFactory Interface
 	virtual UObject* FactoryCreateNew(UClass* Class, UObject* Parent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override;

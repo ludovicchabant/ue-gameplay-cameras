@@ -53,7 +53,7 @@ protected:
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnActivateCameraMode(const FActivateCameraModeParams& Params) override;
+	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
 
 private:
 

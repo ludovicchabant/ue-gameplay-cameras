@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Core/CameraMode.h"
 #include "AssetDefinitionDefault.h"
+#include "Core/CameraRigAsset.h"
 
-#include "AssetDefinition_CameraMode.generated.h"
+#include "AssetDefinition_CameraRigAsset.generated.h"
 
 UCLASS()
-class UAssetDefinition_CameraMode : public UAssetDefinitionDefault
+class UAssetDefinition_CameraRigAsset : public UAssetDefinitionDefault
 {
 	GENERATED_BODY()
 

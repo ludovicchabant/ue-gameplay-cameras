@@ -8,14 +8,14 @@
 #include "RootCameraNode.generated.h"
 
 class UCameraEvaluationContext;
-class UCameraMode;
+class UCameraRigAsset;
 class UCameraSystemEvaluator;
 
 /**
- * Defines evaluation layers for camera modes.
+ * Defines evaluation layers for camera rigs.
  */
 UENUM()
-enum class ECameraModeLayer
+enum class ECameraRigLayer
 {
 	Base,
 	Main,
@@ -25,24 +25,24 @@ enum class ECameraModeLayer
 	User1,
 	User2
 };
-ENUM_CLASS_FLAGS(ECameraModeLayer)
+ENUM_CLASS_FLAGS(ECameraRigLayer)
 
 /**
- * Parameter structure for activating a new camera mode.
+ * Parameter structure for activating a new camera rig.
  */
-struct FActivateCameraModeParams
+struct FActivateCameraRigParams
 {
 	/** The evaluator currently running.*/
 	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 
-	/** The evaluation context in which the camera mode runs. */
+	/** The evaluation context in which the camera rig runs. */
 	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 
-	/** The source camera mode asset that will be instantiated. */
-	TObjectPtr<const UCameraMode> CameraMode;
+	/** The source camera rig asset that will be instantiated. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
 
-	/** The evaluation layer on which to instantiate the camera mode. */
-	ECameraModeLayer Layer = ECameraModeLayer::Main;
+	/** The evaluation layer on which to instantiate the camera rig. */
+	ECameraRigLayer Layer = ECameraRigLayer::Main;
 };
 
 /**
@@ -62,12 +62,12 @@ class FRootCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 public:
 
-	/** Activates a camera mode. */
-	void ActivateCameraMode(const FActivateCameraModeParams& Params);
+	/** Activates a camera rig. */
+	void ActivateCameraRig(const FActivateCameraRigParams& Params);
 
 private:
 
-	/** Activates a camera mode. */
-	virtual void OnActivateCameraMode(const FActivateCameraModeParams& Params) {}
+	/** Activates a camera rig. */
+	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
 };
 

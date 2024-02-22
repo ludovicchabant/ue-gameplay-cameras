@@ -2,9 +2,9 @@
 
 #include "Core/CameraNodeEvaluatorStorage.h"
 
-#include "Core/CameraMode.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraRigAsset.h"
 #include "UObject/Package.h"
 
 FCameraNodeEvaluatorStorage::FCameraNodeEvaluatorStorage()
@@ -32,13 +32,13 @@ FCameraNodeEvaluatorStorage::~FCameraNodeEvaluatorStorage()
 	DestroyEvaluatorTree(true);
 }
 
-FCameraNodeEvaluatorTreeAllocationInfo FCameraNodeEvaluatorStorage::ComputeTreeInfo(const UCameraMode* CameraMode)
+FCameraNodeEvaluatorTreeAllocationInfo FCameraNodeEvaluatorStorage::ComputeTreeInfo(const UCameraRigAsset* CameraRig)
 {
 	int16 MaxSize = 0;
 	int16 MaxAlignment = 0;
 
 	// This isn't ideal, maybe we need a GetChildren API on the UCameraNode class too.
-	UPackage* Package = CameraMode->GetPackage();
+	UPackage* Package = CameraRig->GetPackage();
 	ForEachObjectWithPackage(Package, [&MaxSize, &MaxAlignment](UObject* Object)
 	{
 		if (UCameraNode* CurNode = Cast<UCameraNode>(Object))

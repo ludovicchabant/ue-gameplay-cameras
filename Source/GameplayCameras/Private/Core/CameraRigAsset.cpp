@@ -1,14 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Core/CameraMode.h"
+#include "Core/CameraRigAsset.h"
 
 #include "Core/CameraNode.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraMode)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAsset)
 
 #if WITH_EDITOR
 
-void UCameraMode::GatherPackages(FCameraModePackages& OutPackages) const
+void UCameraRigAsset::GatherPackages(FCameraRigPackages& OutPackages) const
 {
 	TArray<UCameraNode*> NodeStack;
 	if (RootNode)

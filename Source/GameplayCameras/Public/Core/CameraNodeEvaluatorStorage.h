@@ -12,7 +12,7 @@ class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
 class FReferenceCollector;
 class UCameraEvaluationContext;
-class UCameraMode;
+class UCameraRigAsset;
 class UCameraNode;
 class UCameraSystemEvaluator;
 
@@ -54,7 +54,7 @@ public:
 public:
 
 	/** Compute allocation information for the given tree of camera nodes. */
-	static FCameraNodeEvaluatorTreeAllocationInfo ComputeTreeInfo(const UCameraMode* CameraMode);
+	static FCameraNodeEvaluatorTreeAllocationInfo ComputeTreeInfo(const UCameraRigAsset* CameraRig);
 
 	/** Build the tree of evaluators for the given tree of camera nodes. */
 	FCameraNodeEvaluatorPtr BuildEvaluatorTree(const FCameraNodeEvaluatorTreeBuilderParams& Params);

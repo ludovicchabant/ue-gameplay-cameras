@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Core/CameraMode.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
+#include "Core/CameraRigAsset.h"
 #include "IGameplayCamerasLiveEditListener.h"
 
 #include "BlendStackCameraNode.generated.h"
@@ -14,22 +14,22 @@ class FBlendStackRootCameraNodeEvaluator;
 class UBlendStackRootCameraNode;
 class UCameraAsset;
 class UCameraEvaluationContext;
-class UCameraMode;
-struct FCameraModeTransition;
+class UCameraRigAsset;
+struct FCameraRigTransition;
 
 /**
- * Parameter structure for pushing a camera mode onto a blend stack.
+ * Parameter structure for pushing a camera rig onto a blend stack.
  */
 struct FBlendStackCameraPushParams
 {
 	/** The evaluator currently running.*/
 	TObjectPtr<UCameraSystemEvaluator> Evaluator;
 
-	/** The evaluation context within which a camera mode's node tree should run. */
+	/** The evaluation context within which a camera rig's node tree should run. */
 	TObjectPtr<const UCameraEvaluationContext> EvaluationContext;
 
-	/** The source camera mode asset to instantiate and push on the blend stack. */
-	TObjectPtr<const UCameraMode> CameraMode;
+	/** The source camera rig asset to instantiate and push on the blend stack. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
 };
 
 /**
@@ -48,17 +48,17 @@ protected:
 public:
 
 	/** 
-	 * Whether to automatically pop camera modes out of the stack when another mode
+	 * Whether to automatically pop camera rigs out of the stack when another rig
 	 * has reached 100% blend above them.
 	 */
 	UPROPERTY()
 	bool bAutoPop = true;
 
 	/**
-	 * Whether to blend-in the first camera mode when the stack is previously empty.
+	 * Whether to blend-in the first camera rig when the stack is previously empty.
 	 */
 	UPROPERTY()
-	bool bBlendFirstCameraMode = false;
+	bool bBlendFirstCameraRig = false;
 };
 
 /**
@@ -74,7 +74,7 @@ class FBlendStackCameraNodeEvaluator
 
 public:
 
-	/** Push a new camera mode onto the blend stack. */
+	/** Push a new camera rig onto the blend stack. */
 	void Push(const FBlendStackCameraPushParams& Params);
 
 protected:
@@ -92,20 +92,20 @@ protected:
 protected:
 
 	// Utility functions for finding an appropriate transition.
-	const FCameraModeTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
-	const FCameraModeTransition* FindTransition(
-			TArrayView<const FCameraModeTransition> Transitions, 
-			const UCameraMode* FromCameraMode, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
-			const UCameraMode* ToCameraMode, const UCameraAsset* ToCameraAsset) const;
+	const FCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
+	const FCameraRigTransition* FindTransition(
+			TArrayView<const FCameraRigTransition> Transitions, 
+			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
+			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
 protected:
 
-	struct FCameraModeEntry
+	struct FCameraRigEntry
 	{
 		/** Evaluation context in which this entry runs. */
 		TWeakObjectPtr<const UCameraEvaluationContext> EvaluationContext;
-		/** The camera mode asset that this entry runs. */
-		TObjectPtr<const UCameraMode> CameraMode;
+		/** The camera rig asset that this entry runs. */
+		TObjectPtr<const UCameraRigAsset> CameraRig;
 		/** The root node. */
 		TObjectPtr<UBlendStackRootCameraNode> RootNode;
 		/** Storage buffer for all evaluators in this node tree. */
@@ -119,7 +119,7 @@ protected:
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
 #if WITH_EDITOR
-		FCameraModePackages ListenedPackages;
+		FCameraRigPackages ListenedPackages;
 #endif  // WITH_EDITOR
 	};
 
@@ -127,6 +127,6 @@ protected:
 	TObjectPtr<UCameraSystemEvaluator> OwningEvaluator;
 
 	/** Entries in the blend stack. */
-	TArray<FCameraModeEntry> Entries;
+	TArray<FCameraRigEntry> Entries;
 };
 

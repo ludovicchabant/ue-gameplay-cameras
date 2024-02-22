@@ -6,7 +6,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
-#include "Core/CameraMode.h"
+#include "Core/CameraRigAsset.h"
 #include "Core/DefaultRootCameraNode.h"
 #include "GameplayCameras.h"
 #include "IGameplayCamerasModule.h"
@@ -68,7 +68,7 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		return;
 	}
 
-	// Run the camera director, and activate any camera mode(s) it returns to us.
+	// Run the camera director, and activate any camera rig(s) it returns to us.
 	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContextInfo.Evaluator;
 	if (ActiveDirectorEvaluator)
 	{
@@ -80,13 +80,13 @@ void UCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 		ActiveDirectorEvaluator->Run(DirectorParams, DirectorResult);
 
-		if (DirectorResult.ActiveCameraModes.Num() == 1)
+		if (DirectorResult.ActiveCameraRigs.Num() == 1)
 		{
-			FActivateCameraModeParams CameraModeParams;
-			CameraModeParams.Evaluator = this;
-			CameraModeParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
-			CameraModeParams.CameraMode = DirectorResult.ActiveCameraModes[0];
-			RootEvaluator->ActivateCameraMode(CameraModeParams);
+			FActivateCameraRigParams CameraRigParams;
+			CameraRigParams.Evaluator = this;
+			CameraRigParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
+			CameraRigParams.CameraRig = DirectorResult.ActiveCameraRigs[0];
+			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
 	}
 

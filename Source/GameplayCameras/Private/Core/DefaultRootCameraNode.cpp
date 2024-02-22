@@ -3,7 +3,7 @@
 #include "Core/DefaultRootCameraNode.h"
 
 #include "Core/BlendStackCameraNode.h"
-#include "Core/CameraMode.h"
+#include "Core/CameraRigAsset.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DefaultRootCameraNode)
 
@@ -12,12 +12,12 @@ namespace UE::Cameras::Private
 
 TObjectPtr<UBlendStackCameraNode> CreateBlendStack(
 		UObject* This, const FObjectInitializer& ObjectInit,
-		const FName& Name, bool bAutoPop = true, bool bBlendFirstCameraMode = false)
+		const FName& Name, bool bAutoPop = true, bool bBlendFirstCameraRig = false)
 {
 	TObjectPtr<UBlendStackCameraNode> NewBlendStack = ObjectInit.CreateDefaultSubobject<UBlendStackCameraNode>(
 			This, Name);
 	NewBlendStack->bAutoPop = bAutoPop;
-	NewBlendStack->bBlendFirstCameraMode = bBlendFirstCameraMode;
+	NewBlendStack->bBlendFirstCameraRig = bBlendFirstCameraRig;
 	return NewBlendStack;
 }
 
@@ -64,21 +64,21 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	VisualLayer->Run(Params, OutResult);
 }
 
-void FDefaultRootCameraNodeEvaluator::OnActivateCameraMode(const FActivateCameraModeParams& Params)
+void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
 {
 	FBlendStackCameraNodeEvaluator* TargetStack = nullptr;
 	switch (Params.Layer)
 	{
-		case ECameraModeLayer::Base:
+		case ECameraRigLayer::Base:
 			TargetStack = BaseLayer;
 			break;
-		case ECameraModeLayer::Main:
+		case ECameraRigLayer::Main:
 			TargetStack = MainLayer;
 			break;
-		case ECameraModeLayer::Global:
+		case ECameraRigLayer::Global:
 			TargetStack = GlobalLayer;
 			break;
-		case ECameraModeLayer::Visual:
+		case ECameraRigLayer::Visual:
 			TargetStack = VisualLayer;
 			break;
 	}
@@ -88,7 +88,7 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraMode(const FActivateCamera
 		FBlendStackCameraPushParams PushParams;
 		PushParams.Evaluator = Params.Evaluator;
 		PushParams.EvaluationContext = Params.EvaluationContext;
-		PushParams.CameraMode = Params.CameraMode;
+		PushParams.CameraRig = Params.CameraRig;
 		TargetStack->Push(PushParams);
 	}
 }

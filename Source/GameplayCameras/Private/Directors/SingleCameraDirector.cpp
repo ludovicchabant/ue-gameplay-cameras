@@ -11,9 +11,9 @@ protected:
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override
 	{
 		const USingleCameraDirector* SingleDirector = GetCameraDirectorAs<USingleCameraDirector>();
-		if (SingleDirector->CameraMode)
+		if (SingleDirector->CameraRig)
 		{
-			OutResult.ActiveCameraModes.Add(SingleDirector->CameraMode);
+			OutResult.ActiveCameraRigs.Add(SingleDirector->CameraRig);
 		}
 	}
 };
