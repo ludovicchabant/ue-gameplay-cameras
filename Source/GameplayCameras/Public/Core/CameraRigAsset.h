@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraRigTransition.h"
+#include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 
@@ -20,6 +22,23 @@ enum class ECameraRigBuildStatus : uint8
 	CleanWithWarnings,
 	WithErrors,
 	Dirty
+};
+
+/**
+ * Structure describing various allocations needed by a camera node.
+ */
+USTRUCT()
+struct FCameraRigAllocationInfo
+{
+	GENERATED_BODY()
+
+	/** Allocation info for node evaluators. */
+	UPROPERTY()
+	FCameraNodeEvaluatorAllocationInfo EvaluatorInfo;
+
+	/** Allocation info for the camera variable. */
+	UPROPERTY()
+	FCameraVariableTableAllocationInfo VariableTableInfo;
 };
 
 /**
@@ -56,6 +75,11 @@ public:
 	/** List of exist transitions for this camera rig. */
 	UPROPERTY(EditAnywhere, Category=Blending)
 	TArray<FCameraRigTransition> ExitTransitions;
+
+	UPROPERTY()
+	FCameraRigAllocationInfo AllocationInfo;
+
+public:
 
 	UPROPERTY(Transient)
 	ECameraRigBuildStatus BuildStatus = ECameraRigBuildStatus::Dirty;

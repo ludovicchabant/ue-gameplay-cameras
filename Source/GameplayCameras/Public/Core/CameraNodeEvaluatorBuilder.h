@@ -21,8 +21,6 @@ struct FCameraNodeEvaluatorBuilder
 private:
 
 	FCameraNodeEvaluatorStorage& Storage;
-
-	friend class FCameraNodeTreeState;
 };
 
 template<typename EvaluatorType, typename ...ArgTypes>

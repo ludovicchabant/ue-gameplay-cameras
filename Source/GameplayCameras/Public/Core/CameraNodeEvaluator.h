@@ -56,6 +56,28 @@ struct FCameraNodeEvaluationResult
 };
 
 /**
+ * Structure for building the tree of camera node evaluators.
+ */
+struct FCameraNodeEvaluatorBuildParams
+{
+	FCameraNodeEvaluatorBuildParams(FCameraNodeEvaluatorBuilder& InBuilder)
+		: Builder(InBuilder)
+	{}
+
+	/** Builds an evaluator for the given camera node. */
+	FCameraNodeEvaluator* BuildEvaluator(const UCameraNode* InNode) const;
+
+	/** Builds an evaluator for the given camera node, and down-cast it to the given type. */
+	template<typename EvaluatorType>
+	EvaluatorType* BuildEvaluatorAs(const UCameraNode* InNode) const;
+
+private:
+
+	/** Builder object for building children evaluators. */
+	FCameraNodeEvaluatorBuilder& Builder;
+};
+
+/**
  * Structure for initializing a camera node evaluator.
  */
 struct FCameraNodeEvaluatorInitializeParams
@@ -64,15 +86,6 @@ struct FCameraNodeEvaluatorInitializeParams
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
-	/** Builder object for building children evaluators. */
-	FCameraNodeEvaluatorBuilder* Builder = nullptr;
-
-	/** Builds an evaluator for the given camera node. */
-	FCameraNodeEvaluator* BuildEvaluator(const UCameraNode* InNode) const;
-
-	/** Builds an evaluator for the given camera node, and down-cast it to the given type. */
-	template<typename EvaluatorType>
-	EvaluatorType* BuildEvaluatorAs(const UCameraNode* InNode) const;
 };
 
 /** View on a camera node evaluator's children. */
@@ -89,6 +102,9 @@ public:
 
 	FCameraNodeEvaluator();
 	virtual ~FCameraNodeEvaluator() {}
+
+	/** Called to build any children evaluators. */
+	void Build(const FCameraNodeEvaluatorBuildParams& Params);
 
 	/** Initialize this evaluator. */
 	void Initialize(const FCameraNodeEvaluatorInitializeParams& Params);
@@ -115,6 +131,9 @@ public:
 	void SetPrivateCameraNode(TObjectPtr<const UCameraNode> InCameraNode);
 
 protected:
+
+	/** Called to build any children evaluators. */
+	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
 
 	/** Initialize this evaluator. */
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) {}
@@ -150,7 +169,7 @@ public:
 };
 
 template<typename EvaluatorType>
-EvaluatorType* FCameraNodeEvaluatorInitializeParams::BuildEvaluatorAs(const UCameraNode* InNode) const
+EvaluatorType* FCameraNodeEvaluatorBuildParams::BuildEvaluatorAs(const UCameraNode* InNode) const
 {
 	FCameraNodeEvaluator* NewEvaluator = BuildEvaluator(InNode);
 	check(NewEvaluator);

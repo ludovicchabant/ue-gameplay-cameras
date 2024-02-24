@@ -10,20 +10,7 @@
 
 #include "CameraNode.generated.h"
 
-/**
- * Structure describing various allocations needed by a camera node.
- */
-USTRUCT()
-struct FCameraNodeAllocationInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FCameraNodeEvaluatorAllocationInfo EvaluatorInfo;
-
-	UPROPERTY()
-	FCameraVariableTableAllocationInfo VariableTableInfo;
-};
+struct FCameraRigAllocationInfo;
 
 /** View on a camera node's children. */
 using FCameraNodeChildrenView = UE::Cameras::TObjectChildrenView<TObjectPtr<UCameraNode>>;
@@ -44,7 +31,7 @@ public:
 	FCameraNodeChildrenView GetChildren();
 
 	/** Gets optional info about this node's required allocations at runtime. */
-	FCameraNodeAllocationInfo GetAllocationInfo() const;
+	void BuildAllocationInfo(FCameraRigAllocationInfo& AllocationInfo) const;
 
 	/** Builds the evaluator for this node. */
 	FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
@@ -55,7 +42,7 @@ protected:
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
 
 	/** Gets optional info about this node's required allocations at runtime. */
-	virtual FCameraNodeAllocationInfo OnGetAllocationInfo() const { return FCameraNodeAllocationInfo(); }
+	virtual void OnBuildAllocationInfo(FCameraRigAllocationInfo& AllocationInfo) const {}
 
 	/** Builds the evaluator for this node. */
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const { return nullptr; }

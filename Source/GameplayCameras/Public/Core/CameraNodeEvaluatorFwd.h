@@ -18,17 +18,19 @@ struct FCameraNodeEvaluatorBuilder;
 // Typedef to avoid having to deal with namespaces in UCameraNode subclasses.
 using FCameraNodeEvaluatorPtr = UE::Cameras::FCameraNodeEvaluator*;
 
-/** Allocation information for a node evaluator. */
+/** Allocation information for an entire tree of node evaluators. */
 USTRUCT()
 struct FCameraNodeEvaluatorAllocationInfo
 {
 	GENERATED_BODY()
 
+	/** Total required size for the node evaluators. */
 	UPROPERTY()
-	int16 Sizeof = 0;
+	int16 TotalSizeof = 0;
 
+	/** Maximum required alignment for the node evaluators. */
 	UPROPERTY()
-	int16 Alignof = 0;
+	int16 MaxAlignof = 0;
 };
 
 /** Allocation information for a node evaluator, auto-setup for a given type. */
@@ -37,8 +39,8 @@ struct TCameraNodeEvaluatorAllocationInfo : FCameraNodeEvaluatorAllocationInfo
 {
 	TCameraNodeEvaluatorAllocationInfo() 
 	{
-		Sizeof = sizeof(EvaluatorType);
-		Alignof = alignof(EvaluatorType);
+		TotalSizeof = sizeof(EvaluatorType);
+		MaxAlignof = alignof(EvaluatorType);
 	}
 };
 

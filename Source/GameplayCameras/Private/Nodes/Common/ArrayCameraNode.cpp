@@ -16,7 +16,7 @@ class FArrayCameraNodeEvaluator : public FCameraNodeEvaluator
 protected:
 
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 private:
@@ -31,7 +31,7 @@ FCameraNodeEvaluatorChildrenView FArrayCameraNodeEvaluator::OnGetChildren()
 	return FCameraNodeEvaluatorChildrenView(Children);
 }
 
-void FArrayCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FArrayCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UArrayCameraNode* ArrayNode = GetCameraNodeAs<UArrayCameraNode>();
 	for (const UCameraNode* Child : ArrayNode->Children)

@@ -20,15 +20,8 @@ class FCameraNodeEvaluator;
 class FCameraNodeEvaluatorStorage;
 class FCameraSystemEvaluator;
 
-/** Allocation information for an entire tree of node evaluators. */
-struct FCameraNodeEvaluatorTreeAllocationInfo
-{
-	int16 TotalSizeof = 0;
-	int16 MaxAlignof = 0;
-};
-
 /** Structure for building an entire tree of node evaluators. */
-struct FCameraNodeEvaluatorTreeBuilderParams
+struct FCameraNodeEvaluatorTreeBuildParams
 {
 	/** The root node of the tree. */
 	TObjectPtr<const UCameraNode> RootCameraNode;
@@ -37,7 +30,10 @@ struct FCameraNodeEvaluatorTreeBuilderParams
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** An optional allocation information to optimize storage. */
-	FCameraNodeEvaluatorTreeAllocationInfo* AllocationInfo = nullptr;
+	FCameraNodeEvaluatorAllocationInfo* AllocationInfo = nullptr;
+
+	/** Whether to initialize the tree. */
+	bool bInitialize = true;
 };
 
 /**
@@ -57,13 +53,13 @@ public:
 
 public:
 
-	/** Compute allocation information for the given tree of camera nodes. */
-	static FCameraNodeEvaluatorTreeAllocationInfo ComputeTreeInfo(const UCameraRigAsset* CameraRig);
-
 	/** Build the tree of evaluators for the given tree of camera nodes. */
-	FCameraNodeEvaluatorPtr BuildEvaluatorTree(const FCameraNodeEvaluatorTreeBuilderParams& Params);
+	FCameraNodeEvaluatorPtr BuildEvaluatorTree(const FCameraNodeEvaluatorTreeBuildParams& Params);
 	/** Destroy any allocated evaluators. */
 	void DestroyEvaluatorTree(bool bFreeAllocations = false);
+
+	/** Computes the currently allocated totals. */
+	void GetAllocationInfo(FCameraNodeEvaluatorAllocationInfo& OutAllocationInfo);
 
 private:
 
@@ -75,6 +71,7 @@ private:
 	struct FAllocation
 	{
 		uint8* Memory = nullptr;
+		uint16 Alignment = 0;
 		uint16 Capacity = 0;
 		uint16 Used = 0;
 	};
@@ -122,6 +119,7 @@ EvaluatorType* FCameraNodeEvaluatorStorage::BuildEvaluator(ArgTypes&&... InArgs)
 
 		FAllocation& NewAllocation = Allocations.Emplace_GetRef();
 		NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, NewAlignment));
+		NewAllocation.Alignment = NewAlignment;
 		NewAllocation.Capacity = NewCapacity;
 		NewAllocation.Used = StateSizeof;
 

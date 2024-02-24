@@ -10,10 +10,17 @@ namespace UE::Cameras
 
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraNodeEvaluator)
 
-FCameraNodeEvaluator* FCameraNodeEvaluatorInitializeParams::BuildEvaluator(const UCameraNode* InNode) const
+void FCameraNodeEvaluationResult::Reset()
 {
-	FCameraNodeEvaluator* NewEvaluator = InNode->BuildEvaluator(*Builder);
-	NewEvaluator->Initialize(*this);
+	CameraPose.Reset();
+	bIsCameraCut = false;
+	bIsValid = false;
+}
+
+FCameraNodeEvaluator* FCameraNodeEvaluatorBuildParams::BuildEvaluator(const UCameraNode* InNode) const
+{
+	FCameraNodeEvaluator* NewEvaluator = InNode->BuildEvaluator(Builder);
+	NewEvaluator->Build(*this);
 	return NewEvaluator;
 }
 
@@ -49,9 +56,22 @@ void FCameraNodeEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
 	}
 }
 
+void FCameraNodeEvaluator::Build(const FCameraNodeEvaluatorBuildParams& Params)
+{
+	OnBuild(Params);
+}
+
 void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
 	OnInitialize(Params);
+
+	for (FCameraNodeEvaluator* Child : GetChildren())
+	{
+		if (Child)
+		{
+			Child->Initialize(Params);
+		}
+	}
 }
 
 void FCameraNodeEvaluator::Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)

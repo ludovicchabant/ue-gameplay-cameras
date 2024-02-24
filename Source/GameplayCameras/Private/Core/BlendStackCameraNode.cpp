@@ -68,7 +68,7 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	// Make the new stack entry, and use its storage buffer to build the tree of evaluators.
 	FCameraRigEntry NewEntry;
 
-	FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+	FCameraNodeEvaluatorTreeBuildParams BuildParams;
 	BuildParams.RootCameraNode = EntryRootNode;
 	BuildParams.Evaluator = Params.Evaluator;
 	BuildParams.EvaluationContext = Params.EvaluationContext;
@@ -394,7 +394,7 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 			Entry.RootNode->Blend = NewObject<UPopBlendCameraNode>(Entry.RootNode, NAME_None);
 
 			// Rebuild the evaluator tree.
-			FCameraNodeEvaluatorTreeBuilderParams BuildParams;
+			FCameraNodeEvaluatorTreeBuildParams BuildParams;
 			BuildParams.RootCameraNode = Entry.RootNode;
 			BuildParams.Evaluator = OwningEvaluator;
 			BuildParams.EvaluationContext = Entry.EvaluationContext.Pin();
