@@ -9,6 +9,17 @@ UCameraVariableAsset::UCameraVariableAsset(const FObjectInitializer& ObjectInit)
 {
 }
 
+FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
+{
+	FCameraVariableDefinition VariableDefinition;
+	VariableDefinition.VariableId = GetVariableId();
+	VariableDefinition.VariableType = GetVariableType();
+#if WITH_EDITORONLY_DATA
+	VariableDefinition.VariableName = GetName();
+#endif
+	return VariableDefinition;
+}
+
 void UCameraVariableAsset::Serialize(FArchive& Ar)
 {
 	Super::Serialize(Ar);

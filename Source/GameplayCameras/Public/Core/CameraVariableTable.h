@@ -95,6 +95,12 @@ public:
 	template<typename ValueType>
 	bool TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value);
 
+	template<typename VariableAssetType>
+	void SetValue(
+			const VariableAssetType* VariableAsset, 
+			typename TCallTraits<typename VariableAssetType::ValueType>::ParamType Value, 
+			bool bCreateIfMissing = false);
+
 public:
 
 	// Interpolation.
@@ -228,6 +234,28 @@ bool FCameraVariableTable::TrySetValue(uint32 VariableId, typename TCallTraits<V
 		return true;
 	}
 	return false;
+}
+
+template<typename VariableAssetType>
+void FCameraVariableTable::SetValue(
+		const VariableAssetType* VariableAsset, 
+		typename TCallTraits<typename VariableAssetType::ValueType>::ParamType Value, 
+		bool bCreateIfMissing)
+{
+	if (ensure(VariableAsset))
+	{
+		if (TrySetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableId(), Value))
+		{
+			return;
+		}
+
+		if (bCreateIfMissing)
+		{
+			FCameraVariableDefinition VariableDefinition = VariableAsset->GetVariableDefinition();
+			AddVariable(VariableDefinition);
+			SetValue<typename VariableAssetType::ValueType>(VariableDefinition.VariableId, Value);
+		}
+	}
 }
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
