@@ -9,3 +9,15 @@ UCameraVariableAsset::UCameraVariableAsset(const FObjectInitializer& ObjectInit)
 {
 }
 
+void UCameraVariableAsset::Serialize(FArchive& Ar)
+{
+	Super::Serialize(Ar);
+
+#if WITH_EDITORONLY_DATA
+	if ((Ar.IsLoading() && VariableId == 0) || Ar.IsSaving())
+	{
+		VariableId = GetTypeHash(GetFullName());
+	}
+#endif
+}
+

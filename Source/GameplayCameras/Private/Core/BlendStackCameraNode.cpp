@@ -149,9 +149,12 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			// Start with the input given to us.
 			CurResult.CameraPose = OutResult.CameraPose;
 			CurResult.CameraPose.ClearAllChangedFlags();
+			CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
+			CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
 
 			// Override it with whatever the evaluation context has set on its result.
 			CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
+			CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
 			CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
 			CurResult.bIsValid = true;
 

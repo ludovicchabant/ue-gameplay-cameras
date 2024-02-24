@@ -28,6 +28,11 @@ public:
 
 public:
 
+	// UObject interface
+	virtual void Serialize(FArchive& Ar) override;
+
+public:
+
 	/** Whether this variable auto-resets to its default value every frame. */
 	UPROPERTY(EditAnywhere, Category=Camera)
 	bool bAutoReset = false;

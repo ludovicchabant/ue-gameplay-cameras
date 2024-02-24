@@ -63,7 +63,8 @@ public:
 	/** Adds a variable to the table.
 	 *
 	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
-	 * the allocation information needed for a table, and initialize it once. */
+	 * the allocation information needed for a table, and initialize it once.
+	 */
 	void AddVariable(const FCameraVariableDefinition& VariableDefinition);
 
 public:
@@ -98,6 +99,7 @@ public:
 
 	// Interpolation.
 	
+	void OverrideAll(const FCameraVariableTable& OtherTable);
 	void OverrideChanged(const FCameraVariableTable& OtherTable);
 	void OverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
@@ -113,7 +115,7 @@ public:
 	void UnsetAllValues();
 
 	bool IsValueWrittenThisFrame(uint32 VariableId) const;
-	void ResetAllWrittenThisFrame();
+	void ClearAllWrittenThisFrameFlags();
 
 private:
 
@@ -127,8 +129,8 @@ private:
 
 	void ReallocateBuffer(uint32 NewCapacity);
 
-	void InternalOverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
-	void InternalLerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+	void InternalOverride(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
+	void InternalLerp(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
 
 private:
 
@@ -180,7 +182,7 @@ const ValueType& FCameraVariableTable::GetValue(uint32 VariableId) const
 {
 	const FEntry& Entry = Entries.FindChecked(VariableId);
 	CheckVariableType<ValueType>(Entry.Type);
-	return reinterpret_cast<ValueType*>(Memory + Entry.Offset);
+	return *reinterpret_cast<ValueType*>(Memory + Entry.Offset);
 }
 
 template<typename ValueType>
@@ -207,19 +209,22 @@ bool FCameraVariableTable::TryGetValue(uint32 VariableId, ValueType& OutValue) c
 template<typename ValueType>
 void FCameraVariableTable::SetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
 {
-	const FEntry& Entry = Entries.FindChecked(VariableId);
+	FEntry& Entry = Entries.FindChecked(VariableId);
 	CheckVariableType<ValueType>(Entry.Type);
 	ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry.Offset);
 	*ValuePtr = Value;
+	Entry.Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
 }
 
 template<typename ValueType>
 bool FCameraVariableTable::TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
 {
-	if (const FEntry* Entry = Entries.Find(VariableId))
+	if (FEntry* Entry = Entries.Find(VariableId))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
 		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		*ValuePtr = Value;
+		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
 		return true;
 	}
 	return false;
