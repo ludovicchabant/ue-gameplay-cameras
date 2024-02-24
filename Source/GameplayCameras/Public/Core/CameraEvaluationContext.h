@@ -41,6 +41,9 @@ public:
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
+	/** Gets the initial evaluation result for all camera rigs in this context. */
+	FCameraNodeEvaluationResult& GetInitialResult() { return InitialResult; }
+
 public:
 
 	void AddReferencedObjects(FReferenceCollector& Collector);

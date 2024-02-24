@@ -11,6 +11,7 @@
 #include "GameplayCameraComponent.generated.h"
 
 class UCameraAsset;
+class UGameplayCameraEvaluationResultBlueprintInterop;
 
 namespace UE::Cameras
 {
@@ -36,6 +37,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void DeactivateCamera();
+
+	UFUNCTION(BlueprintPure, Category=Camera)
+	GAMEPLAYCAMERAS_API UGameplayCameraEvaluationResultBlueprintInterop* GetInitialResult() const;
 
 public:
 
@@ -65,6 +69,9 @@ protected:
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
 
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
+
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraEvaluationResultBlueprintInterop> InitialResultInterop;
 	
 #if WITH_EDITORONLY_DATA
 

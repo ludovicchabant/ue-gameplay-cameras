@@ -23,6 +23,8 @@ public:
 
 	uint32 GetVariableId() const { return VariableId; }
 
+	FCameraVariableDefinition GetVariableDefinition() const;
+
 	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
 	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
@@ -54,6 +56,8 @@ class GAMEPLAYCAMERAS_API UBooleanCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = bool;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Boolean; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&bDefaultValue); }
 
@@ -71,6 +75,8 @@ class GAMEPLAYCAMERAS_API UInteger32CameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = int32;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Integer32; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -90,6 +96,8 @@ class GAMEPLAYCAMERAS_API UFloatCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = float;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Float; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -107,6 +115,8 @@ class GAMEPLAYCAMERAS_API UDoubleCameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = double;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Double; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -126,6 +136,8 @@ class GAMEPLAYCAMERAS_API UVector2fCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = FVector2f;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector2f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -143,6 +155,8 @@ class GAMEPLAYCAMERAS_API UVector2dCameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = FVector2d;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector2d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -162,6 +176,8 @@ class GAMEPLAYCAMERAS_API UVector3fCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = FVector3f;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -179,6 +195,8 @@ class GAMEPLAYCAMERAS_API UVector3dCameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = FVector3d;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -198,6 +216,8 @@ class GAMEPLAYCAMERAS_API UVector4fCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = FVector4f;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector4f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -215,6 +235,8 @@ class GAMEPLAYCAMERAS_API UVector4dCameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = FVector4d;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector4d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -234,6 +256,8 @@ class GAMEPLAYCAMERAS_API URotator3fCameraVariable : public UCameraVariableAsset
 
 public:
 
+	using ValueType = FRotator3f;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Rotator3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -251,6 +275,8 @@ class GAMEPLAYCAMERAS_API URotator3dCameraVariable : public UCameraVariableAsset
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = FRotator3d;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Rotator3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
@@ -270,6 +296,8 @@ class GAMEPLAYCAMERAS_API UTransform3fCameraVariable : public UCameraVariableAss
 
 public:
 
+	using ValueType = FTransform3f;
+
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Transform3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
@@ -287,6 +315,8 @@ class GAMEPLAYCAMERAS_API UTransform3dCameraVariable : public UCameraVariableAss
 	GENERATED_BODY()
 
 public:
+
+	using ValueType = FTransform3d;
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Transform3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }

@@ -7,6 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/GameplayCameraEvaluationResultBlueprintInterop.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "Logging/MessageLog.h"
@@ -21,6 +22,8 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 	: Super(ObjectInit)
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	InitialResultInterop = ObjectInit.CreateDefaultSubobject<UGameplayCameraEvaluationResultBlueprintInterop>(this, "InitialResultInterop");
 
 #if WITH_EDITORONLY_DATA
 	if (GIsEditor && !IsRunningCommandlet())
@@ -103,6 +106,8 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 	{
 		EvaluationContext = MakeShared<FGameplayCameraComponentEvaluationContext>();
 		EvaluationContext->Initialize(this, PlayerController);
+
+		InitialResultInterop->Setup(&EvaluationContext->GetInitialResult());
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
@@ -133,6 +138,11 @@ void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerControl
 	}
 
 	Deactivate();
+}
+
+UGameplayCameraEvaluationResultBlueprintInterop* UGameplayCameraComponent::GetInitialResult() const
+{
+	return InitialResultInterop;
 }
 
 void UGameplayCameraComponent::OnRegister()

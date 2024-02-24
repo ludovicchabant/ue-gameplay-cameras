@@ -67,7 +67,7 @@ public:
  * Fields are private and can only be accessed via the getters and setters.
  * The ChangedFlags structure keeps track of which fields were changed via the setters.
  */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FCameraPose
 {
 	GENERATED_BODY()
@@ -120,6 +120,7 @@ public:
 
 	/** Gets the transform of the camera. */
 	FTransform3d GetTransform() const;
+
 	/** Sets the transform of the camera. */
 	void SetTransform(FTransform3d Transform);
 
