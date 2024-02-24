@@ -28,7 +28,7 @@ TSoftClassPtr<UObject> UAssetDefinition_CameraAsset::GetAssetClass() const
 
 TConstArrayView<FAssetCategoryPath> UAssetDefinition_CameraAsset::GetAssetCategories() const
 {
-	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay, LOCTEXT("AssetSubCategory", "Cameras")) };
+	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay) };
 	return Categories;
 }
 
