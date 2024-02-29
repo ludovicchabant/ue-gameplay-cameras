@@ -5,6 +5,9 @@
 #include "Core/CameraObjectStorage.h"
 #include "CoreTypes.h"
 #include "Debug/CameraDebugBlock.h"
+#include "GameplayCameras.h"
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
 
 namespace UE::Cameras
 {
@@ -33,4 +36,6 @@ BlockType* FCameraDebugBlockStorage::BuildDebugBlock(ArgTypes&&... InArgs)
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
