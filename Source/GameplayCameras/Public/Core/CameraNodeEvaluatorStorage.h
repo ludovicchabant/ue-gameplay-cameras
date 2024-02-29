@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraObjectStorage.h"
 #include "CoreTypes.h"
