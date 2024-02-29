@@ -10,42 +10,13 @@
 namespace UE::Cameras
 {
 
-FCameraNodeEvaluatorStorage::FCameraNodeEvaluatorStorage()
-{
-}
-
-FCameraNodeEvaluatorStorage::FCameraNodeEvaluatorStorage(FCameraNodeEvaluatorStorage&& Other)
-{
-	Allocations = MoveTemp(Other.Allocations);
-	EvaluatorInfos = MoveTemp(Other.EvaluatorInfos);
-}
-
-FCameraNodeEvaluatorStorage& FCameraNodeEvaluatorStorage::operator=(FCameraNodeEvaluatorStorage&& Other)
-{
-	if (ensure(this != &Other))
-	{
-		Allocations = MoveTemp(Other.Allocations);
-		EvaluatorInfos = MoveTemp(Other.EvaluatorInfos);
-	}
-	return *this;
-}
-
-FCameraNodeEvaluatorStorage::~FCameraNodeEvaluatorStorage()
-{
-	DestroyEvaluatorTree(true);
-}
-
 FCameraNodeEvaluatorPtr FCameraNodeEvaluatorStorage::BuildEvaluatorTree(const FCameraNodeEvaluatorTreeBuildParams& Params)
 {
 	if (Params.AllocationInfo)
 	{
 		const uint16 NewCapacity = Params.AllocationInfo->TotalSizeof;
 		const uint16 NewAlignment = Params.AllocationInfo->MaxAlignof;
-
-		FAllocation& NewAllocation = Allocations.Emplace_GetRef();
-		NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, NewAlignment));
-		NewAllocation.Capacity = NewCapacity;
-		NewAllocation.Used = 0;
+		Super::AllocatePage(NewCapacity, NewAlignment);
 	}
 
 	FCameraNodeEvaluatorBuilder Builder(*this);
@@ -67,48 +38,17 @@ FCameraNodeEvaluatorPtr FCameraNodeEvaluatorStorage::BuildEvaluatorTree(const FC
 
 void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(bool bFreeAllocations)
 {
-	for (FEvaluatorInfo& EvaluatorInfo : EvaluatorInfos)
-	{
-		FCameraNodeEvaluator* Evaluator(EvaluatorInfo.Ptr);
-		Evaluator->~FCameraNodeEvaluator();
-	}
-	EvaluatorInfos.Reset();
-
-	if (bFreeAllocations)
-	{
-		for (FAllocation& Allocation : Allocations)
-		{
-			FMemory::Free(Allocation.Memory);
-		}
-		Allocations.Reset();
-	}
-	else
-	{
-		for (FAllocation& Allocation : Allocations)
-		{
-			Allocation.Used = 0;
-		}
-	}
+	Super::DestroyObjects(bFreeAllocations);
 }
 
 void FCameraNodeEvaluatorStorage::GetAllocationInfo(FCameraNodeEvaluatorAllocationInfo& OutAllocationInfo)
 {
-	OutAllocationInfo.TotalSizeof = 0;
-	OutAllocationInfo.MaxAlignof = 0;
+	uint16 TotalUsed;
+	uint16 FirstAlignment;
+	Super::GetAllocationInfo(TotalUsed, FirstAlignment);
 
-	if (!Allocations.IsEmpty())
-	{
-		OutAllocationInfo.MaxAlignof = Allocations[0].Alignment;
-
-		for (FAllocation& Allocation : Allocations)
-		{
-			if (OutAllocationInfo.TotalSizeof > 0)
-			{
-				OutAllocationInfo.TotalSizeof = Align(OutAllocationInfo.TotalSizeof, Allocation.Alignment);
-			}
-			OutAllocationInfo.TotalSizeof += Allocation.Used;
-		}
-	}
+	OutAllocationInfo.TotalSizeof = TotalUsed;
+	OutAllocationInfo.MaxAlignof = FirstAlignment;
 }
 
 }  // namespace UE::Cameras
