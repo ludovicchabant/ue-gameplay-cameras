@@ -7,6 +7,7 @@
 #include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
+#include "GameplayCameras.h"
 #include "UObject/ObjectPtr.h"
 
 class FReferenceCollector;
@@ -19,6 +20,11 @@ class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraSystemEvaluator;
 struct FCameraNodeEvaluatorBuilder;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+class FCameraDebugBlock;
+struct FCameraDebugBlockBuilder;
+#endif
 
 /**
  * Parameter structure for running a camera node evaluator.
@@ -53,6 +59,11 @@ struct FCameraNodeEvaluationResult
 
 	/** Reset this result to its default (non-valid) state. */
 	void Reset();
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Builder for debug drawing blocks. May be null. */
+	FCameraDebugBlockBuilder* DebugBlockBuilder = nullptr;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 /**
@@ -146,6 +157,22 @@ protected:
 
 	/** Collect referenced UObjects. */
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+public:
+
+	/** Creates the debug drawing block for this camera node. */
+	void CreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder);
+
+private:
+
+	/**
+	 * Creates the debug drawing block for this camera node.
+	 */
+	virtual void OnCreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder);
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:
 

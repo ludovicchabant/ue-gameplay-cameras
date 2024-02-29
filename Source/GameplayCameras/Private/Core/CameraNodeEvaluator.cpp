@@ -3,12 +3,67 @@
 #include "Core/CameraNodeEvaluator.h"
 
 #include "Core/CameraNode.h"
+#include "Debug/CameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
+#include "HAL/IConsoleManager.h"
 #include "UObject/UObjectGlobals.h"
 
 namespace UE::Cameras
 {
 
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraNodeEvaluator)
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+FString GGameplayCamerasDebugNodeTreeFilter;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugNodeTreeFilter(
+	TEXT("GameplayCameras.Debug.NodeTree.Filter"),
+	GGameplayCamerasDebugNodeTreeFilter,
+	TEXT("(Default: "". Filters the debug camera node tree by node name/type."));
+
+class FDefaultCameraNodeDebugBlock : public FCameraDebugBlock
+{
+public:
+
+	FDefaultCameraNodeDebugBlock() {}
+	FDefaultCameraNodeDebugBlock(const UCameraNode* InNode)
+	{
+		NodeClassName = InNode ? InNode->GetClass()->GetName() : TEXT("<null node>");
+	}
+
+protected:
+
+	virtual EDebugDrawResult OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override
+	{
+		Renderer.AddIndent();
+		
+		const bool bDoDebugDraw = (GGameplayCamerasDebugNodeTreeFilter.IsEmpty() ||
+				NodeClassName.Contains(GGameplayCamerasDebugNodeTreeFilter));
+		if (bDoDebugDraw)
+		{
+			Renderer.AddText(TEXT("[%s] "), *NodeClassName);
+		}
+		
+		return bDoDebugDraw ?  EDebugDrawResult::Default : EDebugDrawResult::SkipChildren;
+	}
+
+	virtual void OnPostDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override
+	{
+		Renderer.RemoveIndent();
+	}
+
+	virtual void OnSerialize(FArchive& Ar)
+	{
+		Ar << NodeClassName;
+	}
+
+private:
+
+	FString NodeClassName;
+};
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 void FCameraNodeEvaluationResult::Reset()
 {
@@ -76,11 +131,39 @@ void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams
 
 void FCameraNodeEvaluator::Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	if (PrivateCameraNode->bIsEnabled)
+	if (!PrivateCameraNode || PrivateCameraNode->bIsEnabled)
 	{
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		if (OutResult.DebugBlockBuilder)
+		{
+			CreateDebugBlock(Params, *OutResult.DebugBlockBuilder);
+		}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 		OnRun(Params, OutResult);
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		if (OutResult.DebugBlockBuilder)
+		{
+			OutResult.DebugBlockBuilder->EndBlock();
+		}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FCameraNodeEvaluator::CreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	OnCreateDebugBlock(Params, Builder);
+}
+
+void FCameraNodeEvaluator::OnCreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	Builder.StartBlock<FDefaultCameraNodeDebugBlock>(PrivateCameraNode);
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

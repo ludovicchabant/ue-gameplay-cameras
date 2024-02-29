@@ -135,6 +135,10 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		CurResult.DebugBlockBuilder = OutResult.DebugBlockBuilder;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 		if (!Entry.bIsFrozen)
 		{
 			// If the context in which this camera rig runs doesn't have a valid result,
@@ -166,6 +170,10 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			// Only evaluate the blend via the root node.
 			Entry.RootEvaluator->Run(CurParams, CurResult);
 		}
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		CurResult.DebugBlockBuilder = nullptr;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 
 	// Now blend all the results, keeping track of blends that have reached 100% so

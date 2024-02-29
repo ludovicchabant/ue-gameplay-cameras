@@ -3,6 +3,7 @@
 #include "GameFramework/GameplayCameraSystemComponent.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Debug/DebugDrawService.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
@@ -60,6 +61,11 @@ void UGameplayCameraSystemComponent::OnRegister()
 		Evaluator->Initialize(this);
 	}
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	DebugDrawDelegateHandle = UDebugDrawService::Register(
+			TEXT("Game"), FDebugDrawDelegate::CreateUObject(this, &UGameplayCameraSystemComponent::DebugDraw));
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 #if WITH_EDITORONLY_DATA
 	if (PreviewMesh && !PreviewMeshComponent)
 	{
@@ -86,6 +92,14 @@ void UGameplayCameraSystemComponent::TickComponent(float DeltaTime, ELevelTick T
 void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	if (DebugDrawDelegateHandle.IsValid())
+	{
+		UDebugDrawService::Unregister(DebugDrawDelegateHandle);
+		DebugDrawDelegateHandle.Reset();
+	}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #if WITH_EDITORONLY_DATA
 	if (PreviewMeshComponent)
@@ -125,6 +139,20 @@ void UGameplayCameraSystemComponent::OnBecomeViewTarget()
 void UGameplayCameraSystemComponent::OnEndViewTarget()
 {
 }
+
+#if UE_ENABLE_DEBUG_DRAWING
+void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerController* PlayController)
+{
+	using namespace UE::Cameras;
+
+	if (Evaluator.IsValid())
+	{
+		FCameraSystemDebugDrawParams DebugDrawParams;
+		DebugDrawParams.Canvas = Canvas;
+		Evaluator->DebugDraw(DebugDrawParams);
+	}
+}
+#endif  // UE_ENABLE_DEBUG_DRAWING
 
 #undef LOCTEXT_NAMESPACE
 

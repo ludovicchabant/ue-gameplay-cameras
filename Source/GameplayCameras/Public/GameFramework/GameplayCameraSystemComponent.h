@@ -4,13 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "GameplayCameras.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/ScriptInterface.h"
 #include "Components/SceneComponent.h"
 
 #include "GameplayCameraSystemComponent.generated.h"
 
+class APlayerController;
 class UCameraRigAsset;
+class UCanvas;
 struct FMinimalViewInfo;
 
 namespace UE::Cameras
@@ -60,8 +63,18 @@ public:
 	void OnEndViewTarget();
 
 private:
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	void DebugDraw(UCanvas* Canvas, APlayerController* PlayController);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+private:
 	
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FDelegateHandle DebugDrawDelegateHandle;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #if WITH_EDITORONLY_DATA
 

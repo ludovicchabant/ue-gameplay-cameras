@@ -9,11 +9,14 @@
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraPose.h"
 #include "CoreTypes.h"
+#include "Debug/CameraDebugBlockStorage.h"
+#include "GameplayCameras.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
 class UCameraDirector;
 class UCameraRigAsset;
+class UCanvas;
 class URootCameraNode;
 struct FMinimalViewInfo;
 
@@ -22,6 +25,10 @@ namespace UE::Cameras
 
 class FCameraEvaluationContext;
 class FRootCameraNodeEvaluator;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+class FRootCameraDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
  * Parameter structure for initializing a new camera system evaluator.
@@ -58,6 +65,13 @@ struct FCameraSystemEvaluationUpdateResult
 	bool bIsValid = false;
 };
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+struct FCameraSystemDebugDrawParams
+{
+	UCanvas* Canvas = nullptr;
+};
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 /**
  * The main camera system evaluator class.
  */
@@ -90,6 +104,10 @@ public:
 	/** Get the last evaluated camera. */
 	void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	void DebugDraw(const FCameraSystemDebugDrawParams& Params);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 public:
 
 	void AddReferencedObjects(FReferenceCollector& Collector);
@@ -106,13 +124,21 @@ private:
 	FCameraNodeEvaluatorStorage RootEvaluatorStorage;
 
 	/** The root evaluator. */
-	FRootCameraNodeEvaluator* RootEvaluator;
+	FRootCameraNodeEvaluator* RootEvaluator = nullptr;
 
 	/** The current result of the root camera node. */
 	FCameraNodeEvaluationResult RootNodeResult;
 
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationUpdateResult Result;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Storage for debug drawing blocks. */
+	FCameraDebugBlockStorage DebugBlockStorage;
+
+	/** The root debug drawing block. */
+	FRootCameraDebugBlock* RootDebugBlock = nullptr;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 }  // namespace UE::Cameras
