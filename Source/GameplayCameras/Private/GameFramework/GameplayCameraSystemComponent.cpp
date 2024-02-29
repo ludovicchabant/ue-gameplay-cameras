@@ -34,16 +34,25 @@ void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalView
 {
 	using namespace UE::Cameras;
 
-	FCameraSystemEvaluationUpdateParams UpdateParams;
-	UpdateParams.DeltaTime = DeltaTime;
-	Evaluator->Update(UpdateParams);
+	if (Evaluator.IsValid())
+	{
+		FCameraSystemEvaluationUpdateParams UpdateParams;
+		UpdateParams.DeltaTime = DeltaTime;
+		Evaluator->Update(UpdateParams);
 
-	Evaluator->GetEvaluatedCameraView(DesiredView);
+		Evaluator->GetEvaluatedCameraView(DesiredView);
+	}
 }
 
 void UGameplayCameraSystemComponent::OnRegister()
 {
 	using namespace UE::Cameras;
+
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor || OwnerActor->HasAnyFlags(RF_ClassDefaultObject))
+	{
+		return;
+	}
 
 	if (!Evaluator.IsValid())
 	{
