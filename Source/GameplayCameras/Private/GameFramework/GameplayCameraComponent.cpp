@@ -147,6 +147,8 @@ UGameplayCameraEvaluationResultBlueprintInterop* UGameplayCameraComponent::GetIn
 
 void UGameplayCameraComponent::OnRegister()
 {
+	Super::OnRegister();
+
 #if WITH_EDITORONLY_DATA
 	if (PreviewMesh && !PreviewMeshComponent)
 	{
@@ -163,8 +165,6 @@ void UGameplayCameraComponent::OnRegister()
 
 	UpdatePreviewMeshTransform();
 #endif	// WITH_EDITORONLY_DATA
-
-	Super::OnRegister();
 }
 
 void UGameplayCameraComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
