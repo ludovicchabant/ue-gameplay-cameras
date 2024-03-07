@@ -22,6 +22,6 @@ void UCameraRigAssetEditor::GetObjectsToEdit(TArray<UObject*>& InObjectsToEdit)
 
 TSharedPtr<FBaseAssetToolkit> UCameraRigAssetEditor::CreateToolkit()
 {
-	return MakeShared<FCameraRigAssetEditorToolkit>(this);
+	return MakeShared<UE::Cameras::FCameraRigAssetEditorToolkit>(this);
 }
 

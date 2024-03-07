@@ -4,6 +4,7 @@
 
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
+#include "Core/CameraRigAllocationInfoBuilder.h"
 #include "Core/CameraRigAsset.h"
 #include "EditorModeManager.h"
 #include "Framework/Docking/LayoutExtender.h"
@@ -17,6 +18,9 @@
 #include "Widgets/Docking/SDockTab.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigAssetEditorToolkit"
+
+namespace UE::Cameras
+{
 
 const FName FCameraRigAssetEditorToolkit::DetailsViewTabId(TEXT("CameraRigAssetEditor_DetailsView"));
 
@@ -204,7 +208,14 @@ void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent&
 
 void FCameraRigAssetEditorToolkit::OnBuild()
 {
+	using namespace UE::Cameras;
+
+	FCameraRigAllocationInfo AllocationInfo;
+	FCameraRigAllocationInfoBuilder CameraRigBuilder;
+	CameraRigBuilder.BuildAllocationInfo(CameraRigAsset, AllocationInfo);
+
 	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Clean;
+	CameraRigAsset->AllocationInfo = AllocationInfo;
 
 	FCameraRigPackages BuiltPackages;
 	CameraRigAsset->GatherPackages(BuiltPackages);
@@ -214,6 +225,8 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 		LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
 	}
 }
+
+}  // namespace UE::Cameras
 
 #undef LOCTEXT_NAMESPACE
 

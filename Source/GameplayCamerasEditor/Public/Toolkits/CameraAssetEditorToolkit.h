@@ -11,6 +11,9 @@ class UCameraAsset;
 class UCameraAssetEditor;
 class SWidget;
 
+namespace UE::Cameras
+{
+
 /**
  * Editor toolkit for a camera asset.
  */
@@ -60,4 +63,6 @@ private:
 	/** The asset being edited */
 	TObjectPtr<UCameraAsset> CameraAsset;
 };
+
+}  // namespace UE::Cameras
 

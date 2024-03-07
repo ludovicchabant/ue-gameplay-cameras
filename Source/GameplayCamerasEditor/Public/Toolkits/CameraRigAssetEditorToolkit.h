@@ -17,8 +17,6 @@ namespace UE::Cameras
 
 class IGameplayCamerasLiveEditManager;
 
-}  // namespace UE::Cameras
-
 /**
  * Editor toolkit for a camera rig asset.
  */
@@ -86,4 +84,6 @@ private:
 	/** Live edit manager for updating the assets in the runtime */
 	TSharedPtr<UE::Cameras::IGameplayCamerasLiveEditManager> LiveEditManager;
 };
+
+}  // namespace UE::Cameras
 

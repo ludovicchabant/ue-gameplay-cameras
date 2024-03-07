@@ -42,6 +42,8 @@ public:
 
 	virtual void ShutdownModule() override
 	{
+		using namespace UE::Cameras;
+
 		UToolMenus::UnRegisterStartupCallback(this);
 
 		FCameraAssetEditorCommands::Unregister();
@@ -96,6 +98,8 @@ private:
 
 	void RegisterMenus()
 	{
+		using namespace UE::Cameras;
+
 		FCameraAssetEditorCommands::Register();
 		FCameraRigAssetEditorCommands::Register();	
 	}

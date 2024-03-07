@@ -9,10 +9,13 @@
 
 #define LOCTEXT_NAMESPACE "SequencerCommands"
 
+namespace UE::Cameras
+{
+
 FCameraAssetEditorCommands::FCameraAssetEditorCommands()
 	: TCommands<FCameraAssetEditorCommands>(
-			"GameplayCameras",
-			NSLOCTEXT("Contexts", "GameplayCameras", "Gameplay Cameras"),
+			"GameplayCameras_CameraAssetEditor",
+			NSLOCTEXT("Contexts", "GameplayCameras_CameraAssetEditor", "Camera Asset Editor"),
 			NAME_None,
 			FAppStyle::GetAppStyleSetName()
 		)
@@ -24,6 +27,8 @@ void FCameraAssetEditorCommands::RegisterCommands()
 	UI_COMMAND(Build, "Build", "Builds the asset and refreshes it in PIE",
 			EUserInterfaceActionType::Button, FInputChord(EKeys::F7));
 }
- 
+
+}  // namespace UE::Cameras
+
 #undef LOCTEXT_NAMESPACE
 

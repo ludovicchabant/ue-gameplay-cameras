@@ -9,6 +9,9 @@ class FUICommandInfo;
 class UClass;
 struct FInputChord;
 
+namespace UE::Cameras
+{
+
 class FCameraAssetEditorCommands : public TCommands<FCameraAssetEditorCommands>
 {
 public:
@@ -21,4 +24,6 @@ public:
 
 	TSharedPtr<FUICommandInfo> Build;
 };
+
+}  // namespace UE::Cameras
 

@@ -15,6 +15,9 @@
 
 #define LOCTEXT_NAMESPACE "CameraAssetEditorToolkit"
 
+namespace UE::Cameras
+{
+
 const FName FCameraAssetEditorToolkit::DetailsViewTabId(TEXT("CameraAssetEditor_DetailsView"));
 
 FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwningAssetEditor)
@@ -111,6 +114,8 @@ FLinearColor FCameraAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
 	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
 }
+
+}  // namespace UE::Cameras
 
 #undef LOCTEXT_NAMESPACE
 
