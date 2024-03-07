@@ -5,15 +5,15 @@
 #include "HAL/IConsoleManager.h"
 #include "Math/UnrealMathUtility.h"
 
+namespace UE::Cameras
+{
+
 float GGameplayCamerasCriticalDamperStabilizationThreshold = 0.00001f;
 static FAutoConsoleVariableRef CVarGameplayCamerasCriticalDamperStabilizationThreshold(
 	TEXT("GameplayCameras.CriticalDamper.StabilizationThreshold"),
 	GGameplayCamerasCriticalDamperStabilizationThreshold,
 	TEXT("(Default: 0.00001f (in meters and meters/sec). Determines when to clamp a critical damper to 0 to stabilize it.")
 	);
-
-namespace UE::Cameras
-{
 
 FCriticalDamper::FCriticalDamper()
 {

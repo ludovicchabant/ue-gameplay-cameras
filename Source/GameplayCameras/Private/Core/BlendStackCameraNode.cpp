@@ -8,8 +8,16 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
+#include "Debug/CameraNodeEvaluationResultDebugBlock.h"
+#include "Debug/CameraNodeEvaluatorDebugBlock.h"
+#include "Debug/CameraPoseDebugBlock.h"
+#include "Debug/VariableTableDebugBlock.h"
+#include "HAL/IConsoleManager.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
+#include "Math/ColorList.h"
 #include "Modules/ModuleManager.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
 
@@ -23,6 +31,18 @@ FCameraNodeEvaluatorPtr UBlendStackCameraNode::OnBuildEvaluator(FCameraNodeEvalu
 
 namespace UE::Cameras
 {
+
+bool GGameplayCamerasDebugBlendStackShowUnchanged = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowUnchanged(
+	TEXT("GameplayCameras.Debug.BlendStack.ShowUnchanged"),
+	GGameplayCamerasDebugBlendStackShowUnchanged,
+	TEXT(""));
+
+bool GGameplayCamerasDebugBlendStackShowVariableIds = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowVariableIds(
+	TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIds"),
+	GGameplayCamerasDebugBlendStackShowVariableIds,
+	TEXT(""));
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
@@ -105,7 +125,10 @@ FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 	FCameraNodeEvaluatorChildrenView View;
 	for (FCameraRigEntry& Entry : Entries)
 	{
-		View.Add(Entry.RootEvaluator);
+		if (Entry.RootEvaluator)
+		{
+			View.Add(Entry.RootEvaluator);
+		}
 	}
 	return View;
 }
@@ -134,10 +157,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-		CurResult.DebugBlockBuilder = OutResult.DebugBlockBuilder;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 		if (!Entry.bIsFrozen)
 		{
@@ -170,10 +189,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			// Only evaluate the blend via the root node.
 			Entry.RootEvaluator->Run(CurParams, CurResult);
 		}
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-		CurResult.DebugBlockBuilder = nullptr;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 
 	// Now blend all the results, keeping track of blends that have reached 100% so
@@ -417,6 +432,107 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 }
 
 #endif  // WITH_EDITOR
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FBlendStackCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	Builder.AttachDebugBlock<FBlendStackSummaryCameraDebugBlock>(*this);
+}
+
+FBlendStackCameraDebugBlock* FBlendStackCameraNodeEvaluator::BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	FBlendStackCameraDebugBlock& StackDebugBlock = Builder.BuildDebugBlock<FBlendStackCameraDebugBlock>(*this);
+	for (const FCameraRigEntry& Entry : Entries)
+	{
+		// Each entry has a wrapper debug block with 2 children blocks:
+		// - block for the blend
+		// - block for the result
+		FCameraDebugBlock& EntryDebugBlock = Builder.BuildDebugBlock<FCameraDebugBlock>();
+		StackDebugBlock.AddChild(&EntryDebugBlock);
+		{
+			if (Entry.RootEvaluator)
+			{
+				Builder.StartParentDebugBlockOverride(EntryDebugBlock);
+				{
+					FCameraNodeEvaluator* BlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+					BlendEvaluator->BuildDebugBlocks(Params, Builder);
+				}
+				Builder.EndParentDebugBlockOverride();
+			}
+			else
+			{
+				// Dummy debug block.
+				EntryDebugBlock.AddChild(&Builder.BuildDebugBlock<FCameraDebugBlock>());
+			}
+
+			FCameraNodeEvaluationResultDebugBlock& ResultDebugBlock = Builder.BuildDebugBlock<FCameraNodeEvaluationResultDebugBlock>();
+			EntryDebugBlock.AddChild(&ResultDebugBlock);
+			{
+				ResultDebugBlock.Initialize(Entry.Result, Builder);
+				ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowUnchanged"));
+				ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIdsCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIds"));
+			}
+		}
+	}
+	return &StackDebugBlock;
+}
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackSummaryCameraDebugBlock);
+
+FBlendStackSummaryCameraDebugBlock::FBlendStackSummaryCameraDebugBlock()
+{
+}
+
+FBlendStackSummaryCameraDebugBlock::FBlendStackSummaryCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator)
+{
+	NumEntries = InEvaluator.Entries.Num();
+}
+
+void FBlendStackSummaryCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	Renderer.AddText(TEXT("%d entries"), NumEntries);
+}
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock);
+
+FBlendStackCameraDebugBlock::FBlendStackCameraDebugBlock()
+{
+}
+
+FBlendStackCameraDebugBlock::FBlendStackCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator)
+{
+	for (const FBlendStackCameraNodeEvaluator::FCameraRigEntry& Entry : InEvaluator.Entries)
+	{
+		FEntryDebugInfo EntryDebugInfo;
+		EntryDebugInfo.CameraRigName = Entry.CameraRig ? Entry.CameraRig->GetName() : TEXT("<no camera rig>");
+		Entries.Add(EntryDebugInfo);
+	}
+}
+
+void FBlendStackCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
+
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		const FEntryDebugInfo& Entry(Entries[Index]);
+
+		Renderer.AddText(TEXT("{springgreen}[%d]{white} %s\n"), Index + 1, *Entry.CameraRigName);
+
+		if (ChildrenView.IsValidIndex(Index))
+		{
+			Renderer.AddIndent();
+			ChildrenView[Index]->DebugDraw(Params, Renderer);
+			Renderer.RemoveIndent();
+		}
+	}
+
+	// We've already manually renderered our children blocks.
+	Renderer.SkipAllBlocks();
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

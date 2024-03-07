@@ -11,6 +11,8 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "Debug/CategoryTitleDebugBlock.h"
+#include "Debug/RootCameraDebugBlock.h"
 #include "HAL/IConsoleManager.h"
 #include "IGameplayCamerasModule.h"
 #include "UObject/Package.h"
@@ -18,37 +20,11 @@
 
 DECLARE_CYCLE_STAT(TEXT("Camera System Eval"), CameraSystemEval_Total, STATGROUP_CameraSystem);
 
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-
-bool GGameplayCamerasDebugEnable = false;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnable(
-	TEXT("GameplayCameras.Debug.Enable"),
-	GGameplayCamerasDebugEnable,
-	TEXT("(Default: false. Enables debug drawing for the GamplayCameras system."));
-
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
 namespace UE::Cameras
 {
 
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-
-class FRootCameraDebugBlock : public FCameraDebugBlock
-{
-public:
-
-	float LastDeltaTime = 0.f;
-
-protected:
-
-	virtual EDebugDrawResult OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override
-	{
-		return GGameplayCamerasDebugEnable ?
-			EDebugDrawResult::Default : EDebugDrawResult::SkipChildren;
-	}
-};
-
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+extern bool GGameplayCamerasDebugEnable;
+extern bool GGameplayCamerasDebugTrace;
 
 FCameraSystemEvaluator::FCameraSystemEvaluator()
 {
@@ -156,16 +132,6 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 	RootNodeResult.Reset();
 
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	// Clear previous frame's debug info and make room for this frame's.
-	DebugBlockStorage.DestroyDebugBlocks();
-	RootDebugBlock = DebugBlockStorage.BuildDebugBlock<FRootCameraDebugBlock>();
-	RootDebugBlock->LastDeltaTime = Params.DeltaTime;
-
-	FCameraDebugBlockBuilder DebugBlockBuilder(DebugBlockStorage, *RootDebugBlock);
-	RootNodeResult.DebugBlockBuilder = &DebugBlockBuilder;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
 	// Run the root camera node.
 	RootEvaluator->Run(NodeParams, RootNodeResult);
 
@@ -173,10 +139,6 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 	Result.CameraPose = RootNodeResult.CameraPose;
 	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
 	Result.bIsValid = true;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	RootNodeResult.DebugBlockBuilder = nullptr;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)
@@ -189,17 +151,25 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
-void FCameraSystemEvaluator::DebugDraw(const FCameraSystemDebugDrawParams& Params)
+void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& Params)
 {
-	if (RootDebugBlock)
+	if (!GGameplayCamerasDebugTrace && !GGameplayCamerasDebugEnable)
 	{
-		FCameraDebugBlockDrawParams BlockParams;
-		BlockParams.DeltaTime = RootDebugBlock->LastDeltaTime;
-
-		FCameraDebugRenderer Renderer(Params.Canvas);
-
-		RootDebugBlock->DebugDraw(BlockParams, Renderer);
+		return;
 	}
+
+	// Clear previous frame's debug info and make room for this frame's.
+	DebugBlockStorage.DestroyDebugBlocks();
+
+	// Create the root debug block and start building more.
+	RootDebugBlock = DebugBlockStorage.BuildDebugBlock<FRootCameraDebugBlock>();
+
+	FCameraDebugBlockBuildParams BuildParams;
+	FCameraDebugBlockBuilder DebugBlockBuilder(DebugBlockStorage, *RootDebugBlock);
+	RootDebugBlock->BuildDebugBlocks(*this, BuildParams, DebugBlockBuilder);
+	
+	FCameraDebugRenderer Renderer(Params.Canvas);
+	RootDebugBlock->RootDebugDraw(Renderer);
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

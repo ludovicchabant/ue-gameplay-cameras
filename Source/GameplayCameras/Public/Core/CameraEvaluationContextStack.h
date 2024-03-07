@@ -4,6 +4,7 @@
 
 #include "Containers/Array.h"
 #include "Core/CameraDirectorEvaluator.h"
+#include "GameplayCameras.h"
 #include "UObject/WeakObjectPtr.h"
 
 class UCameraAsset;
@@ -54,6 +55,9 @@ public:
 	/** Pop the active (top) context. */
 	void PopContext();
 
+	/** The number of contexts on the stack. */
+	int32 NumContexts() const { return Entries.Num(); }
+
 public:
 
 	// Internal API
@@ -75,6 +79,10 @@ private:
 
 	/** The owner evaluator. */
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	friend class FCameraDirectorTreeDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 }  // namespace UE::Cameras

@@ -4,6 +4,7 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "GameplayCameras.h"
@@ -24,6 +25,10 @@ protected:
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	FCriticalDamper ForwardDamper;
@@ -31,20 +36,27 @@ private:
 	FCriticalDamper VerticalDamper;
 
 	FVector3d PreviousLocation;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FVector3d LastUndampedPosition;
+	FVector3d LastDampedPosition;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
 
-UE_DEFINE_CAMERA_DEBUG_BLOCK_START(FDampenPositionCameraDebugBlock)
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, ForwardX0);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, LateralX0);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, VerticalX0);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, ForwardDampingFactor);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, LateralDampingFactor);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(float, VerticalDampingFactor);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, UndampedPosition);
-	UE_DEFINE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, DampedPosition);
-UE_DEFINE_CAMERA_DEBUG_BLOCK_END()
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FDampenPositionCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, ForwardX0);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, LateralX0);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, VerticalX0);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, ForwardDampingFactor);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, LateralDampingFactor);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, VerticalDampingFactor);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, UndampedPosition);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, DampedPosition);
+UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FDampenPositionCameraDebugBlock)
 
 void FDampenPositionCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
@@ -113,24 +125,12 @@ void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 		}
 		
 		NextLocation = NewDampedLocation;
+	}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-		if (OutResult.DebugBlockBuilder)
-		{
-			FDampenPositionCameraDebugBlock& DebugBlock = OutResult.DebugBlockBuilder->StartBlock<FDampenPositionCameraDebugBlock>();
-			{
-				DebugBlock.ForwardX0 = ForwardDamper.GetX0();
-				DebugBlock.LateralX0 = LateralDamper.GetX0();
-				DebugBlock.VerticalX0 = VerticalDamper.GetX0();
-
-				DebugBlock.ForwardDampingFactor = ForwardDamper.GetW0();
-				DebugBlock.LateralDampingFactor = LateralDamper.GetW0();
-				DebugBlock.VerticalDampingFactor = VerticalDamper.GetW0();
-			}
-			OutResult.DebugBlockBuilder->EndBlock();
-		}
+	LastUndampedPosition = NextTarget;
+	LastDampedPosition = NextLocation;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-	}
 
 	PreviousLocation = NextLocation;
 
@@ -139,24 +139,34 @@ void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
-EDebugDrawResult FDampenPositionCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+void FDampenPositionCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	FDampenPositionCameraDebugBlock& DebugBlock = Builder.AttachDebugBlock<FDampenPositionCameraDebugBlock>();
+
+	DebugBlock.ForwardX0 = ForwardDamper.GetX0();
+	DebugBlock.LateralX0 = LateralDamper.GetX0();
+	DebugBlock.VerticalX0 = VerticalDamper.GetX0();
+
+	DebugBlock.ForwardDampingFactor = ForwardDamper.GetW0();
+	DebugBlock.LateralDampingFactor = LateralDamper.GetW0();
+	DebugBlock.VerticalDampingFactor = VerticalDamper.GetW0();
+
+	DebugBlock.UndampedPosition = LastUndampedPosition;
+	DebugBlock.DampedPosition = LastDampedPosition;
+}
+
+void FDampenPositionCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
 	Renderer.AddText(
 			TEXT("forward %.3f (factor %.3f)  lateral %.3f (factor %.3f)  vertical %.3f (factor %.3f)"),
 			ForwardX0, ForwardDampingFactor,
 			LateralX0, LateralDampingFactor,
 			VerticalX0, VerticalDampingFactor);
-	return EDebugDrawResult::Default;
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
-
-UDampenPositionCameraNode::UDampenPositionCameraNode(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
-{
-}
 
 FCameraNodeEvaluatorPtr UDampenPositionCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {

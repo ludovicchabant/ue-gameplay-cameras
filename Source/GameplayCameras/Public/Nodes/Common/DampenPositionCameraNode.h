@@ -15,10 +15,6 @@ class UDampenPositionCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
-public:	
-
-	UDampenPositionCameraNode(const FObjectInitializer& ObjectInit);
-
 protected:
 
 	// UCameraNode interface.

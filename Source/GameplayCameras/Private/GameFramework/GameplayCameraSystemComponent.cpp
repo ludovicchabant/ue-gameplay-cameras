@@ -152,9 +152,9 @@ void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerControlle
 
 	if (Evaluator.IsValid())
 	{
-		FCameraSystemDebugDrawParams DebugDrawParams;
-		DebugDrawParams.Canvas = Canvas;
-		Evaluator->DebugDraw(DebugDrawParams);
+		FCameraSystemDebugUpdateParams DebugUpdateParams;
+		DebugUpdateParams.Canvas = Canvas;
+		Evaluator->DebugUpdate(DebugUpdateParams);
 	}
 }
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

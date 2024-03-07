@@ -7,6 +7,7 @@
 #include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
+#include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCameras.h"
 #include "UObject/ObjectPtr.h"
 
@@ -22,9 +23,8 @@ class FCameraSystemEvaluator;
 struct FCameraNodeEvaluatorBuilder;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-class FCameraDebugBlock;
 struct FCameraDebugBlockBuilder;
-#endif
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
  * Parameter structure for running a camera node evaluator.
@@ -59,11 +59,6 @@ struct FCameraNodeEvaluationResult
 
 	/** Reset this result to its default (non-valid) state. */
 	void Reset();
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	/** Builder for debug drawing blocks. May be null. */
-	FCameraDebugBlockBuilder* DebugBlockBuilder = nullptr;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 /**
@@ -102,6 +97,18 @@ struct FCameraNodeEvaluatorInitializeParams
 /** View on a camera node evaluator's children. */
 using FCameraNodeEvaluatorChildrenView = TObjectChildrenView<FCameraNodeEvaluator*>;
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+/**
+ * Structure for creating the node evaluator's debug blocks.
+ */
+struct FCameraDebugBlockBuildParams
+{
+	// Empty for now, but defined for later API changes.
+};
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 /**
  * Base class for objects responsible for running a camera node.
  */
@@ -136,6 +143,11 @@ public:
 		return Cast<CameraNodeType>(PrivateCameraNode);
 	}
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Called to create debug blocks for this node evaluator. */
+	void BuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 public:
 
 	// Internal API.
@@ -159,19 +171,8 @@ protected:
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-
-public:
-
-	/** Creates the debug drawing block for this camera node. */
-	void CreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder);
-
-private:
-
-	/**
-	 * Creates the debug drawing block for this camera node.
-	 */
-	virtual void OnCreateDebugBlock(const FCameraNodeEvaluationParams& Params, FCameraDebugBlockBuilder& Builder);
-
+	/** Called to create debug blocks for this node evaluator. */
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:

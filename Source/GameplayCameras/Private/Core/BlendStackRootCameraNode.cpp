@@ -4,6 +4,9 @@
 
 #include "Core/BlendCameraNode.h"
 #include "Core/CameraRigAsset.h"
+#include "Debug/CameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 
@@ -31,6 +34,12 @@ namespace UE::Cameras
 {
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackRootCameraNodeEvaluator)
+
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FBlendStackRootCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FString, CameraRigAssetName)
+UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackRootCameraDebugBlock)
 
 FCameraNodeEvaluatorChildrenView FBlendStackRootCameraNodeEvaluator::OnGetChildren()
 {
@@ -64,6 +73,54 @@ void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 		RootEvaluator->Run(Params, OutResult);
 	}
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FBlendStackRootCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	if (BlendEvaluator)
+	{
+		BlendEvaluator->BuildDebugBlocks(Params, Builder);
+	}
+	else
+	{
+		// Dummy block.
+		Builder.StartChildDebugBlock<FCameraDebugBlock>();
+		Builder.EndChildDebugBlock();
+	}
+
+	if (RootEvaluator)
+	{
+		RootEvaluator->BuildDebugBlocks(Params, Builder);
+	}
+	else
+	{
+		// Dummy block.
+		Builder.StartChildDebugBlock<FCameraDebugBlock>();
+		Builder.EndChildDebugBlock();
+	}
+
+	Builder.SkipChildren();
+}
+
+void FBlendStackRootCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
+
+	Renderer.AddText("{yellowgreen}[Blend]\n");
+	Renderer.AddIndent();
+	ChildrenView[0]->DebugDraw(Params, Renderer);
+	Renderer.RemoveIndent();
+
+	Renderer.AddText("{yellowgreen}[Camera Rig]\n");
+	Renderer.AddIndent();
+	ChildrenView[1]->DebugDraw(Params, Renderer);
+	Renderer.RemoveIndent();
+
+	Renderer.SkipAllBlocks();
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

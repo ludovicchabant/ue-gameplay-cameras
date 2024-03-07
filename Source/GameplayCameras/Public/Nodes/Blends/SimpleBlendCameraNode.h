@@ -59,6 +59,10 @@ protected:
 
 	void SetBlendFinished() { bIsBlendFinished = true; }
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	float BlendFactor = 0.f;

@@ -6,6 +6,7 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraRigAsset.h"
+#include "Debug/CameraDebugBlock.h"
 #include "IGameplayCamerasLiveEditListener.h"
 
 #include "BlendStackCameraNode.generated.h"
@@ -21,6 +22,10 @@ namespace UE::Cameras
 class FBlendStackRootCameraNodeEvaluator;
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+class FBlendStackCameraDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 
@@ -87,6 +92,10 @@ public:
 	/** Push a new camera rig onto the blend stack. */
 	void Push(const FBlendStackCameraPushParams& Params);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 protected:
 
 	// FCameraNodeEvaluator interface
@@ -94,6 +103,10 @@ protected:
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #if WITH_EDITOR
 	// IGameplayCamerasLiveEditListener interface
@@ -143,7 +156,57 @@ protected:
 #if WITH_EDITOR
 	TMap<const UPackage*, int32> AllListenedPackages;
 #endif  // WITH_EDITOR
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	friend class FBlendStackSummaryCameraDebugBlock;
+	friend class FBlendStackCameraDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+class FBlendStackSummaryCameraDebugBlock : public FCameraDebugBlock
+{
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(FBlendStackSummaryCameraDebugBlock)
+
+public:
+
+	FBlendStackSummaryCameraDebugBlock();
+	FBlendStackSummaryCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator);
+
+protected:
+
+	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+
+private:
+
+	int32 NumEntries;
+};
+
+class FBlendStackCameraDebugBlock : public FCameraDebugBlock
+{
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock)
+
+public:
+
+	FBlendStackCameraDebugBlock();
+	FBlendStackCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator);
+	
+protected:
+
+	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+
+private:
+
+	struct FEntryDebugInfo
+	{
+		FString CameraRigName;
+	};
+
+	TArray<FEntryDebugInfo> Entries;
+};
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

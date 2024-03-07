@@ -4,6 +4,9 @@
 
 #include "Core/BlendStackCameraNode.h"
 #include "Core/CameraRigAsset.h"
+#include "Debug/BlendStacksCameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/RootCameraDebugBlock.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DefaultRootCameraNode)
 
@@ -59,7 +62,6 @@ FCameraNodeEvaluatorChildrenView FDefaultRootCameraNodeEvaluator::OnGetChildren(
 	return FCameraNodeEvaluatorChildrenView({ BaseLayer, MainLayer, GlobalLayer, VisualLayer });
 }
 
-
 void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	BaseLayer->Run(Params, OutResult);
@@ -96,6 +98,33 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		TargetStack->Push(PushParams);
 	}
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FDefaultRootCameraNodeEvaluatorDebugBlock)
+UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FDefaultRootCameraNodeEvaluatorDebugBlock)
+
+void FDefaultRootCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	// Create the debug block that shows the overall blend stack layers.
+	FBlendStacksCameraDebugBlock& DebugBlock = Builder.BuildDebugBlock<FBlendStacksCameraDebugBlock>();
+	{
+		DebugBlock.AddBlendStack(TEXT("Base Layer"), BaseLayer->BuildDetailedDebugBlock(Params, Builder));
+		DebugBlock.AddBlendStack(TEXT("Main Layer"), MainLayer->BuildDetailedDebugBlock(Params, Builder));
+		DebugBlock.AddBlendStack(TEXT("Global Layer"), GlobalLayer->BuildDetailedDebugBlock(Params, Builder));
+		DebugBlock.AddBlendStack(TEXT("Visual Layer"), VisualLayer->BuildDetailedDebugBlock(Params, Builder));
+	}
+
+	Builder.GetRootDebugBlock().AddChild(&DebugBlock);
+}
+
+void FDefaultRootCameraNodeEvaluatorDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

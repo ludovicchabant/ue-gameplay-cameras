@@ -2,12 +2,22 @@
 
 #include "Nodes/Blends/SimpleBlendCameraNode.h"
 
+#include "Debug/CameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SimpleBlendCameraNode)
 
 namespace UE::Cameras
 {
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleBlendCameraNodeEvaluator)
+
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FSimpleBlendCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, BlendFactor)
+UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FSimpleBlendCameraDebugBlock)
 
 void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
@@ -40,6 +50,20 @@ void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParam
 	OutResult.bIsBlendFull = BlendFactor >= 1.f;
 	OutResult.bIsBlendFinished = bIsBlendFinished;
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FSimpleBlendCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	FSimpleBlendCameraDebugBlock& DebugBlock = Builder.AttachDebugBlock<FSimpleBlendCameraDebugBlock>();
+	DebugBlock.BlendFactor = BlendFactor;
+}
+
+void FSimpleBlendCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	Renderer.AddText(TEXT("blend %.2f%%"), BlendFactor * 100.f);
+}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleFixedTimeBlendCameraNodeEvaluator)
 

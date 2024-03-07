@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "EngineDefines.h"
 #include "HAL/Platform.h"
 #include "Stats/Stats.h"
 
 #ifndef UE_GAMEPLAY_CAMERAS_DEBUG
-	#if (!UE_BUILD_SHIPPING || WITH_UNREAL_DEVELOPER_TOOLS || WITH_UNREAL_TARGET_DEVELOPER_TOOLS)
+	#if UE_ENABLE_DEBUG_DRAWING
 		#define UE_GAMEPLAY_CAMERAS_DEBUG 1
 	#else
 		#define UE_GAMEPLAY_CAMERAS_DEBUG 0

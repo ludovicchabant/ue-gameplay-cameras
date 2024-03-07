@@ -6,6 +6,7 @@
 #include "Containers/Set.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
+#include "GameplayCameras.h"
 #include "Misc/EnumClassFlags.h"
 #include "Templates/UnrealTypeTraits.h"
 #include "UObject/NameTypes.h"
@@ -168,6 +169,10 @@ private:
 
 	template<typename T>
 	friend struct TCameraVariableInterpolation;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	friend class FVariableTableDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 ENUM_CLASS_FLAGS(FCameraVariableTable::EEntryFlags)
@@ -178,7 +183,10 @@ const ValueType* FCameraVariableTable::FindValue(uint32 VariableId) const
 	if (const FEntry* Entry = Entries.Find(VariableId))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
-		return reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		if (EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
+		{
+			return reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		}
 	}
 	return nullptr;
 }
@@ -188,6 +196,17 @@ const ValueType& FCameraVariableTable::GetValue(uint32 VariableId) const
 {
 	const FEntry& Entry = Entries.FindChecked(VariableId);
 	CheckVariableType<ValueType>(Entry.Type);
+#if WITH_EDITORONLY_DATA
+	checkf(
+			EnumHasAnyFlags(Entry.Flags, EEntryFlags::Written),
+			TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+			*Entry.DebugName);
+#else
+	checkf(
+			EnumHasAnyFlags(Entry.Flags, EEntryFlags::Written),
+			TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+			*LexToString(VariableId));
+#endif
 	return *reinterpret_cast<ValueType*>(Memory + Entry.Offset);
 }
 

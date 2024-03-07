@@ -66,7 +66,7 @@ struct FCameraSystemEvaluationUpdateResult
 };
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-struct FCameraSystemDebugDrawParams
+struct FCameraSystemDebugUpdateParams
 {
 	UCanvas* Canvas = nullptr;
 };
@@ -96,16 +96,27 @@ public:
 	/** Pop the active (top) evaluation context from the stack. */
 	void PopEvaluationContext();
 
+	/** Gets the context stack. */
+	FCameraEvaluationContextStack& GetEvaluationContextStack() { return ContextStack; }
+	/** Gets the context stack. */
+	const FCameraEvaluationContextStack& GetEvaluationContextStack() const { return ContextStack; }
+
 public:
 
 	/** Run an update of the camera system. */
 	void Update(const FCameraSystemEvaluationUpdateParams& Params);
 
+	/** Returns the root node evaluator. */
+	FRootCameraNodeEvaluator* GetRootNodeEvaluator() const { return RootEvaluator; }
+
+	/** Gets the evaluated result. */
+	const FCameraSystemEvaluationUpdateResult& GetEvaluatedResult() const { return Result; }
+
 	/** Get the last evaluated camera. */
 	void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	void DebugDraw(const FCameraSystemDebugDrawParams& Params);
+	void DebugUpdate(const FCameraSystemDebugUpdateParams& Params);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 public:
