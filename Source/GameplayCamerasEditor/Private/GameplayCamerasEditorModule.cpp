@@ -6,10 +6,16 @@
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
+#include "Commands/GameplayCamerasDebuggerCommands.h"
+#include "Debug/CameraDebugCategories.h"
+#include "Debugger/SBlendStacksDebugPanel.h"
+#include "Debugger/SCameraNodeTreeDebugPanel.h"
+#include "Debugger/SGameplayCamerasDebugger.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
 #include "ISettingsModule.h"
+#include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -33,7 +39,19 @@ public:
 
 	virtual void StartupModule() override
 	{
+		if (GEditor)
+		{
+			OnPostEngineInit();
+		}
+		else
+		{
+			FCoreDelegates::OnPostEngineInit.AddRaw(this, &FGameplayCamerasEditorModule::OnPostEngineInit);
+		}
+
+		FCoreDelegates::OnEnginePreExit.AddRaw(this, &FGameplayCamerasEditorModule::OnPreExit);
+
 		RegisterSettings();
+		RegisterCoreDebugCategories();
 		InitializeLiveEditManager();
 
 		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
@@ -48,9 +66,14 @@ public:
 
 		FCameraAssetEditorCommands::Unregister();
 		FCameraRigAssetEditorCommands::Unregister();
+		FGameplayCamerasDebuggerCommands::Unregister();
 
 		UnregisterSettings();
+		UnregisterCoreDebugCategories();
 		TeardownLiveEditManager();
+
+		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
+		FCoreDelegates::OnEnginePreExit.RemoveAll(this);
 	}
 
 	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) override
@@ -69,7 +92,69 @@ public:
 		return AssetEditor;
 	}
 
+	virtual void RegisterDebugCategory(const UE::Cameras::FCameraDebugCategoryInfo& InCategoryInfo) override
+	{
+		if (!ensureMsgf(!InCategoryInfo.Name.IsEmpty(), TEXT("A debug category must at least specify a name!")))
+		{
+			return;
+		}
+
+		DebugCategoryInfos.Add(InCategoryInfo.Name, InCategoryInfo);
+	}
+
+	virtual void GetRegisteredDebugCategories(TArray<UE::Cameras::FCameraDebugCategoryInfo>& OutCategoryInfos) override
+	{
+		DebugCategoryInfos.GenerateValueArray(OutCategoryInfos);
+	}
+
+	virtual void UnregisterDebugCategory(const FString& InCategoryName)
+	{
+		DebugCategoryInfos.Remove(InCategoryName);
+
+	}
+
+	virtual void RegisterDebugCategoryPanel(const FString& InDebugCategory, FOnCreateDebugCategoryPanel OnCreatePanel) override
+	{
+		if (!DebugCategoryPanelCreators.Contains(InDebugCategory))
+		{
+			DebugCategoryPanelCreators.Add(InDebugCategory, OnCreatePanel);
+		}
+		else
+		{
+			// Override existing creator... for games and projects that want to extend a panel with extra controls.
+			DebugCategoryPanelCreators[InDebugCategory] = OnCreatePanel;
+		}
+	}
+
+	virtual TSharedPtr<SWidget> CreateDebugCategoryPanel(const FString& InDebugCategory) override
+	{
+		if (FOnCreateDebugCategoryPanel* PanelCreator = DebugCategoryPanelCreators.Find(InDebugCategory))
+		{
+			return PanelCreator->Execute(InDebugCategory).ToSharedPtr();
+		}
+		return nullptr;
+	}
+
+	virtual void UnregisterDebugCategoryPanel(const FString& InDebugCategory) override
+	{
+		DebugCategoryPanelCreators.Remove(InDebugCategory);
+	}
+
 private:
+
+	void OnPostEngineInit()
+	{
+		using namespace UE::Cameras;
+
+		SGameplayCamerasDebugger::RegisterTabSpawners();
+	}
+
+	void OnPreExit()
+	{
+		using namespace UE::Cameras;
+
+		SGameplayCamerasDebugger::UnregisterTabSpawners();
+	}
 
 	void RegisterSettings()
 	{
@@ -96,12 +181,69 @@ private:
 		}
 	}
 
+	void RegisterCoreDebugCategories()
+	{
+		using namespace UE::Cameras;
+
+		TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
+		const FName& GameplayCamerasEditorStyleName = GameplayCamerasEditorStyle->GetStyleSetName();
+
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::NodeTree,
+				LOCTEXT("NodeTreeDebugCategory", "Node Tree"),
+				LOCTEXT("NodeTreeDebugCategoryToolTip", "Shows the entire camrera node evaluator tree"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.NodeTree.Icon")
+			});
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::DirectorTree,
+				LOCTEXT("DirectorTreeDebugCategory", "Node Tree"),
+				LOCTEXT("DirectorTreeDebugCategoryToolTip", "Shows the active/inactive directors, and their evaluation context"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.DirectorTree.Icon")
+			});
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::BlendStacks,
+				LOCTEXT("BlendStacksDebugCategory", "Blend Stacks"),
+				LOCTEXT("BlendStacksDebugCategoryToolTip", "Shows a summary of the blend stacks"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.BlendStacks.Icon")
+			});
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::PoseStats,
+				LOCTEXT("PoseStatsDebugCategory", "Pose Stats"),
+				LOCTEXT("PoseStatsDebugCategoryToolTip", "Shows the evaluated camera pose"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.PoseStats.Icon")
+			});
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::Viewfinder,
+				LOCTEXT("ViewfinderDebugCategory", "Viewfinder"),
+				LOCTEXT("ViewfinderDebugCategoryToolTip", "Shows an old-school viewfinder on screen"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.Viewfinder.Icon")
+			});
+
+		RegisterDebugCategoryPanel(FCameraDebugCategories::NodeTree, FOnCreateDebugCategoryPanel::CreateLambda([](const FString&)
+					{
+						return SNew(SCameraNodeTreeDebugPanel);
+					}));
+		RegisterDebugCategoryPanel(FCameraDebugCategories::BlendStacks, FOnCreateDebugCategoryPanel::CreateLambda([](const FString&)
+					{
+						return SNew(SBlendStacksDebugPanel);
+					}));
+	}
+
+	void UnregisterCoreDebugCategories()
+	{
+		using namespace UE::Cameras;
+
+		UnregisterDebugCategoryPanel(FCameraDebugCategories::BlendStacks);
+		UnregisterDebugCategoryPanel(FCameraDebugCategories::NodeTree);
+	}
+
 	void RegisterMenus()
 	{
 		using namespace UE::Cameras;
 
 		FCameraAssetEditorCommands::Register();
 		FCameraRigAssetEditorCommands::Register();	
+		FGameplayCamerasDebuggerCommands::Register();
 	}
 
 	void InitializeLiveEditManager()
@@ -133,6 +275,9 @@ private:
 private:
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasLiveEditManager> LiveEditManager;
+
+	TMap<FString, UE::Cameras::FCameraDebugCategoryInfo> DebugCategoryInfos;
+	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasEditorModule, GameplayCamerasEditor);

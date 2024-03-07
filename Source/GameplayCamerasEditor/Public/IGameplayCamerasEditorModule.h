@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Delegates/Delegate.h"
 #include "Modules/ModuleInterface.h"
 #include "Toolkits/AssetEditorToolkit.h"
 
@@ -10,6 +11,21 @@ class UCameraAsset;
 class UCameraAssetEditor;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
+
+DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPanel, const FString&);
+
+namespace UE::Cameras
+{
+
+struct FCameraDebugCategoryInfo
+{
+	FString Name;
+	FText DisplayText;
+	FText ToolTipText;
+	FSlateIcon IconImage;
+};
+
+}  // namespace UE::Cameras
 
 /**
  * The gameplay cameras editor module.
@@ -19,7 +35,6 @@ class IGameplayCamerasEditorModule : public IModuleInterface
 public:
 
 	static const FName GameplayCamerasEditorAppIdentifier;
-
 	static const FName CameraRigAssetEditorToolBarName;
 
 	virtual ~IGameplayCamerasEditorModule() = default;
@@ -31,5 +46,23 @@ public:
 
 	/** Creates an editor for the given camera rig asset */
 	virtual UCameraRigAssetEditor* CreateCameraRigEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraRigAsset* CameraRig) = 0;
+
+public:
+
+	using FCameraDebugCategoryInfo = UE::Cameras::FCameraDebugCategoryInfo;
+
+	/** Registers a new debug category, to be displayed in the camera debugger tool. */
+	virtual void RegisterDebugCategory(const UE::Cameras::FCameraDebugCategoryInfo& InCategoryInfo) = 0;
+	/** Gets all registered debug categories. */
+	virtual void GetRegisteredDebugCategories(TArray<UE::Cameras::FCameraDebugCategoryInfo>& OutCategoryInfos) = 0;
+	/** Unregisters a debug category. */
+	virtual void UnregisterDebugCategory(const FString& InCategoryName) = 0;
+
+	/** Registers a custom UI panel for a given debug category. */
+	virtual void RegisterDebugCategoryPanel(const FString& InCategoryName, FOnCreateDebugCategoryPanel OnCreatePanel) = 0;
+	/** Creates the custom UI panel (if any) for a given debug category. */
+	virtual TSharedPtr<SWidget> CreateDebugCategoryPanel(const FString& InCategoryName) = 0;
+	/** Unregisters a debug category's custom UI panel. */
+	virtual void UnregisterDebugCategoryPanel(const FString& InCategoryName) = 0;
 };
 
