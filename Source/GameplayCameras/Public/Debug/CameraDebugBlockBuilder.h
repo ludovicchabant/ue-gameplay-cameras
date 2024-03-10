@@ -117,7 +117,7 @@ private:
 	FRootCameraDebugBlock& RootBlock;
 	TArray<FCameraDebugBlock*> CurrentHierarchy;
 
-	ECameraDebugBlockBuildVisitFlags VisitFlags;
+	ECameraDebugBlockBuildVisitFlags VisitFlags = ECameraDebugBlockBuildVisitFlags::None;
 	int32 HierarchyOverrideStart = INDEX_NONE;
 };
 
