@@ -74,8 +74,6 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 
 	const FCameraDebugColors& Colors = FCameraDebugColors::Get();
 
-	Renderer.AddText(TEXT("{cam_title}Variable Table{cam_default}\n"));
-	Renderer.AddIndent();
 	for (const FEntryDebugInfo& Entry : Entries)
 	{
 #if WITH_EDITORONLY_DATA
@@ -83,7 +81,14 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 		{
 			Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Entry.Id);
 		}
-		Renderer.AddText(TEXT("%s : "), *Entry.Name);
+		if (!Entry.Name.IsEmpty())
+		{
+			Renderer.AddText(TEXT("%s : "), *Entry.Name);
+		}
+		else
+		{
+			Renderer.AddText(TEXT("<no name data> : "), Entry.Id);
+		}
 #else
 		Renderer.AddText(TEXT("[%d] <no name data> : "), Entry.Id);
 #endif
@@ -104,23 +109,6 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 		Renderer.NewLine();
 		Renderer.SetTextColor(Colors.Default);
 	}
-	Renderer.RemoveIndent();
-}
-
-void FVariableTableDebugBlock::OnSerialize(FArchive& Ar)
-{
-	Ar << Entries;
-	Ar << ShowVariableIdsCVarName;
-}
-
-FArchive& operator<< (FArchive& Ar, FVariableTableDebugBlock::FEntryDebugInfo& EntryDebugInfo)
-{
-	Ar << EntryDebugInfo.Id;
-	Ar << EntryDebugInfo.Name;
-	Ar << EntryDebugInfo.Value;
-	Ar << EntryDebugInfo.bWritten;
-	Ar << EntryDebugInfo.bWrittenThisFrame;
-	return Ar;
 }
 
 void FVariableTableDebugBlock::OnSerialize(FArchive& Ar)
