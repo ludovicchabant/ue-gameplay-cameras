@@ -2,9 +2,11 @@
 
 #pragma once
 
+#include "Core/CameraPose.h"
 #include "CoreMinimal.h"
 #include "Engine/EngineTypes.h"
 #include "GameFramework/Actor.h"
+#include "GameplayCameras.h"
 #include "UObject/ObjectMacros.h"
 
 #include "GameplayCameraSystemActor.generated.h"
