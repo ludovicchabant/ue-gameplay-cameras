@@ -2,6 +2,8 @@
 
 #include "Trace/CameraSystemTraceProvider.h"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+
 namespace UE::Cameras
 {
 
@@ -21,4 +23,6 @@ void FCameraSystemTraceProvider::AppendFrameData(double InRecordingTime, FCamera
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

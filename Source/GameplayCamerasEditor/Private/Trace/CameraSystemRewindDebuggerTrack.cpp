@@ -13,6 +13,8 @@
 
 #define LOCTEXT_NAMESPACE "CameraSystemRewindDebuggerTrack"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+
 namespace UE::Cameras
 {
 
@@ -151,6 +153,8 @@ TSharedPtr<RewindDebugger::FRewindDebuggerTrack> FCameraSystemRewindDebuggerTrac
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
 #undef LOCTEXT_NAMESPACE
 

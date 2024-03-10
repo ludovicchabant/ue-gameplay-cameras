@@ -12,6 +12,7 @@
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
 #include "Debugger/SGameplayCamerasDebugger.h"
 #include "Features/IModularFeatures.h"
+#include "GameplayCameras.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
@@ -255,6 +256,7 @@ private:
 
 	void RegisterRewindDebuggerFeatures()
 	{
+#if UE_GAMEPLAY_CAMERAS_TRACE
 		using namespace UE::Cameras;
 
 		TraceModule = MakeShared<UE::Cameras::FCameraSystemTraceModule>();
@@ -265,14 +267,17 @@ private:
 		ModularFeatures.RegisterModularFeature(IRewindDebuggerExtension::ModularFeatureName, RewindDebuggerExtension.Get());
 		ModularFeatures.RegisterModularFeature(RewindDebugger::IRewindDebuggerTrackCreator::ModularFeatureName, RewindDebuggerTrackCreator.Get());
 		ModularFeatures.RegisterModularFeature(TraceServices::ModuleFeatureName, TraceModule.Get());
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 
 	void UnregisterRewindDebuggerFeatures()
 	{
+#if UE_GAMEPLAY_CAMERAS_TRACE
 		IModularFeatures& ModularFeatures = IModularFeatures::Get();
 		ModularFeatures.UnregisterModularFeature(IRewindDebuggerExtension::ModularFeatureName, RewindDebuggerExtension.Get());
 		ModularFeatures.UnregisterModularFeature(RewindDebugger::IRewindDebuggerTrackCreator::ModularFeatureName, RewindDebuggerTrackCreator.Get());
 		ModularFeatures.UnregisterModularFeature(TraceServices::ModuleFeatureName, TraceModule.Get());
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 
 	void InitializeLiveEditManager()
@@ -308,9 +313,11 @@ private:
 	TMap<FString, UE::Cameras::FCameraDebugCategoryInfo> DebugCategoryInfos;
 	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
 	TSharedPtr<UE::Cameras::FCameraSystemTraceModule> TraceModule;
 	TSharedPtr<UE::Cameras::FCameraSystemRewindDebuggerExtension> RewindDebuggerExtension;
 	TSharedPtr<UE::Cameras::FCameraSystemRewindDebuggerTrackCreator> RewindDebuggerTrackCreator;
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasEditorModule, GameplayCamerasEditor);

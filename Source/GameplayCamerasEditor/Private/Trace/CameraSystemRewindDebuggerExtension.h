@@ -4,9 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Debug/CameraDebugBlockStorage.h"
+#include "GameplayCameras.h"
 #include "IRewindDebugger.h"
 #include "IRewindDebuggerExtension.h"
 #include "Templates/SharedPointerFwd.h"
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
 
 class APlayerController;
 class UCanvas;
@@ -48,4 +51,6 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayCameras.h"
 #include "TraceServices/ModuleService.h"
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
 
 namespace Insights { class ITimingViewSession; }
 
@@ -29,6 +32,7 @@ private:
 	static FName ModuleName;
 };
 
-
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

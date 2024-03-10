@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "GameplayCameras.h"
 #include "Trace/Analyzer.h"
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
 
 namespace TraceServices { class IAnalysisSession; }
 
@@ -32,4 +35,6 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "GameplayCameras.h"
 #include "IRewindDebuggerTrackCreator.h"
 #include "Math/Color.h"
 #include "RewindDebuggerTrack.h"
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
 
 namespace UE::Cameras
 {
@@ -62,4 +65,6 @@ protected:
 };
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

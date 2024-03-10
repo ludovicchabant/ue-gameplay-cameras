@@ -13,6 +13,8 @@
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "Trace/CameraSystemTraceProvider.h"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+
 namespace UE::Cameras
 {
 
@@ -105,4 +107,6 @@ void FCameraSystemRewindDebuggerExtension::DebugDraw(UCanvas* Canvas, APlayerCon
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

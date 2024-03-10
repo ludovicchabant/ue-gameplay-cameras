@@ -7,6 +7,8 @@
 #include "Trace/CameraSystemTraceProvider.h"
 #include "Trace/CameraSystemTraceAnalyzer.h"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+
 namespace UE::Cameras
 {
 
@@ -35,4 +37,6 @@ void FCameraSystemTraceModule::GenerateReports(const TraceServices::IAnalysisSes
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 

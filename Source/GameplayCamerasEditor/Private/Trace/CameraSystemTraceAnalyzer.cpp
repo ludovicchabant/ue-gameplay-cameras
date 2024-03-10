@@ -5,6 +5,8 @@
 #include "Debug/CameraSystemTrace.h"
 #include "Trace/CameraSystemTraceProvider.h"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+
 namespace UE::Cameras
 {
 
@@ -45,4 +47,6 @@ bool FCameraSystemTraceAnalyzer::OnEvent(uint16 RouteId, EStyle Style, const FOn
 }
 
 }  // namespace UE::Cameras
+
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
