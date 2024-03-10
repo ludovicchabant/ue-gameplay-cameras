@@ -34,24 +34,27 @@ struct FCameraObjectTypeID
 	{
 		return ID;
 	}
-
-	const FName& GetTypeName() const
+	
+	bool IsValid() const
 	{
-		return Name;
+		return ID != MAX_uint32;
 	}
 
-	FCameraObjectTypeID(const FName& InName, uint32 InID)
-		: Name(InName)
-		, ID(InID)
+	FCameraObjectTypeID(uint32 InID)
+		: ID(InID)
 	{}
 
+	static FCameraObjectTypeID Invalid()
+	{
+		return FCameraObjectTypeID(MAX_uint32);
+	}
+
 protected:
 
-	static uint32 RegisterNewID();
+	GAMEPLAYCAMERAS_API static uint32 RegisterNewID();
 
 protected:
 
-	FName Name;
 	uint32 ID;
 };
 
@@ -60,6 +63,11 @@ protected:
  */
 struct FCameraObjectTypeInfo
 {
+	FName TypeName;
+
+	uint32 Sizeof = 0;
+	uint32 Alignof = 0;
+
 	using FConstructor = void(*)(void*);
 	FConstructor Constructor;
 
@@ -76,8 +84,11 @@ public:
 
 	static FCameraObjectTypeRegistry& Get();
 
-	void RegisterType(FCameraObjectTypeID TypeID, FCameraObjectTypeInfo&& TypeInfo);
-	void ConstructObject(FCameraObjectTypeID TypeID, void* Ptr);
+	GAMEPLAYCAMERAS_API void RegisterType(FCameraObjectTypeID TypeID, FCameraObjectTypeInfo&& TypeInfo);
+	GAMEPLAYCAMERAS_API FCameraObjectTypeID FindTypeByName(const FName& TypeName);
+	GAMEPLAYCAMERAS_API const FCameraObjectTypeInfo* GetTypeInfo(FCameraObjectTypeID TypeID);
+
+	GAMEPLAYCAMERAS_API void ConstructObject(FCameraObjectTypeID TypeID, void* Ptr);
 
 private:
 
@@ -93,12 +104,14 @@ struct TCameraObjectTypeID : FCameraObjectTypeID
 {
 private:
 
-	TCameraObjectTypeID(const FName& InName, uint32 InID) : FCameraObjectTypeID(InName, InID) {}
+	TCameraObjectTypeID(uint32 InID) : FCameraObjectTypeID(InID) {}
 
 	static TCameraObjectTypeID RegisterType(const FName& InClassName)
 	{
-		TCameraObjectTypeID NewTypeID(InClassName, FCameraObjectTypeID::RegisterNewID());
-		FCameraObjectTypeInfo NewTypeInfo { 
+		TCameraObjectTypeID NewTypeID(FCameraObjectTypeID::RegisterNewID());
+		FCameraObjectTypeInfo NewTypeInfo {
+			InClassName,
+			sizeof(T), alignof(T),
 			&TCameraObjectTypeID<T>::StaticConstructor,
 			&TCameraObjectTypeID<T>::StaticDestructor
 		};
@@ -137,7 +150,7 @@ private:
 		template<typename Type> Type* CastThisChecked() { check(IsKindOf<Type>()); return static_cast<Type*>(this); }\
 		template<typename Type> const Type* CastThisChecked() const { check(IsKindOf<Type>()); return static_cast<Type*>(this); }\
 	private:\
-		static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
+		GAMEPLAYCAMERAS_API static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
 
 #define UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)\
 	public:\
@@ -145,7 +158,7 @@ private:
 		virtual const FCameraObjectTypeID& GetTypeID() const override { return ClassName::PrivateTypeID; }\
 		virtual bool IsKindOf(const FCameraObjectTypeID& InTypeID) const override { return (InTypeID == ClassName::PrivateTypeID) || BaseClassName::IsKindOf(InTypeID); }\
 	private:\
-		static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
+		GAMEPLAYCAMERAS_API static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
 
 #define UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)\
 	const ::UE::Cameras::TCameraObjectTypeID<ClassName> ClassName::PrivateTypeID = ::UE::Cameras::TCameraObjectTypeID<ClassName>::RegisterType(#ClassName);

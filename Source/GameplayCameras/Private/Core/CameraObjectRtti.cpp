@@ -20,10 +20,31 @@ FCameraObjectTypeRegistry& FCameraObjectTypeRegistry::Get()
 void FCameraObjectTypeRegistry::RegisterType(FCameraObjectTypeID TypeID, FCameraObjectTypeInfo&& TypeInfo)
 {
 	ensureMsgf(
-			!TypeIDsByName.Contains(TypeID.GetTypeName()), 
-			TEXT("Type '%s' has already been registered!"), *TypeID.GetTypeName().ToString());
-	TypeIDsByName.Add(TypeID.GetTypeName(), TypeID.GetTypeID());
+			!TypeIDsByName.Contains(TypeInfo.TypeName), 
+			TEXT("Type '%s' has already been registered!"), *TypeInfo.TypeName.ToString());
+	TypeIDsByName.Add(TypeInfo.TypeName, TypeID.GetTypeID());
 	TypeInfos.Insert(TypeID.GetTypeID(), MoveTemp(TypeInfo));
+}
+
+FCameraObjectTypeID FCameraObjectTypeRegistry::FindTypeByName(const FName& TypeName)
+{
+	if (uint32* RegisteredTypeID = TypeIDsByName.Find(TypeName))
+	{
+		return FCameraObjectTypeID{ *RegisteredTypeID };
+	}
+	return FCameraObjectTypeID::Invalid();
+}
+
+const FCameraObjectTypeInfo* FCameraObjectTypeRegistry::GetTypeInfo(FCameraObjectTypeID TypeID)
+{
+	if (ensureMsgf(
+				TypeID.IsValid() && TypeInfos.IsValidIndex(TypeID.GetTypeID()),
+				TEXT("Given type ID is not valid, or not registered.")))
+	{
+		const FCameraObjectTypeInfo& TypeInfo = TypeInfos[TypeID.GetTypeID()];
+		return &TypeInfo;
+	}
+	return nullptr;
 }
 
 void FCameraObjectTypeRegistry::ConstructObject(FCameraObjectTypeID TypeID, void* Ptr)
