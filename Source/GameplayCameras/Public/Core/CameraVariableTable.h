@@ -110,6 +110,7 @@ public:
 	void OverrideChanged(const FCameraVariableTable& OtherTable);
 	void OverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
+	void LerpAll(const FCameraVariableTable& ToTable, float Factor);
 	void LerpChanged(const FCameraVariableTable& ToTable, float Factor);
 	void LerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 

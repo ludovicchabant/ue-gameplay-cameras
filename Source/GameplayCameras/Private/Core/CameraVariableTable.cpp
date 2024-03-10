@@ -303,6 +303,11 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 	}
 }
 
+void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor)
+{
+	InternalLerp(ToTable, Factor, nullptr, false, nullptr, false);
+}
+
 void FCameraVariableTable::LerpChanged(const FCameraVariableTable& ToTable, float Factor)
 {
 	InternalLerp(ToTable, Factor, nullptr, false, nullptr, true);

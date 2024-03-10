@@ -31,14 +31,9 @@ void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParam
 	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
 	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);
 
-	BlendedResult.CameraPose.LerpChanged(
-			ChildResult.CameraPose, 
-			BlendFactor,
-			ChildResult.CameraPose.GetChangedFlags(), // or is it BlendedResult flags?
-			false,
-			BlendedResult.CameraPose.GetChangedFlags());
-
-	BlendedResult.VariableTable.LerpChanged(ChildResult.VariableTable, BlendFactor);
+	// Blend all properties.
+	BlendedResult.CameraPose.LerpAll(ChildResult.CameraPose, BlendFactor);
+	BlendedResult.VariableTable.LerpAll(ChildResult.VariableTable, BlendFactor);
 
 	// If we have even a fraction of a camera cut, we need to make the
 	// whole result into a camera cut.
@@ -63,6 +58,7 @@ void FSimpleBlendCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 {
 	Renderer.AddText(TEXT("blend %.2f%%"), BlendFactor * 100.f);
 }
+
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleFixedTimeBlendCameraNodeEvaluator)

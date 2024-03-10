@@ -50,6 +50,14 @@ UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 
 public:
 
+	/** Returns a structure where all flags are set. */
+	static const FCameraPoseFlags& All();
+
+	/** Creates a new flags structure. */
+	FCameraPoseFlags();
+	/** Creates a new flags structure with all flags set to the given value. */
+	FCameraPoseFlags(bool bInValue);
+
 	/** Sets all flags to the given value. */
 	FCameraPoseFlags& SetAllFlags(bool bInValue);
 	/** Sets the flags that are set in OtherFlags, but checks that no flag is set on both structures. */
@@ -140,8 +148,12 @@ public:
 
 	// Interpolation
 	
+	/** Takes all properties from OtherPose and sets them on this camera pose. */
+	void OverrideAll(const FCameraPose& OtherPose);
 	/** Takes all changed properties from OtherPose and sets them on this camera pose. */
 	void OverrideChanged(const FCameraPose& OtherPose);
+	/** Interpolates all properties from ToPose using the given factor. */
+	void LerpAll(const FCameraPose& ToPose, float Factor);
 	/** Interpolates all changed properties from ToPose using the given factor. */
 	void LerpChanged(const FCameraPose& ToPose, float Factor);
 	/** Interpolates changed properties from ToPose using the given factor. Only properties defined by InMask are taken into account. */
@@ -150,6 +162,8 @@ public:
 private:
 
 	void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask);
+	void InternalOverrideChanged(const FCameraPose& OtherPose, bool bChangedOnly);
+	void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask, bool bChangedOnly);
 
 private:
 

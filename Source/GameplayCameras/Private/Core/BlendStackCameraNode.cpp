@@ -204,8 +204,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			continue;
 		}
 
-		const FCameraPoseFlags ChangedFlags(CurResult.CameraPose.GetChangedFlags());
-
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = Entry.EvaluationContext.Pin();
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
@@ -229,8 +227,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 			PopEntriesBelow = EntryIndex;
 		}
-
-		CurResult.CameraPose.SetChangedFlags(ChangedFlags);
 		
 		++EntryIndex;
 	}
