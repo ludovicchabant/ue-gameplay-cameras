@@ -319,3 +319,18 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 	}
 }
 
+void FCameraPose::SerializeWithFlags(FArchive& Ar, FCameraPose& CameraPose)
+{
+	static FCameraPose DefaultCameraPose;
+
+	UScriptStruct* ClassStruct = FCameraPose::StaticStruct();
+	ClassStruct->SerializeItem(Ar, &CameraPose, &DefaultCameraPose);
+
+#define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
+	Ar << CameraPose.ChangedFlags.PropName;
+
+UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
+
+#undef UE_CAMERA_POSE_FOR_PROPERTY
+}
+

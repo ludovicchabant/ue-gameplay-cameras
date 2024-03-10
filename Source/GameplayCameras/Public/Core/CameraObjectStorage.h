@@ -17,8 +17,8 @@ namespace UE::Cameras
 template<typename BaseObjectType>
 struct TCameraObjectStorageTraits
 {
-	static const uint16 DefaultPageCapacity = 128;
-	static const uint16 DefaultPageAlignment = 32;
+	static const uint32 DefaultPageCapacity = 128;
+	static const uint32 DefaultPageAlignment = 32;
 };
 
 /**
@@ -55,6 +55,21 @@ protected:
 	BuildObject(ArgTypes&&... InArgs);
 
 	/**
+	 * Allocates memory for an object of the given size and alignment, but
+	 * doesn't initialize anything in that memory block.
+	 *
+	 * After the caller has constructed the object in-place, they MUST call
+	 * RegisterInitializedObject() with the actual object pointer, otherwise 
+	 * the storage won't call its destructor.
+	 */
+	void* BuildObjectUninitialized(uint32 Sizeof, uint32 Alignof);
+
+	/**
+	 * Called to registered an object after it has been constructed.
+	 */
+	void RegisterInitializedObject(BaseObjectType* BaseObjectPtr);
+
+	/**
 	 * Destroys all objects in the storage.
 	 *
 	 * @param bFreeAllocations Whether to also free the memory buffers
@@ -64,12 +79,12 @@ protected:
 	/**
 	 * Computes information about the overall allocated memory.
 	 */
-	void GetAllocationInfo(uint16& OutTotalUsed, uint16& OutFirstAlignment) const;
+	void GetAllocationInfo(uint32& OutTotalUsed, uint32& OutFirstAlignment) const;
 
 	/**
 	 * Allocates a new page buffer.
 	 */
-	void AllocatePage(uint16 InCapacity, uint16 InAlignment);
+	void AllocatePage(uint32 InCapacity, uint32 InAlignment);
 
 private:
 
@@ -77,9 +92,9 @@ private:
 	struct FAllocation
 	{
 		uint8* Memory = nullptr;
-		uint16 Alignment = 0;
-		uint16 Capacity = 0;
-		uint16 Used = 0;
+		uint32 Alignment = 0;
+		uint32 Capacity = 0;
+		uint32 Used = 0;
 	};
 	/** Allocated page buffers */
 	TArray<FAllocation> Allocations;
@@ -127,17 +142,28 @@ template<typename ObjectType, typename ...ArgTypes>
 typename TEnableIf<TPointerIsConvertibleFromTo<ObjectType, BaseObjectType>::Value, ObjectType*>::Type
 TCameraObjectStorage<BaseObjectType>::BuildObject(ArgTypes&&... InArgs)
 {
-	uint16 StateSizeof = sizeof(ObjectType);
-	uint16 StateAlignof = alignof(ObjectType);
+	const uint32 Sizeof = sizeof(ObjectType);
+	const uint32 Alignof = alignof(ObjectType);
+	void* TargetPtr = BuildObjectUninitialized(Sizeof, Alignof);
 
+	ObjectType* NewObject = new(TargetPtr) ObjectType(Forward<ArgTypes>(InArgs)...);
+
+	RegisterInitializedObject(NewObject);
+
+	return NewObject;
+}
+
+template<typename BaseObjectType>
+void* TCameraObjectStorage<BaseObjectType>::BuildObjectUninitialized(uint32 Sizeof, uint32 Alignof)
+{
 	// Search for any allocation bucket that has enough room for the object
 	// we want to build.
 	uint8* TargetPtr = nullptr;
 	FAllocation* TargetAllocation = nullptr;
 	for (FAllocation& Allocation : Allocations)
 	{
-		uint8* PossiblePtr = Align(Allocation.Memory + Allocation.Used, StateAlignof);
-		uint16 NewUsed = (PossiblePtr + StateSizeof) - Allocation.Memory;
+		uint8* PossiblePtr = Align(Allocation.Memory + Allocation.Used, Alignof);
+		uint32 NewUsed = (PossiblePtr + Sizeof) - Allocation.Memory;
 		if (NewUsed <= Allocation.Capacity)
 		{
 			TargetPtr = PossiblePtr;
@@ -151,28 +177,30 @@ TCameraObjectStorage<BaseObjectType>::BuildObject(ArgTypes&&... InArgs)
 	if (TargetPtr == nullptr)
 	{
 		using FStorageTraits = TCameraObjectStorageTraits<BaseObjectType>;
-		const uint16 DefaultCapacity = FStorageTraits::DefaultPageCapacity;
-		const uint16 DefaultAlignment = FStorageTraits::DefaultPageAlignment;
+		const uint32 DefaultCapacity = FStorageTraits::DefaultPageCapacity;
+		const uint32 DefaultAlignment = FStorageTraits::DefaultPageAlignment;
 
-		const uint16 NewCapacity = FMath::Max(DefaultCapacity, StateSizeof);
-		const uint16 NewAlignment = FMath::Max(DefaultAlignment, StateAlignof);
+		const uint32 NewCapacity = FMath::Max(DefaultCapacity, Sizeof);
+		const uint32 NewAlignment = FMath::Max(DefaultAlignment, Alignof);
 
 		FAllocation& NewAllocation = Allocations.Emplace_GetRef();
 		NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, NewAlignment));
 		NewAllocation.Alignment = NewAlignment;
 		NewAllocation.Capacity = NewCapacity;
-		NewAllocation.Used = StateSizeof;
+		NewAllocation.Used = Sizeof;
 
 		TargetPtr = NewAllocation.Memory;
 		TargetAllocation = &NewAllocation;
 	}
 	check(TargetPtr && TargetAllocation);
 
-	ObjectType* NewObject = new(TargetPtr) ObjectType(Forward<ArgTypes>(InArgs)...);
+	return TargetPtr;
+}
 
-	ObjectInfos.Add({ NewObject });
-
-	return NewObject;
+template<typename BaseObjectType>
+void TCameraObjectStorage<BaseObjectType>::RegisterInitializedObject(BaseObjectType* BaseObjectPtr)
+{
+	ObjectInfos.Add({ BaseObjectPtr });
 }
 
 template<typename BaseObjectType>
@@ -205,7 +233,7 @@ void TCameraObjectStorage<BaseObjectType>::DestroyObjects(bool bFreeAllocations)
 }
 
 template<typename BaseObjectType>
-void TCameraObjectStorage<BaseObjectType>::GetAllocationInfo(uint16& OutTotalUsed, uint16& OutFirstAlignment) const
+void TCameraObjectStorage<BaseObjectType>::GetAllocationInfo(uint32& OutTotalUsed, uint32& OutFirstAlignment) const
 {
 	OutTotalUsed = 0;
 	OutFirstAlignment = 0;
@@ -226,7 +254,7 @@ void TCameraObjectStorage<BaseObjectType>::GetAllocationInfo(uint16& OutTotalUse
 }
 
 template<typename BaseObjectType>
-void TCameraObjectStorage<BaseObjectType>::AllocatePage(uint16 InCapacity, uint16 InAlignment)
+void TCameraObjectStorage<BaseObjectType>::AllocatePage(uint32 InCapacity, uint32 InAlignment)
 {
 	FAllocation& NewAllocation = Allocations.Emplace_GetRef();
 	NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(InCapacity, InAlignment));

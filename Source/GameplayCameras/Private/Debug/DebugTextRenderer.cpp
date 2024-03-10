@@ -3,8 +3,8 @@
 #include "Debug/DebugTextRenderer.h"
 
 #include "CanvasItem.h"
+#include "CanvasTypes.h"
 #include "Debug/CameraDebugColors.h"
-#include "Engine/Canvas.h"
 #include "Engine/Font.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -12,12 +12,12 @@
 namespace UE::Cameras
 {
 
-void FDebugTextDrawCommand::Execute(UCanvas* Canvas, const UFont* Font, FVector2f& InOutDrawPosition) const
+void FDebugTextDrawCommand::Execute(FCanvas* Canvas, const FColor& DrawColor, const UFont* Font, FVector2f& InOutDrawPosition) const
 {
 	// Sadly we need to allocate a string here...
 	const FText Text(FText::FromStringView(TextView));
 
-	FCanvasTextItem TextItem(FVector2D(InOutDrawPosition), Text, Font, Canvas->DrawColor);
+	FCanvasTextItem TextItem(FVector2D(InOutDrawPosition), Text, Font, DrawColor);
 	TextItem.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(TextItem);
 	
@@ -31,13 +31,14 @@ void FDebugTextNewLineCommand::Execute(FVector2f& InOutDrawPosition) const
 	InOutDrawPosition.Y += LineSpacing;
 }
 
-void FDebugTextSetColorCommand::Execute(UCanvas* Canvas) const
+void FDebugTextSetColorCommand::Execute(FColor* OutDrawColor) const
 {
-	Canvas->SetDrawColor(DrawColor);
+	*OutDrawColor = DrawColor;
 }
 
-FDebugTextRenderer::FDebugTextRenderer(UCanvas* InCanvas, const UFont* InFont)
+FDebugTextRenderer::FDebugTextRenderer(FCanvas* InCanvas, const FColor& InDrawColor, const UFont* InFont)
 	: Canvas(InCanvas)
+	, DrawColor(InDrawColor)
 	, Font(InFont)
 {
 	LineSpacing = InFont->GetMaxCharHeight();
@@ -132,21 +133,21 @@ void FDebugTextRenderer::ParseText(const TStringView<TCHAR> TextView, FDebugText
 
 void FDebugTextRenderer::ExecuteCommands(FDebugTextCommandArray& Commands)
 {
-	FColor OriginalDrawColor = Canvas->DrawColor;
+	FColor OriginalDrawColor = DrawColor;
 
 	for (FDebugTextCommand& Command : Commands)
 	{
 		switch (Command.GetIndex())
 		{
 			case FDebugTextCommand::IndexOfType<FDebugTextDrawCommand>():
-				Command.Get<FDebugTextDrawCommand>().Execute(Canvas, Font, NextDrawPosition);
+				Command.Get<FDebugTextDrawCommand>().Execute(Canvas, DrawColor, Font, NextDrawPosition);
 				UpdateRightMargin();
 				break;
 			case FDebugTextCommand::IndexOfType<FDebugTextNewLineCommand>():
 				Command.Get<FDebugTextNewLineCommand>().Execute(NextDrawPosition);
 				break;
 			case FDebugTextCommand::IndexOfType<FDebugTextSetColorCommand>():
-				Command.Get<FDebugTextSetColorCommand>().Execute(Canvas);
+				Command.Get<FDebugTextSetColorCommand>().Execute(&DrawColor);
 				break;
 			default:
 				ensureMsgf(false, TEXT("Unsupported command type!"));
@@ -154,7 +155,7 @@ void FDebugTextRenderer::ExecuteCommands(FDebugTextCommandArray& Commands)
 		}
 	}
 
-	Canvas->SetDrawColor(OriginalDrawColor);
+	DrawColor = OriginalDrawColor;
 }
 
 void FDebugTextRenderer::UpdateRightMargin()
@@ -192,8 +193,8 @@ void FDebugTextRenderer::AddTokenCommand(const TCHAR* RangeStart, const TCHAR* R
 {
 	TStringView<TCHAR> TokenView(RangeStart, RangeEnd - RangeStart);
 	// Sadly we need to allocate a string here too...
-	FColor DrawColor = InterpretColor(FString(TokenView));
-	OutCommands.Emplace(TInPlaceType<FDebugTextSetColorCommand>(), FDebugTextSetColorCommand{ DrawColor });
+	FColor NewDrawColor = InterpretColor(FString(TokenView));
+	OutCommands.Emplace(TInPlaceType<FDebugTextSetColorCommand>(), FDebugTextSetColorCommand{ NewDrawColor });
 }
 
 FColor FDebugTextRenderer::InterpretColor(const FString& ColorName)

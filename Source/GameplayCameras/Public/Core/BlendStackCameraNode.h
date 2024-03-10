@@ -177,6 +177,7 @@ public:
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
 
 private:
 
@@ -195,6 +196,7 @@ public:
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
 
 private:
 
@@ -204,6 +206,8 @@ private:
 	};
 
 	TArray<FEntryDebugInfo> Entries;
+
+	friend FArchive& operator<< (FArchive&, FEntryDebugInfo&);
 };
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

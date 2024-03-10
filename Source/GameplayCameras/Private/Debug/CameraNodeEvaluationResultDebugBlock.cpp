@@ -94,6 +94,12 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 	Renderer.SkipAllBlocks();
 }
 
+void FCameraNodeEvaluationResultDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << bIsCameraCut;
+	Ar << bIsValid;
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

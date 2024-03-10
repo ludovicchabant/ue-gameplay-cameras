@@ -16,6 +16,7 @@
 #include "Styling/SlateTypes.h"
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SNullWidget.h"
 #include "WorkspaceMenuStructure.h"
@@ -27,6 +28,7 @@ namespace UE::Cameras
 {
 
 const FName SGameplayCamerasDebugger::WindowName(TEXT("GameplayCamerasDebugger"));
+const FName SGameplayCamerasDebugger::MenubarName(TEXT("GameplayCamerasDebugger.Menubar"));
 const FName SGameplayCamerasDebugger::ToolbarName(TEXT("GameplayCamerasDebugger.Toolbar"));
 
 void SGameplayCamerasDebugger::RegisterTabSpawners()
@@ -72,7 +74,7 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 {
 	IGameplayCamerasEditorModule& GameplayCamerasEditorModule = FModuleManager::GetModuleChecked<IGameplayCamerasEditorModule>(TEXT("GameplayCamerasEditor"));
 	TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
-	const FName& GameplayCamerasEditorStyleName = GameplayCamerasEditorStyle->GetStyleSetName();
+	GameplayCamerasEditorStyleName = GameplayCamerasEditorStyle->GetStyleSetName();
 
 	// Setup commands.
 	const FGameplayCamerasDebuggerCommands& Commands = FGameplayCamerasDebuggerCommands::Get();
@@ -85,16 +87,16 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 
 	// Main menu bar.
 	UToolMenus* ToolMenus = UToolMenus::Get();
-	if (!ToolMenus->IsMenuRegistered(SGameplayCamerasDebugger::ToolbarName))
+	if (!ToolMenus->IsMenuRegistered(SGameplayCamerasDebugger::MenubarName))
 	{
 		FToolMenuOwnerScoped ToolMenuOwnerScope(this);
 
-		UToolMenu* ToolBarMenu = ToolMenus->RegisterMenu(
-				SGameplayCamerasDebugger::ToolbarName, NAME_None, EMultiBoxType::ToolBar);
+		UToolMenu* Menubar = ToolMenus->RegisterMenu(
+				SGameplayCamerasDebugger::MenubarName, NAME_None, EMultiBoxType::MenuBar);
 	}
-	FToolMenuContext ToolbarContext;
-	TSharedRef<SWidget> ToolbarContents = ToolMenus->GenerateWidget(
-			SGameplayCamerasDebugger::ToolbarName, ToolbarContext);
+	FToolMenuContext MenubarContext;
+	TSharedRef<SWidget> MenubarContents = ToolMenus->GenerateWidget(
+			SGameplayCamerasDebugger::MenubarName, MenubarContext);
 
 	// Empty panel.
 	EmptyPanel = SNew(SBox)
@@ -107,45 +109,58 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 		];
 
 	// Toolbar with debug category buttons.
-	FToolBarBuilder DebugCategoriesToolbarBuilder(CommandList.ToSharedPtr(), FMultiBoxCustomization::None);
-	DebugCategoriesToolbarBuilder.BeginSection(TEXT("Main"));
+	if (!ToolMenus->IsMenuRegistered(SGameplayCamerasDebugger::ToolbarName))
 	{
-		DebugCategoriesToolbarBuilder.AddToolBarButton(
-				Commands.EnableDebugInfo,
-				NAME_None,
-				TAttribute<FText>(FText::FromString(TEXT(""))),
-				TAttribute<FText>(),
-				FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.EnableDebugInfo.Icon"));
-	}
-	DebugCategoriesToolbarBuilder.EndSection();
-	DebugCategoriesToolbarBuilder.BeginSection(TEXT("DebugCategories"));
-	{
-		TArray<FCameraDebugCategoryInfo> RegisteredDebugCategories;
-		GameplayCamerasEditorModule.GetRegisteredDebugCategories(RegisteredDebugCategories);
-		for (const FCameraDebugCategoryInfo& DebugCategory : RegisteredDebugCategories)
-		{
-			TSharedPtr<SWidget> DebugCategoryPanel = GameplayCamerasEditorModule.CreateDebugCategoryPanel(DebugCategory.Name);
-			if (DebugCategoryPanel.IsValid())
-			{
-				DebugPanels.Add(DebugCategory.Name, DebugCategoryPanel);
-			}
-			else
-			{
-				// If there aren't any special UI controls for this category, use an empty panel.
-				DebugPanels.Add(DebugCategory.Name, EmptyPanel);
-			}
+		FToolMenuOwnerScoped ToolMenuOwnerScope(this);
 
-			TSharedRef<SDebugCategoryButton> DebugCategoryButton = SNew(SDebugCategoryButton)
-				.DebugCategoryName(DebugCategory.Name)
-				.DisplayText(DebugCategory.DisplayText)
-				.ToolTipText(DebugCategory.ToolTipText)
-				.IconImage(DebugCategory.IconImage.GetIcon())
-				.IsDebugCategoryActive_Lambda([DebugCategory](){ return SGameplayCamerasDebugger::IsDebugCategoryActive(DebugCategory.Name); })
-				.RequestDebugCategoryChange(this, &SGameplayCamerasDebugger::SetActiveDebugCategoryPanel);
-			DebugCategoriesToolbarBuilder.AddToolBarWidget(DebugCategoryButton);
+		UToolMenu* Toolbar = ToolMenus->RegisterMenu(
+				SGameplayCamerasDebugger::ToolbarName, NAME_None, EMultiBoxType::SlimHorizontalToolBar);
+
+		FToolMenuSection& MainSection = Toolbar->AddSection(TEXT("Main"));
+		{
+			FToolMenuEntry ToggleDebugInfo = FToolMenuEntry::InitToolBarButton(
+					Commands.EnableDebugInfo,
+					TAttribute<FText>::CreateSP(this, &SGameplayCamerasDebugger::GetToggleDebugDrawText),
+					TAttribute<FText>(),
+					TAttribute<FSlateIcon>::CreateSP(this, &SGameplayCamerasDebugger::GetToggleDebugDrawIcon));
+			ToggleDebugInfo.SetCommandList(CommandList);
+			MainSection.AddEntry(ToggleDebugInfo);
+		}
+	
+		FToolMenuSection& DebugCategoriesSection = Toolbar->AddSection(TEXT("DebugCategories"));
+		{
+			TArray<FCameraDebugCategoryInfo> RegisteredDebugCategories;
+			GameplayCamerasEditorModule.GetRegisteredDebugCategories(RegisteredDebugCategories);
+			for (const FCameraDebugCategoryInfo& DebugCategory : RegisteredDebugCategories)
+			{
+				TSharedPtr<SWidget> DebugCategoryPanel = GameplayCamerasEditorModule.CreateDebugCategoryPanel(DebugCategory.Name);
+				if (DebugCategoryPanel.IsValid())
+				{
+					DebugPanels.Add(DebugCategory.Name, DebugCategoryPanel);
+				}
+				else
+				{
+					// If there aren't any special UI controls for this category, use an empty panel.
+					DebugPanels.Add(DebugCategory.Name, EmptyPanel);
+				}
+
+				FToolMenuEntry ToggleDebugCategory = FToolMenuEntry::InitToolBarButton(
+					FName(DebugCategory.Name),
+					FUIAction(
+						FExecuteAction::CreateSP(this, &SGameplayCamerasDebugger::SetActiveDebugCategoryPanel, DebugCategory.Name),
+						FCanExecuteAction(),
+						FIsActionChecked::CreateStatic(&SGameplayCamerasDebugger::IsDebugCategoryActive, DebugCategory.Name)),
+					DebugCategory.DisplayText,
+					DebugCategory.ToolTipText,
+					DebugCategory.IconImage,
+					EUserInterfaceActionType::ToggleButton);
+				DebugCategoriesSection.AddEntry(ToggleDebugCategory);
+			}
 		}
 	}
-	DebugCategoriesToolbarBuilder.EndSection();
+	FToolMenuContext ToolbarContext;
+	TSharedRef<SWidget> ToolbarContents = ToolMenus->GenerateWidget(
+			SGameplayCamerasDebugger::ToolbarName, ToolbarContext);
 
 	// Main layout.
 	ChildSlot
@@ -154,32 +169,57 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			[
-				ToolbarContents
+				MenubarContents
 			]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			[
-				DebugCategoriesToolbarBuilder.MakeWidget()
+				ToolbarContents
 			]
 		+ SVerticalBox::Slot()
 		.Padding(2.0)
 			[
 				SAssignNew(PanelHost, SBox)
-				[
-					SNullWidget::NullWidget
-				]
+					.Padding(8.f)
+					[
+						EmptyPanel.ToSharedRef()
+					]
 			]
 	];
 }
 
-bool SGameplayCamerasDebugger::IsDebugCategoryActive(const FString& InCategoryName)
+FText SGameplayCamerasDebugger::GetToggleDebugDrawText() const
+{
+	if (GGameplayCamerasDebugEnable)
+	{
+		return LOCTEXT("DebugInfoEnabled", "Debug Info Enabled");
+	}
+	else
+	{
+		return LOCTEXT("DebugInfoDisabled", "Debug Info Disabled");
+	}
+}
+
+FSlateIcon SGameplayCamerasDebugger::GetToggleDebugDrawIcon() const
+{
+	if (GGameplayCamerasDebugEnable)
+	{
+		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.EnableDebugInfo.Icon");
+	}
+	else
+	{
+		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DisableDebugInfo.Icon");
+	}
+}
+
+bool SGameplayCamerasDebugger::IsDebugCategoryActive(FString InCategoryName)
 {
 	TArray<FStringView, TInlineAllocator<4>> ActiveCategories;
 	UE::String::ParseTokens(GGameplayCamerasDebugCategories, ',', ActiveCategories);
 	return ActiveCategories.Contains(InCategoryName);
 }
 
-void SGameplayCamerasDebugger::SetActiveDebugCategoryPanel(const FString& InCategoryName)
+void SGameplayCamerasDebugger::SetActiveDebugCategoryPanel(FString InCategoryName)
 {
 	if (ensureMsgf(
 				DebugPanels.Contains(InCategoryName), 

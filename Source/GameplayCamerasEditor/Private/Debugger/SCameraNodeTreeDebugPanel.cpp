@@ -21,6 +21,7 @@ void SCameraNodeTreeDebugPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			[
 				SNew(STextBlock)
+					.Margin(4.f)
 					.Text(LOCTEXT("FilterNodeNames", "Filter node names:"))
 			]
 		+ SVerticalBox::Slot()

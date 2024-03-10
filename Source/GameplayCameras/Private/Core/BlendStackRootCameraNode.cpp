@@ -39,7 +39,7 @@ UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FBlendStackRootCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FString, CameraRigAssetName)
 UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 
-UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackRootCameraDebugBlock)
+UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FBlendStackRootCameraDebugBlock)
 
 FCameraNodeEvaluatorChildrenView FBlendStackRootCameraNodeEvaluator::OnGetChildren()
 {

@@ -9,6 +9,7 @@ class FTabManager;
 class FSpawnTabArgs;
 class SBox;
 class SDockTab;
+struct FSlateIcon;
 
 namespace UE::Cameras
 {
@@ -18,6 +19,7 @@ class SGameplayCamerasDebugger : public SCompoundWidget
 public:
 
 	static const FName WindowName;
+	static const FName MenubarName;
 	static const FName ToolbarName;
 
 	static void RegisterTabSpawners();
@@ -36,10 +38,15 @@ public:
 
 protected:
 
-	static bool IsDebugCategoryActive(const FString& InCategoryName);
-	void SetActiveDebugCategoryPanel(const FString& InCategoryName);
+	static bool IsDebugCategoryActive(FString InCategoryName);
+	void SetActiveDebugCategoryPanel(FString InCategoryName);
+
+	FText GetToggleDebugDrawText() const;
+	FSlateIcon GetToggleDebugDrawIcon() const;
 
 private:
+
+	FName GameplayCamerasEditorStyleName;
 
 	TSharedPtr<SBox> PanelHost;
 	TSharedPtr<SWidget> EmptyPanel;

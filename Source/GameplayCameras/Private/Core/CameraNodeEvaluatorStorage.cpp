@@ -43,8 +43,8 @@ void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(bool bFreeAllocations)
 
 void FCameraNodeEvaluatorStorage::GetAllocationInfo(FCameraNodeEvaluatorAllocationInfo& OutAllocationInfo)
 {
-	uint16 TotalUsed;
-	uint16 FirstAlignment;
+	uint32 TotalUsed;
+	uint32 FirstAlignment;
 	Super::GetAllocationInfo(TotalUsed, FirstAlignment);
 
 	OutAllocationInfo.TotalSizeof = TotalUsed;

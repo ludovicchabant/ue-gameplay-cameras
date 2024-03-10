@@ -11,6 +11,7 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "Debug/CameraSystemTrace.h"
 #include "Debug/CategoryTitleDebugBlock.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "HAL/IConsoleManager.h"
@@ -24,7 +25,6 @@ namespace UE::Cameras
 {
 
 extern bool GGameplayCamerasDebugEnable;
-extern bool GGameplayCamerasDebugTrace;
 
 FCameraSystemEvaluator::FCameraSystemEvaluator()
 {
@@ -44,6 +44,7 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	{
 		Owner = GetTransientPackage();
 	}
+	WeakOwner = Owner;
 
 	if (Params.RootNodeFactory)
 	{
@@ -153,10 +154,22 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 
 void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& Params)
 {
-	if (!GGameplayCamerasDebugTrace && !GGameplayCamerasDebugEnable)
+#if UE_GAMEPLAY_CAMERAS_TRACE
+	const bool bTraceEnabled = FCameraSystemTrace::IsTraceEnabled();
+#else
+	const bool bTraceEnabled = false;
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
+	if (!bTraceEnabled && !GGameplayCamerasDebugEnable)
 	{
 		return;
 	}
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+	if (FCameraSystemTrace::IsTraceReplay())
+	{
+		return;
+	}
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
 	// Clear previous frame's debug info and make room for this frame's.
 	DebugBlockStorage.DestroyDebugBlocks();
@@ -167,6 +180,15 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	FCameraDebugBlockBuildParams BuildParams;
 	FCameraDebugBlockBuilder DebugBlockBuilder(DebugBlockStorage, *RootDebugBlock);
 	RootDebugBlock->BuildDebugBlocks(*this, BuildParams, DebugBlockBuilder);
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+	if (bTraceEnabled)
+	{
+		UObject* Owner = WeakOwner.Get();
+		UWorld* OwnerWorld = Owner ? Owner->GetWorld() : nullptr;
+		FCameraSystemTrace::TraceEvaluation(OwnerWorld, Result, *RootDebugBlock);
+	}
+#endif
 	
 	FCameraDebugRenderer Renderer(Params.Canvas);
 	RootDebugBlock->RootDebugDraw(Renderer);

@@ -490,6 +490,11 @@ void FBlendStackSummaryCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDraw
 	Renderer.AddText(TEXT("%d entries"), NumEntries);
 }
 
+void FBlendStackSummaryCameraDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << NumEntries;
+}
+
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock);
 
 FBlendStackCameraDebugBlock::FBlendStackCameraDebugBlock()
@@ -526,6 +531,17 @@ void FBlendStackCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams&
 
 	// We've already manually renderered our children blocks.
 	Renderer.SkipAllBlocks();
+}
+
+void FBlendStackCameraDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << Entries;
+}
+
+FArchive& operator<< (FArchive& Ar, FBlendStackCameraDebugBlock::FEntryDebugInfo& EntryDebugInfo)
+{
+	Ar << EntryDebugInfo.CameraRigName;
+	return Ar;
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

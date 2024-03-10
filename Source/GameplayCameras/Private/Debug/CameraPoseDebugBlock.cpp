@@ -65,6 +65,12 @@ void FCameraPoseDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Param
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 }
 
+void FCameraPoseDebugBlock::OnSerialize(FArchive& Ar)
+{
+	FCameraPose::SerializeWithFlags(Ar, CameraPose);
+	Ar << ShowUnchangedCVarName;
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

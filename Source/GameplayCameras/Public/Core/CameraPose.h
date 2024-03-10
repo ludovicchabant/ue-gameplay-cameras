@@ -8,6 +8,8 @@
 
 #include "CameraPose.generated.h"
 
+class FArchive;
+
 #define UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(FVector, Location)\
 	UE_CAMERA_POSE_FOR_PROPERTY(FRotator3d, Rotation)
@@ -39,7 +41,7 @@
 /**
  * Boolean flags for each of the properties inside FCameraPose.
  */
-struct FCameraPoseFlags
+struct GAMEPLAYCAMERAS_API FCameraPoseFlags
 {
 #define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
 	bool PropName = false;
@@ -76,7 +78,7 @@ public:
  * The ChangedFlags structure keeps track of which fields were changed via the setters.
  */
 USTRUCT(BlueprintType)
-struct FCameraPose
+struct GAMEPLAYCAMERAS_API FCameraPose
 {
 	GENERATED_BODY()
 
@@ -159,9 +161,12 @@ public:
 	/** Interpolates changed properties from ToPose using the given factor. Only properties defined by InMask are taken into account. */
 	void LerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask);
 
+public:
+
+	static void SerializeWithFlags(FArchive& Ar, FCameraPose& CameraPose);
+
 private:
 
-	void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask);
 	void InternalOverrideChanged(const FCameraPose& OtherPose, bool bChangedOnly);
 	void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask, bool bChangedOnly);
 

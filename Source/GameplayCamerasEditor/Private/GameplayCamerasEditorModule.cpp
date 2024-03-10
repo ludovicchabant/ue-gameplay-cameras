@@ -11,9 +11,11 @@
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
 #include "Debugger/SGameplayCamerasDebugger.h"
+#include "Features/IModularFeatures.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
+#include "IRewindDebuggerExtension.h"
 #include "ISettingsModule.h"
 #include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
@@ -21,6 +23,9 @@
 #include "ToolMenus.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
+#include "Trace/CameraSystemRewindDebuggerExtension.h"
+#include "Trace/CameraSystemRewindDebuggerTrack.h"
+#include "Trace/CameraSystemTraceModule.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
@@ -52,6 +57,7 @@ public:
 
 		RegisterSettings();
 		RegisterCoreDebugCategories();
+		RegisterRewindDebuggerFeatures();
 		InitializeLiveEditManager();
 
 		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
@@ -70,6 +76,7 @@ public:
 
 		UnregisterSettings();
 		UnregisterCoreDebugCategories();
+		UnregisterRewindDebuggerFeatures();
 		TeardownLiveEditManager();
 
 		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
@@ -196,7 +203,7 @@ private:
 			});
 		RegisterDebugCategory(FCameraDebugCategoryInfo{
 				FCameraDebugCategories::DirectorTree,
-				LOCTEXT("DirectorTreeDebugCategory", "Node Tree"),
+				LOCTEXT("DirectorTreeDebugCategory", "Director Tree"),
 				LOCTEXT("DirectorTreeDebugCategoryToolTip", "Shows the active/inactive directors, and their evaluation context"),
 				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.DirectorTree.Icon")
 			});
@@ -246,6 +253,28 @@ private:
 		FGameplayCamerasDebuggerCommands::Register();
 	}
 
+	void RegisterRewindDebuggerFeatures()
+	{
+		using namespace UE::Cameras;
+
+		TraceModule = MakeShared<UE::Cameras::FCameraSystemTraceModule>();
+		RewindDebuggerExtension = MakeShared<FCameraSystemRewindDebuggerExtension>();
+		RewindDebuggerTrackCreator = MakeShared<FCameraSystemRewindDebuggerTrackCreator>();
+
+		IModularFeatures& ModularFeatures = IModularFeatures::Get();
+		ModularFeatures.RegisterModularFeature(IRewindDebuggerExtension::ModularFeatureName, RewindDebuggerExtension.Get());
+		ModularFeatures.RegisterModularFeature(RewindDebugger::IRewindDebuggerTrackCreator::ModularFeatureName, RewindDebuggerTrackCreator.Get());
+		ModularFeatures.RegisterModularFeature(TraceServices::ModuleFeatureName, TraceModule.Get());
+	}
+
+	void UnregisterRewindDebuggerFeatures()
+	{
+		IModularFeatures& ModularFeatures = IModularFeatures::Get();
+		ModularFeatures.UnregisterModularFeature(IRewindDebuggerExtension::ModularFeatureName, RewindDebuggerExtension.Get());
+		ModularFeatures.UnregisterModularFeature(RewindDebugger::IRewindDebuggerTrackCreator::ModularFeatureName, RewindDebuggerTrackCreator.Get());
+		ModularFeatures.UnregisterModularFeature(TraceServices::ModuleFeatureName, TraceModule.Get());
+	}
+
 	void InitializeLiveEditManager()
 	{
 		using namespace UE::Cameras;
@@ -278,6 +307,10 @@ private:
 
 	TMap<FString, UE::Cameras::FCameraDebugCategoryInfo> DebugCategoryInfos;
 	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
+
+	TSharedPtr<UE::Cameras::FCameraSystemTraceModule> TraceModule;
+	TSharedPtr<UE::Cameras::FCameraSystemRewindDebuggerExtension> RewindDebuggerExtension;
+	TSharedPtr<UE::Cameras::FCameraSystemRewindDebuggerTrackCreator> RewindDebuggerTrackCreator;
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasEditorModule, GameplayCamerasEditor);

@@ -14,9 +14,9 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
+class FCanvas;
 class UCameraDirector;
 class UCameraRigAsset;
-class UCanvas;
 class URootCameraNode;
 struct FMinimalViewInfo;
 
@@ -68,7 +68,7 @@ struct FCameraSystemEvaluationUpdateResult
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 struct FCameraSystemDebugUpdateParams
 {
-	UCanvas* Canvas = nullptr;
+	FCanvas* Canvas = nullptr;
 };
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -124,6 +124,9 @@ public:
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
+
+	/** The owner (if any) of this camera system evaluator. */
+	TWeakObjectPtr<> WeakOwner;
 
 	/** The root camera node. */
 	TObjectPtr<URootCameraNode> RootNode;

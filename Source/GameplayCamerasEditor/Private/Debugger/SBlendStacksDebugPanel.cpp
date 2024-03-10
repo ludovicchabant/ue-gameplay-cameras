@@ -4,6 +4,7 @@
 
 #include "Debugger/SDebugWidgetUtils.h"
 #include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
 
 #define LOCTEXT_NAMESPACE "SBlendStacksDebugPanel"

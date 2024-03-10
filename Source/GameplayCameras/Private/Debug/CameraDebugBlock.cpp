@@ -16,8 +16,6 @@ bool FCameraDebugBlockDrawParams::IsCategoryActive(const FString& InCategory) co
 
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraDebugBlock)
 
-TArray<FCameraDebugBlockField*> FCameraDebugBlock::StaticFields;
-
 void FCameraDebugBlock::Attach(FCameraDebugBlock* InAttachment)
 {
 	Attachments.Add(InAttachment);
@@ -37,6 +35,7 @@ void FCameraDebugBlock::DebugDraw(const FCameraDebugBlockDrawParams& Params, FCa
 	
 	ECameraDebugDrawVisitFlags VisitFlags = Renderer.GetVisitFlags();
 
+	// Attachments can render on the same line as this debug block so we call DebugDraw directly on them.
 	if (!EnumHasAnyFlags(VisitFlags, ECameraDebugDrawVisitFlags::SkipAttachedBlocks) && !Attachments.IsEmpty())
 	{
 		for (FCameraDebugBlock* Attachment : Attachments)
@@ -45,6 +44,11 @@ void FCameraDebugBlock::DebugDraw(const FCameraDebugBlockDrawParams& Params, FCa
 		}
 	}
 
+	// Children should always render on lines below so we need to make sure we're on a new line for
+	// the remainder of this function. The call to AddIndent() below will flush any pending text and 
+	// add this new line automatically, but we need to add the optional new line ourselves if we
+	// happen to skip this next section.
+	//
 	if (!EnumHasAnyFlags(VisitFlags, ECameraDebugDrawVisitFlags::SkipChildrenBlocks) && !Children.IsEmpty())
 	{
 		Renderer.AddIndent();
@@ -56,6 +60,10 @@ void FCameraDebugBlock::DebugDraw(const FCameraDebugBlockDrawParams& Params, FCa
 
 		Renderer.RemoveIndent();
 	}
+	else
+	{
+		Renderer.NewLine(true);
+	}
 
 	OnPostDebugDraw(Params, Renderer);
 }
@@ -63,11 +71,6 @@ void FCameraDebugBlock::DebugDraw(const FCameraDebugBlockDrawParams& Params, FCa
 void FCameraDebugBlock::Serialize(FArchive& Ar)
 {
 	OnSerialize(Ar);
-
-	for (FCameraDebugBlockField* StaticField : StaticFields)
-	{
-		StaticField->SerializeField(this, Ar);
-	}
 }
 
 }  // namespace UE::Cameras

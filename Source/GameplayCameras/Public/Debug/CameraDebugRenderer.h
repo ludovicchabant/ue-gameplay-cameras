@@ -8,7 +8,7 @@
 #include "Math/Vector.h"
 #include "Misc/StringBuilder.h"
 
-class UCanvas;
+class FCanvas;
 class UFont;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -34,51 +34,54 @@ class FCameraDebugRenderer
 public:
 
 	/** Creates a new debug renderer. */
-	FCameraDebugRenderer(UCanvas* InCanvas);
+	GAMEPLAYCAMERAS_API FCameraDebugRenderer(FCanvas* InCanvas);
 	/** Destroys the debug renderer. */
-	~FCameraDebugRenderer();
+	GAMEPLAYCAMERAS_API ~FCameraDebugRenderer();
 
 	/** Adds text to the text wall. */
-	void AddText(const FString& InString);
-	void AddText(const TCHAR* Fmt, ...);
+	GAMEPLAYCAMERAS_API void AddText(const FString& InString);
+	GAMEPLAYCAMERAS_API void AddText(const TCHAR* Fmt, ...);
 
 	/** 
 	 * Move to a new line on the text wall.
 	 *
 	 * @return Whether a new line was added.
 	 */
-	bool NewLine(bool bSkipIfEmptyLine = false);
+	GAMEPLAYCAMERAS_API bool NewLine(bool bSkipIfEmptyLine = false);
 
 	/** Gets the current text color. */
-	FColor GetTextColor() const;
+	GAMEPLAYCAMERAS_API FColor GetTextColor() const;
 	/** Sets the text color for further calls. Returns the previous color. */
-	FColor SetTextColor(const FColor& Color);
+	GAMEPLAYCAMERAS_API FColor SetTextColor(const FColor& Color);
 
 	/** Increases the indent of the next text wall entry. This will make a new line. */
-	void AddIndent();
+	GAMEPLAYCAMERAS_API void AddIndent();
 	/** Decreases the indent of the next text wall entry. This will make a new line. */
-	void RemoveIndent();
+	GAMEPLAYCAMERAS_API void RemoveIndent();
 
 	/** Draws a translucent background behind the text. */
-	void DrawTextBackgroundTile(float Opacity);
+	GAMEPLAYCAMERAS_API void DrawTextBackgroundTile(float Opacity);
 
 public:
 
 	/** Request skipping drawing any blocks attached to the current block. */
-	void SkipAttachedBlocks();
+	GAMEPLAYCAMERAS_API void SkipAttachedBlocks();
 	/** Request skipping drawing any children blocks of the current block. */
-	void SkipChildrenBlocks();
+	GAMEPLAYCAMERAS_API void SkipChildrenBlocks();
 	/** Skip all related blocks (attached, children, etc.) */
-	void SkipAllBlocks();
+	GAMEPLAYCAMERAS_API void SkipAllBlocks();
 	/**Gets block visiting flags. */
-	ECameraDebugDrawVisitFlags GetVisitFlags() const;
+	GAMEPLAYCAMERAS_API ECameraDebugDrawVisitFlags GetVisitFlags() const;
 	/** Resets block visiting flags. */
-	void ResetVisitFlags();
+	GAMEPLAYCAMERAS_API void ResetVisitFlags();
 
 public:
 
 	/** Gets the drawing canvas. */
-	UCanvas* GetCanvas() const { return Canvas; }
+	FCanvas* GetCanvas() const { return Canvas; }
+
+	/** Gets the size of the canvas. */
+	FVector2D GetCanvasSize() const;
 
 private:
 
@@ -91,9 +94,9 @@ private:
 private:
 
 	/** The canvas used to draw the text wall. */
-	UCanvas* Canvas;
-	/** The original draw color of the canvas. */
-	FColor OriginalDrawColor;
+	FCanvas* Canvas;
+	/** The draw color of the canvas. */
+	FColor DrawColor;
 
 	/** The font used to render the text wall. */
 	const UFont* RenderFont;

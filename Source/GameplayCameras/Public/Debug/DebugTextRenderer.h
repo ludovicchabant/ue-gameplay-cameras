@@ -8,7 +8,7 @@
 #include "Math/UnrealMath.h"
 #include "Misc/TVariant.h"
 
-class UCanvas;
+class FCanvas;
 class UFont;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -53,7 +53,7 @@ struct FDebugTextDrawCommand
 {
 	TStringView<TCHAR> TextView;
 
-	void Execute(UCanvas* Canvas, const UFont* Font, FVector2f& InOutDrawPosition) const;
+	void Execute(FCanvas* Canvas, const FColor& DrawColor, const UFont* Font, FVector2f& InOutDrawPosition) const;
 };
 
 /** Command for moving the drawing position to a new line. */
@@ -70,7 +70,7 @@ struct FDebugTextSetColorCommand
 {
 	FColor DrawColor;
 
-	void Execute(UCanvas* Canvas) const;
+	void Execute(FColor* OutDrawColor) const;
 };
 
 /** A debug text drawing command, which can be of multiple types. */
@@ -97,7 +97,7 @@ public:
 	bool bEndWithNewLine = false;
 
 	/** Creates a new debug text renderer. */
-	FDebugTextRenderer(UCanvas* InCanvas, const UFont* InFont);
+	FDebugTextRenderer(FCanvas* InCanvas, const FColor& InDrawColor, const UFont* InFont);
 
 	/** Renders the given text to the canvas. */
 	void RenderText(float StartingDrawY, const TStringView<TCHAR> TextView);
@@ -130,7 +130,8 @@ private:
 
 private:
 
-	UCanvas* Canvas;
+	FCanvas* Canvas;
+	FColor DrawColor;
 	const UFont* Font;
 	FVector2f NextDrawPosition;
 	float RightMargin = 0;

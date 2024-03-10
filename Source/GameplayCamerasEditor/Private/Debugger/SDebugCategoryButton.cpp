@@ -23,8 +23,8 @@ void SDebugCategoryButton::Construct(const FArguments& InArgs)
 	ActiveModeBorderImage = FAppStyle::GetBrush("ModeSelector.ToggleButton.Pressed");
 	HoverBorderImage = FAppStyle::GetBrush("ModeSelector.ToggleButton.Hovered");
 
-	const FMargin IconPadding(4.0f, 0.0f, 4.0f, 0.0f);
-	const FMargin TextPadding(0.0f, 0.0f, 0.0f, 0.0f);
+	const FMargin IconPadding(8.0f, 8.0f, 4.0f, 8.0f);
+	const FMargin TextPadding(4.0f, 8.0f, 8.0f, 8.0f);
 
 	TSharedRef<SHorizontalBox> ButtonContents = SNew(SHorizontalBox);
 

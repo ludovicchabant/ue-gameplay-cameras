@@ -17,7 +17,7 @@ UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FSimpleBlendCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, BlendFactor)
 UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 
-UE_DEFINE_CAMERA_DEBUG_BLOCK(FSimpleBlendCameraDebugBlock)
+UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FSimpleBlendCameraDebugBlock)
 
 void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {

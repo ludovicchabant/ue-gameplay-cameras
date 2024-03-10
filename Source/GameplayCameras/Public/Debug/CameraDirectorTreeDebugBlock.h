@@ -28,15 +28,17 @@ public:
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
 
 private:
 
 	struct FDirectorDebugInfo
 	{
 		FString CameraAssetName;
-		FCameraDebugBlock* DebugBlock = nullptr;
 	};
 	TArray<FDirectorDebugInfo> CameraDirectors;
+
+	friend FArchive& operator<< (FArchive&, FDirectorDebugInfo&);
 };
 
 }  // namespace UE::Cameras

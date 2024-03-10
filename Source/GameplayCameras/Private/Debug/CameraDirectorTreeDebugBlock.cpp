@@ -88,6 +88,17 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 	Renderer.SkipAllBlocks();
 }
 
+void FCameraDirectorTreeDebugBlock::OnSerialize(FArchive& Ar)
+{
+	 Ar << CameraDirectors;
+}
+
+FArchive& operator<< (FArchive& Ar, FCameraDirectorTreeDebugBlock::FDirectorDebugInfo& DirectorDebugInfo)
+{
+	Ar << DirectorDebugInfo.CameraAssetName;
+	return Ar;
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

@@ -27,6 +27,7 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
 
 	Set("Debugger.EnableDebugInfo.Icon", new IMAGE_BRUSH("/Icons/EnableDebugInfo", Icon16x16));
+	Set("Debugger.DisableDebugInfo.Icon", new IMAGE_BRUSH("/Icons/DisableDebugInfo", Icon16x16));
 
 	Set("DebugCategory.NodeTree.Icon", new IMAGE_BRUSH("/Icons/DebugCategory-NodeTree", Icon16x16));
 	Set("DebugCategory.DirectorTree.Icon", new IMAGE_BRUSH("/Icons/DebugCategory-DirectorTree", Icon16x16));

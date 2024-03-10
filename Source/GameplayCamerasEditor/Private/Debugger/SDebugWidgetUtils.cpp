@@ -15,6 +15,7 @@ TMap<FString, IConsoleVariable*> SDebugWidgetUtils::CachedConsoleVariables;
 TSharedRef<SCheckBox> SDebugWidgetUtils::CreateConsoleVariableCheckBox(const FText& Text, const FString& ConsoleVariableName)
 {
 	return SNew(SCheckBox)
+		.Padding(4.f)
 		.IsChecked_Lambda([ConsoleVariableName]() 
 				{
 					if (IConsoleVariable* ConsoleVariable = SDebugWidgetUtils::GetConsoleVariable(ConsoleVariableName))
@@ -40,6 +41,7 @@ TSharedRef<SCheckBox> SDebugWidgetUtils::CreateConsoleVariableCheckBox(const FTe
 TSharedRef<SEditableTextBox> SDebugWidgetUtils::CreateConsoleVariableTextBox(const FString& ConsoleVariableName)
 {
 	return SNew(SEditableTextBox)
+		.Padding(4.f)
 		.Text_Lambda([ConsoleVariableName]()
 				{
 					if (IConsoleVariable* ConsoleVariable = SDebugWidgetUtils::GetConsoleVariable(ConsoleVariableName))

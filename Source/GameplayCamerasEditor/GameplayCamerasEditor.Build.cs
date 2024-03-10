@@ -31,17 +31,22 @@ public class GameplayCamerasEditor : ModuleRules
 				"InputCore",
 				"InteractiveToolsFramework",
 				"Kismet",
+				"LevelEditor",
 				"Projects",
+				"RewindDebuggerInterface",
 				"Slate",
 				"SlateCore",
 				"TimeManagement",
 				"ToolMenus",
+				"TraceAnalysis",
+				"TraceLog",
+				"TraceServices",
+				"TraceInsights",
 				"UnrealEd",
 			}
 		);
 
 		var DynamicModuleNames = new string[] {
-			"LevelEditor",
 			"PropertyEditor",
 			"WorkspaceMenuStructure",
 		};

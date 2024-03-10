@@ -24,7 +24,7 @@ struct FCameraDebugBlockDrawParams
 	/** The list of active debug categories. */
 	TSet<FString> ActiveCategories;
 
-	bool IsCategoryActive(const FString& InCategory) const;
+	GAMEPLAYCAMERAS_API bool IsCategoryActive(const FString& InCategory) const;
 };
 
 /**
@@ -33,8 +33,8 @@ struct FCameraDebugBlockDrawParams
  */
 struct FCameraDebugBlockField
 {
-	virtual ~FCameraDebugBlockField() {}
-	virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) = 0;
+	GAMEPLAYCAMERAS_API virtual ~FCameraDebugBlockField() {}
+	GAMEPLAYCAMERAS_API virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) = 0;
 
 	FName FieldName;
 	uint16 FieldIndex = 0;
@@ -47,13 +47,13 @@ struct FCameraDebugBlockField
 template<typename FieldType>
 struct TCameraDebugBlockField : FCameraDebugBlockField
 {
-	TCameraDebugBlockField(const FName& InName, uint16 InOffset) 
+	GAMEPLAYCAMERAS_API TCameraDebugBlockField(const FName& InName, uint16 InOffset) 
 	{
 		FieldName = InName;
 		FieldOffset = InOffset;
 	}
 
-	virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) override
+	GAMEPLAYCAMERAS_API virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) override
 	{
 		FieldType* Value = reinterpret_cast<FieldType*>(reinterpret_cast<uint8*>(This) + FieldOffset);
 		Ar << (*Value);
@@ -71,35 +71,37 @@ class FCameraDebugBlock
 
 public:
 
-	virtual ~FCameraDebugBlock() {}
+	GAMEPLAYCAMERAS_API virtual ~FCameraDebugBlock() {}
 
 	/** Attaches a block to this block. */
-	void Attach(FCameraDebugBlock* InAttachment);
+	GAMEPLAYCAMERAS_API void Attach(FCameraDebugBlock* InAttachment);
 	/** Gets the list of blocks attached to this block. */
 	TArrayView<FCameraDebugBlock*> GetAttachments() { return Attachments; }
 
 	/** Adds a child block to this block. */
-	void AddChild(FCameraDebugBlock* InChild);
+	GAMEPLAYCAMERAS_API void AddChild(FCameraDebugBlock* InChild);
 	/** Gets the children of this block. */
 	TArrayView<FCameraDebugBlock*> GetChildren() { return Children; }
 
 	/** Called to let this block display its information on screen. */
-	void DebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer);
+	GAMEPLAYCAMERAS_API void DebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer);
 
 	/** Serializes this debug block into a buffer, for recording/replaying purposes. */
-	void Serialize(FArchive& Ar);
+	GAMEPLAYCAMERAS_API void Serialize(FArchive& Ar);
 
 protected:
 
 	/** Called to let this block display its information on screen. */
-	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+	GAMEPLAYCAMERAS_API virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
 	/** Called after attached and children blocks' debug draw. */
-	virtual void OnPostDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+	GAMEPLAYCAMERAS_API virtual void OnPostDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
 
 	/** Serializes this debug block into a buffer, for recording/replaying purposes. */
-	virtual void OnSerialize(FArchive& Ar) {}
+	GAMEPLAYCAMERAS_API virtual void OnSerialize(FArchive& Ar) {}
 
 protected:
+
+	using FStaticFieldArray = TArray<FCameraDebugBlockField*>;
 
 	template<typename FieldType>
 	static TCameraDebugBlockField<FieldType> CreateField(const FName& FieldName, uint16 FieldOffset)
@@ -107,15 +109,13 @@ protected:
 		return TCameraDebugBlockField<FieldType>{ FieldName, FieldOffset };
 	}
 
-	static int32 RegisterField(FCameraDebugBlockField* InField)
+	static int32 RegisterField(FCameraDebugBlockField* InField, FStaticFieldArray& InStaticFields)
 	{
-		StaticFields.Add(InField);
-		return StaticFields.Num() - 1;
+		InStaticFields.Add(InField);
+		return InStaticFields.Num() - 1;
 	}
 
 private:
-
-	static TArray<FCameraDebugBlockField*> StaticFields;
 
 	using FRelatedDebugBlockArray = TArray<FCameraDebugBlock*>;
 	FRelatedDebugBlockArray Attachments;
@@ -158,22 +158,39 @@ private:
 		UE_DECLARE_CAMERA_DEBUG_BLOCK(ClassName)\
 	private:\
 		using Super = ::UE::Cameras::FCameraDebugBlock;\
-		using ThisClassName = ClassName;
+		using ThisClassName = ClassName;\
+		static FStaticFieldArray StaticFields;\
+	protected:\
+		virtual void OnSerialize(FArchive& Ar) override\
+		{\
+			Super::OnSerialize(Ar);\
+			for (FCameraDebugBlockField* StaticField : ClassName::StaticFields)\
+			{\
+				StaticField->SerializeField(this, Ar);\
+			}\
+		}\
+	private:
 
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FieldType, FieldName)\
 	public:\
 		FieldType FieldName;\
 	private:\
 		inline static PTRINT Get##FieldName##Offset() { return (PTRINT)(&(((ThisClassName*)0)->FieldName)); }\
-		inline static TCameraDebugBlockField<FieldType>* Get##FieldName##Field() {\
+		inline static TCameraDebugBlockField<FieldType>* Get##FieldName##Field()\
+		{\
 			using FField = TCameraDebugBlockField<FieldType>;\
 			static FField StaticField = CreateField<FieldType>(TEXT(#FieldName), Get##FieldName##Offset());\
-			return &StaticField; }\
-		inline static const int32 FieldName##FieldIndex = RegisterField(Get##FieldName##Field());
+			return &StaticField;\
+		}\
+		inline static const int32 FieldName##FieldIndex = RegisterField(Get##FieldName##Field(), StaticFields);
 
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_END()\
 		virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;\
 	};
+
+#define UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(ClassName)\
+	UE_DEFINE_CAMERA_DEBUG_BLOCK(ClassName)\
+	TArray<FCameraDebugBlockField*> ClassName::StaticFields;
 
 #else  // UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -182,8 +199,7 @@ private:
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_START(ClassName)
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FieldType, FieldName)
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
-// This one is included here too since it's required for "simple" debug blocks.
-#define UE_DEFINE_CAMERA_DEBUG_BLOCK(ClassName)
+#define UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(ClassName)
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 

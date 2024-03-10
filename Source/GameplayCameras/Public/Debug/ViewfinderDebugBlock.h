@@ -15,7 +15,7 @@ class FViewfinderDebugBlock : public FCameraDebugBlock
 
 public:
 
-	FViewfinderDebugBlock();
+	GAMEPLAYCAMERAS_API FViewfinderDebugBlock();
 
 protected:
 

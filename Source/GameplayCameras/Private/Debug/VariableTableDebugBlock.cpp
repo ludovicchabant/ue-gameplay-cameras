@@ -107,6 +107,38 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 	Renderer.RemoveIndent();
 }
 
+void FVariableTableDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << Entries;
+	Ar << ShowVariableIdsCVarName;
+}
+
+FArchive& operator<< (FArchive& Ar, FVariableTableDebugBlock::FEntryDebugInfo& EntryDebugInfo)
+{
+	Ar << EntryDebugInfo.Id;
+	Ar << EntryDebugInfo.Name;
+	Ar << EntryDebugInfo.Value;
+	Ar << EntryDebugInfo.bWritten;
+	Ar << EntryDebugInfo.bWrittenThisFrame;
+	return Ar;
+}
+
+void FVariableTableDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << Entries;
+	Ar << ShowVariableIdsCVarName;
+}
+
+FArchive& operator<< (FArchive& Ar, FVariableTableDebugBlock::FEntryDebugInfo& EntryDebugInfo)
+{
+	Ar << EntryDebugInfo.Id;
+	Ar << EntryDebugInfo.Name;
+	Ar << EntryDebugInfo.Value;
+	Ar << EntryDebugInfo.bWritten;
+	Ar << EntryDebugInfo.bWrittenThisFrame;
+	return Ar;
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

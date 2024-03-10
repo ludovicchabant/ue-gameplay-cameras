@@ -4,6 +4,7 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Debug/DebugDrawService.h"
+#include "Engine/Canvas.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
@@ -153,7 +154,7 @@ void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerControlle
 	if (Evaluator.IsValid())
 	{
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
-		DebugUpdateParams.Canvas = Canvas;
+		DebugUpdateParams.Canvas = Canvas->Canvas;
 		Evaluator->DebugUpdate(DebugUpdateParams);
 	}
 }

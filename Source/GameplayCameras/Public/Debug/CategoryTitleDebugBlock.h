@@ -21,18 +21,18 @@ class FCategoryTitleDebugBlock : public FCameraDebugBlock
 
 public:
 
-	FCategoryTitleDebugBlock();
-	FCategoryTitleDebugBlock(const FString& InCategory, const FString& InTitle);
+	GAMEPLAYCAMERAS_API FCategoryTitleDebugBlock();
+	GAMEPLAYCAMERAS_API FCategoryTitleDebugBlock(const FString& InCategory, const FString& InTitle);
 
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
 
 public:
 
 	FString Category;
 	FString Title;
-	FColor TitleColor;
 
 	bool bSkipAttachedBlocksIfInactive = true;
 	bool bSkipChildrenBlocksIfInactive = true;

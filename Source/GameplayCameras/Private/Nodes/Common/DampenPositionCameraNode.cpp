@@ -56,7 +56,7 @@ UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FDampenPositionCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, DampedPosition);
 UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 
-UE_DEFINE_CAMERA_DEBUG_BLOCK(FDampenPositionCameraDebugBlock)
+UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FDampenPositionCameraDebugBlock)
 
 void FDampenPositionCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {

@@ -22,11 +22,19 @@ public:
 	using Super = TCameraObjectStorage<FCameraDebugBlock>;
 
 	/** Destroy any allocated debug blocks. */
-	void DestroyDebugBlocks(bool bFreeAllocations = false);
+	GAMEPLAYCAMERAS_API void DestroyDebugBlocks(bool bFreeAllocations = false);
 
 	/** Build a new debug block inside this storage. */
 	template<typename BlockType, typename ...ArgTypes>
 	BlockType* BuildDebugBlock(ArgTypes&&... InArgs);
+
+public:
+
+	// Internal API.
+	void* BuildDebugBlockUninitialized(uint32 Sizeof, uint32 Alignof)
+	{
+		return BuildObjectUninitialized(Sizeof, Alignof);
+	}
 };
 
 template<typename BlockType, typename ...ArgTypes>

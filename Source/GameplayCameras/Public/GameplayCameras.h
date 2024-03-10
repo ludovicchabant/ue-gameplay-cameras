@@ -15,6 +15,12 @@
 	#endif
 #endif
 
+#if UE_TRACE_ENABLED && !IS_PROGRAM && !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+#define UE_GAMEPLAY_CAMERAS_TRACE 1
+#else
+#define UE_GAMEPLAY_CAMERAS_TRACE 0
+#endif
+
 DECLARE_STATS_GROUP(TEXT("Camera System Evaluation"), STATGROUP_CameraSystem, STATCAT_Advanced)
 DECLARE_STATS_GROUP(TEXT("Camera Animation Evaluation"), STATGROUP_CameraAnimation, STATCAT_Advanced)
 

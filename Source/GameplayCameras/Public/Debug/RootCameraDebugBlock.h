@@ -27,10 +27,10 @@ class FRootCameraDebugBlock : public FCameraDebugBlock
 public:
 
 	/** Build all debug blocks for the last evaluation frame. */
-	void BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+	GAMEPLAYCAMERAS_API void BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 
 	/** Initiate the debug drawing. */
-	void RootDebugDraw(FCameraDebugRenderer& Renderer);
+	GAMEPLAYCAMERAS_API void RootDebugDraw(FCameraDebugRenderer& Renderer);
 };
 
 }  // namespace UE::Cameras

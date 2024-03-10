@@ -12,14 +12,12 @@ namespace UE::Cameras
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FCategoryTitleDebugBlock)
 
 FCategoryTitleDebugBlock::FCategoryTitleDebugBlock()
-	: TitleColor(FColor::Green)
 {
 }
 
 FCategoryTitleDebugBlock::FCategoryTitleDebugBlock(const FString& InCategory, const FString& InTitle)
 	: Category(InCategory)
 	, Title(InTitle)
-	, TitleColor(FColor::Green)
 {
 }
 
@@ -43,6 +41,15 @@ void FCategoryTitleDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 			Renderer.SkipChildrenBlocks();
 		}
 	}
+}
+
+void FCategoryTitleDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << Category;
+	Ar << Title;
+
+	Ar << bSkipAttachedBlocksIfInactive;
+	Ar << bSkipChildrenBlocksIfInactive;
 }
 
 }  // namespace UE::Cameras

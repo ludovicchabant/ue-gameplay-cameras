@@ -21,9 +21,9 @@ class FVariableTableDebugBlock : public FCameraDebugBlock
 public:
 
 	/** Creates a new variable table debug block. */
-	FVariableTableDebugBlock();
+	GAMEPLAYCAMERAS_API FVariableTableDebugBlock();
 	/** Creates a new variable table debug block. */
-	FVariableTableDebugBlock(const FCameraVariableTable& InVariableTable);
+	GAMEPLAYCAMERAS_API FVariableTableDebugBlock(const FCameraVariableTable& InVariableTable);
 
 	/** Specifies the console variable to use to toggle the printing of variable IDs. */
 	FVariableTableDebugBlock& WithShowVariableIdsCVar(const TCHAR* InShowVariableIdsCVarName)
@@ -35,6 +35,7 @@ public:
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
 
 	void Initialize(const FCameraVariableTable& InVariableTable);
 
@@ -45,12 +46,14 @@ private:
 		uint32 Id;
 		FString Name;
 		FString Value;
-		bool bWritten : 1;
-		bool bWrittenThisFrame : 1;
+		bool bWritten;
+		bool bWrittenThisFrame;
 	};
 	TArray<FEntryDebugInfo> Entries;
 
 	FString ShowVariableIdsCVarName;
+
+	friend FArchive& operator<< (FArchive&, FEntryDebugInfo&);
 };
 
 }  // namespace UE::Cameras

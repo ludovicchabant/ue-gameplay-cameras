@@ -3,9 +3,10 @@
 #include "Debug/CameraDebugRenderer.h"
 
 #include "Algo/Find.h"
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/DebugTextRenderer.h"
-#include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "HAL/IConsoleManager.h"
@@ -34,12 +35,10 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundDepthSortKey(
 	GGameplayCamerasDebugBackgroundDepthSortKey,
 	TEXT(""));
 
-FCameraDebugRenderer::FCameraDebugRenderer(UCanvas* InCanvas)
+FCameraDebugRenderer::FCameraDebugRenderer(FCanvas* InCanvas)
 	: Canvas(InCanvas)
+	, DrawColor(FColor::White)
 {
-	OriginalDrawColor = Canvas->DrawColor;
-	Canvas->SetDrawColor(FColor::White);
-
 	RenderFont = GEngine->GetSmallFont();
 	MaxCharHeight = RenderFont->GetMaxCharHeight();
 
@@ -49,7 +48,12 @@ FCameraDebugRenderer::FCameraDebugRenderer(UCanvas* InCanvas)
 FCameraDebugRenderer::~FCameraDebugRenderer()
 {
 	FlushText();
-	Canvas->SetDrawColor(OriginalDrawColor);
+}
+
+FVector2D FCameraDebugRenderer::GetCanvasSize() const
+{
+	FIntPoint ParentSize = Canvas->GetParentCanvasSize();
+	return FVector2D(ParentSize.X, ParentSize.Y);
 }
 
 void FCameraDebugRenderer::AddText(const FString& InString)
@@ -95,14 +99,14 @@ bool FCameraDebugRenderer::NewLine(bool bSkipIfEmptyLine)
 
 FColor FCameraDebugRenderer::GetTextColor() const
 {
-	return Canvas->DrawColor;
+	return DrawColor;
 }
 
 FColor FCameraDebugRenderer::SetTextColor(const FColor& Color)
 {
 	FlushText();
-	FColor ReturnColor = Canvas->DrawColor;
-	Canvas->SetDrawColor(Color);
+	FColor ReturnColor = DrawColor;
+	DrawColor = Color;
 	return ReturnColor;
 }
 
@@ -115,9 +119,10 @@ void FCameraDebugRenderer::FlushText()
 {
 	if (LineBuilder.Len() > 0)
 	{
-		if (NextDrawPosition.Y < Canvas->ClipY)
+		int32 ViewHeight = GetCanvasSize().Y;
+		if (NextDrawPosition.Y < ViewHeight)
 		{
-			FDebugTextRenderer TextRenderer(Canvas, RenderFont);
+			FDebugTextRenderer TextRenderer(Canvas, DrawColor, RenderFont);
 			TextRenderer.LeftMargin = GetIndentMargin();
 			TextRenderer.RenderText(NextDrawPosition, LineBuilder.ToView());
 
@@ -172,13 +177,16 @@ void FCameraDebugRenderer::DrawTextBackgroundTile(float Opacity)
 	const FColor BackgroundColor = FCameraDebugColors::Get().Background.WithAlpha((uint8)(Opacity * 255));
 
 	// Draw the background behind the text.
-	Canvas->Canvas->PushDepthSortKey(GGameplayCamerasDebugBackgroundDepthSortKey);
+	if (Canvas)
 	{
-		FCanvasTileItem BackgroundTile(TopLeft, TileSize, BackgroundColor);
-		BackgroundTile.BlendMode = SE_BLEND_Translucent;
-		Canvas->DrawItem(BackgroundTile);
+		Canvas->PushDepthSortKey(GGameplayCamerasDebugBackgroundDepthSortKey);
+		{
+			FCanvasTileItem BackgroundTile(TopLeft, TileSize, BackgroundColor);
+			BackgroundTile.BlendMode = SE_BLEND_Translucent;
+			Canvas->DrawItem(BackgroundTile);
+		}
+		Canvas->PopDepthSortKey();
 	}
-	Canvas->Canvas->PopDepthSortKey();
 }
 
 void FCameraDebugRenderer::SkipAttachedBlocks()

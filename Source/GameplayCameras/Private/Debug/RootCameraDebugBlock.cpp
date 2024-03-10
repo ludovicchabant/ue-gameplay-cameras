@@ -27,12 +27,6 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnable(
 	GGameplayCamerasDebugEnable,
 	TEXT("(Default: false. Enables debug drawing for the GamplayCameras system."));
 
-bool GGameplayCamerasDebugTrace = true;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugTrace(
-	TEXT("GameplayCameras.Debug.Trace"),
-	GGameplayCamerasDebugTrace,
-	TEXT("(Default: false. Enables background tracing of GamplayCameras system debug info."));
-
 FString GGameplayCamerasDebugCategories = "nodetree";
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugCategories(
 	TEXT("GameplayCameras.Debug.Categories"),

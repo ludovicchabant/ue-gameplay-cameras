@@ -66,6 +66,11 @@ void FBlendStacksCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 	Renderer.SkipAllBlocks();
 }
 
+void FBlendStacksCameraDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << BlendStackNames;
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
