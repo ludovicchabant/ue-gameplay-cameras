@@ -7,7 +7,7 @@
 #include "Framework/Commands/UICommandInfo.h"
 #include "Styling/AppStyle.h"
 
-#define LOCTEXT_NAMESPACE "SequencerCommands"
+#define LOCTEXT_NAMESPACE "CameraAssetEditorCommands"
 
 namespace UE::Cameras
 {
