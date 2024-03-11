@@ -5,10 +5,15 @@
 #include "CoreTypes.h"
 #include "Widgets/SCompoundWidget.h"
 
-class FTabManager;
+#include "SGameplayCamerasDebugger.generated.h"
+
 class FSpawnTabArgs;
+class FTabManager;
+class FUICommandList;
 class SBox;
 class SDockTab;
+class SWidget;
+class UToolMenu;
 struct FSlateIcon;
 
 namespace UE::Cameras
@@ -38,6 +43,11 @@ public:
 
 protected:
 
+	static SGameplayCamerasDebugger* FromContext(UToolMenu* InMenu);
+	TSharedRef<SWidget> ConstructMenubar();
+	TSharedRef<SWidget> ConstructToolbar(TSharedRef<FUICommandList> InCommandList);
+	void ConstructDebugPanels();
+
 	static bool IsDebugCategoryActive(FString InCategoryName);
 	void SetActiveDebugCategoryPanel(FString InCategoryName);
 
@@ -54,4 +64,14 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+UCLASS()
+class UGameplayCamerasDebuggerMenuContext : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	TWeakPtr<UE::Cameras::SGameplayCamerasDebugger> CamerasDebugger;
+};
 
