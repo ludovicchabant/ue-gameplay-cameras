@@ -150,9 +150,12 @@ void SGameplayCamerasDebugger::InitializeColorSchemeNames()
 SGameplayCamerasDebugger* SGameplayCamerasDebugger::FromContext(UToolMenu* InMenu)
 {
 	UGameplayCamerasDebuggerMenuContext* Context = InMenu->FindContext<UGameplayCamerasDebuggerMenuContext>();
-	ensure(Context);
-	TSharedPtr<SGameplayCamerasDebugger> This = Context->CamerasDebugger.Pin();
-	return This.Get();
+	if (ensure(Context))
+	{
+		TSharedPtr<SGameplayCamerasDebugger> This = Context->CamerasDebugger.Pin();
+		return This.Get();
+	}
+	return nullptr;
 }
 
 TSharedRef<SWidget> SGameplayCamerasDebugger::ConstructMenubar()
