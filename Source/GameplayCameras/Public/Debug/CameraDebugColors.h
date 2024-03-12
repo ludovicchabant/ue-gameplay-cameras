@@ -18,8 +18,6 @@ class FCameraDebugColors
 {
 public:
 
-	static const FCameraDebugColors& Get();
-
 	/** Debug category titles and section titles. */
 	FColor Title;
 	/** Normal text. */
@@ -43,15 +41,41 @@ public:
 
 public:
 
+	/** Gets the current color scheme. */
+	static const FCameraDebugColors& Get();
+
+	/** Gets a specific color by name on the current scheme. */
 	static TOptional<FColor> GetFColorByName(const FString& InColorName);
+
+	/** Gets the current color scheme name. */
+	GAMEPLAYCAMERAS_API static const FString& GetName();
+	/** Sets the current color scheme. */
+	GAMEPLAYCAMERAS_API static void Set(const FString& InColorSchemeName);
+	/** Sets the current color scheme. */
+	GAMEPLAYCAMERAS_API static void Set(const FCameraDebugColors& InColorScheme);
+
+	/** Registers a new color scheme. */
+	GAMEPLAYCAMERAS_API static void RegisterColorScheme(const FString& InColorSchemeName, const FCameraDebugColors& InColorScheme);
+	/** Gets all registered color scheme names. */
+	GAMEPLAYCAMERAS_API static void GetColorSchemeNames(TArray<FString>& OutColorSchemeNames);
+
+
+public:
+
+	// Internal API.
+	static void RegisterBuiltinColorSchemes();
 
 private:
 
-	FCameraDebugColors();
-
 	static void UpdateColorMap(const FCameraDebugColors& Instance);
 
+private:
+
+	static FString CurrentColorSchemeName;
+	static FCameraDebugColors CurrentColorScheme;
 	static TMap<FString, FColor> ColorMap;
+
+	static TMap<FString, FCameraDebugColors> ColorSchemes;
 };
 
 }  // namespace UE::Cameras

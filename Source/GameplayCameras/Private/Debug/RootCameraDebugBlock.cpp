@@ -7,6 +7,7 @@
 #include "Core/RootCameraNode.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugCategories.h"
+#include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraDirectorTreeDebugBlock.h"
 #include "Debug/CameraNodeEvaluatorDebugBlock.h"
@@ -49,6 +50,12 @@ float GGameplayCamerasDebugBackgroundOpacity = 0.6f;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundOpacity(
 	TEXT("GameplayCameras.Debug.BackgroundOpacity"),
 	GGameplayCamerasDebugBackgroundOpacity,
+	TEXT(""));
+
+FString GGameplayCamerasDebugColorScheme = TEXT("SolarizedDark");
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugColorScheme(
+	TEXT("GameplayCameras.Debug.ColorScheme"),
+	GGameplayCamerasDebugColorScheme,
 	TEXT(""));
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FRootCameraDebugBlock)
@@ -115,6 +122,9 @@ void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer)
 	{
 		Params.ActiveCategories.Add(FString(CategoryView));
 	}
+
+	// Update the color scheme in case it changed.
+	FCameraDebugColors::Set(GGameplayCamerasDebugColorScheme);
 
 	// Do the drawing!
 	FCameraDebugBlock::DebugDraw(Params, Renderer);

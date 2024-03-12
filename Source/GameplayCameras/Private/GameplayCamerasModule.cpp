@@ -5,6 +5,7 @@
 #include "Camera/CameraModularFeature.h"
 #include "CameraAnimationCameraModifier.h"
 #include "CameraAnimationSequencePlayer.h"
+#include "Debug/CameraDebugColors.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
@@ -29,6 +30,10 @@ public:
 		{
 			IModularFeatures::Get().RegisterModularFeature(ICameraModularFeature::GetModularFeatureName(), CameraModularFeature.Get());
 		}
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		UE::Cameras::FCameraDebugColors::RegisterBuiltinColorSchemes();
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 
 	virtual void ShutdownModule() override
