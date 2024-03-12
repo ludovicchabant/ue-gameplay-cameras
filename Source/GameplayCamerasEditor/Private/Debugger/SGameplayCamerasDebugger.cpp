@@ -3,8 +3,10 @@
 #include "Debugger/SGameplayCamerasDebugger.h"
 
 #include "Commands/GameplayCamerasDebuggerCommands.h"
+#include "Debug/CameraDebugColors.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "Debugger/SDebugCategoryButton.h"
+#include "Debugger/SDebugWidgetUtils.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/LayoutService.h"
 #include "Framework/Docking/TabManager.h"
@@ -17,8 +19,9 @@
 #include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
 #include "Widgets/Docking/SDockTab.h"
-#include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SExpandableArea.h"
+#include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/SNullWidget.h"
 #include "WorkspaceMenuStructure.h"
@@ -77,6 +80,8 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 	TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
 	GameplayCamerasEditorStyleName = GameplayCamerasEditorStyle->GetStyleSetName();
 
+	InitializeColorSchemeNames();
+
 	// Setup commands.
 	const FGameplayCamerasDebuggerCommands& Commands = FGameplayCamerasDebuggerCommands::Get();
 	TSharedRef<FUICommandList> CommandList = MakeShareable(new FUICommandList);
@@ -89,6 +94,7 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 	// Build all UI elements.
 	TSharedRef<SWidget> MenubarContents = ConstructMenubar();
 	TSharedRef<SWidget> ToolbarContents = ConstructToolbar(CommandList);
+	TSharedRef<SWidget> GeneralOptionsContents = ConstructGeneralOptions(CommandList);
 	ConstructDebugPanels();
 
 	// Main layout.
@@ -106,7 +112,7 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 				ToolbarContents
 			]
 		+ SVerticalBox::Slot()
-		.Padding(2.0)
+			.Padding(2.0)
 			[
 				SAssignNew(PanelHost, SBox)
 					.Padding(8.f)
@@ -114,7 +120,31 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 						EmptyPanel.ToSharedRef()
 					]
 			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(2.0)
+			[
+				GeneralOptionsContents
+			]
 	];
+
+	// Set initial debug panel.
+	TArray<FStringView, TInlineAllocator<4>> ActiveCategories;
+	UE::String::ParseTokens(GGameplayCamerasDebugCategories, ',', ActiveCategories);
+	if (!ActiveCategories.IsEmpty())
+	{
+		SetActiveDebugCategoryPanel(FString(ActiveCategories[0]));
+	}
+}
+
+void SGameplayCamerasDebugger::InitializeColorSchemeNames()
+{
+	TArray<FString> RawNames;
+	FCameraDebugColors::GetColorSchemeNames(RawNames);
+	for (const FString& RawName :RawNames)
+	{
+		ColorSchemeNames.Add(MakeShared<FString>(RawName));
+	}
 }
 
 SGameplayCamerasDebugger* SGameplayCamerasDebugger::FromContext(UToolMenu* InMenu)
@@ -201,6 +231,108 @@ TSharedRef<SWidget> SGameplayCamerasDebugger::ConstructToolbar(TSharedRef<FUICom
 	ToolbarContext.AddObject(ThisContextWrapper);
 
 	return ToolMenus->GenerateWidget(SGameplayCamerasDebugger::ToolbarName, ToolbarContext);
+}
+
+TSharedRef<SWidget> SGameplayCamerasDebugger::ConstructGeneralOptions(TSharedRef<FUICommandList> InCommandList)
+{
+	const ISlateStyle& AppStyle = FAppStyle::Get();
+	const FMargin GridCellPadding(4.f);
+
+	return SNew(SExpandableArea)
+		.BorderImage(AppStyle.GetBrush("Brushes.Header"))
+		.BodyBorderImage(AppStyle.GetBrush("Brushes.Recessed"))
+		.HeaderPadding(FMargin(4.0f))
+		.Padding(FMargin(0, 1, 0, 0))
+		.InitiallyCollapsed(true)
+		.AllowAnimatedTransition(false)
+		.HeaderContent()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+						.Text(LOCTEXT("GeneralOptions", "General Options"))
+						.TextStyle(AppStyle, "ButtonText")
+						.Font(AppStyle.GetFontStyle("NormalFontBold"))
+				]
+		]
+		.BodyContent()
+		[
+			SNew(SBorder)
+				.BorderImage(AppStyle.GetBrush("Brushes.Header"))
+				.Padding(2.f)
+				[
+					SNew(SGridPanel)
+						.FillColumn(0, 1.f)
+						.FillColumn(2, 1.f)
+					+ SGridPanel::Slot(0, 0)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("TopMargin", "Top margin"))
+					]
+					+ SGridPanel::Slot(1, 0)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SDebugWidgetUtils::CreateConsoleVariableSpinBox(TEXT("GameplayCameras.Debug.TopMargin"))
+					]
+					+ SGridPanel::Slot(0, 1)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("LeftMargin", "Left margin"))
+					]
+					+ SGridPanel::Slot(1, 1)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SDebugWidgetUtils::CreateConsoleVariableSpinBox(TEXT("GameplayCameras.Debug.LeftMargin"))
+					]
+					+ SGridPanel::Slot(0, 2)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("InnerMargin", "Inner margin"))
+					]
+					+ SGridPanel::Slot(1, 2)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SDebugWidgetUtils::CreateConsoleVariableSpinBox(TEXT("GameplayCameras.Debug.InnerMargin"))
+					]
+					+ SGridPanel::Slot(0, 3)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("IndentSize", "Indent size"))
+					]
+					+ SGridPanel::Slot(1, 3)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SDebugWidgetUtils::CreateConsoleVariableSpinBox(TEXT("GameplayCameras.Debug.Indent"))
+					]
+					+ SGridPanel::Slot(2, 0)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+							.Text(LOCTEXT("ColorScheme", "Color scheme"))
+					]
+					+ SGridPanel::Slot(3, 0)
+					.Padding(GridCellPadding)
+					.VAlign(VAlign_Center)
+					[
+						SDebugWidgetUtils::CreateConsoleVariableComboBox(TEXT("GameplayCameras.Debug.ColorScheme"), &ColorSchemeNames)
+					]
+				]
+		];
 }
 
 void SGameplayCamerasDebugger::ConstructDebugPanels()

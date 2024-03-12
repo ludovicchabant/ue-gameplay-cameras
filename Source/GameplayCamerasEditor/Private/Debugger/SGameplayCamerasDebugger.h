@@ -46,7 +46,10 @@ protected:
 	static SGameplayCamerasDebugger* FromContext(UToolMenu* InMenu);
 	TSharedRef<SWidget> ConstructMenubar();
 	TSharedRef<SWidget> ConstructToolbar(TSharedRef<FUICommandList> InCommandList);
+	TSharedRef<SWidget> ConstructGeneralOptions(TSharedRef<FUICommandList> InCommandList);
 	void ConstructDebugPanels();
+
+	void InitializeColorSchemeNames();
 
 	static bool IsDebugCategoryActive(FString InCategoryName);
 	void SetActiveDebugCategoryPanel(FString InCategoryName);
@@ -59,8 +62,11 @@ private:
 	FName GameplayCamerasEditorStyleName;
 
 	TSharedPtr<SBox> PanelHost;
+
 	TSharedPtr<SWidget> EmptyPanel;
 	TMap<FString, TSharedPtr<SWidget>> DebugPanels;
+
+	TArray<TSharedPtr<FString>> ColorSchemeNames;
 };
 
 }  // namespace UE::Cameras
