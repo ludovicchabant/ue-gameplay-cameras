@@ -2,6 +2,11 @@
 
 #include "Core/CameraParameters.h"
 
+#include "Math/Rotator.h"
+#include "Math/Transform.h"
+#include "Math/Vector.h"
+#include "Math/Vector2D.h"
+#include "Math/Vector4.h"
 #include "UObject/UnrealNames.h"
 
 bool FBooleanCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
@@ -49,6 +54,11 @@ bool FDoubleCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag,
 	return false;
 }
 
+FVector2fCameraParameter::FVector2fCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
+}
+
 bool FVector2fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
 	if (Tag.GetType().IsStruct(NAME_Vector2f) || Tag.GetType().IsStruct(NAME_Vector2D))
@@ -58,6 +68,11 @@ bool FVector2fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	}
 
 	return false;
+}
+
+FVector2dCameraParameter::FVector2dCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
 }
 
 bool FVector2dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
@@ -71,6 +86,11 @@ bool FVector2dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	return false;
 }
 
+FVector3fCameraParameter::FVector3fCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
+}
+
 bool FVector3fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
 	if (Tag.GetType().IsStruct(NAME_Vector3f))
@@ -80,6 +100,11 @@ bool FVector3fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	}
 
 	return false;
+}
+
+FVector3dCameraParameter::FVector3dCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
 }
 
 bool FVector3dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
@@ -93,6 +118,11 @@ bool FVector3dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	return false;
 }
 
+FVector4fCameraParameter::FVector4fCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
+}
+
 bool FVector4fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
 	if (Tag.GetType().IsStruct(NAME_Vector4f))
@@ -102,6 +132,11 @@ bool FVector4fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	}
 
 	return false;
+}
+
+FVector4dCameraParameter::FVector4dCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
 }
 
 bool FVector4dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
@@ -115,6 +150,11 @@ bool FVector4dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Ta
 	return false;
 }
 
+FRotator3fCameraParameter::FRotator3fCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
+}
+
 bool FRotator3fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
 	if (Tag.GetType().IsStruct(NAME_Rotator3f))
@@ -124,6 +164,11 @@ bool FRotator3fCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& T
 	}
 
 	return false;
+}
+
+FRotator3dCameraParameter::FRotator3dCameraParameter()
+	: Value(EForceInit::ForceInit)
+{
 }
 
 bool FRotator3dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)

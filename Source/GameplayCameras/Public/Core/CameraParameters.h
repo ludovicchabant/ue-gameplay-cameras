@@ -90,6 +90,7 @@ struct FVector2fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2fCameraVariable> Variable;
 
+	FVector2fCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -107,6 +108,7 @@ struct FVector2dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2dCameraVariable> Variable;
 
+	FVector2dCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -124,6 +126,7 @@ struct FVector3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3fCameraVariable> Variable;
 
+	FVector3fCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -141,6 +144,7 @@ struct FVector3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3dCameraVariable> Variable;
 
+	FVector3dCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -158,6 +162,7 @@ struct FVector4fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4fCameraVariable> Variable;
 
+	FVector4fCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -175,6 +180,7 @@ struct FVector4dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4dCameraVariable> Variable;
 
+	FVector4dCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -192,6 +198,7 @@ struct FRotator3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3fCameraVariable> Variable;
 
+	FRotator3fCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
@@ -209,6 +216,7 @@ struct FRotator3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3dCameraVariable> Variable;
 
+	FRotator3dCameraParameter();
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 };
 
