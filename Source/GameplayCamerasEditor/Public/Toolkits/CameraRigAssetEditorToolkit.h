@@ -7,6 +7,8 @@
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
 
+#include "CameraRigAssetEditorToolkit.generated.h"
+
 class IMessageLogListing;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
@@ -37,6 +39,7 @@ protected:
 	virtual void UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager) override;
 	virtual void CreateWidgets() override;
 	virtual void RegisterToolbar() override;
+	virtual void InitToolMenuContext(FToolMenuContext& MenuContext) override;
 	virtual void PostInitAssetEditor() override;
 
 	// IToolkit interface
@@ -86,4 +89,14 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+UCLASS()
+class UCameraRigAssetEditorMenuContext : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	TWeakPtr<UE::Cameras::FCameraRigAssetEditorToolkit> CameraRigAssetEditorToolkit;
+};
 
