@@ -98,6 +98,13 @@ void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierar
 {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
 
+#if WITH_EDITORONLY_DATA
+	if (PreviewMeshComponent)
+	{
+		PreviewMeshComponent->DestroyComponent();
+	}
+#endif  // WITH_EDITORONLY_DATA
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	if (DebugDrawDelegateHandle.IsValid())
 	{
@@ -106,12 +113,10 @@ void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierar
 	}
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
-#if WITH_EDITORONLY_DATA
-	if (PreviewMeshComponent)
+	if (Evaluator.IsValid())
 	{
-		PreviewMeshComponent->DestroyComponent();
+		Evaluator.Reset();
 	}
-#endif  // WITH_EDITORONLY_DATA
 }
 
 #if WITH_EDITOR

@@ -26,7 +26,7 @@ struct FCameraNodeEvaluatorTreeBuildParams
 	/** The root node of the tree. */
 	TObjectPtr<const UCameraNode> RootCameraNode;
 	/** The evaluator running this evaluation. */
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** An optional allocation information to optimize storage. */

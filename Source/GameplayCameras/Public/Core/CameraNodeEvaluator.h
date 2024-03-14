@@ -32,7 +32,7 @@ struct FCameraDebugBlockBuilder;
 struct FCameraNodeEvaluationParams
 {
 	/** The evaluation running this evaluation. */
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** The time interval for the evaluation. */
@@ -89,7 +89,7 @@ private:
 struct FCameraNodeEvaluatorInitializeParams
 {
 	/** The evaluation running this evaluation. */
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 };

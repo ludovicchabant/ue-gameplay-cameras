@@ -61,7 +61,7 @@ public:
 public:
 
 	// Internal API
-	void Initialize(TSharedRef<FCameraSystemEvaluator> InEvaluator);
+	void Initialize(FCameraSystemEvaluator& InEvaluator);
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
@@ -78,7 +78,7 @@ private:
 	TArray<FContextEntry> Entries;
 
 	/** The owner evaluator. */
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	friend class FCameraDirectorTreeDebugBlock;

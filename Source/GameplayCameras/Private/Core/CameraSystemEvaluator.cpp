@@ -55,12 +55,10 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 		RootNode = NewObject<UDefaultRootCameraNode>(Owner, TEXT("RootNode"));
 	}
 
-	TSharedRef<FCameraSystemEvaluator> This(SharedThis(this));
-
-	ContextStack.Initialize(This);
+	ContextStack.Initialize(*this);
 
 	FCameraNodeEvaluatorTreeBuildParams BuildParams;
-	BuildParams.Evaluator = This;
+	BuildParams.Evaluator = this;
 	BuildParams.RootCameraNode = RootNode;
 	RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
 }
@@ -102,8 +100,6 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		return;
 	}
 
-	TSharedPtr<FCameraSystemEvaluator> This(SharedThis(this));
-
 	// Run the camera director, and activate any camera rig(s) it returns to us.
 	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContextInfo.Evaluator;
 	if (ActiveDirectorEvaluator)
@@ -119,7 +115,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		if (DirectorResult.ActiveCameraRigs.Num() == 1)
 		{
 			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.Evaluator = This;
+			CameraRigParams.Evaluator = this;
 			CameraRigParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
 			CameraRigParams.CameraRig = DirectorResult.ActiveCameraRigs[0];
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
@@ -128,7 +124,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 	// Setup the params/result for running the root camera node.
 	FCameraNodeEvaluationParams NodeParams;
-	NodeParams.Evaluator = This;
+	NodeParams.Evaluator = this;
 	NodeParams.DeltaTime = Params.DeltaTime;
 
 	RootNodeResult.Reset();

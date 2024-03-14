@@ -67,7 +67,7 @@ namespace UE::Cameras
 struct FBlendStackCameraPushParams
 {
 	/** The evaluator currently running.*/
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 
 	/** The evaluation context within which a camera rig's node tree should run. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
@@ -88,6 +88,8 @@ class FBlendStackCameraNodeEvaluator
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
 public:
+
+	~FBlendStackCameraNodeEvaluator();
 
 	/** Push a new camera rig onto the blend stack. */
 	void Push(const FBlendStackCameraPushParams& Params);
@@ -122,6 +124,8 @@ protected:
 			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
+	void PopEntries(int32 FirstIndexToKeep);
+
 protected:
 
 	struct FCameraRigEntry
@@ -148,7 +152,7 @@ protected:
 	};
 
 	/** The camera system evaluator running this node. */
-	TSharedPtr<FCameraSystemEvaluator> OwningEvaluator;
+	FCameraSystemEvaluator* OwningEvaluator = nullptr;
 
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;

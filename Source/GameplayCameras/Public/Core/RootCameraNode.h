@@ -47,7 +47,7 @@ class FCameraSystemEvaluator;
 struct FActivateCameraRigParams
 {
 	/** The evaluator currently running.*/
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	FCameraSystemEvaluator* Evaluator = nullptr;
 
 	/** The evaluation context in which the camera rig runs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;

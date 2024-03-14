@@ -46,6 +46,12 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowVariableIds
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
+FBlendStackCameraNodeEvaluator::~FBlendStackCameraNodeEvaluator()
+{
+	// Pop all our entries to unregister the live-edit callbacks.
+	PopEntries(Entries.Num());
+}
+
 void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
 {
 	if (!Entries.IsEmpty())
@@ -68,8 +74,7 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	UObject* Outer = const_cast<UObject*>((UObject*)GetCameraNode());
 	UBlendStackRootCameraNode* EntryRootNode = NewObject<UBlendStackRootCameraNode>(Outer, NAME_None);
 	{
-		UCameraNode* ModeRootNode = Params.CameraRig->RootNode;
-		EntryRootNode->RootNode = ModeRootNode;
+		EntryRootNode->RootNode = Params.CameraRig->RootNode;
 
 		// Find a transition and use its blend. If no transition is found,
 		// make a camera cut transition.
@@ -234,38 +239,48 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 	// Pop out camera rigs that have been blended out.
 	if (BlendStackNode->bAutoPop && PopEntriesBelow != INDEX_NONE)
 	{
-#if WITH_EDITOR
-		IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
-		TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
-#endif  // WITH_EDITOR
-
-		for (int32 Index = 0; Index < PopEntriesBelow; ++Index)
-		{
-#if WITH_EDITOR
-			const FCameraRigEntry& FirstEntry = Entries[0];
-			for (const UPackage* ListenPackage : FirstEntry.ListenedPackages)
-			{
-				int32* NumListens = AllListenedPackages.Find(ListenPackage);
-				if (ensure(NumListens))
-				{
-					--(*NumListens);
-					if (*NumListens == 0)
-					{
-						LiveEditManager->RemoveListener(ListenPackage, this);
-						AllListenedPackages.Remove(ListenPackage);
-					}
-				}
-			}
-#endif  // WITH_EDITOR
-
-			Entries.RemoveAt(0);
-		}
+		PopEntries(PopEntriesBelow);
 	}
 
 	// Reset first frame flags.
 	for (FCameraRigEntry& Entry : Entries)
 	{
 		Entry.bIsFirstFrame = false;
+	}
+}
+
+void FBlendStackCameraNodeEvaluator::PopEntries(int32 FirstIndexToKeep)
+{
+	if (UNLIKELY(Entries.IsEmpty()))
+	{
+		return;
+	}
+
+#if WITH_EDITOR
+	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
+	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+#endif  // WITH_EDITOR
+
+	for (int32 Index = 0; Index < FirstIndexToKeep; ++Index)
+	{
+#if WITH_EDITOR
+		const FCameraRigEntry& FirstEntry = Entries[0];
+		for (const UPackage* ListenPackage : FirstEntry.ListenedPackages)
+		{
+			int32* NumListens = AllListenedPackages.Find(ListenPackage);
+			if (ensure(NumListens))
+			{
+				--(*NumListens);
+				if (*NumListens == 0)
+				{
+					LiveEditManager->RemoveListener(ListenPackage, this);
+					AllListenedPackages.Remove(ListenPackage);
+				}
+			}
+		}
+#endif  // WITH_EDITOR
+
+		Entries.RemoveAt(0);
 	}
 }
 

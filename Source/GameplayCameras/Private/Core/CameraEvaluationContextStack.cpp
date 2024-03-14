@@ -79,9 +79,9 @@ void FCameraEvaluationContextStack::PopContext()
 	Entries.Pop();
 }
 
-void FCameraEvaluationContextStack::Initialize(TSharedRef<FCameraSystemEvaluator> InEvaluator)
+void FCameraEvaluationContextStack::Initialize(FCameraSystemEvaluator& InEvaluator)
 {
-	Evaluator = InEvaluator;
+	Evaluator = &InEvaluator;
 }
 
 void FCameraEvaluationContextStack::AddReferencedObjects(FReferenceCollector& Collector)
