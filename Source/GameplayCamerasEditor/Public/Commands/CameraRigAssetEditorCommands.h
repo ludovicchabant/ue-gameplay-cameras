@@ -23,6 +23,13 @@ public:
 public:
 
 	TSharedPtr<FUICommandInfo> Build;
+	
+	TSharedPtr<FUICommandInfo> ShowNodeHierarchy;
+	TSharedPtr<FUICommandInfo> ShowTransitions;
+
+	TSharedPtr<FUICommandInfo> ShowMessages;
+	TSharedPtr<FUICommandInfo> FindInCameraRig;
+	TSharedPtr<FUICommandInfo> FocusHome;
 };
 
 }  // namespace UE::Cameras

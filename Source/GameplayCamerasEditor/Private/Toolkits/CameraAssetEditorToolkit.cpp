@@ -79,6 +79,8 @@ void FCameraAssetEditorToolkit::CreateWidgets()
 	DetailsViewArgs.bHideSelectionTip = true;
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
+	// Now do our custom stuff.
+	
 	// Create the message log.
 	FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
 	FMessageLogInitializationOptions LogOptions;

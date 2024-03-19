@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "CoreTypes.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
@@ -18,5 +18,22 @@ class GAMEPLAYCAMERASEDITOR_API UGameplayCamerasEditorSettings : public UObject
 public:
 
 	UGameplayCamerasEditorSettings(const FObjectInitializer& ObjectInitializer);	
+
+public:
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraNodeTitleColor;
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraRigAssetTitleColor;
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraRigTransitionTitleColor;
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraRigTransitionConditionTitleColor;
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraBlendNodeTitleColor;
 };
 

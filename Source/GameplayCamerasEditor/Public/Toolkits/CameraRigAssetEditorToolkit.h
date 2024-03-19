@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "CoreTypes.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Misc/NotifyHook.h"
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
@@ -10,14 +11,19 @@
 #include "CameraRigAssetEditorToolkit.generated.h"
 
 class IMessageLogListing;
+class SFindInObjectTreeGraph;
+class SObjectTreeGraphToolbox;
+class SWidget;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
-class SWidget;
+class UEdGraphNode;
 
 namespace UE::Cameras
 {
 
 class IGameplayCamerasLiveEditManager;
+class SCameraRigAssetEditor;
+class SCameraTransitionEditor;
 
 /**
  * Editor toolkit for a camera rig asset.
@@ -63,26 +69,45 @@ protected:
 
 private:
 
+	TSharedRef<SDockTab> SpawnTab_Toolbox(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_CameraRigEditor(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
+
 	FSlateIcon GetBuildButtonIcon() const;
 	FText GetBuildButtonTooltip() const;
 
 	void OnBuild();
+	void OnFindInCameraRig();
 
 private:
 
+	static const FName ToolboxTabId;
+	static const FName CameraRigEditorTabId;
+	static const FName SearchTabId;
+	static const FName MessagesTabId;
 	static const FName DetailsViewTabId;
+
+	/** The asset being edited */
+	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 
 	/** Command bindings */
 	TSharedRef<FUICommandList> CommandBindings;
 
-	/** Message log widget */
-	TSharedPtr<SWidget> Stats;
-
 	/** Message log listing */
-	TSharedPtr<IMessageLogListing> StatsListing;
+	TSharedPtr<IMessageLogListing> MessageListing;
 
-	/** The asset being edited */
-	TObjectPtr<UCameraRigAsset> CameraRigAsset;
+	/** Camera rig editor widget */
+	TSharedPtr<SCameraRigAssetEditor> CameraRigEditorWidget;
+
+	/** Toolbox widget */
+	TSharedPtr<SObjectTreeGraphToolbox> ToolboxWidget;
+
+	/** Message log widget */
+	TSharedPtr<SWidget> MessagesWidget;
+
+	/** Search widget */
+	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;
 
 	/** Live edit manager for updating the assets in the runtime */
 	TSharedPtr<UE::Cameras::IGameplayCamerasLiveEditManager> LiveEditManager;

@@ -11,10 +11,10 @@
 
 #include "BlendStackCameraNode.generated.h"
 
-struct FCameraRigTransition;
 class UBlendStackRootCameraNode;
 class UCameraAsset;
 class UCameraRigAsset;
+class UCameraRigTransition;
 
 namespace UE::Cameras
 {
@@ -32,7 +32,7 @@ class FBlendStackCameraDebugBlock;
 /**
  * A blend stack implemented as a camera node.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, Hidden)
 class UBlendStackCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
@@ -118,9 +118,9 @@ protected:
 protected:
 
 	// Utility functions for finding an appropriate transition.
-	const FCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
-	const FCameraRigTransition* FindTransition(
-			TArrayView<const FCameraRigTransition> Transitions, 
+	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
+	const UCameraRigTransition* FindTransition(
+			TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
 			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 

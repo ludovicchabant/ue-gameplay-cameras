@@ -15,7 +15,7 @@ class UCameraRigAsset;
  * This camera node wraps both the camera rig's root node, and the
  * blend node used to blend it.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, Hidden)
 class UBlendStackRootCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

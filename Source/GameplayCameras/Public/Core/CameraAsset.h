@@ -26,11 +26,11 @@ public:
 
 	/** A list of default enter transitions for all the camera rigs in this asset. */
 	UPROPERTY(EditAnywhere, Category=Blending)
-	TArray<FCameraRigTransition> EnterTransitions;
+	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
 
 	/** A list of default exit transitions for all the camera rigs in this asset. */
 	UPROPERTY(EditAnywhere, Category=Blending)
-	TArray<FCameraRigTransition> ExitTransitions;
+	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
 };
 
 

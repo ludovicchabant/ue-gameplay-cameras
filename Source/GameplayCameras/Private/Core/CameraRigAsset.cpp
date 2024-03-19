@@ -29,4 +29,26 @@ void UCameraRigAsset::GatherPackages(FCameraRigPackages& OutPackages) const
 	}
 }
 
+void UCameraRigAsset::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+{
+	NodePosX = GraphNodePosX;
+	NodePosY = GraphNodePosY;
+}
+
+void UCameraRigAsset::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY)
+{
+	GraphNodePosX = NodePosX;
+	GraphNodePosY = NodePosY;
+}
+
+const FString& UCameraRigAsset::GetGraphNodeCommentText() const
+{
+	return GraphNodeComment;
+}
+
+void UCameraRigAsset::OnUpdateGraphNodeCommentText(const FString& NewComment)
+{
+	GraphNodeComment = NewComment;
+}
+
 #endif  // WITH_EDITOR

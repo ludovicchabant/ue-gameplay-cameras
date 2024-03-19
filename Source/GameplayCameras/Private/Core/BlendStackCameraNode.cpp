@@ -79,7 +79,7 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 		// Find a transition and use its blend. If no transition is found,
 		// make a camera cut transition.
 		UBlendCameraNode* ModeBlend = nullptr;
-		if (const FCameraRigTransition* Transition = FindTransition(Params))
+		if (const UCameraRigTransition* Transition = FindTransition(Params))
 		{
 			ModeBlend = Transition->Blend;
 		}
@@ -284,7 +284,7 @@ void FBlendStackCameraNodeEvaluator::PopEntries(int32 FirstIndexToKeep)
 	}
 }
 
-const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
+const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
 {
 	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
 
@@ -298,7 +298,7 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 	// appropriate.
 	if (!Entries.IsEmpty())
 	{
-		const FCameraRigTransition* TransitionToUse = nullptr;
+		const UCameraRigTransition* TransitionToUse = nullptr;
 
 		// Start by looking at exit transitions on the last active (top) camera rig.
 		const FCameraRigEntry& TopEntry = Entries.Top();
@@ -367,8 +367,8 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 	return nullptr;
 }
 
-const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
-			TArrayView<const FCameraRigTransition> Transitions, 
+const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
+			TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
 			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const
 {
@@ -379,10 +379,10 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 	MatchParams.ToCameraAsset = ToCameraAsset;
 
 	// The transition should be used if all its conditions pass.
-	for (const FCameraRigTransition& Transition : Transitions)
+	for (TObjectPtr<const UCameraRigTransition> Transition : Transitions)
 	{
 		bool bConditionsPass = true;
-		for (const UCameraRigTransitionCondition* Condition : Transition.Conditions)
+		for (const UCameraRigTransitionCondition* Condition : Transition->Conditions)
 		{
 			if (!Condition->TransitionMatches(MatchParams))
 			{
@@ -393,7 +393,7 @@ const FCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 
 		if (bConditionsPass)
 		{
-			return &Transition;
+			return Transition;
 		}
 	}
 

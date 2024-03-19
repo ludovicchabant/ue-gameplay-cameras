@@ -24,3 +24,29 @@ FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder&
 	return NewEvaluator;
 }
 
+#if WITH_EDITOR
+
+void UCameraNode::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+{
+	NodePosX = GraphNodePosX;
+	NodePosY = GraphNodePosY;
+}
+
+void UCameraNode::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY)
+{
+	GraphNodePosX = NodePosX;
+	GraphNodePosY = NodePosY;
+}
+
+const FString& UCameraNode::GetGraphNodeCommentText() const
+{
+	return GraphNodeComment;
+}
+
+void UCameraNode::OnUpdateGraphNodeCommentText(const FString& NewComment)
+{
+	GraphNodeComment = NewComment;
+}
+
+#endif  // WITH_EDITOR
+

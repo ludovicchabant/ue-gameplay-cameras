@@ -19,6 +19,7 @@ public class GameplayCamerasEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"ApplicationCore",
 				"AssetDefinition",
 				"AssetRegistry",
 				"BlueprintGraph",
@@ -28,6 +29,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"EditorSubsystem",
 				"Engine",
 				"GameplayCameras",
+				"GraphEditor",
 				"InputCore",
 				"InteractiveToolsFramework",
 				"Kismet",

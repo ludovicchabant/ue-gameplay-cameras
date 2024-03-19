@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "CoreTypes.h"
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
 

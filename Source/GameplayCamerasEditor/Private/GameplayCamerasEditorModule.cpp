@@ -170,9 +170,9 @@ private:
 
 		if (SettingsModule != nullptr)
 		{
-			SettingsModule->RegisterSettings("Project", "Plugins", "GameplayCamerasEditor",
-				LOCTEXT("GameplayCamerasEditorProjectSettingsName", "Gameplay Cameras Editor"),
-				LOCTEXT("GameplayCamerasEditorProjectSettingsDescription", "Configure the gameplay cameras editor."),
+			SettingsModule->RegisterSettings("Editor", "Plugins", "Gameplay Cameras",
+				LOCTEXT("GameplayCamerasEditorProjectSettingsName", "Gameplay Cameras"),
+				LOCTEXT("GameplayCamerasEditorProjectSettingsDescription", "Configure the gameplay cameras editors."),
 				GetMutableDefault<UGameplayCamerasEditorSettings>()
 			);
 		}
@@ -184,8 +184,7 @@ private:
 
 		if (SettingsModule != nullptr)
 		{
-			SettingsModule->UnregisterSettings("Project", "Plugins", "GameplayCamerasEditor");
-			SettingsModule->UnregisterSettings("Editor", "ContentEditors", "GameplayCamerasEditor");
+			SettingsModule->UnregisterSettings("Editor", "Plugins", "Gameplay Cameras");
 		}
 	}
 

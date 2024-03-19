@@ -10,7 +10,7 @@
 /**
  * Base class for blend camera nodes.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, Hidden, meta=(ObjectTreeGraphCategory="Camera Blends"))
 class UBlendCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

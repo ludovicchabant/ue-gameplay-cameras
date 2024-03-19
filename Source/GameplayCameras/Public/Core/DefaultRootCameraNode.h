@@ -11,7 +11,7 @@ class UBlendStackCameraNode;
 /**
  * The default implementation of a root camera node.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, Hidden)
 class UDefaultRootCameraNode : public URootCameraNode
 {
 	GENERATED_BODY()
