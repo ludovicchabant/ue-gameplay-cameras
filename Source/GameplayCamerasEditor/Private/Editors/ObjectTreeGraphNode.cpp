@@ -536,7 +536,7 @@ void UObjectTreeGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, clas
 				FNewToolMenuDelegate::CreateLambda([&GraphEditorCommands](UToolMenu* InMenu)
 					{
 						FToolMenuSection& SubMenuSection = InMenu->AddSection(
-								"ObjectTreeGraphAlignmentActions", LOCTEXT("AlignmentHeader", "Align"));
+								"ObjectTreeGraphAlignmentActions", LOCTEXT("AlignmentHeader", "Alignment"));
 						SubMenuSection.AddMenuEntry(GraphEditorCommands.AlignNodesTop);
 						SubMenuSection.AddMenuEntry(GraphEditorCommands.AlignNodesMiddle);
 						SubMenuSection.AddMenuEntry(GraphEditorCommands.AlignNodesBottom);
