@@ -11,6 +11,9 @@ class IDetailsView;
 class UObjectTreeGraph;
 class UObjectTreeGraphNode;
 
+/**
+ * A graph editor for an object tree graph.
+ */
 class SObjectTreeGraphEditor 
 	: public SCompoundWidget
 	, public FEditorUndoClient
@@ -19,12 +22,19 @@ public:
 
 	SLATE_BEGIN_ARGS(SObjectTreeGraphEditor)
 	{}
+		/** Any additional command mappings to use in the graph editor. */
 		SLATE_ARGUMENT(TSharedPtr<FUICommandList>, AdditionalCommands)
+		/** A custom graph title bar. A default is provided if this isn't specified. */
 		SLATE_ARGUMENT(TSharedPtr<SWidget>, GraphTitleBar)
+		/** The details view to use for showing the current graph selection. */
 		SLATE_ARGUMENT(TSharedPtr<IDetailsView>, DetailsView)
+		/** The graph to show in the editor. */
 		SLATE_ARGUMENT(UObjectTreeGraph*, GraphToEdit)
+		/** The toolkit inside which this editor lives, if any. */
 		SLATE_ARGUMENT(TWeakPtr<FAssetEditorToolkit>, AssetEditorToolkit)
+		/** The graph editor appearance. */
 		SLATE_ATTRIBUTE(FGraphAppearanceInfo, Appearance)
+		/** The graph editor title. */
 		SLATE_ATTRIBUTE(FText, GraphTitle)
 	SLATE_END_ARGS()
 

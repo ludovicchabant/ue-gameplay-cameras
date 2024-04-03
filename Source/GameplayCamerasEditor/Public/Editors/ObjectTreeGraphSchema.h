@@ -12,6 +12,9 @@ class UObjectTreeGraph;
 class UObjectTreeGraphNode;
 struct FObjectTreeGraphClassConfig;
 
+/**
+ * Schema class for an object tree graph.
+ */
 UCLASS()
 class UObjectTreeGraphSchema : public UEdGraphSchema
 {
@@ -20,18 +23,20 @@ class UObjectTreeGraphSchema : public UEdGraphSchema
 public:
 
 	// Pin categories.
-	static const FName PC_Self;
-	static const FName PC_Property;
+	static const FName PC_Self;			// A "self" pin.
+	static const FName PC_Property;		// A property pin.
 
 	// Pin sub-categories.
-	static const FName PSC_ObjectProperty;
-	static const FName PSC_ArrayProperty;
-	static const FName PSC_ArrayPropertyItem;
+	static const FName PSC_ObjectProperty;		// A normal object property pin.
+	static const FName PSC_ArrayProperty;		// An array property pin (generally hidden).
+	static const FName PSC_ArrayPropertyItem;	// A pin for an item inside an array property.
 
 public:
 
+	/** Creates a new schema. */
 	UObjectTreeGraphSchema(const FObjectInitializer& ObjInit);
 
+	/** Creates an object graph node for the given object. */
 	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
 
 public:
@@ -64,6 +69,9 @@ protected:
 	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const;
 };
 
+/**
+ * Graph action to create a new object (and corresponding graph node) of a given class.
+ */
 USTRUCT()
 struct FObjectGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 {
@@ -71,9 +79,11 @@ struct FObjectGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 
 public:
 
+	/** The outer for the new object. Defaults to the root object's package. */
 	UPROPERTY()
 	TObjectPtr<UObject> ObjectOuter;
 
+	/** The class of the new object. */
 	UPROPERTY()
 	TObjectPtr<UClass> ObjectClass;
 

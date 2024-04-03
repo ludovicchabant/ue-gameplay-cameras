@@ -15,6 +15,10 @@ class UClass;
 
 template<typename> class SListView;
 
+/**
+ * A widget for an object tree graph toolbox entry, showing a specific
+ * instantiable object class that can be added to a graph.
+ */
 class SObjectTreeGraphToolboxEntry : public SCompoundWidget
 {
 public:
@@ -23,8 +27,11 @@ public:
 		: _ObjectClass(nullptr)
 		, _GraphConfig(nullptr)
 	{}
+		/** The object class represented by this entry. */
 		SLATE_ARGUMENT(UClass*, ObjectClass)
+		/** The configuration of the graph this toolbox works for. */
 		SLATE_ARGUMENT(const FObjectTreeGraphConfig*, GraphConfig)
+		/** Text to highlight if a search is ongoing. */
 		SLATE_ATTRIBUTE(FText, HighlightText)
 	SLATE_END_ARGS()
 
@@ -52,6 +59,10 @@ private:
 	const FSlateBrush* PressedImage = nullptr;
 };
 
+/**
+ * A toolbox widget that shows all the possible instantiable classes of objects for a
+ * given object tree graph.
+ */
 class SObjectTreeGraphToolbox : public SCompoundWidget
 {
 public:
@@ -63,6 +74,10 @@ public:
 
 	void Construct(const FArguments& InArgs);
 
+	/**
+	 * Updates the toolbox to reflect the list of instantiable objects for
+	 * the given graph configuration.
+	 */
 	void SetGraphConfig(const FObjectTreeGraphConfig& InGraphConfig);
 
 protected:
@@ -100,6 +115,10 @@ private:
 	bool bUpdateFilteredItemSource = false;
 };
 
+/**
+ * Drag-drop operation for creating a new object (and corresponding graph node) in an object tree graph
+ * by dragging one of the entries from the toolbox widget.
+ */
 class FObjectTreeClassDragDropOp : public FDecoratedDragDropOp
 {
 public:

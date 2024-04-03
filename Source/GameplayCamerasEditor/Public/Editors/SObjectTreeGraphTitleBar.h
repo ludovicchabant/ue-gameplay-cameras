@@ -21,6 +21,9 @@ struct FObjectTreeGraphInfo
 	FString GraphName;
 };
 
+/**
+ * The default object graph title bar used by the object tree graph editor.
+ */
 class SObjectTreeGraphTitleBar : public SCompoundWidget
 {
 public:

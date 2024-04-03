@@ -15,11 +15,16 @@
 class UObjectTreeGraphNode;
 class UObjectTreeGraphSchema;
 
+/** Specifies where to find graph node objects. */
 enum class EObjectTreeGraphBuildSource
 {
+	/** Create graph nodes from all eligible objects found in the same package. */
 	RootObjectPackage
 };
 
+/**
+ * A node graph that represents a hierarchy of objects and their relationships.
+ */
 UCLASS()
 class UObjectTreeGraph : public UEdGraph
 {
@@ -27,14 +32,20 @@ class UObjectTreeGraph : public UEdGraph
 
 public:
 
+	/** Creates a new graph. */
 	UObjectTreeGraph(const FObjectInitializer& ObjInit);
 
+	/** Initializes the graph given a root object and a graph configuration. */
 	void Initialize(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig);
 
+	/** Gets the root object. */
 	UObject* GetRootObject() const { return WeakRootObject.Get(); }
+	/** Gets the root object's graph node. */
 	UObjectTreeGraphNode* GetRootObjectNode() const { return RootObjectNode; }
+	/** Gets the graph configuration. */
 	const FObjectTreeGraphConfig& GetConfig() const;
 
+	/** Rebuilds the node graph. */
 	void RebuildGraph(EObjectTreeGraphBuildSource InSource);
 
 private:

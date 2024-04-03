@@ -14,6 +14,9 @@ class UObjectTreeGraph;
 struct FObjectTreeGraphConfig;
 struct FObjectTreeGraphClassConfig;
 
+/**
+ * A graph node that represents an object inside an object tree graph.
+ */
 UCLASS()
 class UObjectTreeGraphNode : public UEdGraphNode
 {
@@ -21,22 +24,36 @@ class UObjectTreeGraphNode : public UEdGraphNode
 
 public:
 
+	/** Creates a new graph node. */
 	UObjectTreeGraphNode(const FObjectInitializer& ObjInit);
 
+	/** Initializes this graph node for the given object. */
 	void Initialize(UObject* InObject);
 
+	/** Gets the underlying object represented by this graph node. */
 	UObject* GetObject() const { return Object.Get(); }
+	/** Gets all connectable properties on the underlying object. */
 	void GetAllConnectableProperties(TArray<FProperty*>& OutProperties) const;
 
+	/** Finds the self pin that represents the underlying object itself. */
 	UEdGraphPin* GetSelfPin() const;
+	/** Changes the direction of the self pin. */
 	void OverrideSelfPinDirection(EEdGraphPinDirection Direction);
 
+	/** Finds the pin for the given object property. */
 	UEdGraphPin* GetPinForProperty(FObjectProperty* InProperty) const;
+	/** Finds the pin for the given item in an array property. */
 	UEdGraphPin* GetPinForProperty(FArrayProperty* InProperty, int32 Index) const;
+	/** Finds the extra free pin used to add new items in an array property. */
 	UEdGraphPin* GetPinForPropertyNewItem(FArrayProperty* InProperty, bool bCreateNew);
+	/** Gets the underlying property represented by the given pin. */
 	FProperty* GetPropertyForPin(const UEdGraphPin* InPin) const;
+	/** Gets the type of object that can connect to the given pin. */
 	UClass* GetConnectedObjectClassForPin(const UEdGraphPin* InPin) const;
+	/** Gets the index of the given pin's underlying value inside an array property. */
 	int32 GetIndexOfArrayPin(const UEdGraphPin* InPin) const;
+
+public:
 
 	// UEdGraphNode interface.
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;

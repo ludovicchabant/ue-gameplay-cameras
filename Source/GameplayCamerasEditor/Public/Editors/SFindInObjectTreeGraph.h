@@ -18,31 +18,50 @@ class SSearchBox;
 
 class SFindInObjectTreeGraph;
 
+/** 
+ * Structure for a search result inside an object tree graph.
+ */
 struct FFindInObjectTreeGraphResult
 {
 public:
 
+	/** Parent result. */
 	TWeakPtr<FFindInObjectTreeGraphResult> Parent;
+	/** Children results. */
 	TArray<TSharedPtr<FFindInObjectTreeGraphResult>> Children;
 
+	/** Custom text for this result. */
 	FText CustomText;
+	/** The graph node that this result refers to. */
 	TWeakObjectPtr<UEdGraphNode> GraphNode;
+	/** The graph pin that this result refers to. */
 	FEdGraphPinReference GraphPin;
 
 public:
 
+	/** Creates a new result with a custom text. */
 	FFindInObjectTreeGraphResult(const FText& InCustomText);
+	/** Creates a new result referring to a graph node, under a parent result. */
 	FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphNode* InGraphNode);
+	/** Creates a new result referring to a graph pin, under a parent result. */
 	FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphPin* InGraphPin);
 
+	/** Gets the icon for this result. */
 	TSharedRef<SWidget>	GetIcon() const;
+	/** Gets the category for this result. */
 	FText GetCategory() const;
+	/** Gets the display text for this result. */
 	FText GetText() const;
+	/** Gets the comment text for this result. */
 	FText GetCommentText() const;
 
+	/** Go to the graph node, pin, etc. */
 	FReply OnClick(TSharedRef<SFindInObjectTreeGraph> FindInObjectTreeGraph);
 };
 
+/**
+ * A search panel to find things in one or more object tree graphs.
+ */
 class SFindInObjectTreeGraph : public SCompoundWidget
 {
 public:
@@ -52,8 +71,11 @@ public:
 
 	SLATE_BEGIN_ARGS(SFindInObjectTreeGraph)
 	{}
+		/** The graphs to search. */
 		SLATE_ARGUMENT(TArray<UEdGraph*>, GraphsToSearch)
+		/** The callback to invoke when a search result wants to focus a node. */
 		SLATE_ARGUMENT(FOnJumpToNodeRequested, OnJumpToNodeRequested)
+		/** The callback to invoke when a search result wants to focus a pin. */
 		SLATE_ARGUMENT(FOnJumpToPinRequested, OnJumpToPinRequested)
 	SLATE_END_ARGS()
 

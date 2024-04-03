@@ -20,20 +20,32 @@ struct FObjectTreeGraphConfig;
 namespace UE::Cameras
 {
 
+/** The current mode of the camera rig asset editor. */
 enum class ECameraRigAssetEditorMode
 {
+	/** Show the node hierarchy editor. */
 	NodeGraph,
+	/** Show the transition editor. */
 	TransitionGraph
 };
 
+/**
+ * A camera rig asset editor.
+ *
+ * This implements only the dual-graph editor, for the node hierarchy and transitions.
+ * The rest of the UI such as the details view or the toolbox aren't included here.
+ */
 class SCameraRigAssetEditor : public SCompoundWidget
 {
 public:
 
 	SLATE_BEGIN_ARGS(SCameraRigAssetEditor)
 	{}
+		/** The camera rig asset to edit. */
 		SLATE_ARGUMENT(TObjectPtr<UCameraRigAsset>, CameraRigAsset)
+		/** The details view to synchronize with the graph selection. */
 		SLATE_ARGUMENT(TSharedPtr<IDetailsView>, DetailsView)
+		/** The toolkit inside which this editor lives, if any. */
 		SLATE_ARGUMENT(TWeakPtr<FAssetEditorToolkit>, AssetEditorToolkit)
 	SLATE_END_ARGS()
 
@@ -41,15 +53,22 @@ public:
 
 public:
 
+	/** Gets the current editor mode. */
 	ECameraRigAssetEditorMode GetEditorMode() const;
+	/** Checks if the editor is in the current mode. */
 	bool IsEditorMode(ECameraRigAssetEditorMode InMode) const;
+	/** Changes the editor's current mode. */
 	void SetEditorMode(ECameraRigAssetEditorMode InMode);
 
+	/** Gets both the node hierarchy and transition graphs. */
 	void GetGraphs(TArray<UEdGraph*>& OutGraphs) const;
 
+	/** Gets the graph configuration for the current mode. */
 	const FObjectTreeGraphConfig& GetFocusedGraphConfig() const;
 
+	/** Focuses the current graph to the root object node. */
 	void FocusHome();
+	/** Jumps the current graph to the given node. */
 	void JumpToNode(UEdGraphNode* InGraphNode);
 
 protected:
