@@ -109,27 +109,26 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UObject* InObject) const
 	if (InObject)
 	{
 		FText DisplayNameText;
+		const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObject->GetClass());
 
 		const IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
 		if (GraphObject && GraphObject->HasSupportFlags(EObjectTreeGraphObjectSupportFlags::CustomRename))
 		{
 			DisplayNameText = FText::FromString(GraphObject->GetGraphNodeName());
 		}
-		if (!DisplayNameText.IsEmpty())
-		{
-			FormatDisplayNameText(InObject, DisplayNameText);
-			return DisplayNameText;
-		}
 
-		const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObject->GetClass());
-		if (ClassConfig.NodeTitleUsesObjectName())
+		if (DisplayNameText.IsEmpty() && ClassConfig.NodeTitleUsesObjectName())
 		{
 			DisplayNameText = FText::FromString(InObject->GetName());
-			FormatDisplayNameText(InObject, DisplayNameText);
+		}
+
+		if (!DisplayNameText.IsEmpty())
+		{
+			FormatDisplayNameText(InObject, ClassConfig, DisplayNameText);
 			return DisplayNameText;
 		}
 
-		return GetDisplayNameText(InObject->GetClass());
+		return GetDisplayNameText(InObject->GetClass(), ClassConfig);
 	}
 	return FText::GetEmpty();
 }
@@ -139,24 +138,31 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass) const
 	if (InClass)
 	{
 		const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InClass);
-		if (ClassConfig.OnGetObjectClassDisplayName().IsBound())
-		{
-			return ClassConfig.OnGetObjectClassDisplayName().Execute(InClass);
-		}
-
-		FText DisplayNameText = InClass->GetDisplayNameText();
-		FormatDisplayNameText(InClass, DisplayNameText);
-		return DisplayNameText;
+		return GetDisplayNameText(InClass, ClassConfig);
 	}
 	return FText::GetEmpty();
 }
 
-void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, FText& InOutDisplayNameText) const
+FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfig& InClassConfig) const
 {
-	if (StripDisplayNameSuffixes.Num() > 0)
+	check(InClass);
+	
+	if (InClassConfig.OnGetObjectClassDisplayName().IsBound())
+	{
+		return InClassConfig.OnGetObjectClassDisplayName().Execute(InClass);
+	}
+
+	FText DisplayNameText = InClass->GetDisplayNameText();
+	FormatDisplayNameText(InClass, InClassConfig, DisplayNameText);
+	return DisplayNameText;
+}
+
+void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfig& InClassConfig, FText& InOutDisplayNameText) const
+{
+	if (InClassConfig.StripDisplayNameSuffixes().Num() > 0)
 	{
 		FString DisplayName = InOutDisplayNameText.ToString();
-		for (const FString& StripSuffix : StripDisplayNameSuffixes)
+		for (const FString& StripSuffix : InClassConfig.StripDisplayNameSuffixes())
 		{
 			if (DisplayName.RemoveFromEnd(StripSuffix))
 			{

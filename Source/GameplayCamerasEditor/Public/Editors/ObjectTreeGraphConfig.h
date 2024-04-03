@@ -11,6 +11,8 @@
 #include "Templates/SubclassOf.h"
 #include "Templates/UnrealTypeTraits.h"
 
+#include <initializer_list>
+
 class FText;
 class UClass;
 class UObject;
@@ -58,22 +60,41 @@ public:
 
 public:
 
-	TMap<FName, EEdGraphPinDirection> PropertyPinDirections;
+	TArrayView<const FString> StripDisplayNameSuffixes() const { return _StripDisplayNameSuffixes; }
+
+	FObjectTreeGraphClassConfig& StripDisplayNameSuffix(const FString& InSuffix)
+	{
+		_StripDisplayNameSuffixes.Add(InSuffix);
+		return *this;
+	}
+
+	FObjectTreeGraphClassConfig& StripDisplayNameSuffixes(std::initializer_list<FString> InSuffixes)
+	{
+		_StripDisplayNameSuffixes.Append(InSuffixes);
+		return *this;
+	}
+
+	const TMap<FName, EEdGraphPinDirection>& PropertyPinDirections() const { return _PropertyPinDirections; }
 
 	FObjectTreeGraphClassConfig& SetPropertyPinDirection(const FName& InPropertyName, EEdGraphPinDirection InDirection)
 	{
-		PropertyPinDirections.Add(InPropertyName, InDirection);
+		_PropertyPinDirections.Add(InPropertyName, InDirection);
 		return *this;
 	}
 
 	EEdGraphPinDirection GetPropertyPinDirection(const FName& InPropertyName) const
 	{
-		if (const EEdGraphPinDirection* PinDirection = PropertyPinDirections.Find(InPropertyName))
+		if (const EEdGraphPinDirection* PinDirection = _PropertyPinDirections.Find(InPropertyName))
 		{
 			return *PinDirection;
 		}
 		return _DefaultPropertyPinDirection;
 	}
+
+private:
+
+	TArray<FString> _StripDisplayNameSuffixes;
+	TMap<FName, EEdGraphPinDirection> _PropertyPinDirections;
 };
 
 struct FObjectTreeGraphConfig
@@ -88,7 +109,6 @@ public:
 	FLinearColor DefaultGraphNodeTitleColor;
 	FLinearColor DefaultGraphNodeBodyTintColor;
 
-	TArray<FString> StripDisplayNameSuffixes;
 	FOnFormatObjectDisplayName OnFormatObjectDisplayName;
 
 	TMap<UClass*, FObjectTreeGraphClassConfig> ObjectClassConfigs;
@@ -107,6 +127,7 @@ public:
 
 private:
 
-	void FormatDisplayNameText(const UObject* InObject, FText& InOutDisplayNameText) const;
+	FText GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfig& InClassConfig) const;
+	void FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfig& InClassConfig, FText& InOutDisplayNameText) const;
 };
 

@@ -51,6 +51,8 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 		.HasSelfPin(false)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
+		.StripDisplayNameSuffix(TEXT("Camera Node"));
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
 	NodeGraph->AddToRoot();
@@ -90,7 +92,10 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor(const FArguments& InArgs
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
 		.SelfPinDirection(EGPD_Output)
 		.DefaultPropertyPinDirection(EGPD_Input)
+		.StripDisplayNameSuffix(TEXT("Transition Condition"))
 		.NodeTitleColor(Settings->CameraRigTransitionConditionTitleColor);
+	GraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())
+		.StripDisplayNameSuffix(TEXT("Camera Node"));
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
 	TransitionGraph->Schema = UCameraTransitionGraphSchema::StaticClass();
