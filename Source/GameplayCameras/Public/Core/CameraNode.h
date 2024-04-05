@@ -19,8 +19,8 @@ using FCameraNodeChildrenView = UE::Cameras::TObjectChildrenView<TObjectPtr<UCam
 /**
  * The base class for a camera node.
  */
-UCLASS(Abstract, DefaultToInstanced, EditInlineNew, MinimalAPI, meta=(ObjectTreeGraphCategory="Camera Nodes"))
-class UCameraNode 
+UCLASS(Abstract, DefaultToInstanced, EditInlineNew, meta=(ObjectTreeGraphCategory="Camera Nodes"))
+class GAMEPLAYCAMERAS_API UCameraNode 
 	: public UObject
 	, public IObjectTreeGraphObject
 {

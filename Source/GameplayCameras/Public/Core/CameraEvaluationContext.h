@@ -24,10 +24,10 @@ class FCameraEvaluationContext : public TSharedFromThis<FCameraEvaluationContext
 public:
 
 	/** Constructs an evaluation context. */
-	FCameraEvaluationContext();
+	GAMEPLAYCAMERAS_API FCameraEvaluationContext();
 
 	/** Destroys this evaluation context. */
-	virtual ~FCameraEvaluationContext();
+	GAMEPLAYCAMERAS_API virtual ~FCameraEvaluationContext();
 
 	/**
 	 * Gets the player controller (if any) in control of the cameras running inside

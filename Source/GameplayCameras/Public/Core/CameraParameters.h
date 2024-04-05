@@ -10,7 +10,7 @@
 
 /** Boolean camera parameter. */
 USTRUCT()
-struct FBooleanCameraParameter
+struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 {
 	GENERATED_BODY()
 
@@ -27,7 +27,7 @@ struct FBooleanCameraParameter
 
 /** Integer camera parameter. */
 USTRUCT()
-struct FInteger32CameraParameter
+struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 {
 	GENERATED_BODY()
 
@@ -61,7 +61,7 @@ struct FFloatCameraParameter
 
 /** Double camera parameter. */
 USTRUCT()
-struct FDoubleCameraParameter
+struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 {
 	GENERATED_BODY()
 
@@ -96,7 +96,7 @@ struct FVector2fCameraParameter
 
 /** Vector2d camera parameter. */
 USTRUCT()
-struct FVector2dCameraParameter
+struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -132,7 +132,7 @@ struct FVector3fCameraParameter
 
 /** Vector3d camera parameter. */
 USTRUCT()
-struct FVector3dCameraParameter
+struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -186,7 +186,7 @@ struct FVector4dCameraParameter
 
 /** Rotator3f camera parameter. */
 USTRUCT()
-struct FRotator3fCameraParameter
+struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -204,7 +204,7 @@ struct FRotator3fCameraParameter
 
 /** Rotator3d camera parameter. */
 USTRUCT()
-struct FRotator3dCameraParameter
+struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -239,7 +239,7 @@ struct FTransform3fCameraParameter
 
 /** Transform3d camera parameter. */
 USTRUCT()
-struct FTransform3dCameraParameter
+struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 {
 	GENERATED_BODY()
 

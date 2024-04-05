@@ -11,8 +11,8 @@
 /**
  * Base class for a camera director.
  */
-UCLASS(Abstract, DefaultToInstanced, MinimalAPI)
-class UCameraDirector : public UObject
+UCLASS(Abstract, DefaultToInstanced)
+class GAMEPLAYCAMERAS_API UCameraDirector : public UObject
 {
 	GENERATED_BODY()
 

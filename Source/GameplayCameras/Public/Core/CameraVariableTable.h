@@ -53,7 +53,7 @@ public:
 	FCameraVariableTable();
 	FCameraVariableTable(FCameraVariableTable&& Other);
 	FCameraVariableTable& operator=(FCameraVariableTable&& Other);
-	~FCameraVariableTable();
+	GAMEPLAYCAMERAS_API ~FCameraVariableTable();
 
 	FCameraVariableTable(const FCameraVariableTable&) = delete;
 	FCameraVariableTable& operator=(const FCameraVariableTable&) = delete;
@@ -66,7 +66,7 @@ public:
 	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
 	 * the allocation information needed for a table, and initialize it once.
 	 */
-	void AddVariable(const FCameraVariableDefinition& VariableDefinition);
+	GAMEPLAYCAMERAS_API void AddVariable(const FCameraVariableDefinition& VariableDefinition);
 
 public:
 

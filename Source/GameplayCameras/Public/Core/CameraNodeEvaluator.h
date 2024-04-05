@@ -44,7 +44,7 @@ struct FCameraNodeEvaluationParams
 /**
  * Input/output result structure for running a camera node evaluator.
  */
-struct FCameraNodeEvaluationResult
+struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
 {
 	/** The camera pose. */
 	FCameraPose CameraPose;
@@ -118,8 +118,8 @@ class FCameraNodeEvaluator
 
 public:
 
-	FCameraNodeEvaluator();
-	virtual ~FCameraNodeEvaluator() {}
+	GAMEPLAYCAMERAS_API FCameraNodeEvaluator();
+	GAMEPLAYCAMERAS_API virtual ~FCameraNodeEvaluator() {}
 
 	/** Called to build any children evaluators. */
 	void Build(const FCameraNodeEvaluatorBuildParams& Params);
@@ -156,23 +156,23 @@ public:
 protected:
 
 	/** Called to build any children evaluators. */
-	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
+	GAMEPLAYCAMERAS_API virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
 
 	/** Initialize this evaluator. */
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) {}
+	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) {}
 
 	/** Get the list of children under this evaluator. */
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
 
 	/** Run this evaluator. */
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
 
 	/** Collect referenced UObjects. */
-	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+	GAMEPLAYCAMERAS_API virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Called to create debug blocks for this node evaluator. */
-	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+	GAMEPLAYCAMERAS_API virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:

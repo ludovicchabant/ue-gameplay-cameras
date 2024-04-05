@@ -85,8 +85,8 @@ class FCameraDirectorEvaluator
 
 public:
 
-	FCameraDirectorEvaluator();
-	virtual ~FCameraDirectorEvaluator() {}
+	GAMEPLAYCAMERAS_API FCameraDirectorEvaluator();
+	GAMEPLAYCAMERAS_API virtual ~FCameraDirectorEvaluator() {}
 	
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);

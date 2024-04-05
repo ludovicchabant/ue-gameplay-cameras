@@ -82,7 +82,7 @@ class FCameraObjectTypeRegistry
 {
 public:
 
-	static FCameraObjectTypeRegistry& Get();
+	GAMEPLAYCAMERAS_API static FCameraObjectTypeRegistry& Get();
 
 	GAMEPLAYCAMERAS_API void RegisterType(FCameraObjectTypeID TypeID, FCameraObjectTypeInfo&& TypeInfo);
 	GAMEPLAYCAMERAS_API FCameraObjectTypeID FindTypeByName(const FName& TypeName);

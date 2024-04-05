@@ -33,7 +33,7 @@ class FRootCameraDebugBlock;
 /**
  * Parameter structure for initializing a new camera system evaluator.
  */
-struct FCameraSystemEvaluatorCreateParams
+struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
 {
 	TObjectPtr<UObject> Owner;
 
@@ -44,7 +44,7 @@ struct FCameraSystemEvaluatorCreateParams
 /**
  * Parameter structure for updating the camera system.
  */
-struct FCameraSystemEvaluationUpdateParams
+struct GAMEPLAYCAMERAS_API FCameraSystemEvaluationUpdateParams
 {
 	/** Time interface for the update. */
 	float DeltaTime = 0.f;
@@ -80,21 +80,21 @@ class FCameraSystemEvaluator : public TSharedFromThis<FCameraSystemEvaluator>
 public:
 
 	/** Builds a new camera system. Initialize must be called before the system is used. */
-	FCameraSystemEvaluator();
+	GAMEPLAYCAMERAS_API FCameraSystemEvaluator();
 
 	/** Initializes the camera system. */
-	void Initialize(TObjectPtr<UObject> InOwner = nullptr);
+	GAMEPLAYCAMERAS_API void Initialize(TObjectPtr<UObject> InOwner = nullptr);
 	/** Initializes the camera system. */
-	void Initialize(const FCameraSystemEvaluatorCreateParams& Params);
+	GAMEPLAYCAMERAS_API void Initialize(const FCameraSystemEvaluatorCreateParams& Params);
 
 public:
 
 	/** Push a new evaluation context on the stack. */
-	void PushEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
+	GAMEPLAYCAMERAS_API void PushEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
 	/** Remove an existing evaluation context from the stack. */
-	void RemoveEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
+	GAMEPLAYCAMERAS_API void RemoveEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext);
 	/** Pop the active (top) evaluation context from the stack. */
-	void PopEvaluationContext();
+	GAMEPLAYCAMERAS_API void PopEvaluationContext();
 
 	/** Gets the context stack. */
 	FCameraEvaluationContextStack& GetEvaluationContextStack() { return ContextStack; }
@@ -104,7 +104,7 @@ public:
 public:
 
 	/** Run an update of the camera system. */
-	void Update(const FCameraSystemEvaluationUpdateParams& Params);
+	GAMEPLAYCAMERAS_API void Update(const FCameraSystemEvaluationUpdateParams& Params);
 
 	/** Returns the root node evaluator. */
 	FRootCameraNodeEvaluator* GetRootNodeEvaluator() const { return RootEvaluator; }
@@ -113,15 +113,15 @@ public:
 	const FCameraSystemEvaluationUpdateResult& GetEvaluatedResult() const { return Result; }
 
 	/** Get the last evaluated camera. */
-	void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
+	GAMEPLAYCAMERAS_API void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	void DebugUpdate(const FCameraSystemDebugUpdateParams& Params);
+	GAMEPLAYCAMERAS_API void DebugUpdate(const FCameraSystemDebugUpdateParams& Params);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 public:
 
-	void AddReferencedObjects(FReferenceCollector& Collector);
+	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
 private:
 
