@@ -67,7 +67,7 @@ struct TCameraDebugBlockField : FCameraDebugBlockField
  */
 class FCameraDebugBlock
 {
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(FCameraDebugBlock)
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(GAMEPLAYCAMERAS_API, FCameraDebugBlock)
 
 public:
 
@@ -126,11 +126,11 @@ private:
 
 // Macros for defining debug blocks.
 //
-#define UE_DECLARE_CAMERA_DEBUG_BLOCK(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, ::UE::Cameras::FCameraDebugBlock)
+#define UE_DECLARE_CAMERA_DEBUG_BLOCK(ApiDeclSpec, ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, ::UE::Cameras::FCameraDebugBlock)
 
-#define UE_DECLARE_CAMERA_DEBUG_BLOCK_EX(ClassName, BaseClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+#define UE_DECLARE_CAMERA_DEBUG_BLOCK_EX(ApiDeclSpec, ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, BaseClassName)
 
 #define UE_DEFINE_CAMERA_DEBUG_BLOCK(ClassName)\
 	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
@@ -145,17 +145,17 @@ private:
 //
 // Example:
 //
-//     UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FMyDebugBlock)
+//     UE_DECLARE_CAMERA_DEBUG_BLOCK_START(MYMODULE_API, FMyDebugBlock)
 //			UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, Something)
 //			UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bSomethingElse)
 //	   UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 //
 //	   UE_DEFINE_CAMERA_DEBUG_BLOCK(FMyDebugBlock)
 //
-#define UE_DECLARE_CAMERA_DEBUG_BLOCK_START(ClassName)\
+#define UE_DECLARE_CAMERA_DEBUG_BLOCK_START(ApiDeclSpec, ClassName)\
 	class ClassName : public ::UE::Cameras::FCameraDebugBlock\
 	{\
-		UE_DECLARE_CAMERA_DEBUG_BLOCK(ClassName)\
+		UE_DECLARE_CAMERA_DEBUG_BLOCK(ApiDeclSpec, ClassName)\
 	private:\
 		using Super = ::UE::Cameras::FCameraDebugBlock;\
 		using ThisClassName = ClassName;\
@@ -196,7 +196,7 @@ private:
 
 // Empty macros for shipping builds.
 //
-#define UE_DECLARE_CAMERA_DEBUG_BLOCK_START(ClassName)
+#define UE_DECLARE_CAMERA_DEBUG_BLOCK_START(ApiDeclSpec, ClassName)
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FieldType, FieldName)
 #define UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 #define UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(ClassName)

@@ -17,7 +17,7 @@ struct FCameraEvaluationContextStack;
  */
 class FCameraDirectorTreeDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FCameraDirectorTreeDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FCameraDirectorTreeDebugBlock)
 
 public:
 

@@ -139,8 +139,9 @@ private:
 // The first macro is for the root of the class hierarchy, while the second is for all
 // other classes below it. The third macro goes in the cpp file of each class.
 //
-#define UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(ClassName)\
+#define UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(ApiDeclSpec, ClassName)\
 	public:\
+		using FCameraObjectTypeID = ::UE::Cameras::FCameraObjectTypeID;\
 		static const ::UE::Cameras::TCameraObjectTypeID<ClassName>& StaticTypeID() { return ClassName::PrivateTypeID; }\
 		virtual const FCameraObjectTypeID& GetTypeID() const { return ClassName::PrivateTypeID; }\
 		virtual bool IsKindOf(const FCameraObjectTypeID& InTypeID) const { return InTypeID == ClassName::PrivateTypeID; }\
@@ -150,15 +151,15 @@ private:
 		template<typename Type> Type* CastThisChecked() { check(IsKindOf<Type>()); return static_cast<Type*>(this); }\
 		template<typename Type> const Type* CastThisChecked() const { check(IsKindOf<Type>()); return static_cast<Type*>(this); }\
 	private:\
-		GAMEPLAYCAMERAS_API static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
+		ApiDeclSpec static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
 
-#define UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)\
+#define UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, BaseClassName)\
 	public:\
 		static const ::UE::Cameras::TCameraObjectTypeID<ClassName>& StaticTypeID() { return ClassName::PrivateTypeID; }\
 		virtual const FCameraObjectTypeID& GetTypeID() const override { return ClassName::PrivateTypeID; }\
 		virtual bool IsKindOf(const FCameraObjectTypeID& InTypeID) const override { return (InTypeID == ClassName::PrivateTypeID) || BaseClassName::IsKindOf(InTypeID); }\
 	private:\
-		GAMEPLAYCAMERAS_API static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
+		ApiDeclSpec static const ::UE::Cameras::TCameraObjectTypeID<ClassName> PrivateTypeID;
 
 #define UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)\
 	const ::UE::Cameras::TCameraObjectTypeID<ClassName> ClassName::PrivateTypeID = ::UE::Cameras::TCameraObjectTypeID<ClassName>::RegisterType(#ClassName);

@@ -9,7 +9,8 @@ namespace UE::Cameras
 
 class FPopBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 {
-	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(FPopBlendCameraNodeEvaluator)
+	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FPopBlendCameraNodeEvaluator)
+
 protected:
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) override;

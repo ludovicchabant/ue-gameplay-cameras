@@ -81,7 +81,7 @@ private:
  */
 class FCameraDirectorEvaluator
 {
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(FCameraDirectorEvaluator)
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(GAMEPLAYCAMERAS_API, FCameraDirectorEvaluator)
 
 public:
 
@@ -136,11 +136,11 @@ using FCameraDirectorEvaluatorPtr = UE::Cameras::FCameraDirectorEvaluator*;
 
 // Utility macros for declaring and defining camera director evaluators.
 //
-#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, ::UE::Cameras::FCameraDirectorEvaluator)
+#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(ApiDeclSpec, ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, ::UE::Cameras::FCameraDirectorEvaluator)
 
-#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR_EX(ClassName, BaseClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+#define UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR_EX(ApiDeclSpec, ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, BaseClassName)
 
 #define UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(ClassName)\
 	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)

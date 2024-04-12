@@ -9,7 +9,7 @@ namespace UE::Cameras
 
 class FSingleCameraDirectorEvaluator : public FCameraDirectorEvaluator
 {
-	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(FSingleCameraDirectorEvaluator)
+	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(GAMEPLAYCAMERAS_API, FSingleCameraDirectorEvaluator)
 protected:
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override
 	{

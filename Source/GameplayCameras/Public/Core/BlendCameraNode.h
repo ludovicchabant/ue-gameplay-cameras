@@ -61,7 +61,7 @@ struct FCameraNodeBlendResult
  */
 class FBlendCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FBlendCameraNodeEvaluator)
 
 public:
 
@@ -81,11 +81,11 @@ protected:
 // from having to specify FBlendCameraNodeEvaluator as the base class, which saves
 // a little bit of typing.
 //
-#define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(ClassName)\
-	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, ::UE::Cameras::FBlendCameraNodeEvaluator)
+#define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(ApiDeclSpec, ClassName)\
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ApiDeclSpec, ClassName, ::UE::Cameras::FBlendCameraNodeEvaluator)
 
-#define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)\
-	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ClassName, BaseClassName)
+#define UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(ApiDeclSpec, ClassName, BaseClassName)\
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(ApiDeclSpec, ClassName, BaseClassName)
 
 #define UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(ClassName)\
 	UE_DEFINE_CAMERA_NODE_EVALUATOR(ClassName)

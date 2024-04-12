@@ -15,7 +15,7 @@ namespace UE::Cameras
  */
 class FCameraPoseDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FCameraPoseDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FCameraPoseDebugBlock)
 
 public:
 

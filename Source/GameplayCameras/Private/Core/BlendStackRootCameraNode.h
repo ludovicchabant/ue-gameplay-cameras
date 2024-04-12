@@ -47,7 +47,7 @@ class FBlendCameraNodeEvaluator;
  */
 class FBlendStackRootCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackRootCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FBlendStackRootCameraNodeEvaluator)
 
 public:
 

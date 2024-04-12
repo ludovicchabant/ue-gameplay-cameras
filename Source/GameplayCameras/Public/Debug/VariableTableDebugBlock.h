@@ -16,7 +16,7 @@ class FCameraVariableTable;
  */
 class FVariableTableDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FVariableTableDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FVariableTableDebugBlock)
 
 public:
 

@@ -22,7 +22,7 @@ struct FCameraNodeEvaluationResult;
  */
 class FCameraNodeEvaluationResultDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FCameraNodeEvaluationResultDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FCameraNodeEvaluationResultDebugBlock)
 
 public:
 

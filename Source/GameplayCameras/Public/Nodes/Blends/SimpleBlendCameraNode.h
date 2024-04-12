@@ -43,7 +43,7 @@ struct FSimpleBlendCameraNodeEvaluationResult
 
 class FSimpleBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 {
-	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(FSimpleBlendCameraNodeEvaluator)
+	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FSimpleBlendCameraNodeEvaluator)
 
 public:
 
@@ -71,7 +71,7 @@ private:
 
 class FSimpleFixedTimeBlendCameraNodeEvaluator : public FSimpleBlendCameraNodeEvaluator
 {
-	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(FSimpleFixedTimeBlendCameraNodeEvaluator, FSimpleBlendCameraNodeEvaluator)
+	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FSimpleFixedTimeBlendCameraNodeEvaluator, FSimpleBlendCameraNodeEvaluator)
 
 protected:
 

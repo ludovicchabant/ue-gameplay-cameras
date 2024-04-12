@@ -49,7 +49,7 @@ class FBlendStackCameraNodeEvaluator;
  */
 class FDefaultRootCameraNodeEvaluator : public FRootCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FDefaultRootCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FDefaultRootCameraNodeEvaluator)
 
 protected:
 

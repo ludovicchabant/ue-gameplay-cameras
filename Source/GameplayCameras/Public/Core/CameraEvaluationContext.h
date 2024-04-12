@@ -19,7 +19,7 @@ namespace UE::Cameras
  */
 class FCameraEvaluationContext : public TSharedFromThis<FCameraEvaluationContext>
 {
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(FCameraEvaluationContext)
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI_BASE(GAMEPLAYCAMERAS_API, FCameraEvaluationContext)
 
 public:
 
@@ -67,11 +67,11 @@ protected:
 
 // Utility macros for declaring and defining camera evaluation contexts.
 //
-#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT(ClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, ::UE::Cameras::FCameraEvaluationContext)
+#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT(ApiDeclSpec, ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, ::UE::Cameras::FCameraEvaluationContext)
 
-#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT_EX(ClassName, BaseClassName)\
-	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ClassName, BaseClassName)
+#define UE_DECLARE_CAMERA_EVALUATION_CONTEXT_EX(ApiDeclSpec, ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, BaseClassName)
 
 #define UE_DEFINE_CAMERA_EVALUATION_CONTEXT(ClassName)\
 	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)

@@ -85,7 +85,7 @@ class FBlendStackCameraNodeEvaluator
 	, public IGameplayCamerasLiveEditListener
 #endif
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FBlendStackCameraNodeEvaluator)
 
 public:
 
@@ -171,7 +171,7 @@ protected:
 
 class FBlendStackSummaryCameraDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FBlendStackSummaryCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FBlendStackSummaryCameraDebugBlock)
 
 public:
 
@@ -190,7 +190,7 @@ private:
 
 class FBlendStackCameraDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FBlendStackCameraDebugBlock)
 
 public:
 

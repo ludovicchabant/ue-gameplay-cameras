@@ -96,7 +96,7 @@ namespace UE::Cameras
  */
 class FGameplayCameraComponentEvaluationContext : public FCameraEvaluationContext
 {
-	UE_DECLARE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
+	UE_DECLARE_CAMERA_EVALUATION_CONTEXT(GAMEPLAYCAMERAS_API, FGameplayCameraComponentEvaluationContext)
 
 public:
 

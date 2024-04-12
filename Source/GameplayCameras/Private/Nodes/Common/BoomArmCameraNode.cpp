@@ -14,7 +14,7 @@ namespace UE::Cameras
 
 class FBoomArmCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FBoomArmCameraNodeEvaluator)
 
 protected:
 

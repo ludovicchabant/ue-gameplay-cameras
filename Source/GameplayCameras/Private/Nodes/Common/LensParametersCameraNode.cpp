@@ -13,7 +13,7 @@ namespace UE::Cameras
 
 class FLensParametersCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FLensParametersCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FLensParametersCameraNodeEvaluator)
 
 protected:
 

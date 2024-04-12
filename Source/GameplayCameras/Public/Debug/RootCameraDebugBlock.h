@@ -22,7 +22,7 @@ GAMEPLAYCAMERAS_API extern FString GGameplayCamerasDebugCategories;
  */
 class FRootCameraDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FRootCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FRootCameraDebugBlock)
 
 public:
 

@@ -11,7 +11,7 @@ namespace UE::Cameras
 
 class FViewfinderDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FViewfinderDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FViewfinderDebugBlock)
 
 public:
 

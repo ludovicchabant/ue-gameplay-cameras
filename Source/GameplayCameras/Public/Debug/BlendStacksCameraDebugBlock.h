@@ -16,7 +16,7 @@ class FBlendStackCameraDebugBlock;
  */
 class FBlendStacksCameraDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FBlendStacksCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FBlendStacksCameraDebugBlock)
 
 public:
 

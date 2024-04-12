@@ -17,7 +17,7 @@ class FCameraNodeEvaluatorDebugBlock;
  */
 class FCategoryTitleDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FCategoryTitleDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FCategoryTitleDebugBlock)
 
 public:
 

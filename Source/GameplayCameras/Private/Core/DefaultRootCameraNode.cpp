@@ -101,7 +101,7 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
-UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FDefaultRootCameraNodeEvaluatorDebugBlock)
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FDefaultRootCameraNodeEvaluatorDebugBlock)
 UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FDefaultRootCameraNodeEvaluatorDebugBlock)

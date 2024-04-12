@@ -19,7 +19,7 @@ namespace UE::Cameras
  */
 class FCameraNodeEvaluatorDebugBlock : public FCameraDebugBlock
 {
-	UE_DECLARE_CAMERA_DEBUG_BLOCK(FCameraNodeEvaluatorDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FCameraNodeEvaluatorDebugBlock)
 
 public:
 

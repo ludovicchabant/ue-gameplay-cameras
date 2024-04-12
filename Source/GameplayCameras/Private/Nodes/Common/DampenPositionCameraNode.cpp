@@ -18,7 +18,7 @@ namespace UE::Cameras
 
 class FDampenPositionCameraNodeEvaluator : public FCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FDampenPositionCameraNodeEvaluator)
 
 protected:
 
@@ -45,7 +45,7 @@ private:
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FDampenPositionCameraNodeEvaluator)
 
-UE_DECLARE_CAMERA_DEBUG_BLOCK_START(FDampenPositionCameraDebugBlock)
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FDampenPositionCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, ForwardX0);
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, LateralX0);
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, VerticalX0);
