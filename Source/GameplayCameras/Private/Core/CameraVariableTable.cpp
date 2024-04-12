@@ -13,11 +13,11 @@ namespace Private
 
 static const FString GUnavailableVariableDebugName(TEXT("<no debug info>"));
 
-bool IsVariableInMask(uint32 VariableId, const FCameraVariableTableFlags* InMask, bool bInvertMask)
+bool IsVariableInMask(FCameraVariableID VariableID, const FCameraVariableTableFlags* InMask, bool bInvertMask)
 {
 	if (InMask)
 	{
-		const bool bIsInMask = InMask->VariableIds.Contains(VariableId);
+		const bool bIsInMask = InMask->VariableIDs.Contains(VariableID);
 		return bInvertMask ? !bIsInMask : bIsInMask;
 	}
 	return true;
@@ -86,13 +86,13 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
 
 		FEntry NewEntry;
-		NewEntry.Id = VariableDefinition.VariableId;
+		NewEntry.ID = VariableDefinition.VariableID;
 		NewEntry.Type = VariableDefinition.VariableType;
 		NewEntry.Offset = NewEntryOffset;
 #if WITH_EDITORONLY_DATA
 		NewEntry.DebugName = VariableDefinition.VariableName;
 #endif
-		Entries.Add(NewEntry.Id, NewEntry);
+		Entries.Add(NewEntry.ID, NewEntry);
 	}
 
 	// Allocate the memory buffer.
@@ -138,7 +138,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	Used = NewUsed;
 
 	FEntry NewEntry;
-	NewEntry.Id = VariableDefinition.VariableId;
+	NewEntry.ID = VariableDefinition.VariableID;
 	NewEntry.Type = VariableDefinition.VariableType;
 	NewEntry.Offset = VariablePtr - Memory;
 	NewEntry.Flags = VariableDefinition.bIsPrivate ? EEntryFlags::Private : EEntryFlags::None;
@@ -146,7 +146,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	NewEntry.DebugName = VariableDefinition.VariableName;
 #endif
 
-	Entries.Add(VariableDefinition.VariableId, NewEntry);
+	Entries.Add(VariableDefinition.VariableID, NewEntry);
 }
 
 void FCameraVariableTable::ReallocateBuffer(uint32 NewCapacity)
@@ -174,23 +174,23 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	return false;
 }
 
-bool FCameraVariableTable::ContainsValue(uint32 VariableId) const
+bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 {
-	return Entries.Contains(VariableId);
+	return Entries.Contains(VariableID);
 }
 
-bool FCameraVariableTable::IsValueWritten(uint32 VariableId) const
+bool FCameraVariableTable::IsValueWritten(FCameraVariableID VariableID) const
 {
-	if (const FEntry* Entry = Entries.Find(VariableId))
+	if (const FEntry* Entry = Entries.Find(VariableID))
 	{
 		return EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written);
 	}
 	return false;
 }
 
-void FCameraVariableTable::UnsetValue(uint32 VariableId)
+void FCameraVariableTable::UnsetValue(FCameraVariableID VariableID)
 {
-	if (FEntry* Entry = Entries.Find(VariableId))
+	if (FEntry* Entry = Entries.Find(VariableID))
 	{
 		EnumRemoveFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
 	}
@@ -204,9 +204,9 @@ void FCameraVariableTable::UnsetAllValues()
 	}
 }
 
-bool FCameraVariableTable::IsValueWrittenThisFrame(uint32 VariableId) const
+bool FCameraVariableTable::IsValueWrittenThisFrame(FCameraVariableID VariableID) const
 {
-	if (const FEntry* Entry = Entries.Find(VariableId))
+	if (const FEntry* Entry = Entries.Find(VariableID))
 	{
 		return EnumHasAnyFlags(Entry->Flags, EEntryFlags::WrittenThisFrame);
 	}
@@ -248,10 +248,10 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::WrittenThisFrame))
 				&& !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private)
-				&& IsVariableInMask(OtherEntry.Id, InMask, bInvertMask))
+				&& IsVariableInMask(OtherEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.
-			FEntry* ThisEntry = Entries.Find(OtherEntry.Id);
+			FEntry* ThisEntry = Entries.Find(OtherEntry.ID);
 			if (ThisEntry)
 			{
 				// We already have the other table's variable in our table. Let's check
@@ -259,7 +259,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 #if WITH_EDITORONLY_DATA
 				checkf(ThisEntry->DebugName == OtherEntry.DebugName,
 						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
-						ThisEntry->Id, *ThisEntry->DebugName, *OtherEntry.DebugName);
+						ThisEntry->ID.GetValue(), *ThisEntry->DebugName, *OtherEntry.DebugName);
 #endif
 
 #if WITH_EDITORONLY_DATA
@@ -269,21 +269,21 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 #endif
 				checkf(ThisEntry->Type == OtherEntry.Type, 
 						TEXT("Camera variable name collision! Expected '%d' (%s) to be of type '%s' but other table has type '%s'!"),
-						ThisEntry->Id, *DebugName,
+						ThisEntry->ID.GetValue(), *DebugName,
 						*UEnum::GetValueAsString(ThisEntry->Type), *UEnum::GetValueAsString(OtherEntry.Type));
 			}
 			else
 			{
 				// We don't have this variable in our table. Let's add it.
 				FCameraVariableDefinition NewVariableDefinition;
-				NewVariableDefinition.VariableId = OtherEntry.Id;
+				NewVariableDefinition.VariableID = OtherEntry.ID;
 				NewVariableDefinition.VariableType = OtherEntry.Type;
 #if WITH_EDITORONLY_DATA
 				NewVariableDefinition.VariableName = OtherEntry.DebugName;
 #endif
 				AddVariable(NewVariableDefinition);
 
-				ThisEntry = Entries.Find(OtherEntry.Id);
+				ThisEntry = Entries.Find(OtherEntry.ID);
 			}
 
 			if (ensure(ThisEntry))
@@ -299,7 +299,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 
 				if (OutMask)
 				{
-					OutMask->VariableIds.Add(ThisEntry->Id);
+					OutMask->VariableIDs.Add(ThisEntry->ID);
 				}
 			}
 		}
@@ -333,10 +333,10 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, flo
 		if (EnumHasAnyFlags(ToFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(ToFlags, EEntryFlags::WrittenThisFrame))
 				&& !EnumHasAnyFlags(ToFlags, EEntryFlags::Private)
-				&& IsVariableInMask(ToEntry.Id, InMask, bInvertMask))
+				&& IsVariableInMask(ToEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.
-			FEntry* FromEntry = Entries.Find(ToEntry.Id);
+			FEntry* FromEntry = Entries.Find(ToEntry.ID);
 			if (FromEntry)
 			{
 				// We already have the other table's variable in our table. Let's check
@@ -344,7 +344,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, flo
 #if WITH_EDITORONLY_DATA
 				checkf(FromEntry->DebugName == ToEntry.DebugName,
 						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
-						FromEntry->Id, *FromEntry->DebugName, *ToEntry.DebugName);
+						FromEntry->ID.GetValue(), *FromEntry->DebugName, *ToEntry.DebugName);
 #endif
 
 #if WITH_EDITORONLY_DATA
@@ -354,7 +354,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, flo
 #endif
 				checkf(FromEntry->Type == ToEntry.Type, 
 						TEXT("Camera variable name collision! Expected '%d' (%s) to be of type '%s' but other table has type '%s'!"),
-						FromEntry->Id, *DebugName,
+						FromEntry->ID.GetValue(), *DebugName,
 						*UEnum::GetValueAsString(FromEntry->Type), *UEnum::GetValueAsString(ToEntry.Type));
 
 				uint8* FromValuePtr = Memory + FromEntry->Offset;
@@ -379,14 +379,14 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 			{
 				// We don't have this variable in our table. Let's add it.
 				FCameraVariableDefinition NewVariableDefinition;
-				NewVariableDefinition.VariableId = ToEntry.Id;
+				NewVariableDefinition.VariableID = ToEntry.ID;
 				NewVariableDefinition.VariableType = ToEntry.Type;
 #if WITH_EDITORONLY_DATA
 				NewVariableDefinition.VariableName = ToEntry.DebugName;
 #endif
 				AddVariable(NewVariableDefinition);
 
-				FromEntry = Entries.Find(ToEntry.Id);
+				FromEntry = Entries.Find(ToEntry.ID);
 				check(FromEntry);
 
 				uint32 ValueSize = 0, ValueAlignment = 0;
@@ -401,7 +401,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 			if (OutMask)
 			{
-				OutMask->VariableIds.Add(FromEntry->Id);
+				OutMask->VariableIDs.Add(FromEntry->ID);
 			}
 		}
 	}

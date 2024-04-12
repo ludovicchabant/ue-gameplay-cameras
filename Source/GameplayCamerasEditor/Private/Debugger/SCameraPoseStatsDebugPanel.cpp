@@ -27,8 +27,8 @@ void SCameraPoseStatsDebugPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			[
 				SDebugWidgetUtils::CreateConsoleVariableCheckBox(
-						LOCTEXT("ShowVariableIds", "Show variable IDs"),
-						TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIds"))
+						LOCTEXT("ShowVariableIDs", "Show variable IDs"),
+						TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"))
 			]
 	];
 }

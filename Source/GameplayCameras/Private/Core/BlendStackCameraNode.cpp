@@ -38,10 +38,10 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowUnchanged(
 	GGameplayCamerasDebugBlendStackShowUnchanged,
 	TEXT(""));
 
-bool GGameplayCamerasDebugBlendStackShowVariableIds = false;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowVariableIds(
-	TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIds"),
-	GGameplayCamerasDebugBlendStackShowVariableIds,
+bool GGameplayCamerasDebugBlendStackShowVariableIDs = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowVariableIDs(
+	TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIDs"),
+	GGameplayCamerasDebugBlendStackShowVariableIDs,
 	TEXT(""));
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
@@ -482,7 +482,7 @@ FBlendStackCameraDebugBlock* FBlendStackCameraNodeEvaluator::BuildDetailedDebugB
 			{
 				ResultDebugBlock.Initialize(Entry.Result, Builder);
 				ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowUnchanged"));
-				ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIdsCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIds"));
+				ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIDs"));
 			}
 		}
 	}

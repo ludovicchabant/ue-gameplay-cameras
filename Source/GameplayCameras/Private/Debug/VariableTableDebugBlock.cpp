@@ -26,9 +26,9 @@ FVariableTableDebugBlock::FVariableTableDebugBlock(const FCameraVariableTable& I
 
 void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariableTable)
 {
-	for (const TPair<uint32, FCameraVariableTable::FEntry>& Pair : InVariableTable.Entries)
+	for (const TPair<FCameraVariableID, FCameraVariableTable::FEntry>& Pair : InVariableTable.Entries)
 	{
-		const int32 EntryId = Pair.Key;
+		const uint32 EntryID = Pair.Key.GetValue();
 		const FCameraVariableTable::FEntry& Entry = Pair.Value;
 
 		FString EntryName;
@@ -41,7 +41,7 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 			case ECameraVariableType::ValueName:\
 				if (EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written))\
 				{\
-					const ValueType EntryValue = InVariableTable.GetValue<ValueType>(EntryId);\
+					const ValueType EntryValue = InVariableTable.GetValue<ValueType>(FCameraVariableID::FromHashValue(EntryID));\
 					EntryValueStr = ToDebugString(EntryValue);\
 				}\
 				break;
@@ -51,7 +51,7 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 		}
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
-		FEntryDebugInfo EntryDebugInfo{ EntryId, EntryName, EntryValueStr };
+		FEntryDebugInfo EntryDebugInfo{ EntryID, EntryName, EntryValueStr };
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written);
 		EntryDebugInfo.bWrittenThisFrame = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::WrittenThisFrame);
 		Entries.Add(EntryDebugInfo);
@@ -61,13 +61,13 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
 #if WITH_EDITORONLY_DATA
-	bool bShowVariableIds = false;
-	if (!ShowVariableIdsCVarName.IsEmpty())
+	bool bShowVariableIDs = false;
+	if (!ShowVariableIDsCVarName.IsEmpty())
 	{
-		IConsoleVariable* ShowVariableIdsCVar = IConsoleManager::Get().FindConsoleVariable(*ShowVariableIdsCVarName, false);
-		if (ensureMsgf(ShowVariableIdsCVar, TEXT("No such console variable: %s"), *ShowVariableIdsCVarName))
+		IConsoleVariable* ShowVariableIDsCVar = IConsoleManager::Get().FindConsoleVariable(*ShowVariableIDsCVarName, false);
+		if (ensureMsgf(ShowVariableIDsCVar, TEXT("No such console variable: %s"), *ShowVariableIDsCVarName))
 		{
-			bShowVariableIds = ShowVariableIdsCVar->GetBool();
+			bShowVariableIDs = ShowVariableIDsCVar->GetBool();
 		}
 	}
 #endif
@@ -77,9 +77,9 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 	for (const FEntryDebugInfo& Entry : Entries)
 	{
 #if WITH_EDITORONLY_DATA
-		if (bShowVariableIds)
+		if (bShowVariableIDs)
 		{
-			Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Entry.Id);
+			Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Entry.ID);
 		}
 		if (!Entry.Name.IsEmpty())
 		{
@@ -87,10 +87,10 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 		}
 		else
 		{
-			Renderer.AddText(TEXT("<no name data> : "), Entry.Id);
+			Renderer.AddText(TEXT("<no name data> : "), Entry.ID);
 		}
 #else
-		Renderer.AddText(TEXT("[%d] <no name data> : "), Entry.Id);
+		Renderer.AddText(TEXT("[%d] <no name data> : "), Entry.ID);
 #endif
 
 		if (Entry.bWritten)
@@ -114,12 +114,12 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 void FVariableTableDebugBlock::OnSerialize(FArchive& Ar)
 {
 	Ar << Entries;
-	Ar << ShowVariableIdsCVarName;
+	Ar << ShowVariableIDsCVarName;
 }
 
 FArchive& operator<< (FArchive& Ar, FVariableTableDebugBlock::FEntryDebugInfo& EntryDebugInfo)
 {
-	Ar << EntryDebugInfo.Id;
+	Ar << EntryDebugInfo.ID;
 	Ar << EntryDebugInfo.Name;
 	Ar << EntryDebugInfo.Value;
 	Ar << EntryDebugInfo.bWritten;

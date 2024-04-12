@@ -21,7 +21,7 @@ public:
 
 	UCameraVariableAsset(const FObjectInitializer& ObjectInit);
 
-	uint32 GetVariableId() const { return VariableId; }
+	FCameraVariableID GetVariableID() const { return VariableID; }
 
 	FCameraVariableDefinition GetVariableDefinition() const;
 
@@ -32,8 +32,19 @@ public:
 
 	// UObject interface
 	virtual void Serialize(FArchive& Ar) override;
+	virtual void PostInitProperties() override;
+	virtual void PostRename(UObject* OldOuter, const FName OldName) override;
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
+
+private:
+
+	void RegenerateVariableID();
 
 public:
+
+	/** Whether this variable is private and shouldn't be propagated with evaluation results. */
+	UPROPERTY()
+	bool bIsPrivate = false;
 
 	/** Whether this variable auto-resets to its default value every frame. */
 	UPROPERTY(EditAnywhere, Category=Camera)
@@ -42,10 +53,7 @@ public:
 private:
 
 	UPROPERTY()
-	uint32 VariableId = 0;
-
-	UPROPERTY()
-	bool bIsLocal = false;
+	FCameraVariableID VariableID;
 };
 
 /** Boolean camera variable. */

@@ -9,10 +9,15 @@ UCameraVariableAsset::UCameraVariableAsset(const FObjectInitializer& ObjectInit)
 {
 }
 
+void UCameraVariableAsset::RegenerateVariableID()
+{
+	VariableID = FCameraVariableID::FromHashValue(GetTypeHash(GetFullName()));
+}
+
 FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
 {
 	FCameraVariableDefinition VariableDefinition;
-	VariableDefinition.VariableId = GetVariableId();
+	VariableDefinition.VariableID = GetVariableID();
 	VariableDefinition.VariableType = GetVariableType();
 #if WITH_EDITORONLY_DATA
 	VariableDefinition.VariableName = GetName();
@@ -25,10 +30,28 @@ void UCameraVariableAsset::Serialize(FArchive& Ar)
 	Super::Serialize(Ar);
 
 #if WITH_EDITORONLY_DATA
-	if ((Ar.IsLoading() && VariableId == 0) || Ar.IsSaving())
+	if ((Ar.IsLoading() && !VariableID.IsValid()) || Ar.IsSaving())
 	{
-		VariableId = GetTypeHash(GetFullName());
+		RegenerateVariableID();
 	}
 #endif
+}
+
+void UCameraVariableAsset::PostInitProperties()
+{
+	RegenerateVariableID();
+	Super::PostInitProperties();
+}
+
+void UCameraVariableAsset::PostRename(UObject* OldOuter, const FName OldName)
+{
+	RegenerateVariableID();
+	Super::PostRename(OldOuter, OldName);
+}
+
+void UCameraVariableAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	RegenerateVariableID();
+	Super::PostDuplicate(DuplicateMode);
 }
 

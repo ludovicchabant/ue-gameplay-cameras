@@ -27,7 +27,7 @@ struct TCameraVariableInterpolation;
 struct FCameraVariableTableFlags
 {
 	/** The list of processed variable IDs. */
-	TSet<uint32> VariableIds;
+	TSet<FCameraVariableID> VariableIDs;
 };
 
 /**
@@ -73,28 +73,28 @@ public:
 	// Getter methods.
 
 	template<typename ValueType>
-	const ValueType* FindValue(uint32 VariableId) const;
+	const ValueType* FindValue(FCameraVariableID VariableID) const;
 
 	template<typename ValueType>
-	const ValueType& GetValue(uint32 VariableId) const;
+	const ValueType& GetValue(FCameraVariableID VariableID) const;
 
 	template<typename ValueType>
-	ValueType GetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType DefaultValue) const;
+	ValueType GetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType DefaultValue) const;
 
 	template<typename ValueType>
-	bool TryGetValue(uint32 VariableId, ValueType& OutValue) const;
+	bool TryGetValue(FCameraVariableID VariableID, ValueType& OutValue) const;
 
-	bool ContainsValue(uint32 VariableId) const;
+	bool ContainsValue(FCameraVariableID VariableID) const;
 
 public:
 
 	// Setter methods.
 	
 	template<typename ValueType>
-	void SetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value);
+	void SetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value);
 
 	template<typename ValueType>
-	bool TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value);
+	bool TrySetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value);
 
 	template<typename VariableAssetType>
 	void SetValue(
@@ -118,11 +118,11 @@ public:
 
 	// Lower level API.
 
-	bool IsValueWritten(uint32 VariableId) const;
-	void UnsetValue(uint32 VariableId);
+	bool IsValueWritten(FCameraVariableID VariableID) const;
+	void UnsetValue(FCameraVariableID VariableID);
 	void UnsetAllValues();
 
-	bool IsValueWrittenThisFrame(uint32 VariableId) const;
+	bool IsValueWrittenThisFrame(FCameraVariableID VariableID) const;
 	void ClearAllWrittenThisFrameFlags();
 
 private:
@@ -153,7 +153,7 @@ private:
 
 	struct FEntry
 	{
-		uint32 Id;
+		FCameraVariableID ID;
 		ECameraVariableType Type;
 		uint32 Offset;
 		mutable EEntryFlags Flags;
@@ -162,7 +162,7 @@ private:
 #endif
 	};
 
-	TMap<uint32, FEntry> Entries;
+	TMap<FCameraVariableID, FEntry> Entries;
 
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
@@ -179,9 +179,9 @@ private:
 ENUM_CLASS_FLAGS(FCameraVariableTable::EEntryFlags)
 
 template<typename ValueType>
-const ValueType* FCameraVariableTable::FindValue(uint32 VariableId) const
+const ValueType* FCameraVariableTable::FindValue(FCameraVariableID VariableID) const
 {
-	if (const FEntry* Entry = Entries.Find(VariableId))
+	if (const FEntry* Entry = Entries.Find(VariableID))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
 		if (EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
@@ -193,9 +193,9 @@ const ValueType* FCameraVariableTable::FindValue(uint32 VariableId) const
 }
 
 template<typename ValueType>
-const ValueType& FCameraVariableTable::GetValue(uint32 VariableId) const
+const ValueType& FCameraVariableTable::GetValue(FCameraVariableID VariableID) const
 {
-	const FEntry& Entry = Entries.FindChecked(VariableId);
+	const FEntry& Entry = Entries.FindChecked(VariableID);
 	CheckVariableType<ValueType>(Entry.Type);
 #if WITH_EDITORONLY_DATA
 	checkf(
@@ -206,15 +206,15 @@ const ValueType& FCameraVariableTable::GetValue(uint32 VariableId) const
 	checkf(
 			EnumHasAnyFlags(Entry.Flags, EEntryFlags::Written),
 			TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
-			*LexToString(VariableId));
+			*LexToString(VariableID.GetValue()));
 #endif
 	return *reinterpret_cast<ValueType*>(Memory + Entry.Offset);
 }
 
 template<typename ValueType>
-ValueType FCameraVariableTable::GetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType DefaultValue) const
+ValueType FCameraVariableTable::GetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType DefaultValue) const
 {
-	if (const ValueType* Value = FindValue<ValueType>(VariableId))
+	if (const ValueType* Value = FindValue<ValueType>(VariableID))
 	{
 		return *Value;
 	}
@@ -222,9 +222,9 @@ ValueType FCameraVariableTable::GetValue(uint32 VariableId, typename TCallTraits
 }
 
 template<typename ValueType>
-bool FCameraVariableTable::TryGetValue(uint32 VariableId, ValueType& OutValue) const
+bool FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ValueType& OutValue) const
 {
-	if (const ValueType* Value = FindValue<ValueType>(VariableId))
+	if (const ValueType* Value = FindValue<ValueType>(VariableID))
 	{
 		OutValue = *Value;
 		return true;
@@ -233,9 +233,9 @@ bool FCameraVariableTable::TryGetValue(uint32 VariableId, ValueType& OutValue) c
 }
 
 template<typename ValueType>
-void FCameraVariableTable::SetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
+void FCameraVariableTable::SetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
-	FEntry& Entry = Entries.FindChecked(VariableId);
+	FEntry& Entry = Entries.FindChecked(VariableID);
 	CheckVariableType<ValueType>(Entry.Type);
 	ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry.Offset);
 	*ValuePtr = Value;
@@ -243,9 +243,9 @@ void FCameraVariableTable::SetValue(uint32 VariableId, typename TCallTraits<Valu
 }
 
 template<typename ValueType>
-bool FCameraVariableTable::TrySetValue(uint32 VariableId, typename TCallTraits<ValueType>::ParamType Value)
+bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
-	if (FEntry* Entry = Entries.Find(VariableId))
+	if (FEntry* Entry = Entries.Find(VariableID))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
 		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
@@ -264,7 +264,7 @@ void FCameraVariableTable::SetValue(
 {
 	if (ensure(VariableAsset))
 	{
-		if (TrySetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableId(), Value))
+		if (TrySetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableID(), Value))
 		{
 			return;
 		}
@@ -273,7 +273,7 @@ void FCameraVariableTable::SetValue(
 		{
 			FCameraVariableDefinition VariableDefinition = VariableAsset->GetVariableDefinition();
 			AddVariable(VariableDefinition);
-			SetValue<typename VariableAssetType::ValueType>(VariableDefinition.VariableId, Value);
+			SetValue<typename VariableAssetType::ValueType>(VariableDefinition.VariableID, Value);
 		}
 	}
 }

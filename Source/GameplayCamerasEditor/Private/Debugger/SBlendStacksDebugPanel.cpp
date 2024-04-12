@@ -28,8 +28,8 @@ void SBlendStacksDebugPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			[
 				SDebugWidgetUtils::CreateConsoleVariableCheckBox(
-						LOCTEXT("ShowVariableIds", "Show variable IDs"),
-						TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIds"))
+						LOCTEXT("ShowVariableIDs", "Show variable IDs"),
+						TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIDs"))
 			]
 	];
 }

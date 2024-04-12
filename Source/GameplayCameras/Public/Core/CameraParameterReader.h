@@ -37,7 +37,7 @@ public:
 
 		if (Parameter.Variable)
 		{
-			VariableId = Parameter.Variable->GetVariableId();
+			VariableID = Parameter.Variable->GetVariableID();
 			DefaultValuePtr = reinterpret_cast<const ValueType*>(Parameter.Variable->GetDefaultValuePtr());
 			ensureMsgf(DefaultValuePtr, TEXT("The given parameter's driving variable doesn't have a default value!"));
 		}
@@ -49,7 +49,7 @@ public:
 	typename TCallTraits<ValueType>::ParamType Get(const FCameraVariableTable& VariableTable) const
 	{
 		checkf(DefaultValuePtr, TEXT("Parameter reader has no value pointer!"));
-		if (VariableId == 0)
+		if (!VariableID.IsValid())
 		{
 			// No variable is driving the parameter, just return the parameter value.
 			return *DefaultValuePtr;
@@ -57,7 +57,7 @@ public:
 		else
 		{
 			// The parameter is driven by a variable. Find it in the variable table.
-			if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableId))
+			if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableID))
 			{
 				return *ActualValue;
 			}
@@ -70,7 +70,7 @@ private:
 	/** Pointer to the value in the parameter. */
 	const ValueType* DefaultValuePtr = nullptr;
 	/** The ID of the variable driving the parameter, if any. */
-	uint32 VariableId = 0;
+	FCameraVariableID VariableID;
 };
 
 }  // namespace UE::Cameras

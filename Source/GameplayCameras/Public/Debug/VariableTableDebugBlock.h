@@ -26,9 +26,9 @@ public:
 	GAMEPLAYCAMERAS_API FVariableTableDebugBlock(const FCameraVariableTable& InVariableTable);
 
 	/** Specifies the console variable to use to toggle the printing of variable IDs. */
-	FVariableTableDebugBlock& WithShowVariableIdsCVar(const TCHAR* InShowVariableIdsCVarName)
+	FVariableTableDebugBlock& WithShowVariableIDsCVar(const TCHAR* InShowVariableIDsCVarName)
 	{
-		ShowVariableIdsCVarName = InShowVariableIdsCVarName;
+		ShowVariableIDsCVarName = InShowVariableIDsCVarName;
 		return *this;
 	}
 
@@ -43,7 +43,7 @@ private:
 
 	struct FEntryDebugInfo
 	{
-		uint32 Id;
+		uint32 ID;
 		FString Name;
 		FString Value;
 		bool bWritten;
@@ -51,7 +51,7 @@ private:
 	};
 	TArray<FEntryDebugInfo> Entries;
 
-	FString ShowVariableIdsCVarName;
+	FString ShowVariableIDsCVarName;
 
 	friend FArchive& operator<< (FArchive&, FEntryDebugInfo&);
 };

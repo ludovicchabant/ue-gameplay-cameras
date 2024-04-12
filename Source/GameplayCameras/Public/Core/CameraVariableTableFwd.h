@@ -43,12 +43,64 @@ enum class ECameraVariableType
 };
 
 USTRUCT()
+struct FCameraVariableID
+{
+	GENERATED_BODY()
+
+public:
+
+	FCameraVariableID() : Value(INVALID) {}
+
+	uint32 GetValue() const { return Value; }
+
+	bool IsValid() const { return Value != INVALID; }
+
+	explicit operator bool() const { return IsValid(); }
+
+	static FCameraVariableID FromHashValue(uint32 InValue)
+	{
+		return FCameraVariableID(InValue);
+	}
+
+public:
+
+	friend bool operator<(FCameraVariableID A, FCameraVariableID B)
+	{
+		return A.Value < B.Value;
+	}
+
+	friend bool operator==(FCameraVariableID A, FCameraVariableID B)
+	{
+		return A.Value == B.Value;
+	}
+
+	friend bool operator!=(FCameraVariableID A, FCameraVariableID B)
+	{
+		return A.Value != B.Value;
+	}
+
+	friend uint32 GetTypeHash(FCameraVariableID In)
+	{
+		return In.Value;
+	}
+
+private:
+
+	FCameraVariableID(uint32 InValue) : Value(InValue) {}
+
+	static const uint32 INVALID = uint32(-1);
+
+	UPROPERTY()
+	uint32 Value;
+};
+
+USTRUCT()
 struct FCameraVariableDefinition
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	uint32 VariableId = 0;
+	FCameraVariableID VariableID;
 
 	UPROPERTY()
 	ECameraVariableType VariableType = ECameraVariableType::Boolean;
