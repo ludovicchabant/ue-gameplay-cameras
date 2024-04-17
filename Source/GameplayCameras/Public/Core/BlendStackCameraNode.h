@@ -146,6 +146,11 @@ protected:
 		bool bIsFirstFrame = false;
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+		bool bLogWarnings = true;
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
+
 #if WITH_EDITOR
 		FCameraRigPackages ListenedPackages;
 #endif  // WITH_EDITOR
