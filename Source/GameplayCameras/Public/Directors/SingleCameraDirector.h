@@ -9,7 +9,7 @@
 /**
  * A simple camera director that only ever returns one single camera rig.
  */
-UCLASS(EditInlineNew)
+UCLASS(MinimalAPI, EditInlineNew)
 class USingleCameraDirector : public UCameraDirector
 {
 	GENERATED_BODY()

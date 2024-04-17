@@ -12,16 +12,16 @@
 namespace UE::Cameras
 {
 
-FCameraEvaluationContextInfo FCameraEvaluationContextStack::GetActiveContext() const
+TSharedPtr<FCameraEvaluationContext> FCameraEvaluationContextStack::GetActiveContext() const
 {
 	for (const FContextEntry& Entry : ReverseIterate(Entries))
 	{
 		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
 		{
-			return FCameraEvaluationContextInfo{ Context, Entry.CameraDirector, Entry.Evaluator };
+			return Context;
 		}
 	}
-	return FCameraEvaluationContextInfo();
+	return nullptr;
 }
 
 bool FCameraEvaluationContextStack::HasContext(TSharedRef<FCameraEvaluationContext> Context) const
@@ -54,24 +54,45 @@ void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationCont
 		return;
 	}
 
-	// Make a new entry and build the director evaluator using the entry's storage.
+	// Make a new entry and activate the context. This will build the director evaluator.
 	FContextEntry NewEntry;
 
-	FCameraDirectorEvaluatorBuilder Builder(NewEntry.EvaluatorStorage);
-	const UCameraDirector* CameraDirector = Context->GetCameraAsset()->CameraDirector;
-	FCameraDirectorEvaluator* DirectorEvaluator = CameraDirector->BuildEvaluator(Builder);
+	FCameraEvaluationContextActivateParams ActivateParams;
+	Context->Activate(ActivateParams);
 	
 	NewEntry.WeakContext = Context;
-	NewEntry.CameraDirector = CameraDirector;
-	NewEntry.Evaluator = DirectorEvaluator;
 	Entries.Push(MoveTemp(NewEntry));
+}
+
+bool FCameraEvaluationContextStack::AddChildContext(TSharedRef<FCameraEvaluationContext> Context)
+{
+	TSharedPtr<FCameraEvaluationContext> ActiveContext = GetActiveContext();
+	if (ensureMsgf(ActiveContext.IsValid(), TEXT("Can't add child context to the stack, no active context was found!")))
+	{
+		FCameraDirectorEvaluator* DirectorEvaluator = ActiveContext->GetDirectorEvaluator();
+		if (ensureMsgf(DirectorEvaluator, TEXT("Can't add child context, active context has no camera director evaluator!")))
+		{
+			return DirectorEvaluator->AddChildEvaluationContext(Context);
+		}
+	}
+	return false;
 }
 
 bool FCameraEvaluationContextStack::RemoveContext(TSharedRef<FCameraEvaluationContext> Context)
 {
-	const int32 NumRemoved = Entries.RemoveAll(
-			[Context](FContextEntry& Entry) { return Entry.WeakContext == Context; });
-	return (NumRemoved > 0);
+	for (auto It = Entries.CreateIterator(); It; ++It)
+	{
+		FContextEntry& Entry = (*It);
+		if (Entry.WeakContext == Context)
+		{
+			FCameraEvaluationContextDeactivateParams DeactivateParams;
+			Context->Deactivate(DeactivateParams);
+
+			It.RemoveCurrent();
+			return true;
+		}
+	}
+	return false;
 }
 
 void FCameraEvaluationContextStack::PopContext()
@@ -88,7 +109,10 @@ void FCameraEvaluationContextStack::AddReferencedObjects(FReferenceCollector& Co
 {
 	for (FContextEntry& Entry : Entries)
 	{
-		Collector.AddReferencedObject(Entry.CameraDirector);
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			Context->AddReferencedObjects(Collector);
+		}
 	}
 }
 

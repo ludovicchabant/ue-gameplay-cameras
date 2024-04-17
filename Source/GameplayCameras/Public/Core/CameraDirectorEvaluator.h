@@ -4,6 +4,7 @@
 
 #include "Core/CameraObjectRtti.h"
 #include "CoreTypes.h"
+#include "GameplayCameras.h"
 #include "Templates/UniquePtr.h"
 #include "UObject/ObjectPtr.h"
 
@@ -17,6 +18,12 @@ class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
 class FCameraEvaluationContext;
 
+struct FCameraDirectorInitializeParams
+{
+	TSharedPtr<FCameraEvaluationContext> OwnerContext;
+	TObjectPtr<const UCameraDirector> CameraDirector;
+};
+
 /**
  * Parameter structure for running a camera director.
  */
@@ -29,13 +36,25 @@ struct FCameraDirectorEvaluationParams
 	TSharedPtr<const FCameraEvaluationContext> OwnerContext;
 };
 
+struct FActiveCameraRigInfo
+{
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+};
+
 /**
  * Result structure for running a camera director.
  */
 struct FCameraDirectorEvaluationResult
 {
+	using FActiveCameraRigInfos = TArray<FActiveCameraRigInfo, TInlineAllocator<2>>;
 	/** The camera rig(s) that the director says should be active this frame. */
-	TArray<TObjectPtr<const UCameraRigAsset>, TInlineAllocator<2>> ActiveCameraRigs;
+	FActiveCameraRigInfos ActiveCameraRigs;
+
+	void Add(TSharedPtr<const FCameraEvaluationContext> InContext, TObjectPtr<const UCameraRigAsset> InCameraRig)
+	{
+		ActiveCameraRigs.Add(FActiveCameraRigInfo{ InContext, InCameraRig });
+	}
 };
 
 /**
@@ -66,10 +85,12 @@ public:
 	/** Gets the stored evaluator, if any. */
 	FCameraDirectorEvaluator* GetEvaluator() const { return Evaluator.Get(); }
 
-private:
-
 	template<typename EvaluatorType, typename ...ArgTypes>
 	EvaluatorType* BuildEvaluator(ArgTypes&&... InArgs);
+
+	void DestroyEvaluator();
+
+private:
 
 	TSharedPtr<FCameraDirectorEvaluator> Evaluator;
 
@@ -87,9 +108,13 @@ public:
 
 	GAMEPLAYCAMERAS_API FCameraDirectorEvaluator();
 	GAMEPLAYCAMERAS_API virtual ~FCameraDirectorEvaluator() {}
+
+	void Initialize(const FCameraDirectorInitializeParams& Params);
 	
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
+
+	const UCameraDirector* GetCameraDirector() const { return PrivateCameraDirector; }
 
 	/** Gets the camera director. */
 	template<typename CameraDirectorType>
@@ -98,17 +123,51 @@ public:
 		return Cast<CameraDirectorType>(PrivateCameraDirector);
 	}
 
+	GAMEPLAYCAMERAS_API bool AddChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
+	GAMEPLAYCAMERAS_API bool RemoveChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
+
+	void AddReferencedObjects(FReferenceCollector& Collector);
+
 public:
 
 	// Internal API.
-	void SetPrivateCameraDirector(TObjectPtr<const UCameraDirector> InCameraDirector);
+	void SetPrivateCameraDirector(const UCameraDirector* InCameraDirector);
 
 protected:
+
+	enum class EChildContextManipulationResult
+	{
+		Failure,
+		Success,
+		ChildContextSuccess
+	};
+
+	struct FChildContextManulationParams
+	{
+		TSharedPtr<FCameraEvaluationContext> ParentContext;
+		TSharedPtr<FCameraEvaluationContext> ChildContext;
+	};
+
+	struct FChildContextManulationResult
+	{
+		EChildContextManipulationResult Result = EChildContextManipulationResult::Failure;
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+	};
+
+	virtual void OnInitialize(const FCameraDirectorInitializeParams& Params) {}
 
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) {}
 
+	virtual void OnAddChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) {}
+	virtual void OnRemoveChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) {}
+
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+
 private:
+
+	TWeakPtr<FCameraEvaluationContext> WeakOwnerContext;
 
 	/** The camera director this evaluator is running. */
 	TObjectPtr<const UCameraDirector> PrivateCameraDirector;

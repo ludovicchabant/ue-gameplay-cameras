@@ -4,15 +4,31 @@
 
 #include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraObjectRtti.h"
 #include "Templates/SharedPointer.h"
 
-class UCameraAsset;
 class APlayerController;
+class UCameraAsset;
+class UCameraDirector;
 
 namespace UE::Cameras
 {
+
+struct FCameraEvaluationContextInitializeParams
+{
+	TObjectPtr<const UCameraAsset> CameraAsset;
+	TObjectPtr<APlayerController> PlayerController;
+};
+
+struct FCameraEvaluationContextActivateParams
+{
+};
+
+struct FCameraEvaluationContextDeactivateParams
+{
+};
 
 /**
  * Base class for providing a context to running camera rigs.
@@ -26,6 +42,8 @@ public:
 	/** Constructs an evaluation context. */
 	GAMEPLAYCAMERAS_API FCameraEvaluationContext();
 
+	GAMEPLAYCAMERAS_API void Initialize(const FCameraEvaluationContextInitializeParams& Params);
+
 	/** Destroys this evaluation context. */
 	GAMEPLAYCAMERAS_API virtual ~FCameraEvaluationContext();
 
@@ -36,7 +54,7 @@ public:
 	APlayerController* GetPlayerController() const { return PlayerController; }
 
 	/** Gets the camera asset that is hosted in this context. */
-	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
+	const UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
@@ -44,9 +62,29 @@ public:
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult& GetInitialResult() { return InitialResult; }
 
+	FCameraDirectorEvaluator* GetDirectorEvaluator() const { return DirectorEvaluator; }
+
+	TArrayView<const TSharedPtr<FCameraEvaluationContext>> GetChildrenContexts() const { return ChildrenContexts; }
+
 public:
 
+	void Activate(const FCameraEvaluationContextActivateParams& Params);
+	void Deactivate(const FCameraEvaluationContextDeactivateParams& Params);
+
+public:
+
+	// Internal API.
 	void AddReferencedObjects(FReferenceCollector& Collector);
+
+	bool RegisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
+	bool UnregisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
+
+protected:
+
+	virtual void OnActivate(const FCameraEvaluationContextActivateParams& Params) {}
+	virtual void OnDeactivate(const FCameraEvaluationContextDeactivateParams& Params) {}
+
+	void AutoCreateDirectorEvaluator();
 
 protected:
 
@@ -57,10 +95,23 @@ protected:
 	TObjectPtr<APlayerController> PlayerController;
 
 	/** The camera asset hosted in this context. */
-	TObjectPtr<UCameraAsset> CameraAsset;
+	TObjectPtr<const UCameraAsset> CameraAsset;
 
 	/** The initial result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult InitialResult;
+
+private:
+
+	FCameraDirectorEvaluatorStorage DirectorEvaluatorStorage;
+	FCameraDirectorEvaluator* DirectorEvaluator = nullptr;
+
+	TWeakPtr<FCameraEvaluationContext> WeakParent;
+
+	using FChildrenContexts = TArray<TSharedPtr<FCameraEvaluationContext>>;
+	FChildrenContexts ChildrenContexts;
+
+	bool bInitialized = false;
+	bool bActivated = false;
 };
 
 }  // namespace UE::Cameras

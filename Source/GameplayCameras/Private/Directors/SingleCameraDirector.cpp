@@ -16,7 +16,7 @@ protected:
 		const USingleCameraDirector* SingleDirector = GetCameraDirectorAs<USingleCameraDirector>();
 		if (SingleDirector->CameraRig)
 		{
-			OutResult.ActiveCameraRigs.Add(SingleDirector->CameraRig);
+			OutResult.Add(Params.OwnerContext, SingleDirector->CameraRig);
 		}
 	}
 };

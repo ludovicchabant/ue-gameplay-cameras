@@ -2,6 +2,9 @@
 
 #include "Core/CameraEvaluationContext.h"
 
+#include "Core/CameraAsset.h"
+#include "Core/CameraDirector.h"
+
 namespace UE::Cameras
 {
 
@@ -11,8 +14,117 @@ FCameraEvaluationContext::FCameraEvaluationContext()
 {
 }
 
+void FCameraEvaluationContext::Initialize(const FCameraEvaluationContextInitializeParams& Params)
+{
+	if (!ensureMsgf(!bInitialized, TEXT("This evaluation context has already been initialized!")))
+	{
+		return;
+	}
+
+	CameraAsset = Params.CameraAsset;
+	PlayerController = Params.PlayerController;
+
+	bInitialized = true;
+}
+
 FCameraEvaluationContext::~FCameraEvaluationContext()
 {
+	// Camera director evaluator usually gets destroyed here since the storage object generally
+	// holds the only shared pointer to it.
+}
+
+void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	Collector.AddReferencedObject(CameraAsset);
+
+	if (DirectorEvaluator)
+	{
+		DirectorEvaluator->AddReferencedObjects(Collector);
+	}
+
+	for (TSharedPtr<FCameraEvaluationContext> ChildContext : ChildrenContexts)
+	{
+		ChildContext->AddReferencedObjects(Collector);
+	}
+}
+
+void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
+{
+	if (DirectorEvaluator == nullptr)
+	{
+		if (const UCameraDirector* CameraDirector = CameraAsset->CameraDirector)
+		{
+			FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
+			DirectorEvaluator = CameraDirector->BuildEvaluator(DirectorBuilder);
+
+			FCameraDirectorInitializeParams InitParams;
+			InitParams.OwnerContext = SharedThis(this);
+			InitParams.CameraDirector = CameraDirector;
+			DirectorEvaluator->Initialize(InitParams);
+		}
+		else
+		{
+			UE_LOG(LogCameraSystem, Warning, TEXT("Activating an evaluation context without a camera director!"));
+		}
+	}
+}
+
+void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivateParams& Params)
+{
+	if (!ensureMsgf(bInitialized, TEXT("This evaluation context needs to be initialized!")))
+	{
+		return;
+	}
+	if (!ensureMsgf(!bActivated, TEXT("This evaluation context has already been activated!")))
+	{
+		return;
+	}
+
+	OnActivate(Params);
+
+	AutoCreateDirectorEvaluator();
+
+	bActivated = true;
+}
+
+void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactivateParams& Params)
+{
+	if (!ensureMsgf(bActivated, TEXT("This evaluation context has not been activated!")))
+	{
+		return;
+	}
+
+	// Don't destroy the camera director evaluator, it could still be useful. We only destroy it
+	// along with this context.
+
+	OnDeactivate(Params);
+
+	bActivated = false;
+}
+
+bool FCameraEvaluationContext::RegisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)
+{
+	if (!ensureMsgf(ChildContext->WeakParent == nullptr, TEXT("The given evaluation context already has a parent!")))
+	{
+		return false;
+	}
+
+	ChildContext->WeakParent = SharedThis(this);
+	ChildrenContexts.Add(ChildContext);
+	return true;
+}
+
+bool FCameraEvaluationContext::UnregisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)
+{
+	if (!ensureMsgf(ChildContext->WeakParent == SharedThis(this), TEXT("The given evaluation context isn't our child!")))
+	{
+		return false;
+	}
+
+	ChildContext->WeakParent = nullptr;
+	const int32 NumRemoved = ChildrenContexts.Remove(ChildContext);
+	ensureMsgf(NumRemoved == 1, TEXT("The given evaluation context wasn't in our list of children!"));
+	return true;
 }
 
 }  // namespace UE::Cameras

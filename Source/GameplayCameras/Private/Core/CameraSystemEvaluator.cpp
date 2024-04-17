@@ -93,20 +93,20 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
 	// Get the active evaluation context.
-	FCameraEvaluationContextInfo ActiveContextInfo = ContextStack.GetActiveContext();
-	if (UNLIKELY(!ActiveContextInfo.IsValid()))
+	TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
+	if (UNLIKELY(!ActiveContext.IsValid()))
 	{
 		Result.bIsValid = false;
 		return;
 	}
 
 	// Run the camera director, and activate any camera rig(s) it returns to us.
-	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContextInfo.Evaluator;
+	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContext->GetDirectorEvaluator();
 	if (ActiveDirectorEvaluator)
 	{
 		FCameraDirectorEvaluationParams DirectorParams;
 		DirectorParams.DeltaTime = Params.DeltaTime;
-		DirectorParams.OwnerContext = ActiveContextInfo.EvaluationContext;
+		DirectorParams.OwnerContext = ActiveContext;
 
 		FCameraDirectorEvaluationResult DirectorResult;
 
@@ -114,12 +114,15 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 
 		if (DirectorResult.ActiveCameraRigs.Num() == 1)
 		{
+			const FActiveCameraRigInfo& ActiveCameraRig = DirectorResult.ActiveCameraRigs[0];
+
 			FActivateCameraRigParams CameraRigParams;
 			CameraRigParams.Evaluator = this;
-			CameraRigParams.EvaluationContext = ActiveContextInfo.EvaluationContext;
-			CameraRigParams.CameraRig = DirectorResult.ActiveCameraRigs[0];
+			CameraRigParams.EvaluationContext = ActiveCameraRig.EvaluationContext;
+			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
+		// TODO: handle the case of composite camera rigs.
 	}
 
 	// Setup the params/result for running the root camera node.
