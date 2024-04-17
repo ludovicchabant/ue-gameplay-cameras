@@ -157,7 +157,6 @@ private:
 	{\
 		UE_DECLARE_CAMERA_DEBUG_BLOCK(ApiDeclSpec, ClassName)\
 	private:\
-		using Super = ::UE::Cameras::FCameraDebugBlock;\
 		using ThisClassName = ClassName;\
 		static FStaticFieldArray StaticFields;\
 	protected:\
