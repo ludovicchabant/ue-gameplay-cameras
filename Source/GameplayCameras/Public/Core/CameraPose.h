@@ -21,7 +21,6 @@ class FArchive;
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorWidth)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorHeight)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SqueezeFactor)\
-	UE_CAMERA_POSE_FOR_PROPERTY(float,  AspectRatio)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  NearClippingPlane)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  FarClippingPlane)
 
@@ -72,6 +71,15 @@ public:
 };
 
 /**
+ * Simple struct for holding horizontal and vertical fields of view.
+ */
+struct FCameraFieldsOfView
+{
+	float HorizontalFieldOfView;
+	float VerticalFieldOfView;
+};
+
+/**
  * Structure describing the state of a camera.
  *
  * Fields are private and can only be accessed via the getters and setters.
@@ -98,10 +106,13 @@ public:
 	{\
 		return PropName;\
 	}\
-	void Set##PropName(TCallTraits<PropType>::ParamType InValue)\
+	void Set##PropName(TCallTraits<PropType>::ParamType InValue, bool bForceSet = false)\
 	{\
-		ChangedFlags.PropName = true;\
-		PropName = InValue;\
+		if (bForceSet || PropName != InValue)\
+		{\
+			ChangedFlags.PropName = true;\
+			PropName = InValue;\
+		}\
 	}
 
 UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
@@ -135,16 +146,23 @@ public:
 	void SetTransform(FTransform3d Transform);
 
 	/**
-	 * Computes the field of view of the camera.
+	 * Computes the horizontal field of view of the camera.
 	 * The effective field of view can be driven by the FieldOfView property, or
 	 * the FocalLength property in combination with the sensor size.
 	 */
 	float GetEffectiveFieldOfView() const;
 
-	/**
-	 * Gets the aiming ray of the camera.
-	 */
+	/** Gets both horizontal and vertical effective fields of view.  */
+	FCameraFieldsOfView GetEffectiveFieldsOfView() const;
+
+	/** Gets the aspect ratio of the camera sensor. */
+	float GetSensorAspectRatio() const;
+
+	/** Gets the aiming ray of the camera. */
 	FRay3d GetAimRay() const;
+
+	/** Gets the aiming direction of the camera. */
+	FVector3d GetAimDir() const;
 
 public:
 
@@ -190,13 +208,6 @@ private:
 	 */
 	UPROPERTY()
 	float FieldOfView = -1.f;  // Default to using a focal length
-
-	/**
-	 * The aspect ratio of the camera
-	 * If zero or less, the sensor width and height are used instead
-	 */
-	UPROPERTY()
-	float AspectRatio = -1.f;
 
 	/**
 	 * The focal length of the camera's lens, in millimeters

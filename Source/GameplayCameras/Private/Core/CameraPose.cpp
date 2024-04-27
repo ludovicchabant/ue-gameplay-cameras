@@ -122,6 +122,7 @@ float FCameraPose::GetEffectiveFieldOfView() const
 	{
 		// Compute FOV with similar code to UCineCameraComponent...
 		float CropedSensorWidth = SensorWidth * SqueezeFactor;
+		const float AspectRatio = GetSensorAspectRatio();
 		if (AspectRatio > 0.0f)
 		{
 			float DesqueezeAspectRatio = SensorWidth * SqueezeFactor / SensorHeight;
@@ -140,11 +141,35 @@ float FCameraPose::GetEffectiveFieldOfView() const
 	}
 }
 
+FCameraFieldsOfView FCameraPose::GetEffectiveFieldsOfView() const
+{
+	FCameraFieldsOfView FOVs;
+
+	FOVs.HorizontalFieldOfView = GetEffectiveFieldOfView();
+
+	const float AspectRatio = GetSensorAspectRatio();
+	FOVs.VerticalFieldOfView = FMath::RadiansToDegrees(
+			2.f * FMath::Atan(
+				FMath::Tan(FMath::DegreesToRadians(FOVs.HorizontalFieldOfView / 2.f)) / AspectRatio));
+
+	return FOVs;
+}
+
+float FCameraPose::GetSensorAspectRatio() const
+{
+	return (SensorHeight > 0.f) ? (SensorWidth / SensorHeight) : 0.f;
+}
+
 FRay3d FCameraPose::GetAimRay() const
 {
 	const bool bDirectionIsNormalized = false;
 	const FVector3d TargetDir{ TargetDistance, 0, 0 };
 	return FRay3d(Location, Rotation.RotateVector(TargetDir), bDirectionIsNormalized);
+}
+
+FVector3d FCameraPose::GetAimDir() const
+{
+	return Rotation.RotateVector(FVector3d{ 1, 0, 0 });
 }
 
 void FCameraPose::OverrideAll(const FCameraPose& OtherPose)
