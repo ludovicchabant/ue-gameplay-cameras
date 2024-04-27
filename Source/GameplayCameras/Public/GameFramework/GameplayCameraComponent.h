@@ -11,7 +11,7 @@
 #include "GameplayCameraComponent.generated.h"
 
 class UCameraAsset;
-class UGameplayCameraEvaluationResultBlueprintInterop;
+class UCameraEvaluationResultInterop;
 
 namespace UE::Cameras
 {
@@ -39,7 +39,7 @@ public:
 	GAMEPLAYCAMERAS_API void DeactivateCamera();
 
 	UFUNCTION(BlueprintPure, Category=Camera)
-	GAMEPLAYCAMERAS_API UGameplayCameraEvaluationResultBlueprintInterop* GetInitialResult() const;
+	GAMEPLAYCAMERAS_API UCameraEvaluationResultInterop* GetInitialResult() const;
 
 public:
 
@@ -70,15 +70,15 @@ protected:
 
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
 
-	UPROPERTY()
-	TObjectPtr<UGameplayCameraEvaluationResultBlueprintInterop> InitialResultInterop;
+	UPROPERTY(Transient)
+	TObjectPtr<UCameraEvaluationResultInterop> InitialResultInterop;
 	
 #if WITH_EDITORONLY_DATA
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> PreviewMesh;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
 
 #endif	// WITH_EDITORONLY_DATA
@@ -100,7 +100,6 @@ class FGameplayCameraComponentEvaluationContext : public FCameraEvaluationContex
 
 public:
 
-	void Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController);
 	void Update(UGameplayCameraComponent* Owner);
 };
 

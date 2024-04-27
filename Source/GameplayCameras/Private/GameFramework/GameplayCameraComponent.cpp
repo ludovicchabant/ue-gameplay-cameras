@@ -7,7 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
-#include "GameFramework/GameplayCameraEvaluationResultBlueprintInterop.h"
+#include "GameFramework/CameraEvaluationResultInterop.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "Logging/MessageLog.h"
@@ -23,7 +23,7 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 {
 	PrimaryComponentTick.bCanEverTick = true;
 
-	InitialResultInterop = ObjectInit.CreateDefaultSubobject<UGameplayCameraEvaluationResultBlueprintInterop>(this, "InitialResultInterop");
+	InitialResultInterop = ObjectInit.CreateDefaultSubobject<UCameraEvaluationResultInterop>(this, "InitialResultInterop");
 
 #if WITH_EDITORONLY_DATA
 	if (GIsEditor && !IsRunningCommandlet())
@@ -145,7 +145,7 @@ void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerControl
 	Deactivate();
 }
 
-UGameplayCameraEvaluationResultBlueprintInterop* UGameplayCameraComponent::GetInitialResult() const
+UCameraEvaluationResultInterop* UGameplayCameraComponent::GetInitialResult() const
 {
 	return InitialResultInterop;
 }

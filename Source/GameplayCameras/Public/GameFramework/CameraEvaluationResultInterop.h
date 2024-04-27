@@ -5,7 +5,7 @@
 #include "CoreTypes.h"
 #include "UObject/ObjectMacros.h"
 
-#include "GameplayCameraEvaluationResultBlueprintInterop.generated.h"
+#include "CameraEvaluationResultInterop.generated.h"
 
 class UBooleanCameraVariable;
 class UDoubleCameraVariable;
@@ -25,8 +25,8 @@ struct FCameraNodeEvaluationResult;
 
 }  // namespace UE::Cameras
 
-UCLASS(BlueprintType, DisplayName="Gameplay Camera Evaluation Result")
-class UGameplayCameraEvaluationResultBlueprintInterop : public UObject
+UCLASS(BlueprintType, DisplayName="Camera Evaluation Result")
+class GAMEPLAYCAMERAS_API UCameraEvaluationResultInterop : public UObject
 {
 	GENERATED_BODY()
 
@@ -34,10 +34,13 @@ public:
 
 	using FCameraNodeEvaluationResult = UE::Cameras::FCameraNodeEvaluationResult;
 
-	UGameplayCameraEvaluationResultBlueprintInterop(const FObjectInitializer& ObjectInit);
+	UCameraEvaluationResultInterop(const FObjectInitializer& ObjectInit);
 
 	void Setup(FCameraNodeEvaluationResult* InResult);
 	void Teardown();
+
+	FCameraNodeEvaluationResult* GetEvaluationResult() { return Result; }
+	const FCameraNodeEvaluationResult* GetEvaluationResult() const { return Result; }
 
 public:
 
