@@ -23,9 +23,13 @@ protected:
 
 public:
 
-	/** The offset to apply to the camera, in local space. */
+	/** The translation offset to apply to the camera. */
 	UPROPERTY(EditAnywhere, Category=Common)
-	FVector3dCameraParameter Offset;
+	FVector3dCameraParameter TranslationOffset;
+
+	/** The rotation offset to apply to the camera. */
+	UPROPERTY(EditAnywhere, Category=Common)
+	FRotator3dCameraParameter RotationOffset;
 
 	/** The space in which to apply the offset. */
 	UPROPERTY(EditAnywhere, Category=Common)

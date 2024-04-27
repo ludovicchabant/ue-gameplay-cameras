@@ -5,6 +5,7 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
 #include "GameplayCameras.h"
+#include "Math/Axis.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OffsetCameraNode)
 
@@ -31,21 +32,24 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
 void FOffsetCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
 	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
-	OffsetReader.Initialize(OffsetNode->Offset);
+	TranslationReader.Initialize(OffsetNode->TranslationOffset);
+	RotationReader.Initialize(OffsetNode->RotationOffset);
 }
 
 void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	FVector3d LocalOffset = OffsetReader.Get(OutResult.VariableTable);
+	const FVector3d TranslationOffset = TranslationReader.Get(OutResult.VariableTable);
+	const FRotator3d RotationOffset = RotationReader.Get(OutResult.VariableTable);
 
 	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
-	switch(OffsetNode->OffsetSpace)
+	switch (OffsetNode->OffsetSpace)
 	{
 		case ECameraNodeSpace::CameraPose:
 		default:
 			{
-				const FRotator3d Rotation = OutResult.CameraPose.GetRotation();
-				LocalOffset = Rotation.RotateVector(LocalOffset);
+				FTransform3d Transform = OutResult.CameraPose.GetTransform();
+				Transform = FTransform3d(RotationOffset, TranslationOffset) * Transform;
+				OutResult.CameraPose.SetTransform(Transform);
 			}
 			break;
 		case ECameraNodeSpace::Context:
@@ -54,8 +58,25 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
 				ensureMsgf(InitialResult.bIsValid,
 						TEXT("OffsetCameraNode: using invalid context result as offset space!"));
-				const FRotator3d Rotation = InitialResult.CameraPose.GetRotation();
-				LocalOffset = Rotation.RotateVector(LocalOffset);
+
+				// The offsets are meant to be treated as context-local. Let's get the context transform
+				// and apply the offsets using that transform's axes.
+				const FTransform3d ContextTransform = InitialResult.CameraPose.GetTransform();
+
+				const FVector3d WorldTranslationOffset = ContextTransform.TransformVector(TranslationOffset);
+
+				const FVector3d ContextForward = ContextTransform.GetUnitAxis(EAxis::X);
+				const FVector3d ContextRight = ContextTransform.GetUnitAxis(EAxis::Y);
+				const FVector3d ContextUp = ContextTransform.GetUnitAxis(EAxis::Z);
+				const FQuat WorldRotationOffset = 
+					FQuat(ContextUp, RotationOffset.Yaw) * 
+					FQuat(ContextRight, RotationOffset.Pitch) *
+					FQuat(ContextForward, RotationOffset.Roll);
+
+				FTransform3d Transform = OutResult.CameraPose.GetTransform();
+				Transform.SetTranslation(Transform.GetTranslation() + WorldTranslationOffset);
+				Transform.SetRotation(WorldRotationOffset * Transform.GetRotation());
+				OutResult.CameraPose.SetTransform(Transform);
 			}
 			else
 			{
@@ -66,12 +87,14 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 			}
 			break;
 		case ECameraNodeSpace::World:
-			// Nothing to do;
+			{
+				FTransform3d Transform = OutResult.CameraPose.GetTransform();
+				Transform.SetTranslation(Transform.GetTranslation() + TranslationOffset);
+				Transform.SetRotation(RotationOffset.Quaternion() * Transform.GetRotation());
+				OutResult.CameraPose.SetTransform(Transform);
+			}
 			break;
 	}
-
-	const FVector3d Location = OutResult.CameraPose.GetLocation();
-	OutResult.CameraPose.SetLocation(Location + LocalOffset);
 }
 
 }  // namespace UE::Cameras
