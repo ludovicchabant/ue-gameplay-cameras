@@ -10,14 +10,14 @@ namespace UE::Cameras
 {
 
 template<typename ValueType>
-class FCameraParameterReader
+class TCameraParameterReader
 {
 public:
 
-	FCameraParameterReader() {}
+	TCameraParameterReader() {}
 
 	template<typename ParameterType>
-	FCameraParameterReader(const ParameterType& Parameter)
+	TCameraParameterReader(const ParameterType& Parameter)
 	{
 		Initialize(Parameter);
 	}

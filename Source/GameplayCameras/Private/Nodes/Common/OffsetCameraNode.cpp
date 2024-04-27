@@ -22,7 +22,8 @@ protected:
 
 private:
 
-	FCameraParameterReader<FVector3d> OffsetReader;
+	TCameraParameterReader<FVector3d> TranslationReader;
+	TCameraParameterReader<FRotator3d> RotationReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)

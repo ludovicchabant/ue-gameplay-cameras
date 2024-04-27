@@ -22,11 +22,11 @@ protected:
 
 private:
 
-	FCameraParameterReader<float> SensorWidthReader;
-	FCameraParameterReader<float> SensorHeightReader;
-	FCameraParameterReader<float> FocusDistanceReader;
-	FCameraParameterReader<float> FocalLengthReader;
-	FCameraParameterReader<float> ApertureReader;
+	TCameraParameterReader<float> SensorWidthReader;
+	TCameraParameterReader<float> SensorHeightReader;
+	TCameraParameterReader<float> FocusDistanceReader;
+	TCameraParameterReader<float> FocalLengthReader;
+	TCameraParameterReader<float> ApertureReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FLensParametersCameraNodeEvaluator)
