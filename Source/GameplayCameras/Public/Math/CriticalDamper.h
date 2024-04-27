@@ -4,6 +4,8 @@
 
 #include "CoreTypes.h"
 
+class FArchive;
+
 namespace UE::Cameras
 {
 
@@ -93,6 +95,9 @@ public:
 	 */
 	float Update(float PreviousDamped, float NextTarget, float DeltaTime);
 
+	/** Saves or loads the state of this critical damper. */
+	void Serialize(FArchive& Ar);
+
 private:
 
 	void InternalUpdate(float ForcedMovement, float DeltaTime);
@@ -105,7 +110,11 @@ private:
 	float X0;
 	/** Initial velocity of the spring-mass system, aka the previous frame's velocity. */
 	float X0Derivative;
+
+	friend FArchive& operator <<(FArchive& Ar, FCriticalDamper& Damper);
 };
+
+FArchive& operator <<(FArchive& Ar, FCriticalDamper& Damper);
 
 }  // namespace UE::Cameras
 

@@ -248,5 +248,18 @@ void FCriticalDamper::InternalUpdate(float ForcedMovement, float DeltaTime)
 	}
 }
 
+void FCriticalDamper::Serialize(FArchive& Ar)
+{
+	Ar << W0;
+	Ar << X0;
+	Ar << X0Derivative;
+}
+
+FArchive& operator <<(FArchive& Ar, FCriticalDamper& Damper)
+{
+	Damper.Serialize(Ar);
+	return Ar;
+}
+
 }  // namespace UE::Cameras
 
