@@ -16,16 +16,31 @@ class UCameraDirector;
 namespace UE::Cameras
 {
 
+/**
+ * Parameter struct for initializing an evaluation context.
+ */
 struct FCameraEvaluationContextInitializeParams
 {
+	/** The owner of the context, if any. */
+	TObjectPtr<UObject> Owner;
+	/** The camera asset to run inside the context, if any. */
 	TObjectPtr<const UCameraAsset> CameraAsset;
+	/** The player controller driving this context, if any. */
 	TObjectPtr<APlayerController> PlayerController;
 };
 
+/**
+ * Parameter struct for activating an evaluation context, which happens when it is added
+ * to the camera system's context stack.
+ */
 struct FCameraEvaluationContextActivateParams
 {
 };
 
+/**
+ * Parameter struct for deactivating an evaluation context, which happens when it is removed
+ * from the camera system's context stack.
+ */
 struct FCameraEvaluationContextDeactivateParams
 {
 };
@@ -41,17 +56,23 @@ public:
 
 	/** Constructs an evaluation context. */
 	GAMEPLAYCAMERAS_API FCameraEvaluationContext();
+	/** Constructs an evaluation context. */
+	GAMEPLAYCAMERAS_API FCameraEvaluationContext(const FCameraEvaluationContextInitializeParams& Params);
 
+	/** Initializes the evaluation context, if it was created with the default constructor. */
 	GAMEPLAYCAMERAS_API void Initialize(const FCameraEvaluationContextInitializeParams& Params);
 
 	/** Destroys this evaluation context. */
 	GAMEPLAYCAMERAS_API virtual ~FCameraEvaluationContext();
 
+	/** Gets the owner of this evaluation context, if any, and if still valid. */
+	UObject* GetOwner() const { return WeakOwner.Get(); }
+
 	/**
 	 * Gets the player controller (if any) in control of the cameras running inside
 	 * of this evaluation context.
 	 */
-	APlayerController* GetPlayerController() const { return PlayerController; }
+	APlayerController* GetPlayerController() const { return WeakPlayerController.Get(); }
 
 	/** Gets the camera asset that is hosted in this context. */
 	const UCameraAsset* GetCameraAsset() const { return CameraAsset; }
@@ -62,13 +83,23 @@ public:
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult& GetInitialResult() { return InitialResult; }
 
+	/** Gets the camera director evaluator that runs the camera rigs of this context. */
 	FCameraDirectorEvaluator* GetDirectorEvaluator() const { return DirectorEvaluator; }
 
+	/** Gets the children evaluation contexts running inside this context. */
 	TArrayView<const TSharedPtr<FCameraEvaluationContext>> GetChildrenContexts() const { return ChildrenContexts; }
 
 public:
 
+	/**
+	 * Activates this evaluation context.
+	 * This will create the camera director evaluator if necessary.
+	 */
 	void Activate(const FCameraEvaluationContextActivateParams& Params);
+
+	/**
+	 * Deactivates this evaluation context.
+	 */
 	void Deactivate(const FCameraEvaluationContextDeactivateParams& Params);
 
 public:
@@ -88,11 +119,14 @@ protected:
 
 protected:
 
+	/** The owner of this context, if any. */
+	TWeakObjectPtr<> WeakOwner;
+
 	/**
 	 * The player controller (if any) in control of the cameras running inside
 	 * of this evaluation context.
 	 */
-	TObjectPtr<APlayerController> PlayerController;
+	TWeakObjectPtr<APlayerController> WeakPlayerController;
 
 	/** The camera asset hosted in this context. */
 	TObjectPtr<const UCameraAsset> CameraAsset;

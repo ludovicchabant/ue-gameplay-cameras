@@ -4,6 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
+#include "GameFramework/PlayerController.h"
 
 namespace UE::Cameras
 {
@@ -14,6 +15,11 @@ FCameraEvaluationContext::FCameraEvaluationContext()
 {
 }
 
+FCameraEvaluationContext::FCameraEvaluationContext(const FCameraEvaluationContextInitializeParams& Params)
+{
+	Initialize(Params);
+}
+
 void FCameraEvaluationContext::Initialize(const FCameraEvaluationContextInitializeParams& Params)
 {
 	if (!ensureMsgf(!bInitialized, TEXT("This evaluation context has already been initialized!")))
@@ -21,8 +27,9 @@ void FCameraEvaluationContext::Initialize(const FCameraEvaluationContextInitiali
 		return;
 	}
 
+	WeakOwner = Params.Owner;
 	CameraAsset = Params.CameraAsset;
-	PlayerController = Params.PlayerController;
+	WeakPlayerController = Params.PlayerController;
 
 	bInitialized = true;
 }
@@ -52,20 +59,25 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 {
 	if (DirectorEvaluator == nullptr)
 	{
-		if (const UCameraDirector* CameraDirector = CameraAsset->CameraDirector)
+		if (!CameraAsset)
 		{
-			FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
-			DirectorEvaluator = CameraDirector->BuildEvaluator(DirectorBuilder);
+			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera!"));
+			return;
+		}
+		if (!CameraAsset->CameraDirector)
+		{
+			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera director!"));
+			return;
+		}
 
-			FCameraDirectorInitializeParams InitParams;
-			InitParams.OwnerContext = SharedThis(this);
-			InitParams.CameraDirector = CameraDirector;
-			DirectorEvaluator->Initialize(InitParams);
-		}
-		else
-		{
-			UE_LOG(LogCameraSystem, Warning, TEXT("Activating an evaluation context without a camera director!"));
-		}
+		const UCameraDirector* CameraDirector = CameraAsset->CameraDirector;
+		FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
+		DirectorEvaluator = CameraDirector->BuildEvaluator(DirectorBuilder);
+
+		FCameraDirectorInitializeParams InitParams;
+		InitParams.OwnerContext = SharedThis(this);
+		InitParams.CameraDirector = CameraDirector;
+		DirectorEvaluator->Initialize(InitParams);
 	}
 }
 

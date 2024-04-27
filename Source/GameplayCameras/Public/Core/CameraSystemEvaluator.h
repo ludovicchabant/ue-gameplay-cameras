@@ -35,8 +35,10 @@ class FRootCameraDebugBlock;
  */
 struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
 {
+	/** The owner of the camera system, if any. */
 	TObjectPtr<UObject> Owner;
 
+	/** An optional factory for creating the root node. */
 	using FRootNodeFactory = TFunction<URootCameraNode*()>;
 	FRootNodeFactory RootNodeFactory;
 };
@@ -86,6 +88,11 @@ public:
 	GAMEPLAYCAMERAS_API void Initialize(TObjectPtr<UObject> InOwner = nullptr);
 	/** Initializes the camera system. */
 	GAMEPLAYCAMERAS_API void Initialize(const FCameraSystemEvaluatorCreateParams& Params);
+
+public:
+
+	/** Gets the owner of this camera system, if any, and if still valid. */
+	UObject* GetOwner() const { return WeakOwner.Get(); }
 
 public:
 

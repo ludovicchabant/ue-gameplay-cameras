@@ -105,7 +105,12 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 	if (!EvaluationContext.IsValid())
 	{
 		EvaluationContext = MakeShared<FGameplayCameraComponentEvaluationContext>();
-		EvaluationContext->Initialize(this, PlayerController);
+
+		FCameraEvaluationContextInitializeParams InitParams;
+		InitParams.Owner = this;
+		InitParams.CameraAsset = Camera;
+		InitParams.PlayerController = PlayerController;
+		EvaluationContext->Initialize(InitParams);
 
 		InitialResultInterop->Setup(&EvaluationContext->GetInitialResult());
 	}
@@ -208,12 +213,6 @@ namespace UE::Cameras
 {
 
 UE_DEFINE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
-
-void FGameplayCameraComponentEvaluationContext::Initialize(UGameplayCameraComponent* Owner, APlayerController* InPlayerController)
-{
-	PlayerController = InPlayerController;
-	CameraAsset = Owner->Camera;
-}
 
 void FGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent* Owner)
 {
