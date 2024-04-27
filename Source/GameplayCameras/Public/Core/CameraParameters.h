@@ -15,6 +15,7 @@ struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = bool;
+	using VariableAssetType = UBooleanCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	bool Value = false;
@@ -32,6 +33,7 @@ struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 	GENERATED_BODY()
 
 	using ValueType = int32;
+	using VariableAssetType = UInteger32CameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	int32 Value = 0;
@@ -49,6 +51,7 @@ struct FFloatCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = float;
+	using VariableAssetType = UFloatCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	float Value = 0.f;
@@ -66,6 +69,7 @@ struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = double;
+	using VariableAssetType = UDoubleCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	double Value = 0.0;
@@ -83,6 +87,7 @@ struct FVector2fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector2f;
+	using VariableAssetType = UVector2fCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector2f Value;
@@ -101,6 +106,7 @@ struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector2D;
+	using VariableAssetType = UVector2dCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector2D Value;
@@ -119,6 +125,7 @@ struct FVector3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector3f;
+	using VariableAssetType = UVector3fCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3f Value;
@@ -137,6 +144,7 @@ struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector3d;
+	using VariableAssetType = UVector3dCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3d Value;
@@ -155,6 +163,7 @@ struct FVector4fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector4f;
+	using VariableAssetType = UVector4fCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector4f Value;
@@ -173,6 +182,7 @@ struct FVector4dCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector4d;
+	using VariableAssetType = UVector4dCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector4d Value;
@@ -191,6 +201,7 @@ struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FRotator3f;
+	using VariableAssetType = URotator3fCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FRotator3f Value;
@@ -209,6 +220,7 @@ struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FRotator3d;
+	using VariableAssetType = URotator3dCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FRotator3d Value;
@@ -227,6 +239,7 @@ struct FTransform3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FTransform3f;
+	using VariableAssetType = UTransform3fCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FTransform3f Value;
@@ -244,6 +257,7 @@ struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FTransform3d;
+	using VariableAssetType = UTransform3dCameraVariable;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FTransform3d Value;
