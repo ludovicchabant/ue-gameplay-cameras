@@ -15,12 +15,7 @@
 class UObjectTreeGraphNode;
 class UObjectTreeGraphSchema;
 
-/** Specifies where to find graph node objects. */
-enum class EObjectTreeGraphBuildSource
-{
-	/** Create graph nodes from all eligible objects found in the same package. */
-	RootObjectPackage
-};
+enum class EObjectTreeGraphBuildSource : uint8;
 
 /**
  * A node graph that represents a hierarchy of objects and their relationships.
@@ -50,22 +45,13 @@ public:
 
 private:
 
-	struct FCreatedNodes
-	{
-		TMap<UObject*, UObjectTreeGraphNode*> CreatedNodes;
-	};
-
-	void RemoveAllNodes();
-	void CreateAllNodes(EObjectTreeGraphBuildSource InSource);
-	void CreateConnections(UObjectTreeGraphNode* InGraphNode, const FCreatedNodes& InCreatedNodes);
-
-private:
-
 	TWeakObjectPtr<> WeakRootObject;
 
 	FObjectTreeGraphConfig Config;
 
 	UPROPERTY()
 	TObjectPtr<UObjectTreeGraphNode> RootObjectNode;
+
+	friend class UObjectTreeGraphSchema;
 };
 

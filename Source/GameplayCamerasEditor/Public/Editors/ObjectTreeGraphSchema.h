@@ -12,6 +12,13 @@ class UObjectTreeGraph;
 class UObjectTreeGraphNode;
 struct FObjectTreeGraphClassConfig;
 
+/** Specifies where to find graph node objects. */
+enum class EObjectTreeGraphBuildSource : uint8
+{
+	/** Create graph nodes from all eligible objects found in the same package. */
+	RootObjectPackage
+};
+
 /**
  * Schema class for an object tree graph.
  */
@@ -35,6 +42,8 @@ public:
 
 	/** Creates a new schema. */
 	UObjectTreeGraphSchema(const FObjectInitializer& ObjInit);
+
+	void RebuildGraph(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const;
 
 	/** Creates an object graph node for the given object. */
 	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
@@ -61,12 +70,25 @@ public:
 
 protected:
 
+	struct FCreatedNodes
+	{
+		TMap<UObject*, UObjectTreeGraphNode*> CreatedNodes;
+	};
+
+	// UObjectTreeGraphSchema interface.
+	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
 	virtual UObjectTreeGraphNode* CreateObjectNodeImpl(UObjectTreeGraph* InGraph, UObject* InObject) const;
 
 protected:
 
 	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraphNode* InNode) const;
 	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const;
+
+private:
+
+	void RemoveAllNodes(UObjectTreeGraph* InGraph) const;
+	void CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const;
+	void CreateConnections(UObjectTreeGraphNode* InGraphNode, const FCreatedNodes& InCreatedNodes) const;
 };
 
 /**

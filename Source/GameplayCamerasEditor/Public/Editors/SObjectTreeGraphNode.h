@@ -7,6 +7,9 @@
 
 class UObjectTreeGraphNode;
 
+/**
+ * The widget used by default for object tree graph nodes.
+ */
 class SObjectTreeGraphNode : public SGraphNode
 {
 public:
@@ -29,21 +32,5 @@ public:
 protected:
 
 	UObjectTreeGraphNode* ObjectGraphNode;
-};
-
-class SObjectTreeGraphAddArrayItemPin : public SGraphPin
-{
-public:
-
-	SLATE_BEGIN_ARGS(SObjectTreeGraphAddArrayItemPin)
-	{}
-	SLATE_END_ARGS()
-
-	void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
-
-public:
-
-	// SGraphPin interface.
-
 };
 

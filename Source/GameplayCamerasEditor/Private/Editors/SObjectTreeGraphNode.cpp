@@ -24,8 +24,3 @@ void SObjectTreeGraphNode::MoveTo(const FVector2D& NewPosition, FNodeSet& NodeFi
 	}
 }
 
-void SObjectTreeGraphAddArrayItemPin::Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj)
-{
-	SGraphPin::Construct(SGraphPin::FArguments(), InGraphPinObj);
-}
-
