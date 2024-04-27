@@ -29,6 +29,11 @@
 			"LoadingPhase" : "PreDefault"
 		},
 		{
+			"Name" : "GameplayCamerasUncookedOnly",
+			"Type" : "UncookedOnly",
+			"LoadingPhase" : "Default"
+		},
+		{
 			"Name": "GameplayCamerasEditor",
 			"Type": "Editor",
 			"LoadingPhase": "PostEngineInit"
