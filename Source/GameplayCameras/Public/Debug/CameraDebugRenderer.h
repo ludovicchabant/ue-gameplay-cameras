@@ -11,6 +11,8 @@
 
 class FCanvas;
 class UFont;
+class ULineBatchComponent;
+class UWorld;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -35,7 +37,7 @@ class FCameraDebugRenderer
 public:
 
 	/** Creates a new debug renderer. */
-	GAMEPLAYCAMERAS_API FCameraDebugRenderer(FCanvas* InCanvas);
+	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, FCanvas* InCanvas);
 	/** Destroys the debug renderer. */
 	GAMEPLAYCAMERAS_API ~FCameraDebugRenderer();
 
@@ -74,6 +76,8 @@ public:
 	/** Draws a 2D circle. */
 	GAMEPLAYCAMERAS_API void Draw2DCircle(const FVector2D& Center, float Radius, const FLinearColor& LineColor, float LineThickness = 1.f, int32 NumSides = 0);
 
+	GAMEPLAYCAMERAS_API void DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness = 1.f);
+
 public:
 
 	/** Request skipping drawing any blocks attached to the current block. */
@@ -105,8 +109,12 @@ private:
 	float GetIndentMargin() const;
 	void FlushText();
 
+	ULineBatchComponent* GetDebugLineBatcher() const;
+
 private:
 
+	/** The world in which we might draw debug primitives. */
+	UWorld* World;
 	/** The canvas used to draw the text wall. */
 	FCanvas* Canvas;
 	/** The draw color of the canvas. */

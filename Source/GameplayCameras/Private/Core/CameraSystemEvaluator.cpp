@@ -180,16 +180,17 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	FCameraDebugBlockBuilder DebugBlockBuilder(DebugBlockStorage, *RootDebugBlock);
 	RootDebugBlock->BuildDebugBlocks(*this, BuildParams, DebugBlockBuilder);
 
+	UObject* Owner = WeakOwner.Get();
+	UWorld* OwnerWorld = Owner ? Owner->GetWorld() : nullptr;
+
 #if UE_GAMEPLAY_CAMERAS_TRACE
 	if (bTraceEnabled)
 	{
-		UObject* Owner = WeakOwner.Get();
-		UWorld* OwnerWorld = Owner ? Owner->GetWorld() : nullptr;
 		FCameraSystemTrace::TraceEvaluation(OwnerWorld, Result, *RootDebugBlock);
 	}
 #endif
 	
-	FCameraDebugRenderer Renderer(Params.Canvas);
+	FCameraDebugRenderer Renderer(OwnerWorld, Params.Canvas);
 	RootDebugBlock->RootDebugDraw(Renderer);
 }
 

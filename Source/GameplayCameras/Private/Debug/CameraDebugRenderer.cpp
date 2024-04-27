@@ -5,10 +5,12 @@
 #include "Algo/Find.h"
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
+#include "Components/LineBatchComponent.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/DebugTextRenderer.h"
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
+#include "Engine/World.h"
 #include "HAL/IConsoleManager.h"
 #include "Math/Box2D.h"
 #include "Misc/TVariant.h"
@@ -48,8 +50,9 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundDepthSortKey(
 	GGameplayCamerasDebugBackgroundDepthSortKey,
 	TEXT(""));
 
-FCameraDebugRenderer::FCameraDebugRenderer(FCanvas* InCanvas)
-	: Canvas(InCanvas)
+FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, FCanvas* InCanvas)
+	: World(InWorld)
+	, Canvas(InCanvas)
 	, DrawColor(FColor::White)
 {
 	RenderFont = GEngine->GetSmallFont();
@@ -255,6 +258,19 @@ void FCameraDebugRenderer::Draw2DCircle(const FVector2D& Center, float Radius, c
 		Draw2DLine(LastVertex, Vertex, LineColor, LineThickness);
 		LastVertex = Vertex;
 	}
+}
+
+void FCameraDebugRenderer::DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness)
+{
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		LineBatcher->DrawLine(Start, End, LineColor, SDPG_Foreground, LineThickness);
+	}
+}
+
+ULineBatchComponent* FCameraDebugRenderer::GetDebugLineBatcher() const
+{
+	return World ? World->ForegroundLineBatcher : nullptr;
 }
 
 void FCameraDebugRenderer::SkipAttachedBlocks()
