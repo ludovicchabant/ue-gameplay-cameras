@@ -136,7 +136,10 @@ struct GAMEPLAYCAMERAS_API FActiveCameraAnimationInfo
 	FActiveCameraAnimationInfo();
 
 	/** Whether this is a valid, ongoing camera animation */
-	bool IsValid() const { return Sequence != nullptr; }
+	bool IsValid() const;
+
+	/** Whether this camera animation's player is valid */
+	bool HasValidPlayer() const;
 
 	/** The sequence to use for the animation. */
 	UPROPERTY()

@@ -236,10 +236,6 @@ public:
 	/** Returns true if this camera shake will loop forever */
 	bool IsLooping() const;
 
-	/** Sets current playback time and applies the shake (both oscillation and camera animation sequence) to the given POV. */
-	UE_DEPRECATED(4.27, "SetCurrentTimeAndApplyShake is deprecated, please use ScrubAndApplyCameraShake")
-	void SetCurrentTimeAndApplyShake(float NewTime, FMinimalViewInfo& POV);
-
 private:
 
 	void DoStartShake(const FCameraShakePatternStartParams& Params);

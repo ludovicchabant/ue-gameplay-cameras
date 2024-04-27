@@ -409,11 +409,6 @@ bool ULegacyCameraShake::IsLooping() const
 	return ActualOscillationDuration < 0.0f;
 }
 
-void ULegacyCameraShake::SetCurrentTimeAndApplyShake(float NewTime, FMinimalViewInfo& POV)
-{
-	ScrubAndApplyCameraShake(NewTime, 1.f, POV);
-}
-
 ULegacyCameraShake* ULegacyCameraShake::StartLegacyCameraShake(APlayerCameraManager* PlayerCameraManager, TSubclassOf<ULegacyCameraShake> ShakeClass, float Scale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRot)
 {
 	if (PlayerCameraManager)

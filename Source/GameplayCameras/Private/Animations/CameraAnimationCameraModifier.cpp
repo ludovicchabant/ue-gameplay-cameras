@@ -36,6 +36,16 @@ FActiveCameraAnimationInfo::FActiveCameraAnimationInfo()
 {
 }
 
+bool FActiveCameraAnimationInfo::IsValid() const
+{
+	return Sequence != nullptr;
+}
+
+bool FActiveCameraAnimationInfo::HasValidPlayer() const
+{
+	return Player && Player->IsValid();
+}
+
 namespace CameraAnimationCameraModifierImpl
 {
 	float Sinusoidal(float InTime)
@@ -305,11 +315,22 @@ void UCameraAnimationCameraModifier::TickAllAnimations(float DeltaTime, FMinimal
 	{
 		if (ActiveAnimation.IsValid())
 		{
-			TickAnimation(ActiveAnimation, DeltaTime, InOutPOV);
-
-			if (ActiveAnimation.Player->GetPlaybackStatus() == EMovieScenePlayerStatus::Stopped)
+			if (ActiveAnimation.HasValidPlayer())
 			{
-				DeactivateCameraAnimation(ActiveAnimation.Handle.InstanceID);
+				TickAnimation(ActiveAnimation, DeltaTime, InOutPOV);
+
+				if (ActiveAnimation.Player->GetPlaybackStatus() == EMovieScenePlayerStatus::Stopped)
+				{
+					DeactivateCameraAnimation(ActiveAnimation.Handle.InstanceID);
+				}
+			}
+			else
+			{
+				// The animation's player might have become invalid due to things like server travel 
+				// to a new level. The player's linker would have been destroyed with the old level.
+				// In that case, we abort the camera animation.
+				ActiveAnimation.Sequence = nullptr;
+				ActiveAnimation.Player = nullptr;
 			}
 		}
 	}
