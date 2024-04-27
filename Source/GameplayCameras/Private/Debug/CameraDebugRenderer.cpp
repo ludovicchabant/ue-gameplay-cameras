@@ -10,6 +10,7 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "HAL/IConsoleManager.h"
+#include "Math/Box2D.h"
 #include "Misc/TVariant.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -199,6 +200,60 @@ void FCameraDebugRenderer::DrawTextBackgroundTile(float Opacity)
 			Canvas->DrawItem(BackgroundTile);
 		}
 		Canvas->PopDepthSortKey();
+	}
+}
+
+void FCameraDebugRenderer::Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness)
+{
+	if (Canvas)
+	{
+		FCanvasLineItem LineItem(Start, End);
+		LineItem.SetColor(LineColor);
+		LineItem.LineThickness = LineThickness;
+		Canvas->DrawItem(LineItem);
+	}
+}
+
+void FCameraDebugRenderer::Draw2DBox(const FBox2D& Box, const FLinearColor& LineColor, float LineThickness)
+{
+	if (Canvas)
+	{
+		FCanvasBoxItem BoxItem(Box.Min, Box.GetSize());
+		BoxItem.SetColor(LineColor);
+		BoxItem.LineThickness = LineThickness;
+		Canvas->DrawItem(BoxItem);
+	}
+}
+
+void FCameraDebugRenderer::Draw2DBox(const FVector2D& BoxPosition, const FVector2D& BoxSize, const FLinearColor& LineColor, float LineThickness)
+{
+	if (Canvas)
+	{
+		FCanvasBoxItem BoxItem(BoxPosition, BoxSize);
+		BoxItem.SetColor(LineColor);
+		BoxItem.LineThickness = LineThickness;
+		Canvas->DrawItem(BoxItem);
+	}
+}
+
+void FCameraDebugRenderer::Draw2DCircle(const FVector2D& Center, float Radius, const FLinearColor& LineColor, float LineThickness, int32 NumSides)
+{
+	if (NumSides <= 0)
+	{
+		NumSides = FMath::Max(6, (int)Radius / 25);
+	}
+
+	const float	AngleDelta = 2.0f * UE_PI / NumSides;
+	const FVector2D AxisX(1.f, 0.f);
+	const FVector2D AxisY(0.f, -1.f);
+	FVector2D LastVertex = Center + AxisX * Radius;
+
+	for (int32 SideIndex = 0; SideIndex < NumSides; SideIndex++)
+	{
+		const float CurAngle = AngleDelta * (SideIndex + 1);
+		const FVector2D Vertex = Center + (AxisX * FMath::Cos(CurAngle) + AxisY * FMath::Sin(CurAngle)) * Radius;
+		Draw2DLine(LastVertex, Vertex, LineColor, LineThickness);
+		LastVertex = Vertex;
 	}
 }
 

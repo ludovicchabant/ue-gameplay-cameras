@@ -5,6 +5,7 @@
 #include "CoreTypes.h"
 #include "GameplayCameras.h"
 #include "Math/Color.h"
+#include "Math/MathFwd.h"
 #include "Math/Vector.h"
 #include "Misc/StringBuilder.h"
 
@@ -64,6 +65,17 @@ public:
 
 public:
 
+	/** Draws a 2D line. */
+	GAMEPLAYCAMERAS_API void Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness = 1.f);
+	/** Draws a 2D box. */
+	GAMEPLAYCAMERAS_API void Draw2DBox(const FBox2D& Box, const FLinearColor& LineColor, float LineThickness = 1.f);
+	/** Draws a 2D box. */
+	GAMEPLAYCAMERAS_API void Draw2DBox(const FVector2D& BoxPosition, const FVector2D& BoxSize, const FLinearColor& LineColor, float LineThickness = 1.f);
+	/** Draws a 2D circle. */
+	GAMEPLAYCAMERAS_API void Draw2DCircle(const FVector2D& Center, float Radius, const FLinearColor& LineColor, float LineThickness = 1.f, int32 NumSides = 0);
+
+public:
+
 	/** Request skipping drawing any blocks attached to the current block. */
 	GAMEPLAYCAMERAS_API void SkipAttachedBlocks();
 	/** Request skipping drawing any children blocks of the current block. */
@@ -82,6 +94,8 @@ public:
 
 	/** Gets the size of the canvas. */
 	FVector2D GetCanvasSize() const;
+
+	bool HasCanvas() const { return Canvas != nullptr; }
 
 private:
 
