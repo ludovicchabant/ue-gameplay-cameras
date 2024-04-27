@@ -137,8 +137,6 @@ FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 
 void UObjectTreeGraphNode::AllocateDefaultPins()
 {
-	static const FName SelfPinName("self");
-
 	if (!ensure(Object))
 	{
 		return;
@@ -152,6 +150,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 	{
 		FEdGraphPinType SelfPinType;
 		SelfPinType.PinCategory = UObjectTreeGraphSchema::PC_Self;
+		const FName& SelfPinName = ObjectClassConfig.SelfPinName();
 		UEdGraphPin* SelfPin = CreatePin(ObjectClassConfig.SelfPinDirection(), SelfPinType, SelfPinName);
 		SelfPin->PinFriendlyName = ObjectClassConfig.SelfPinFriendlyName();
 	}
@@ -167,7 +166,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 
 		if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(*PropertyIt))
 		{
-			if (!ObjectProperty->PropertyClass || !OuterGraphConfig.IsConnectable(ObjectProperty->PropertyClass))
+			if (!OuterGraphConfig.IsConnectable(ObjectProperty))
 			{
 				continue;
 			}

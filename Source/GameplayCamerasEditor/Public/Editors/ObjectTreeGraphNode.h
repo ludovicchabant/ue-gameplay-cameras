@@ -32,6 +32,11 @@ public:
 
 	/** Gets the underlying object represented by this graph node. */
 	UObject* GetObject() const { return Object.Get(); }
+	/** Gets whether we have a valid underlying object, and that it's a type of ObjectClass. */
+	template<typename ObjectClass> bool IsObjectA() const;
+	/** Gets the underlying object as a point to the given sub-class. */
+	template<typename ObjectClass> ObjectClass* CastObject() const;
+
 	/** Gets all connectable properties on the underlying object. */
 	void GetAllConnectableProperties(TArray<FProperty*>& OutProperties) const;
 
@@ -111,4 +116,24 @@ private:
 	UPROPERTY()
 	bool bOverrideSelfPinDirection;
 };
+
+template<typename ObjectClass>
+bool UObjectTreeGraphNode::IsObjectA() const
+{
+	if (Object)
+	{
+		return Object->IsA<ObjectClass>();
+	}
+	return false;
+}
+
+template<typename ObjectClass> 
+ObjectClass* UObjectTreeGraphNode::CastObject() const
+{
+	if (Object)
+	{
+		return Cast<ObjectClass>(Object);
+	}
+	return nullptr;
+}
 

@@ -40,6 +40,8 @@ public:
 	/** The subclass of graph nodes to create. */
 	OTGCC_FIELD(TSubclassOf<UObjectTreeGraphNode>, GraphNodeClass)
 
+	/** The name of the self pin. */
+	OTGCC_FIELD(FName, SelfPinName)
 	/** The display name of the self pin. */
 	OTGCC_FIELD(FText, SelfPinFriendlyName)
 	/** The direction of the self pin. */
@@ -171,6 +173,14 @@ public:
 	 * and nor it or any of its parent classes is in NonConnectableObjectClasses.
 	 */
 	bool IsConnectable(UClass* InObjectClass) const;
+
+	/**
+	 * Returns whether the given object reference property is connectable.
+	 *
+	 * It is connectable if the property's reference type is for a connectable class, and if the
+	 * property doesn't have the ObjectTreeGraphHidden metadata.
+	 */
+	bool IsConnectable(FObjectProperty* InObjectProperty) const;
 
 	/**
 	 * Gets all possible known connectable classes.

@@ -11,7 +11,8 @@
 #define LOCTEXT_NAMESPACE "ObjectTreeGraphConfig"
 
 FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
-	: _SelfPinFriendlyName(LOCTEXT("SelfPinFriendlyName", "self"))
+	: _SelfPinName(NAME_Self)
+	, _SelfPinFriendlyName(FText::GetEmpty())
 	, _SelfPinDirection(EGPD_Input)
 	, _HasSelfPin(true)
 	, _DefaultPropertyPinDirection(EGPD_Output)
@@ -38,6 +39,11 @@ FObjectTreeGraphConfig::FObjectTreeGraphConfig()
 
 bool FObjectTreeGraphConfig::IsConnectable(UClass* InObjectClass) const
 {
+	if (!ensure(InObjectClass))
+	{
+		return false;
+	}
+
 	const bool bIsConnectable = Algo::AnyOf(ConnectableObjectClasses, [InObjectClass](UClass* Item)
 			{
 				return InObjectClass->IsChildOf(Item);
@@ -57,6 +63,22 @@ bool FObjectTreeGraphConfig::IsConnectable(UClass* InObjectClass) const
 	}
 
 	return true;
+}
+
+bool FObjectTreeGraphConfig::IsConnectable(FObjectProperty* InObjectProperty) const
+{
+	if (!ensure(InObjectProperty))
+	{
+		return false;
+	}
+
+	if (!IsConnectable(InObjectProperty->PropertyClass))
+	{
+		return false;
+	}
+
+	const bool bIsHidden = InObjectProperty->GetBoolMetaData(TEXT("ObjectTreeGraphHidden"));
+	return !bIsHidden;
 }
 
 void FObjectTreeGraphConfig::GetConnectableClasses(TArray<UClass*>& OutClasses, bool bPlaceableOnly)

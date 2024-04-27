@@ -162,8 +162,17 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNode(UObjectTreeGraph*
 
 UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNodeImpl(UObjectTreeGraph* InGraph, UObject* InObject) const
 {
+	const FObjectTreeGraphConfig& Config = InGraph->GetConfig();
+	const FObjectTreeGraphClassConfig& ClassConfig = Config.GetObjectClassConfig(InObject->GetClass());
+
+	TSubclassOf<UObjectTreeGraphNode> GraphNodeClass = ClassConfig.GraphNodeClass();
+	if (!GraphNodeClass.Get())
+	{
+		GraphNodeClass = Config.DefaultGraphNodeClass;
+	}
+
 	FGraphNodeCreator<UObjectTreeGraphNode> GraphNodeCreator(*InGraph);
-	UObjectTreeGraphNode* NewNode = GraphNodeCreator.CreateNode(false);
+	UObjectTreeGraphNode* NewNode = GraphNodeCreator.CreateNode(false, GraphNodeClass);
 	NewNode->Initialize(InObject);
 	GraphNodeCreator.Finalize();
 	return NewNode;
@@ -177,6 +186,7 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 	// Find the common class restriction for all the dragged pins. We will only show actions that
 	// are compatible with them.
 	UClass* DraggedPinClass = nullptr;
+	bool bShouldShowNewObjectActions = true;
 	if (const UEdGraphPin* DraggedPin = ContextMenuBuilder.FromPin)
 	{
 		UObjectTreeGraphNode* OwningNode = Cast<UObjectTreeGraphNode>(DraggedPin->GetOwningNode());
@@ -190,7 +200,22 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 			{
 				DraggedPinClass = OwningNode->GetConnectedObjectClassForPin(DraggedPin);
 			}
+			else
+			{
+				// Dragged an unknown pin...
+				bShouldShowNewObjectActions = false;
+			}
 		}
+		else
+		{
+			// Dragged a pin from an unknown node...
+				bShouldShowNewObjectActions = false;
+		}
+	}
+	if (!bShouldShowNewObjectActions)
+	{
+		// Don't show anything.
+		return;
 	}
 
 	// Find all the object classes we can create from those pins, for the given graph.
@@ -244,6 +269,7 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 			}
 		}
 
+		checkSlow(PossibleObjectClass);
 		TSharedRef<FObjectGraphSchemaAction_NewNode> Action = MakeShared<FObjectGraphSchemaAction_NewNode>(
 				CategoryName ? FText::FromString(*CategoryName) : FText::GetEmpty(),
 				PossibleObjectClass->GetDisplayNameText(), 
@@ -365,6 +391,12 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 		return false;
 	}
 
+	const bool bHandled = OnCreateConnection(A, B);
+	if (bHandled)
+	{
+		return true;
+	}
+
 	const FScopedTransaction Transaction(LOCTEXT("CreateConnection", "Create Connection"));
 
 	UObjectTreeGraphNode* NodeA = Cast<UObjectTreeGraphNode>(A->GetOwningNode());
@@ -415,15 +447,26 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 	return true;
 }
 
-void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotifcation) const
+bool UObjectTreeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
-	const FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
+	return false;
+}
 
+void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
+{
 	if (TargetPin.LinkedTo.IsEmpty())
 	{
-		Super::BreakPinLinks(TargetPin, bSendsNodeNotifcation);
+		Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
 		return;
 	}
+
+	const bool bHandled = OnBreakPinLinks(TargetPin, bSendsNodeNotification);
+	if (bHandled)
+	{
+		return;
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
 
 	// TargetPin could be a self pin or a property pin, we need to handle both cases and directions.
 	UEdGraphPin* PropertyPin = &TargetPin;
@@ -457,7 +500,7 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 		bRemovePropertyPin = true;
 	}
 
-	Super::BreakPinLinks(TargetPin, bSendsNodeNotifcation);
+	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
 
 	if (bRemovePropertyPin)
 	{
@@ -466,8 +509,19 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 	}
 }
 
+bool UObjectTreeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
+{
+	return false;
+}
+
 void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
+	const bool bHandled = OnBreakSinglePinLink(SourcePin, TargetPin);
+	if (bHandled)
+	{
+		return;
+	}
+
 	const FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
 
 	// SourcePin could be the self-pin, and TargetPin the property pin, if the directions
@@ -510,6 +564,11 @@ void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraph
 		PropertyOwningNode->RemoveItemPin(PropertyPin);
 		PropertyOwningNode->GetGraph()->NotifyNodeChanged(PropertyOwningNode);
 	}
+}
+
+bool UObjectTreeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+{
+	return false;
 }
 
 bool UObjectTreeGraphSchema::SupportsDropPinOnNode(UEdGraphNode* InTargetNode, const FEdGraphPinType& InSourcePinType, EEdGraphPinDirection InSourcePinDirection, FText& OutErrorMessage) const
@@ -612,6 +671,7 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 		NewGraphNode->NodePosX = Location.X;
 		NewGraphNode->NodePosY = Location.Y;
+		NewGraphNode->OnGraphNodeMoved();
 
 		AutoSetupNewNode(NewGraphNode, FromPin);
 
