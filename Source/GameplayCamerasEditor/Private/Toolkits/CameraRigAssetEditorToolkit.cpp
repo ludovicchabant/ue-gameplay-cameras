@@ -4,7 +4,7 @@
 
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
-#include "Core/CameraRigAllocationInfoBuilder.h"
+#include "Core/CameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "EditorModeManager.h"
 #include "Editors/ObjectTreeGraph.h"
@@ -384,12 +384,7 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 {
 	using namespace UE::Cameras;
 
-	FCameraRigAllocationInfo AllocationInfo;
-	FCameraRigAllocationInfoBuilder CameraRigBuilder;
-	CameraRigBuilder.BuildAllocationInfo(CameraRigAsset, AllocationInfo);
-
-	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Clean;
-	CameraRigAsset->AllocationInfo = AllocationInfo;
+	CameraRigAsset->BuildCameraRig();
 
 	FCameraRigPackages BuiltPackages;
 	CameraRigAsset->GatherPackages(BuiltPackages);

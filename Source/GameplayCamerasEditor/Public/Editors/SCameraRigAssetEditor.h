@@ -63,6 +63,8 @@ public:
 	/** Gets both the node hierarchy and transition graphs. */
 	void GetGraphs(TArray<UEdGraph*>& OutGraphs) const;
 
+	/** Gets the graph for the current mode. */
+	UEdGraph* GetFocusedGraph() const;
 	/** Gets the graph configuration for the current mode. */
 	const FObjectTreeGraphConfig& GetFocusedGraphConfig() const;
 

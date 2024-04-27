@@ -7,6 +7,9 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
 #include "EdGraph/EdGraphPin.h"
+#include "Editors/CameraNodeGraphNode.h"
+#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraRigInterfaceParameterGraphNode.h"
 #include "Editors/CameraTransitionGraphSchema.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
@@ -45,6 +48,7 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 	FObjectTreeGraphConfig GraphConfig;
 	GraphConfig.ConnectableObjectClasses.Add(UCameraRigAsset::StaticClass());
 	GraphConfig.ConnectableObjectClasses.Add(UCameraNode::StaticClass());
+	GraphConfig.ConnectableObjectClasses.Add(UCameraRigInterfaceParameter::StaticClass());
 	GraphConfig.NonConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
 		.OnlyAsRoot()
@@ -52,9 +56,15 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
-		.StripDisplayNameSuffix(TEXT("Camera Node"));
+		.StripDisplayNameSuffix(TEXT("Camera Node"))
+		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigInterfaceParameter::StaticClass())
+		.SelfPinDirection(EGPD_Output)
+		.SelfPinName(NAME_None)  // No self pin name, we just want the title
+		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
+	NodeGraph->Schema = UCameraNodeGraphSchema::StaticClass();
 	NodeGraph->AddToRoot();
 	NodeGraph->Initialize(CameraRigAsset, GraphConfig);
 	NodeGraph->RebuildGraph(EObjectTreeGraphBuildSource::RootObjectPackage);
@@ -150,6 +160,20 @@ void SCameraRigAssetEditor::GetGraphs(TArray<UEdGraph*>& OutGraphs) const
 {
 	OutGraphs.Add(NodeGraph);
 	OutGraphs.Add(TransitionGraph);
+}
+
+UEdGraph* SCameraRigAssetEditor::GetFocusedGraph() const
+{
+	switch (CurrentMode)
+	{
+		case ECameraRigAssetEditorMode::NodeGraph:
+			return NodeGraph;
+		case ECameraRigAssetEditorMode::TransitionGraph:
+			return TransitionGraph;
+		default:
+			ensure(false);
+			return nullptr;
+	}
 }
 
 const FObjectTreeGraphConfig& SCameraRigAssetEditor::GetFocusedGraphConfig() const

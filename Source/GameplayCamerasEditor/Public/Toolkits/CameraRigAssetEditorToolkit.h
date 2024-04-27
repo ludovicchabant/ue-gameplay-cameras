@@ -23,7 +23,6 @@ namespace UE::Cameras
 
 class IGameplayCamerasLiveEditManager;
 class SCameraRigAssetEditor;
-class SCameraTransitionEditor;
 
 /**
  * Editor toolkit for a camera rig asset.

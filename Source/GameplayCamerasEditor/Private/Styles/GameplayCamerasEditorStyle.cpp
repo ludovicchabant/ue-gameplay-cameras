@@ -62,6 +62,15 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("DebugCategory.PoseStats.Icon", new IMAGE_BRUSH("Icons/DebugCategory-PoseStats", Icon16x16));
 	Set("DebugCategory.Viewfinder.Icon", new IMAGE_BRUSH("Icons/DebugCategory-Viewfinder", Icon16x16));
 
+	// Graph editor brushes.
+	Set("Graph.CameraRigParameterNode.Body", new BOX_BRUSH("Graph/CameraRigParameterNode_Body", FMargin(16.f/64.f, 12.f/28.f)));
+	Set("Graph.CameraRigParameterNode.ColorSpill", new IMAGE_BRUSH("Graph/CameraRigParameterNode_ColorSpill", FVector2D(132,28)));
+	Set("Graph.CameraRigParameterNode.Gloss", new BOX_BRUSH("Graph/CameraRigParameterNode_Gloss", FMargin(16.f/64.f, 16.f/28.f, 16.f/64.f, 4.f/28.f)));
+	Set("Graph.CameraRigParameterNode.Shadow", new BOX_BRUSH("Graph/CameraRigParameterNode_Shadow", FMargin(26.0f/64.0f)));
+	Set("Graph.CameraRigParameterNode.ShadowSelected", new BOX_BRUSH("Graph/CameraRigParameterNode_ShadowSelected", FMargin(26.0f/64.0f)));
+	Set("Graph.CameraRigParameterNode.DiffHighlight", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlight", FMargin(18.0f/64.0f)));
+	Set("Graph.CameraRigParameterNode.DiffHighlightShading", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlightShading", FMargin(18.0f/64.0f)));
+
 	FSlateStyleRegistry::RegisterSlateStyle(*this);
 }
 
