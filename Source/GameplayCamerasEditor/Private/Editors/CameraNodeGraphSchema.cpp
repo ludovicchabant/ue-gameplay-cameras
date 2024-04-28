@@ -103,7 +103,7 @@ bool UCameraNodeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) 
 		CameraParameterPin = B;
 	}
 
-	if (!RigInterfacePin && !CameraParameterPin)
+	if (!RigInterfacePin || !CameraParameterPin)
 	{
 		return false;
 	}

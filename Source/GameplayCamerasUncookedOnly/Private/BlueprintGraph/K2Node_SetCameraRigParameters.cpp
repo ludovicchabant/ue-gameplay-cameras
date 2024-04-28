@@ -220,7 +220,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 	}
 
 	// Connect the last node if necessary.
-	if (OriginalThenPin && OriginalThenPin->LinkedTo.Num() > 0)
+	if (OriginalThenPin && PreviousThenPin && OriginalThenPin->LinkedTo.Num() > 0)
 	{
 		CompilerContext.MovePinLinksToIntermediate(*OriginalThenPin, *PreviousThenPin);
 	}
