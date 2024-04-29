@@ -37,9 +37,16 @@ void FFieldOfViewCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 {
 	const float FieldOfView = FieldOfViewReader.Get(OutResult.VariableTable);
 	OutResult.CameraPose.SetFieldOfView(FieldOfView);
+	OutResult.CameraPose.SetFocalLength(-1);
 }
 
 }  // namespace UE::Cameras
+
+UFieldOfViewCameraNode::UFieldOfViewCameraNode(const FObjectInitializer& ObjectInit)
+	: Super(ObjectInit)
+{
+	FieldOfView.Value = 90.f;
+}
 
 FCameraNodeEvaluatorPtr UFieldOfViewCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {

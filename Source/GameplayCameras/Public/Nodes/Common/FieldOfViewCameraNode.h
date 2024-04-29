@@ -16,15 +16,19 @@ class UFieldOfViewCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
-protected:
-
-	// UCameraNode interface.
-	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
-
 public:
 
 	/** The field of view, in degrees. */
 	UPROPERTY(EditAnywhere, Category=Common)
 	FFloatCameraParameter FieldOfView;
+
+public:
+
+	UFieldOfViewCameraNode(const FObjectInitializer& ObjectInit);
+
+protected:
+
+	// UCameraNode interface.
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 };
 

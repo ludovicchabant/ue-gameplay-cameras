@@ -64,6 +64,7 @@ void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	if (FocalLength > 0)
 	{
 		OutPose.SetFocalLength(FocalLength);
+		OutPose.SetFieldOfView(-1);
 	}
 	float Aperture = ApertureReader.Get(OutResult.VariableTable);
 	if (Aperture > 0)
