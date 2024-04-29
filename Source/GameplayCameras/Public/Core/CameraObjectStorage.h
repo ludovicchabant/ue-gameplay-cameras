@@ -259,6 +259,7 @@ void TCameraObjectStorage<BaseObjectType>::AllocatePage(uint32 InCapacity, uint3
 {
 	FAllocation& NewAllocation = Allocations.Emplace_GetRef();
 	NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(InCapacity, InAlignment));
+	NewAllocation.Alignment = InAlignment;
 	NewAllocation.Capacity = InCapacity;
 	NewAllocation.Used = 0;
 }
