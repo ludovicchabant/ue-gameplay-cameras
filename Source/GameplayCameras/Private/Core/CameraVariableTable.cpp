@@ -130,7 +130,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 
 	if (NewUsed > Capacity)
 	{
-		ReallocateBuffer(Capacity * 2);
+		ReallocateBuffer(NewUsed);
 
 		VariablePtr = Align(Memory + Used, AlignOf);
 	}
@@ -149,12 +149,26 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	Entries.Add(VariableDefinition.VariableID, NewEntry);
 }
 
-void FCameraVariableTable::ReallocateBuffer(uint32 NewCapacity)
+void FCameraVariableTable::ReallocateBuffer(uint32 MinRequired)
 {
+	static const uint32 DefaultCapacity = 64;
 	static const uint32 DefaultAlignment = 32;
 
+	uint32 NewCapacity = Capacity <= 0 ? DefaultCapacity : Capacity * 2;
+	if (MinRequired > 0)
+	{
+		NewCapacity = FMath::Max(NewCapacity, MinRequired);
+	}
+
+	uint8* OldMemory = Memory;
 	uint8* NewMemory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, DefaultAlignment));
-	FMemory::Memmove(NewMemory, Memory, Capacity);
+
+	if (OldMemory)
+	{
+		FMemory::Memmove(NewMemory, OldMemory, Capacity);
+		FMemory::Free(OldMemory);
+	}
+
 	Memory = NewMemory;
 	Capacity = NewCapacity;
 }

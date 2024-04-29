@@ -135,7 +135,7 @@ private:
 		return ensure(TCameraVariableTraits<ValueType>::Type == InType);
 	}
 
-	void ReallocateBuffer(uint32 NewCapacity);
+	void ReallocateBuffer(uint32 MinRequired = 0);
 
 	void InternalOverride(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
 	void InternalLerp(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
