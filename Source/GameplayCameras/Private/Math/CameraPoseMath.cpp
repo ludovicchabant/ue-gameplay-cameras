@@ -20,36 +20,36 @@ FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose&
 
 FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, const APlayerController* PlayerController)
 {
-	const float AspectRatio = GetEffectiveAspectRatio(CameraPose, PlayerController);
+	const double AspectRatio = GetEffectiveAspectRatio(CameraPose, PlayerController);
 	return GetEffectiveFieldsOfView(CameraPose, AspectRatio);
 }
 
-FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, float AspectRatio)
+FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, double AspectRatio)
 {
 	if (CameraPose.GetConstrainAspectRatio() || 
-			!ensureMsgf(AspectRatio > 0.f, TEXT("Invalid aspect ratio! Using sensor aspect ratio instead.")))
+			!ensureMsgf(AspectRatio > 0.0, TEXT("Invalid aspect ratio! Using sensor aspect ratio instead.")))
 	{
 		// Aspect ratio is constrained, there will be black bars to enforce it to be equal to
 		// our sensor aspect ratio.
 		return GetEffectiveFieldsOfView(CameraPose, CameraPose.GetSensorAspectRatio());
 	}
 
-	const float HorizontalFOV = CameraPose.GetEffectiveFieldOfView();
+	const double HorizontalFOV = CameraPose.GetEffectiveFieldOfView();
 
 	// Check the sort of aspect ratio axis constraint we have.
 	const EAspectRatioAxisConstraint Constraint(CameraPose.GetAspectRatioAxisConstraint());
 	if (Constraint == AspectRatio_MaintainYFOV ||
-			(Constraint == AspectRatio_MajorAxisFOV && AspectRatio < 1.f))
+			(Constraint == AspectRatio_MajorAxisFOV && AspectRatio < 1.0))
 	{
 		FCameraFieldsOfView FOVs;
 
 		// We need to maintain vertical FOV... the horizontal FOV we have is for our "ideal" aspect ratio,
 		// i.e. our sensor's aspect ratio. Now we need to compute the vertical FOV in this ideal situation
 		// and re-compute the effective horizontal FOV using the effective aspect ratio.
-		const float VerticalFOVRad = 2.f * FMath::Atan(
-				FMath::Tan(FMath::DegreesToRadians(HorizontalFOV / 2.f)) / AspectRatio);
-		const float HorizontalFOVRad = 2.f * FMath::Atan(
-				FMath::Tan(VerticalFOVRad / 2.f) * AspectRatio);
+		const double VerticalFOVRad = 2.0 * FMath::Atan(
+				FMath::Tan(FMath::DegreesToRadians(HorizontalFOV / 2.0)) / AspectRatio);
+		const double HorizontalFOVRad = 2.0 * FMath::Atan(
+				FMath::Tan(VerticalFOVRad / 2.0) * AspectRatio);
 
 		FOVs.HorizontalFieldOfView = FMath::RadiansToDegrees(HorizontalFOVRad);
 		FOVs.VerticalFieldOfView = FMath::RadiansToDegrees(VerticalFOVRad);
@@ -62,14 +62,14 @@ FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose&
 		FCameraFieldsOfView FOVs;
 
 		FOVs.HorizontalFieldOfView = HorizontalFOV;
-		FOVs.VerticalFieldOfView = FMath::RadiansToDegrees(2.f * FMath::Atan(
-					FMath::Tan(FMath::DegreesToRadians(FOVs.HorizontalFieldOfView / 2.f)) / AspectRatio));
+		FOVs.VerticalFieldOfView = FMath::RadiansToDegrees(2.0 * FMath::Atan(
+					FMath::Tan(FMath::DegreesToRadians(FOVs.HorizontalFieldOfView / 2.0)) / AspectRatio));
 
 		return FOVs;
 	}
 }
 
-float FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, const APlayerController* PlayerController)
+double FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, const APlayerController* PlayerController)
 {
 	if (CameraPose.GetConstrainAspectRatio() || PlayerController == nullptr)
 	{
@@ -82,7 +82,7 @@ float FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, co
 		if (ensureMsgf(ViewportSizeX > 0 && ViewportSizeY > 0,
 				TEXT("Can't get viewport aspect ratio! Using sensor aspect ratio instead.")))
 		{
-			return (float)ViewportSizeX / (float)ViewportSizeY;
+			return (double)ViewportSizeX / (double)ViewportSizeY;
 		}
 		else
 		{
@@ -91,14 +91,14 @@ float FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, co
 	}
 }
 
-FMatrix FCameraPoseMath::BuildProjectionMatrix(const FCameraPose& CameraPose, float AspectRatio)
+FMatrix FCameraPoseMath::BuildProjectionMatrix(const FCameraPose& CameraPose, double AspectRatio)
 {
 	const double NearClippingPlane = CameraPose.GetNearClippingPlane() > 0.0f ? 
 		CameraPose.GetNearClippingPlane() : GNearClippingPlane;
 	const double FieldOfView = FMath::Max(CameraPose.GetEffectiveFieldOfView(), 0.001f);
 
 	FMatrix ProjectionMatrix = FReversedZPerspectiveMatrix(
-			FMath::DegreesToRadians(FieldOfView / 2.f),
+			FMath::DegreesToRadians(FieldOfView / 2.0),
 			AspectRatio,
 			1.0f,
 			NearClippingPlane);
@@ -106,7 +106,7 @@ FMatrix FCameraPoseMath::BuildProjectionMatrix(const FCameraPose& CameraPose, fl
 	return ProjectionMatrix;
 }
 
-FMatrix FCameraPoseMath::BuildViewProjectionMatrix(const FCameraPose& CameraPose, float AspectRatio)
+FMatrix FCameraPoseMath::BuildViewProjectionMatrix(const FCameraPose& CameraPose, double AspectRatio)
 {
 	const FTranslationMatrix InverseOrigin(-CameraPose.GetLocation());
 
@@ -123,7 +123,7 @@ FMatrix FCameraPoseMath::BuildViewProjectionMatrix(const FCameraPose& CameraPose
 }
 
 TOptional<FVector2d> FCameraPoseMath::ProjectWorldToScreen(
-		const FCameraPose& CameraPose, float AspectRatio, 
+		const FCameraPose& CameraPose, double AspectRatio, 
 		const FVector3d& WorldLocation, bool bForceLocationInsideFrustum)
 {
 	const FMatrix ViewProjectionMatrix = BuildViewProjectionMatrix(CameraPose, AspectRatio);
@@ -131,7 +131,7 @@ TOptional<FVector2d> FCameraPoseMath::ProjectWorldToScreen(
 }
 
 TOptional<FVector2d> FCameraPoseMath::ProjectCameraToScreen(
-			const FCameraPose& CameraPose, float AspectRatio, 
+			const FCameraPose& CameraPose, double AspectRatio, 
 			const FVector3d& CameraSpaceLocation, bool bForceLocationInsideFrustum)
 {
 	const FMatrix ProjectionMatrix = BuildProjectionMatrix(CameraPose, AspectRatio);
@@ -171,28 +171,28 @@ TOptional<FVector2d> FCameraPoseMath::ProjectToScreen(
 	return FVector2d(ScreenSpaceX, ScreenSpaceY);
 }
 
-FRay3d FCameraPoseMath::UnprojectScreenToCamera(const FCameraPose& CameraPose, float AspectRatio, const FVector2D& ScreenSpacePoint)
+FRay3d FCameraPoseMath::UnprojectScreenToCamera(const FCameraPose& CameraPose, double AspectRatio, const FVector2D& ScreenSpacePoint)
 {
 	const FMatrix ProjectionMatrix = BuildProjectionMatrix(CameraPose, AspectRatio);
 	const FMatrix InvProjectionMatrix = ProjectionMatrix.InverseFast();
 	return UnprojectFromScreen(InvProjectionMatrix, ScreenSpacePoint);
 }
 
-FVector3d FCameraPoseMath::UnprojectScreenToCamera(const FCameraPose& CameraPose, float AspectRatio, const FVector2D& ScreenSpacePoint, double PredictedDistance)
+FVector3d FCameraPoseMath::UnprojectScreenToCamera(const FCameraPose& CameraPose, double AspectRatio, const FVector2D& ScreenSpacePoint, double PredictedDistance)
 {
 	const FRay3d UnprojectedRay = UnprojectScreenToCamera(CameraPose, AspectRatio, ScreenSpacePoint);
 	const FVector3d WorldPoint = UnprojectedRay.PointAt(PredictedDistance);
 	return WorldPoint;
 }
 
-FRay3d FCameraPoseMath::UnprojectScreenToWorld(const FCameraPose& CameraPose, float AspectRatio, const FVector2D& ScreenSpacePoint)
+FRay3d FCameraPoseMath::UnprojectScreenToWorld(const FCameraPose& CameraPose, double AspectRatio, const FVector2D& ScreenSpacePoint)
 {
 	const FMatrix ViewProjectionMatrix = BuildViewProjectionMatrix(CameraPose, AspectRatio);
 	const FMatrix InvViewProjectionMatrix = ViewProjectionMatrix.InverseFast();
 	return UnprojectFromScreen(InvViewProjectionMatrix, ScreenSpacePoint);
 }
 
-FVector3d FCameraPoseMath::UnprojectScreenToWorld(const FCameraPose& CameraPose, float AspectRatio, const FVector2D& ScreenSpacePoint, double PredictedDistance)
+FVector3d FCameraPoseMath::UnprojectScreenToWorld(const FCameraPose& CameraPose, double AspectRatio, const FVector2D& ScreenSpacePoint, double PredictedDistance)
 {
 	const FRay3d UnprojectedRay = UnprojectScreenToWorld(CameraPose, AspectRatio, ScreenSpacePoint);
 	const FVector3d WorldPoint = UnprojectedRay.PointAt(PredictedDistance);

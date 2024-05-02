@@ -146,10 +146,10 @@ public:
 	 * The effective field of view can be driven by the FieldOfView property, or
 	 * the FocalLength property in combination with the sensor size.
 	 */
-	float GetEffectiveFieldOfView() const;
+	double GetEffectiveFieldOfView() const;
 
 	/** Gets the aspect ratio of the camera sensor. */
-	float GetSensorAspectRatio() const;
+	double GetSensorAspectRatio() const;
 
 	/** Gets the aiming ray of the camera. */
 	FRay3d GetAimRay() const;

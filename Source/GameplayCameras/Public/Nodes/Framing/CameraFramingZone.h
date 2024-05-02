@@ -21,16 +21,16 @@ struct FCameraFramingZone
 public:
 
 	UPROPERTY(EditAnywhere, Category="Framing")
-	FFloatCameraParameter LeftMargin;
+	FDoubleCameraParameter LeftMargin;
 
 	UPROPERTY(EditAnywhere, Category="Framing")
-	FFloatCameraParameter TopMargin;
+	FDoubleCameraParameter TopMargin;
 
 	UPROPERTY(EditAnywhere, Category="Framing")
-	FFloatCameraParameter RightMargin;
+	FDoubleCameraParameter RightMargin;
 
 	UPROPERTY(EditAnywhere, Category="Framing")
-	FFloatCameraParameter BottomMargin;
+	FDoubleCameraParameter BottomMargin;
 
 public:
 
@@ -42,7 +42,7 @@ public:
 		BottomMargin.Value = 0;
 	}
 
-	FCameraFramingZone(float UniformMargin)
+	FCameraFramingZone(double UniformMargin)
 	{
 		LeftMargin.Value = UniformMargin;
 		TopMargin.Value = UniformMargin;
@@ -50,7 +50,7 @@ public:
 		BottomMargin.Value = UniformMargin;
 	}
 
-	FCameraFramingZone(float HorizontalMargin, float VerticalMargin)
+	FCameraFramingZone(double HorizontalMargin, double VerticalMargin)
 	{
 		LeftMargin.Value = HorizontalMargin;
 		TopMargin.Value = VerticalMargin;
@@ -58,7 +58,7 @@ public:
 		BottomMargin.Value = VerticalMargin;
 	}
 
-	FCameraFramingZone(float InLeftMargin, float InTopMargin, float InRightMargin, float InBottomMargin)
+	FCameraFramingZone(double InLeftMargin, double InTopMargin, double InRightMargin, double InBottomMargin)
 	{
 		LeftMargin.Value = InLeftMargin;
 		TopMargin.Value = InTopMargin;

@@ -18,10 +18,10 @@ struct FCameraFieldsOfView;
  */
 struct FFramingZoneMargins
 {
-	float LeftMargin = 0;
-	float TopMargin = 0;
-	float RightMargin = 0;
-	float BottomMargin = 0;
+	double LeftMargin = 0;
+	double TopMargin = 0;
+	double RightMargin = 0;
+	double BottomMargin = 0;
 };
 
 /**
@@ -31,10 +31,10 @@ struct FFramingZoneMargins
  */
 struct FFramingZone
 {
-	float LeftBound = 0;
-	float TopBound = 0;
-	float RightBound = 0;
-	float BottomBound = 0;
+	double LeftBound = 0;
+	double TopBound = 0;
+	double RightBound = 0;
+	double BottomBound = 0;
 
 	/** Builds an empty framing zone. */
 	FFramingZone();
@@ -60,8 +60,14 @@ struct FFramingZone
 	/** Checks whether the given point (in 0..1 UI space) is inside this zone. */
 	bool Contains(const FVector2d& Point) const;
 
+	/** 
+	 * Computes intersections between a line and the zone's box, and returns the one closest
+	 * to the line's origin point.
+	 */
+	FVector2d ComputeClosestIntersection(const FVector2d& Origin, const FVector2d& LineDir, bool bLineDirIsNormalized = false) const;
+
 	/** Gets the inner margins of this zone compared to the screen's center. */
-	FVector4f GetNormalizedBounds() const;
+	FVector4d GetNormalizedBounds() const;
 
 	/** Gets the coordinates of the top-left corner of the zone, in 0..Width/Height canvas units. */
 	FVector2d GetCanvasPosition(const FVector2d& CanvasSize) const;
@@ -72,7 +78,7 @@ struct FFramingZone
 
 private:
 
-	static float GetNormalizedBound(float Bound);
+	static double GetNormalizedBound(double Bound);
 };
 
 FArchive& operator <<(FArchive& Ar, FFramingZone& FramingZone);

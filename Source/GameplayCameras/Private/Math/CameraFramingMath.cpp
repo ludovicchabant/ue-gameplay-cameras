@@ -33,7 +33,7 @@ FFramingZoneAngles FCameraFramingMath::GetFramingZoneAngles(const FFramingZone& 
 	const float TanHalfHorizontalFOV = FMath::Tan(FMath::DegreesToRadians(FieldsOfView.HorizontalFieldOfView / 2.f));
 	const float TanHalfVerticalFOV = FMath::Tan(FMath::DegreesToRadians(FieldsOfView.VerticalFieldOfView / 2.f));
 
-	const FVector4f BoundFactorsFromCenter = FramingZone.GetNormalizedBounds();
+	const FVector4d BoundFactorsFromCenter = FramingZone.GetNormalizedBounds();
 
 	const double LeftHalfAngleRad = GetBoundAngle(BoundFactorsFromCenter.X, TanHalfHorizontalFOV);
 	const double TopHalfAngleRad = GetBoundAngle(BoundFactorsFromCenter.Y, TanHalfVerticalFOV);

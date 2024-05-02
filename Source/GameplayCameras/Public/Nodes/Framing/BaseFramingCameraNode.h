@@ -25,15 +25,23 @@ public:
 
 	/** The ideal horizontal screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
-	FFloatCameraParameter HorizontalFraming;
+	FDoubleCameraParameter HorizontalFraming;
 
 	/** The ideal vertical screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
-	FFloatCameraParameter VerticalFraming;
+	FDoubleCameraParameter VerticalFraming;
 
 	/** The damping factor for how fast the framing recenters on the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
 	FFloatCameraParameter ReframeDampingFactor;
+
+	/** 
+	 * If valid, the recentering damping factor will interpolate between LowReframeDampingFactor 
+	 * and ReframeDampingFactor as the target moves between the ideal target position and the
+	 * boundaries of the hard-zone. If invalid, no interpolation occurs and the damping factor
+	 * is always equal to ReframeDampingFactor. */
+	UPROPERTY(EditAnywhere, Category="Framing Target")
+	FFloatCameraParameter LowReframeDampingFactor;
 
 	/**
 	 * The distance from the ideal framing position at which we can disengage reframing.
@@ -77,10 +85,10 @@ struct FCameraFramingZoneParameterReader
 {
 public:
 
-	TCameraParameterReader<float> LeftMargin;
-	TCameraParameterReader<float> TopMargin;
-	TCameraParameterReader<float> RightMargin;
-	TCameraParameterReader<float> BottomMargin;
+	TCameraParameterReader<double> LeftMargin;
+	TCameraParameterReader<double> TopMargin;
+	TCameraParameterReader<double> RightMargin;
+	TCameraParameterReader<double> BottomMargin;
 
 public:
 
@@ -159,9 +167,10 @@ protected:
 	/** Utility structure for all the parameter readers we need every frame. */
 	struct FReaders
 	{
-		TCameraParameterReader<float> HorizontalFraming;
-		TCameraParameterReader<float> VerticalFraming;
+		TCameraParameterReader<double> HorizontalFraming;
+		TCameraParameterReader<double> VerticalFraming;
 		TCameraParameterReader<float> ReframeDampingFactor;
+		TCameraParameterReader<float> LowReframeDampingFactor;
 		TCameraParameterReader<float> ReframeUnlockRadius;
 
 		FCameraFramingZoneParameterReader DeadZoneMargin;
@@ -179,6 +188,8 @@ protected:
 		FVector2d IdealTarget;
 		/** Current reframing damping factor. */
 		float ReframeDampingFactor;
+		/** Current low reframing damping factor. */
+		float LowReframeDampingFactor;
 		/** Current reframe unlock radius. */
 		float ReframeUnlockRadius;
 		/** Current coordinates of the dead zone. */

@@ -113,7 +113,7 @@ void FCameraPose::SetTransform(FTransform3d Transform)
 	SetRotation(Transform.GetRotation().Rotator());
 }
 
-float FCameraPose::GetEffectiveFieldOfView() const
+double FCameraPose::GetEffectiveFieldOfView() const
 {
 	checkf((FocalLength > 0.f || FieldOfView > 0.f), TEXT("FocalLength or FieldOfView must have a valid, positive value."));
 
@@ -130,18 +130,18 @@ float FCameraPose::GetEffectiveFieldOfView() const
 	if (FocalLength > 0.f)
 	{
 		// Compute FOV with similar code to UCineCameraComponent...
-		float CropedSensorWidth = SensorWidth * SqueezeFactor;
-		const float AspectRatio = GetSensorAspectRatio();
-		if (AspectRatio > 0.0f)
+		double CropedSensorWidth = SensorWidth * SqueezeFactor;
+		const double AspectRatio = GetSensorAspectRatio();
+		if (AspectRatio > 0.0)
 		{
-			float DesqueezeAspectRatio = SensorWidth * SqueezeFactor / SensorHeight;
+			double DesqueezeAspectRatio = SensorWidth * SqueezeFactor / SensorHeight;
 			if (AspectRatio < DesqueezeAspectRatio)
 			{
 				CropedSensorWidth *= AspectRatio / DesqueezeAspectRatio;
 			}
 		}
 
-		return FMath::RadiansToDegrees(2.f * FMath::Atan(CropedSensorWidth / (2.f * FocalLength)));
+		return FMath::RadiansToDegrees(2.0 * FMath::Atan(CropedSensorWidth / (2.0 * FocalLength)));
 	}
 	else
 	{
@@ -150,9 +150,9 @@ float FCameraPose::GetEffectiveFieldOfView() const
 	}
 }
 
-float FCameraPose::GetSensorAspectRatio() const
+double FCameraPose::GetSensorAspectRatio() const
 {
-	return (SensorHeight > 0.f) ? (SensorWidth / SensorHeight) : 0.f;
+	return (SensorHeight > 0.f) ? (SensorWidth / SensorHeight) : 0.0;
 }
 
 FRay3d FCameraPose::GetAimRay() const

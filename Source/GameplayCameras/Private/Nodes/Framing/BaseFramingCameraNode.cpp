@@ -10,6 +10,7 @@
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "GameplayCameras.h"
+#include "HAL/IConsoleManager.h"
 #include "Math/CameraPoseMath.h"
 #include "Math/ColorList.h"
 
@@ -17,6 +18,12 @@
 
 namespace UE::Cameras
 {
+
+float GFramingUnlockRadiusEpsilon = 1.e-4;
+static FAutoConsoleVariableRef CVarFramingUnlockRadiusEpsilon(
+	TEXT("GameplayCameras.Framing.UnlockRadiusEpsilon"),
+	GFramingUnlockRadiusEpsilon,
+	TEXT("(Default: 0.0001. The epsilon to determine whether we have reached the framing unlock circle."));
 
 UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FBaseFramingCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FBaseFramingCameraNodeEvaluator::FState, State);
@@ -52,6 +59,7 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 	Readers.HorizontalFraming.Initialize(BaseFramingNode->HorizontalFraming);
 	Readers.VerticalFraming.Initialize(BaseFramingNode->VerticalFraming);
 	Readers.ReframeDampingFactor.Initialize(BaseFramingNode->ReframeDampingFactor);
+	Readers.LowReframeDampingFactor.Initialize(BaseFramingNode->LowReframeDampingFactor);
 	Readers.ReframeUnlockRadius.Initialize(BaseFramingNode->ReframeUnlockRadius);
 
 	Readers.DeadZoneMargin.Initialize(BaseFramingNode->DeadZone);
@@ -63,11 +71,11 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 	// Get screen-space coordinates of the ideal framing point. These are in 0..1 UI space.
 	State.IdealTarget.X = Readers.HorizontalFraming.Get(OutResult.VariableTable);
 	State.IdealTarget.Y = Readers.VerticalFraming.Get(OutResult.VariableTable);
-	State.ReframeDampingFactor = Readers.ReframeDampingFactor.Get(OutResult.VariableTable);
-	State.ReframeUnlockRadius = Readers.ReframeUnlockRadius.Get(OutResult.VariableTable);
 
-	// Update the damping factor in case it's driven by a variable.
-	State.ReframeDamper.SetW0(Readers.ReframeDampingFactor.Get(OutResult.VariableTable));
+	// Update the damping factors and unlock radius in case they are driven by a variable.
+	State.ReframeDampingFactor = Readers.ReframeDampingFactor.Get(OutResult.VariableTable);
+	State.LowReframeDampingFactor = Readers.LowReframeDampingFactor.Get(OutResult.VariableTable);
+	State.ReframeUnlockRadius = Readers.ReframeUnlockRadius.Get(OutResult.VariableTable);
 
 	// Get the effective margins of the framing zones for this frame.
 	const FFramingZoneMargins DeadZoneMargins = Readers.DeadZoneMargin.GetZoneMargins(OutResult.VariableTable);
@@ -84,10 +92,29 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 
 	// Get the target in screen-space.
 	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(TempPose, PlayerController);
+	const double AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(TempPose, PlayerController);
 	const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectWorldToScreen(TempPose, AspectRatio, TargetLocation, true);
 	State.WorldTarget = TargetLocation;
 	State.ScreenTarget = ScreenTarget.Get(FVector2d(0.5, 0.5));
+
+	// Update the reframe damper's damping factor.
+	if (State.LowReframeDampingFactor <= 0)
+	{
+		State.ReframeDamper.SetW0(State.ReframeDampingFactor);
+	}
+	else
+	{
+		const FVector2d IdealToCurrent(State.ScreenTarget - State.IdealTarget);
+		const double UnlockEdgeToCurrent(IdealToCurrent.Length() - State.ReframeUnlockRadius);
+
+		const FVector2d HardZonePoint = State.SoftZone.ComputeClosestIntersection(State.IdealTarget, IdealToCurrent);
+		const double UnlockEdgeToHardZone = FMath::Max(
+				FVector2d::Distance(State.IdealTarget, HardZonePoint) - State.ReframeUnlockRadius,
+				UE_DOUBLE_SMALL_NUMBER);
+
+		const double Alpha = FMath::Clamp(UnlockEdgeToCurrent / UnlockEdgeToHardZone, 0.0, 1.1);
+		State.ReframeDamper.SetW0(FMath::Lerp(State.LowReframeDampingFactor, State.ReframeDampingFactor, Alpha));
+	}
 
 	// Make sure our framing zones are hierarchically correct: soft zone contains the dead zone, which contains
 	// the ideal target.
@@ -115,7 +142,7 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 		State.TargetFramingState = ETargetFramingState::InDeadZone;
 
 		// Even though the target is free to move inside the dead zone, we might still want to continue reframing
-		// it towars the ideal position... if we didn't do that, reframing from the soft zone would stop entirely 
+		// it towards the ideal position... if we didn't do that, reframing from the soft zone would stop entirely 
 		// once we reach the edge of the dead zone, and we would never really ever see the target near the ideal
 		// position. So if we re-enter the dead zone from the soft zone, we keep reframing until we hit a smaller
 		// "unlock reframing" zone defined by the ReframeUnlockRadius.
@@ -129,7 +156,9 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 			const double DistanceToIdeal = FVector2d::Distance(
 					FVector2d(State.ScreenTarget.X, (State.ScreenTarget.Y - 0.5) / AspectRatio + 0.5),
 					FVector2d(State.IdealTarget.X, (State.IdealTarget.Y - 0.5) / AspectRatio + 0.5));
-			if (DistanceToIdeal <= State.ReframeUnlockRadius)
+			// Add an epsilon to the comparison to avoid being stuck in reframing mode because of
+			// floating point precision issues.
+			if (DistanceToIdeal <= (State.ReframeUnlockRadius + GFramingUnlockRadiusEpsilon))
 			{
 				State.bIsReframingTarget = false;
 			}
@@ -162,7 +191,11 @@ void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 	}
 
 	// Move the target towards the ideal position using some damping.
-	const double NewDistanceToGo = State.ReframeDamper.Update(DistanceToGo, DeltaTime);
+	// Remove the radius of the unlock zone from the distance we pass to the damper, 
+	// otherwise the damper won't ever get to smoothly ease out to zero.
+	double DampingDistanceToGo = DistanceToGo - State.ReframeUnlockRadius;
+	const double NewDampedDistanceToGo = State.ReframeDamper.Update(DampingDistanceToGo, DeltaTime);
+	const double NewDistanceToGo = NewDampedDistanceToGo + State.ReframeUnlockRadius;
 
 	// Compute where we want the target this frame.
 	const FVector2d InvReframeDir(IdealToTarget / DistanceToGo);
@@ -288,7 +321,7 @@ void FBaseFramingCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 		Renderer.AddText(TEXT("[REFRAMING]"));
 	}
 
-	Renderer.AddText(TEXT(" (damping = %0.3f)"), State.ReframeDamper.GetX0());
+	Renderer.AddText(TEXT(" (damping = %0.3f, factor = %0.1f)"), State.ReframeDamper.GetX0(), State.ReframeDamper.GetW0());
 
 	if (Renderer.HasCanvas())
 	{
@@ -369,6 +402,7 @@ UBaseFramingCameraNode::UBaseFramingCameraNode(const FObjectInitializer& ObjectI
 	HorizontalFraming.Value = 0.5f;
 	VerticalFraming.Value = 0.5f;
 	ReframeDampingFactor.Value = 10.f;
+	LowReframeDampingFactor.Value = -1.f;
 	ReframeUnlockRadius.Value = 0.005f;
 }
 
