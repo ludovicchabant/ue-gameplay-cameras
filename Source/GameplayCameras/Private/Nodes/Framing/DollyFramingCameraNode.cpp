@@ -10,14 +10,9 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
-#include "Math/CameraFramingZoneMath.h"
+#include "Math/CameraFramingMath.h"
 #include "Math/CameraPoseMath.h"
 #include "Math/InverseRotationMatrix.h"
-
-#include "Engine/LocalPlayer.h"
-#include "Engine/GameViewportClient.h"
-#include "Kismet/GameplayStatics.h"
-#include "SceneView.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DollyFramingCameraNode)
 
@@ -39,7 +34,8 @@ protected:
 
 private:
 
-	FVector3d ComputeFramingTranslation(const FCameraPose& CameraPose);
+	FTransform3d BuildDollyShotTransform(const FCameraPose& CameraPose) const;
+	FVector3d ComputeFramingTranslation(const FCameraPose& CameraPose, APlayerController* PlayerController);
 
 private:
 
@@ -49,7 +45,7 @@ private:
 	FVector2d DollyPosition;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	FVector3d DebugUnprojectedNextScreenTarget;
+	FVector3d DebugNextDesiredTarget;
 	FVector2d DebugDollyCorrection;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
@@ -60,7 +56,7 @@ UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FDollyFramingCameraDebu
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector2d, DollyPosition);
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector2d, DollyCorrection);
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, WorldTarget);
-	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, UnprojectedNextScreenTarget);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FVector3d, NextWorldTarget);
 UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FDollyFramingCameraDebugBlock)
@@ -84,18 +80,18 @@ void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& 
 	const FVector3d TargetLocation = Pawn->GetActorLocation();
 
 	// Let the base class figure out all the screen-space framing stuff.
-	UpdateFramingState(OutResult, TargetLocation);
+	const FTransform3d LastShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
+	UpdateFramingState(Params, OutResult, TargetLocation, LastShotTransform);
 	ComputeDesiredState(Params.DeltaTime);
 
 	// If we need to reframe the target this tick, figure out how much we need to move the dolly
 	// to accomplish that.
 	if (Desired.bHasCorrection)
 	{
-		const FTransform& LastFraming = GetLastFraming();
-		FCameraPose LastFramingPose(OutResult.CameraPose);
-		LastFramingPose.SetTransform(LastFraming);
+		FCameraPose LastShotPose(OutResult.CameraPose);
+		LastShotPose.SetTransform(LastShotTransform);
 
-		FVector3d DesiredLocalOffset = ComputeFramingTranslation(LastFramingPose);
+		FVector3d DesiredLocalOffset = ComputeFramingTranslation(LastShotPose, PlayerController);
 
 		// We never bring the dolly forward or backward (we only move it vertically or horizontally).
 		DesiredLocalOffset.X = 0.f;
@@ -116,37 +112,70 @@ void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& 
 		DebugDollyCorrection = DollyCorrection;
 #endif  //UE_GAMEPLAY_CAMERAS_DEBUG
 	}
+	else
+	{
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		DebugDollyCorrection = FVector2d::ZeroVector;
+#endif  //UE_GAMEPLAY_CAMERAS_DEBUG
+	}
 
-	// Build the new shot transform and register it with the base class for next tick.
-	FTransform3d Transform = OutResult.CameraPose.GetTransform();
-	Transform = FTransform3d(FVector3d(0, DollyPosition.X, DollyPosition.Y)) * Transform;
-	OutResult.CameraPose.SetTransform(Transform);
-
-	RegisterNewFraming(Transform);
+	const FTransform3d NewShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
+	OutResult.CameraPose.SetTransform(NewShotTransform);
 }
 
-FVector3d FDollyFramingCameraNodeEvaluator::ComputeFramingTranslation(const FCameraPose& CameraPose)
+FTransform3d FDollyFramingCameraNodeEvaluator::BuildDollyShotTransform(const FCameraPose& CameraPose) const
 {
-	// Unproject the desired screen-space position of our target for this tick. This normally gives us
-	// a ray into the camera frustum, since there is an infinity of world-space points that correspond
-	// to a point on the screen... we arbitrarily pick a point along this ray that is at the same 
-	// distance as our target, since generally it's not far from there.
-	const FVector3d CameraToTarget(State.WorldTarget - CameraPose.GetLocation());
-	const double TargetDist(CameraToTarget.Length());
+	FTransform3d Transform = CameraPose.GetTransform();
+	Transform = FTransform3d(FVector3d(0, DollyPosition.X, DollyPosition.Y)) * Transform;
+	return Transform;
+}
 
-	const FVector2D DesiredScreenTarget(Desired.ScreenTarget);
-	FVector3d RoughDesiredWorldTarget = FCameraPoseMath::UnprojectScreenToWorld(CameraPose, DesiredScreenTarget, TargetDist);
+FVector3d FDollyFramingCameraNodeEvaluator::ComputeFramingTranslation(const FCameraPose& CameraPose, APlayerController* PlayerController)
+{
+	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, PlayerController);
+	const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(CameraPose, AspectRatio));
+
+	// Get the position of the current target in camera space.
+	const FTransform3d InverseCameraTransform = CameraPose.GetTransform().Inverse();
+	const FVector3d TargetInCameraSpace = InverseCameraTransform.TransformPosition(State.WorldTarget);
+
+	// Get the horizontal and vertical angles, relative to the aiming vector, for the desired 
+	// target position.
+	const FVector2d DesiredAngles = FCameraFramingMath::GetTargetAngles(Desired.ScreenTarget, FOVs);
+
+	// The position of the desired target in camera space can be deduced from the angle and the current
+	// target position. We know that:
+	//
+	// 1) The current and desired targets will be on a plane parallel to the focal plane (i.e. on a plane
+	//    orthogonal to the aiming vector). This is because our dolly shot only translate laterally and
+	//    vertically -- it doesn't translate forwards/backwards.
+	//
+	// 2) We can do basic trigonometry for each axis (left/right and up/down, a.k.a. Y and Z in camera 
+	//    space). There's a right triangle between the aim vector (up to the targets' distance) and the
+	//    vector from the camera position to the desired target position.
+	//
+	// From (1) we know that the desired target's distance from the focal plane is the same as the
+	// current target's. So the X coordinates (near/far) are the same.
+	//
+	// From (2) we can use the sin() of the horizontal/vertical angles to get the horizontal/vertical
+	// coordinates of the desired target (again, in camera space). We just need to invert the vertical
+	// one because positive Z is up, while positive vertical angle is down (because this was computed
+	// in -1..1 UI screen-space).
+	//
+	const FVector3d DesiredInCameraSpace(
+			TargetInCameraSpace.X,
+			TargetInCameraSpace.X * FMath::Sin(FMath::DegreesToRadians(DesiredAngles.X)),
+			TargetInCameraSpace.X * -FMath::Sin(FMath::DegreesToRadians(DesiredAngles.Y)));
+
+	// Now we can figure out the desired camera-space offset that the dolly needs to move by. Remember
+	// that, for instance, moving the camera to the *right* will result in the target moving to the
+	// *left* on screen, so that's why we move by Desired->Current, and not the other way around.
+	FVector3d DesiredLocalOffset = (TargetInCameraSpace - DesiredInCameraSpace);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	DebugUnprojectedNextScreenTarget = RoughDesiredWorldTarget;
+	DebugNextDesiredTarget = CameraPose.GetTransform().TransformPosition(DesiredInCameraSpace);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
-	// Now we know that we need to translate the dolly by that much in world-space. Convert that to
-	// a camera-space offset, since we want to decompose that into lateral and vertical dolly 
-	// movement.
-	const FVector3d DesiredWorldOffset(State.WorldTarget - RoughDesiredWorldTarget);
-	const FInverseRotationMatrix InverseRotation(CameraPose.GetRotation());
-	const FVector3d DesiredLocalOffset = InverseRotation.TransformVector(DesiredWorldOffset);
 	return DesiredLocalOffset;
 }
 
@@ -160,7 +189,7 @@ void FDollyFramingCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBloc
 	DebugBlock.DollyPosition = DollyPosition;
 	DebugBlock.DollyCorrection = DebugDollyCorrection;
 	DebugBlock.WorldTarget = State.WorldTarget;
-	DebugBlock.UnprojectedNextScreenTarget = DebugUnprojectedNextScreenTarget;
+	DebugBlock.NextWorldTarget = DebugNextDesiredTarget;
 }
 
 void FDollyFramingCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
@@ -170,7 +199,7 @@ void FDollyFramingCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 			DollyPosition.X, DollyPosition.Y,
 			DollyCorrection.X, DollyCorrection.Y);
 
-	Renderer.DrawLine(WorldTarget, UnprojectedNextScreenTarget, FLinearColor(FColorList::NavyBlue), 1.f);
+	Renderer.DrawLine(WorldTarget, NextWorldTarget, FLinearColor(FColorList::LightGrey), 1.f);
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

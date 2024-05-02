@@ -126,14 +126,9 @@ protected:
 protected:
 
 	/** Updates the framing state for the current tick, see State member field. */
-	void UpdateFramingState(const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation);
+	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
 	/** Computes the desired reframing for the current tick, see Desired member field. */
 	void ComputeDesiredState(float DeltaTime);
-
-	/** Gets the last registered shot transform (probably from last tick). */
-	const FTransform& GetLastFraming() const;
-	/** Registers a new shot transform computed by a sub-class. */
-	void RegisterNewFraming(const FTransform& NewPoseTransform);
 
 private:
 
@@ -195,12 +190,8 @@ protected:
 		FVector2d ScreenTarget;
 		/** Current state of the tracked target. */
 		ETargetFramingState TargetFramingState;
-		/** Last tick's shot transform, as per RegisterNewFraming. */
-		FTransform3d LastFramedTransform;
 		/** Whether we are actively trying to bring the target back to the ideal position. */
 		bool bIsReframingTarget = false;
-		/** Whether this is the first tick. */
-		bool bIsFirstFrame = false;
 
 		/** The damper for reframing from the soft zone. */
 		FCriticalDamper ReframeDamper;

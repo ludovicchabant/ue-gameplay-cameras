@@ -2,7 +2,6 @@
 
 #include "Math/CameraFramingZoneMath.h"
 
-#include "Core/CameraPose.h"
 #include "Nodes/Framing/CameraFramingZone.h"
 
 namespace UE::Cameras
@@ -59,13 +58,20 @@ bool FFramingZone::Contains(const FVector2d& Point) const
 		Point.Y >= TopBound && Point.Y <= BottomBound;
 }
 
-FVector4d FFramingZone::GetMarginsFromCenter() const
+FVector4f FFramingZone::GetNormalizedBounds() const
 {
-	return FVector4d(
-		0.5 - LeftBound,
-		0.5 - TopBound,
-		0.5 - (1.0 - RightBound),
-		0.5 - (1.0 - BottomBound));
+	// Returned margins are negative if in the left or upper halves, and
+	// positive if in the right or lower halves.
+	return FVector4f(
+		GetNormalizedBound(LeftBound),
+		GetNormalizedBound(TopBound),
+		GetNormalizedBound(RightBound),
+		GetNormalizedBound(BottomBound));
+}
+
+float FFramingZone::GetNormalizedBound(float Bound)
+{
+	return (Bound - 0.5f) * 2.f;
 }
 
 FVector2d FFramingZone::GetCanvasPosition(const FVector2d& CanvasSize) const
@@ -90,31 +96,6 @@ FArchive& operator <<(FArchive& Ar, FFramingZone& FramingZone)
 {
 	FramingZone.Serialize(Ar);
 	return Ar;
-}
-
-FFramingZoneAngles FFramingZoneMath::GetFramingZoneAngles(const FFramingZone& FramingZone, const FCameraFieldsOfView& FieldsOfView)
-{
-	const float BackingHalfWidth = FMath::Tan(FMath::DegreesToRadians(FieldsOfView.HorizontalFieldOfView / 2.f));
-	const float BackingHalfHeight = FMath::Tan(FMath::DegreesToRadians(FieldsOfView.VerticalFieldOfView / 2.f));
-
-	const FVector4d MarginsFromCenter = FramingZone.GetMarginsFromCenter();
-
-	FFramingZoneAngles Angles;
-	Angles.LeftHalfAngle = GetFramingMarginAngle(MarginsFromCenter.X, BackingHalfWidth);
-	Angles.TopHalfAngle = GetFramingMarginAngle(MarginsFromCenter.Y, BackingHalfHeight);
-	Angles.RightHalfAngle = GetFramingMarginAngle(MarginsFromCenter.Z, BackingHalfWidth);
-	Angles.BottomHalfAngle = GetFramingMarginAngle(MarginsFromCenter.W, BackingHalfHeight);
-	return Angles;
-}
-
-double FFramingZoneMath::GetFramingMarginAngle(float MarginFromCenter, float BackingHalfSize)
-{
-	// The margin should always be a percentage from the center of the screen.
-	// So a margin of zero is the center, a margin of 0.5 is half way between the center and the edge,
-	// and a margin of 1 is at the edge.
-	const double MarginSize = FMath::Clamp(MarginFromCenter, -1.f, 1.f) * BackingHalfSize;
-	const double MarginAngle = FMath::Atan(MarginSize);
-	return MarginAngle;
 }
 
 }  // namespace UE::Cameras

@@ -56,11 +56,9 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 
 	Readers.DeadZoneMargin.Initialize(BaseFramingNode->DeadZone);
 	Readers.SoftZoneMargin.Initialize(BaseFramingNode->SoftZone);
-
-	State.bIsFirstFrame = true;
 }
 
-void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation)
+void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming)
 {
 	// Get screen-space coordinates of the ideal framing point. These are in 0..1 UI space.
 	State.IdealTarget.X = Readers.HorizontalFraming.Get(OutResult.VariableTable);
@@ -79,20 +77,15 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 	State.DeadZone = FFramingZone(DeadZoneMargins);
 	State.SoftZone = FFramingZone(SoftZoneMargins);
 
-	// On the first frame, initialize LastFrameTransform to the current so we don't use garbage.
-	if (State.bIsFirstFrame)
-	{
-		State.LastFramedTransform = OutResult.CameraPose.GetTransform();
-		State.bIsFirstFrame = false;
-	}
-
 	// We are going to reframing things iteratively, so we'll use a temporary pose defined by last frame's
 	// shot transform.
 	FCameraPose TempPose(OutResult.CameraPose);
-	TempPose.SetTransform(State.LastFramedTransform);
+	TempPose.SetTransform(LastFraming);
 
 	// Get the target in screen-space.
-	const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectWorldToScreen(TempPose, TargetLocation, true);
+	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
+	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(TempPose, PlayerController);
+	const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectWorldToScreen(TempPose, AspectRatio, TargetLocation, true);
 	State.WorldTarget = TargetLocation;
 	State.ScreenTarget = ScreenTarget.Get(FVector2d(0.5, 0.5));
 
@@ -133,7 +126,6 @@ void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvalua
 		{
 			// Since screen-space positions are in 0..1 space, we need to modulate vertical coordinates by the
 			// aspect ratio, otherwise we end up comparing against a squished ellipse instead of a circle.
-			const float AspectRatio = OutResult.CameraPose.GetSensorAspectRatio();
 			const double DistanceToIdeal = FVector2d::Distance(
 					FVector2d(State.ScreenTarget.X, (State.ScreenTarget.Y - 0.5) / AspectRatio + 0.5),
 					FVector2d(State.IdealTarget.X, (State.IdealTarget.Y - 0.5) / AspectRatio + 0.5));
@@ -179,16 +171,6 @@ void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 
 	Desired.FramingCorrection = Desired.ScreenTarget - State.ScreenTarget;
 	Desired.bHasCorrection = true;
-}
-
-const FTransform& FBaseFramingCameraNodeEvaluator::GetLastFraming() const
-{
-	return State.LastFramedTransform;
-}
-
-void FBaseFramingCameraNodeEvaluator::RegisterNewFraming(const FTransform& NewPoseTransform)
-{
-	State.LastFramedTransform = NewPoseTransform;
 }
 
 FVector2d FBaseFramingCameraNodeEvaluator::GetHardReframeCoords() const

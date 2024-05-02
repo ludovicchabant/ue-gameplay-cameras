@@ -3,14 +3,15 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Math/Vector.h"
+#include "Math/MathFwd.h"
 
 class FArchive;
-struct FCameraFieldsOfView;
 struct FCameraPose;
 
 namespace UE::Cameras
 {
+
+struct FCameraFieldsOfView;
 
 /**
  * Effective margins for a rectangular screen-space zone.
@@ -60,7 +61,7 @@ struct FFramingZone
 	bool Contains(const FVector2d& Point) const;
 
 	/** Gets the inner margins of this zone compared to the screen's center. */
-	FVector4d GetMarginsFromCenter() const;
+	FVector4f GetNormalizedBounds() const;
 
 	/** Gets the coordinates of the top-left corner of the zone, in 0..Width/Height canvas units. */
 	FVector2d GetCanvasPosition(const FVector2d& CanvasSize) const;
@@ -68,6 +69,10 @@ struct FFramingZone
 	FVector2d GetCanvasSize(const FVector2d& CanvasSize) const;
 
 	void Serialize(FArchive& Ar);
+
+private:
+
+	static float GetNormalizedBound(float Bound);
 };
 
 FArchive& operator <<(FArchive& Ar, FFramingZone& FramingZone);
@@ -84,20 +89,5 @@ struct FFramingZoneAngles
 	double BottomHalfAngle = 0;
 };
 
-/**
- * Utility class for mathematical functions related to framing zones.
- */
-class FFramingZoneMath
-{
-public:
-
-	/** Gets the framing zone's half-angles for a given camera FOV. */
-	static FFramingZoneAngles GetFramingZoneAngles(const FFramingZone& FramingZone, const FCameraFieldsOfView& FieldsOfView);
-
-private:
-
-	static double GetFramingMarginAngle(float MarginFromCenter, float BackingHalfSize);
-};
-
-}  // namesdoubleUE::Cameras
+}  // namespace UE::Cameras
 

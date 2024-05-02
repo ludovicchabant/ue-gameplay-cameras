@@ -2,8 +2,9 @@
 
 #include "Core/CameraPose.h"
 
-#include "Math/Ray.h"
+#include "Engine/EngineTypes.h"
 #include "GameplayCameras.h"
+#include "Math/Ray.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraPose)
 
@@ -147,20 +148,6 @@ float FCameraPose::GetEffectiveFieldOfView() const
 		// Let's use the FOV directly, like in the good old times.
 		return FieldOfView;
 	}
-}
-
-FCameraFieldsOfView FCameraPose::GetEffectiveFieldsOfView() const
-{
-	FCameraFieldsOfView FOVs;
-
-	FOVs.HorizontalFieldOfView = GetEffectiveFieldOfView();
-
-	const float AspectRatio = GetSensorAspectRatio();
-	FOVs.VerticalFieldOfView = FMath::RadiansToDegrees(
-			2.f * FMath::Atan(
-				FMath::Tan(FMath::DegreesToRadians(FOVs.HorizontalFieldOfView / 2.f)) / AspectRatio));
-
-	return FOVs;
 }
 
 float FCameraPose::GetSensorAspectRatio() const

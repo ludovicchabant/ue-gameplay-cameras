@@ -4,6 +4,7 @@
 
 #include "CoreTypes.h"
 #include "Containers/StringView.h"
+#include "Engine/EngineTypes.h"
 #include "GameplayCameras.h"
 #include "Math/UnrealMath.h"
 #include "Misc/TVariant.h"
@@ -46,6 +47,17 @@ template<typename T>
 FString ToDebugString(const UE::Math::TTransform<T>& FieldValue)
 {
 	return FieldValue.ToString();
+}
+template<>
+inline FString ToDebugString(const EAspectRatioAxisConstraint& FieldValue)
+{
+	switch (FieldValue)
+	{
+		case AspectRatio_MaintainYFOV: return TEXT("Maintain Y-Axis FOV");
+		case AspectRatio_MaintainXFOV: return TEXT("Maintain X-Axis FOV");
+		case AspectRatio_MajorAxisFOV: return TEXT("Maintain Major Axis FOV");
+	}
+	return TEXT("Invalid");
 }
 
 /** Command for drawing text on a canvas. */

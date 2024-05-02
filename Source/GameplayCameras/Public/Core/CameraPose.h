@@ -9,6 +9,7 @@
 #include "CameraPose.generated.h"
 
 class FArchive;
+enum EAspectRatioAxisConstraint : int;
 
 #define UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(FVector, Location)\
@@ -29,13 +30,17 @@ class FArchive;
 	UE_CAMERA_POSE_FOR_PROPERTY(float, FocalLength)
 
 #define UE_CAMERA_POSE_FOR_BOOL_PROPERTIES()\
-	UE_CAMERA_POSE_FOR_PROPERTY(bool, bConstrainAspectRatio)
+	UE_CAMERA_POSE_FOR_PROPERTY(bool, ConstrainAspectRatio)
+
+#define UE_CAMERA_POSE_FOR_INTEGER_PROPERTIES()\
+	UE_CAMERA_POSE_FOR_PROPERTY(EAspectRatioAxisConstraint, AspectRatioAxisConstraint)
 
 #define UE_CAMERA_POSE_FOR_ALL_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_INTERPOLABLE_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_FOV_PROPERTIES()\
-	UE_CAMERA_POSE_FOR_BOOL_PROPERTIES()
+	UE_CAMERA_POSE_FOR_BOOL_PROPERTIES()\
+	UE_CAMERA_POSE_FOR_INTEGER_PROPERTIES()
 
 /**
  * Boolean flags for each of the properties inside FCameraPose.
@@ -68,15 +73,6 @@ public:
 	FCameraPoseFlags& AND(const FCameraPoseFlags& OtherFlags);
 	/** Combines the flags with an OR logical operation. */
 	FCameraPoseFlags& OR(const FCameraPoseFlags& OtherFlags);
-};
-
-/**
- * Simple struct for holding horizontal and vertical fields of view.
- */
-struct FCameraFieldsOfView
-{
-	float HorizontalFieldOfView;
-	float VerticalFieldOfView;
 };
 
 /**
@@ -151,9 +147,6 @@ public:
 	 * the FocalLength property in combination with the sensor size.
 	 */
 	float GetEffectiveFieldOfView() const;
-
-	/** Gets both horizontal and vertical effective fields of view.  */
-	FCameraFieldsOfView GetEffectiveFieldsOfView() const;
 
 	/** Gets the aspect ratio of the camera sensor. */
 	float GetSensorAspectRatio() const;
@@ -246,7 +239,11 @@ private:
 
 	/** Whether to constrain aspect ratio */
 	UPROPERTY()
-	bool bConstrainAspectRatio = false;
+	bool ConstrainAspectRatio = false;
+
+	/** If ConstrainAspectRatio is false, how we should compute FieldOfView */
+	UPROPERTY()
+	TEnumAsByte<EAspectRatioAxisConstraint> AspectRatioAxisConstraint;
 
 private:
 	
