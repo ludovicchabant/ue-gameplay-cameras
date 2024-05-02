@@ -68,6 +68,12 @@ public:
 	/** Gets the owner of this evaluation context, if any, and if still valid. */
 	UObject* GetOwner() const { return WeakOwner.Get(); }
 
+	/** 
+	 * Gets the world in which this evaluation context runs. 
+	 * This is the owner's world.
+	 */
+	UWorld* GetWorld() const;
+
 	/**
 	 * Gets the player controller (if any) in control of the cameras running inside
 	 * of this evaluation context.

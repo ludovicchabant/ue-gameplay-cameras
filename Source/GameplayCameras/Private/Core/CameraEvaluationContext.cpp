@@ -40,6 +40,15 @@ FCameraEvaluationContext::~FCameraEvaluationContext()
 	// holds the only shared pointer to it.
 }
 
+UWorld* FCameraEvaluationContext::GetWorld() const
+{
+	if (UObject* Owner = GetOwner())
+	{
+		return Owner->GetWorld();
+	}
+	return nullptr;
+}
+
 void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	Collector.AddReferencedObject(CameraAsset);
