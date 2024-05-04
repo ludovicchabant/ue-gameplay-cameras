@@ -12,13 +12,13 @@ class UCameraRigAsset;
 /**
  * Defines evaluation layers for camera rigs.
  */
-UENUM()
-enum class ECameraRigLayer
+UENUM(BlueprintType)
+enum class ECameraRigLayer : uint8
 {
-	Base,
-	Main,
-	Global,
-	Visual,
+	Base UMETA(DisplayName="Base Layer"),
+	Main UMETA(DisplayName="Main Layer"),
+	Global UMETA(DisplayName="Global Layer"),
+	Visual UMETA(DisplayName="Visual Layer"),
 	User0,
 	User1,
 	User2

@@ -1,0 +1,63 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Core/CameraEvaluationContext.h"
+#include "Core/RootCameraNode.h"
+#include "CoreTypes.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "Templates/SharedPointerFwd.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/ObjectPtr.h"
+
+#include "ActivateCameraRigFunctions.generated.h"
+
+class APlayerController;
+class UCameraRigAsset;
+
+namespace UE::Cameras
+{
+	class FCameraEvaluationContext;
+	class FCameraSystemEvaluator;
+}  // namespace UE::Cameras
+
+/**
+ * Blueprint functions for activating camera rigs in the base/global/visual layers.
+ *
+ * These camera rigs run with a global, shared evaluation context that doesn't provide any
+ * meaningful initial result. They are activated on the camera system found to be running
+ * on the given player controller.
+ */
+UCLASS(MinimalAPI)
+class UActivateCameraRigFunctions : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+
+	/** Activates the given camera rig in the base layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	static void ActivateBaseCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig in the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	static void ActivateGlobalCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig in the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	static void ActivateVisualCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig in the given layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	static void ActivateCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
+
+private:
+
+	static UE::Cameras::FCameraSystemEvaluator* FindCameraSystemEvaluator(APlayerController* PlayerController);
+	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> EnsureGlobalContext();
+
+private:
+
+	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> GlobalContext;
+};
+
