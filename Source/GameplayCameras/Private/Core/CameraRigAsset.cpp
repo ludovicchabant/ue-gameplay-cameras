@@ -100,6 +100,11 @@ bool FCameraRigInterface::HasInterfaceParameter(const FString& ParameterName) co
 	return FindInterfaceParameterByName(ParameterName) != nullptr;
 }
 
+void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
+{
+	TagContainer.AppendTags(GameplayTags);
+}
+
 void UCameraRigAsset::BuildCameraRig()
 {
 	using namespace UE::Cameras;

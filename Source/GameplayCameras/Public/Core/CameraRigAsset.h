@@ -7,6 +7,8 @@
 #include "Core/CameraVariableTableFwd.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "CoreTypes.h"
+#include "GameplayTagAssetInterface.h"
+#include "GameplayTagContainer.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraRigAsset.generated.h"
@@ -135,6 +137,7 @@ using FCameraRigPackages = TArray<const UPackage*, TInlineAllocator<4>>;
 UCLASS(MinimalAPI)
 class UCameraRigAsset
 	: public UObject
+	, public IGameplayTagAssetInterface
 	, public IObjectTreeGraphObject
 {
 	GENERATED_BODY()
@@ -150,6 +153,10 @@ public:
 	/** Root camera node. */
 	UPROPERTY(EditAnywhere, Instanced, Category=Common)
 	TObjectPtr<UCameraNode> RootNode;
+
+	/** The gameplay tags on this camera rig. */
+	UPROPERTY(EditAnywhere, Category=GameplayTags)
+	FGameplayTagContainer GameplayTags;
 
 	/** The public data interface of this camera rig. */
 	UPROPERTY()
@@ -179,6 +186,11 @@ public:
 	 * camera variables for any exposed parameters.
 	 */
 	GAMEPLAYCAMERAS_API void BuildCameraRig();
+
+public:
+
+	// IGameplayTagAssetInterface.
+	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
 protected:
 
