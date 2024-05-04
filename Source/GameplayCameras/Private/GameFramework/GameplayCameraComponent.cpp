@@ -102,6 +102,11 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 		return;
 	}
 
+	if (!ensure(Camera))
+	{
+		return;
+	}
+
 	if (!EvaluationContext.IsValid())
 	{
 		EvaluationContext = MakeShared<FGameplayCameraComponentEvaluationContext>();
