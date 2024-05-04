@@ -109,6 +109,7 @@ void FCameraNodeEvaluator::BuildDebugBlocks(const FCameraDebugBlockBuildParams& 
 
 		// Build debug blocks for children node evaluators.
 		ECameraDebugBlockBuildVisitFlags VisitFlags = Builder.GetVisitFlags();
+		Builder.ResetVisitFlags();
 		if (!EnumHasAnyFlags(VisitFlags, ECameraDebugBlockBuildVisitFlags::SkipChildren))
 		{
 			FCameraNodeEvaluatorChildrenView ChildrenView(GetChildren());
