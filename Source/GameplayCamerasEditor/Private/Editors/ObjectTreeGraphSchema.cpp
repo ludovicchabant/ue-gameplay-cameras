@@ -106,6 +106,10 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 			UObjectTreeGraphNode* const* ConnectedNode = InCreatedNodes.CreatedNodes.Find(OutConnectedObject);
 			if (ensure(ConnectedNode))
 			{
+				if (Pin->Direction == EGPD_Input)
+				{
+					(*ConnectedNode)->OverrideSelfPinDirection(EGPD_Output);
+				}
 				UEdGraphPin* ConnectedPin = (*ConnectedNode)->GetSelfPin();
 				Pin->MakeLinkTo(ConnectedPin);
 			}
@@ -133,6 +137,10 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 				UObjectTreeGraphNode* const* ConnectedNode = InCreatedNodes.CreatedNodes.Find(ConnectedObject);
 				if (ensure(ConnectedNode))
 				{
+					if (Pin->Direction == EGPD_Input)
+					{
+						(*ConnectedNode)->OverrideSelfPinDirection(EGPD_Output);
+					}
 					UEdGraphPin* ConnectedPin = (*ConnectedNode)->GetSelfPin();
 					Pin->MakeLinkTo(ConnectedPin);
 				}
