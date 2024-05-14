@@ -161,7 +161,6 @@ void SFindInObjectTreeGraph::Construct(const FArguments& InArgs)
 			.BorderImage(FAppStyle::GetBrush("Menu.Background"))
 			[
 				SAssignNew(ResultTreeView, SResultTreeView)
-				.ItemHeight(24)
 				.TreeItemsSource(&Results)
 				.SelectionMode(ESelectionMode::Multi)
 				.OnGenerateRow(this, &SFindInObjectTreeGraph::OnResultTreeViewGenerateRow)

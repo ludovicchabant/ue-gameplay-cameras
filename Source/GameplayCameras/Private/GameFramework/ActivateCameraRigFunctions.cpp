@@ -18,22 +18,22 @@
 
 TSharedPtr<UE::Cameras::FCameraEvaluationContext> UActivateCameraRigFunctions::GlobalContext;
 
-void UActivateCameraRigFunctions::ActivateBaseCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig)
+void UActivateCameraRigFunctions::ActivateBaseCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig)
 {
-	ActivateCameraRig(PlayerController, CameraRig, ECameraRigLayer::Base);
+	ActivateCameraRig(WorldContextObject, PlayerController, CameraRig, ECameraRigLayer::Base);
 }
 
-void UActivateCameraRigFunctions::ActivateGlobalCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig)
+void UActivateCameraRigFunctions::ActivateGlobalCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig)
 {
-	ActivateCameraRig(PlayerController, CameraRig, ECameraRigLayer::Global);
+	ActivateCameraRig(WorldContextObject, PlayerController, CameraRig, ECameraRigLayer::Global);
 }
 
-void UActivateCameraRigFunctions::ActivateVisualCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig)
+void UActivateCameraRigFunctions::ActivateVisualCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig)
 {
-	ActivateCameraRig(PlayerController, CameraRig, ECameraRigLayer::Visual);
+	ActivateCameraRig(WorldContextObject, PlayerController, CameraRig, ECameraRigLayer::Visual);
 }
 
-void UActivateCameraRigFunctions::ActivateCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
+void UActivateCameraRigFunctions::ActivateCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
 {
 	using namespace UE::Cameras;
 
@@ -47,7 +47,7 @@ void UActivateCameraRigFunctions::ActivateCameraRig(APlayerController* PlayerCon
 	{
 		FActivateCameraRigParams Params;
 		Params.CameraRig = CameraRig;
-		Params.EvaluationContext = EnsureGlobalContext();
+		Params.EvaluationContext = EnsureGlobalContext(WorldContextObject, PlayerController);
 		Params.Evaluator = SystemEvaluator;
 		Params.Layer = EvaluationLayer;
 		SystemEvaluator->GetRootNodeEvaluator()->ActivateCameraRig(Params);
@@ -67,13 +67,16 @@ UE::Cameras::FCameraSystemEvaluator* UActivateCameraRigFunctions::FindCameraSyst
 	return nullptr;
 }
 
-TSharedPtr<UE::Cameras::FCameraEvaluationContext> UActivateCameraRigFunctions::EnsureGlobalContext()
+TSharedPtr<UE::Cameras::FCameraEvaluationContext> UActivateCameraRigFunctions::EnsureGlobalContext(UObject* WorldContextObject, APlayerController* PlayerController)
 {
 	using namespace UE::Cameras;
 
 	if (!GlobalContext.IsValid())
 	{
-		GlobalContext = MakeShared<FCameraEvaluationContext>();
+		FCameraEvaluationContextInitializeParams InitParams;
+		InitParams.Owner = WorldContextObject;
+		InitParams.PlayerController = PlayerController;
+		GlobalContext = MakeShared<FCameraEvaluationContext>(InitParams);
 		GlobalContext->GetInitialResult().bIsValid = true;	
 	}
 	return GlobalContext;

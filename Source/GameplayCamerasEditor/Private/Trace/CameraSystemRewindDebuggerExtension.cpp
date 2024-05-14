@@ -67,6 +67,7 @@ void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugg
 		if (FoundFrameData && CurrentTraceTime != LastTraceTime)
 		{
 			LastTraceTime = CurrentTraceTime;
+			VisualizedWorld = RewindDebugger->GetWorldToVisualize();
 
 			DebugBlockStorage.DestroyDebugBlocks();
 
@@ -99,10 +100,9 @@ void FCameraSystemRewindDebuggerExtension::EnsureDebugDrawDelegate(bool bIsRegis
 
 void FCameraSystemRewindDebuggerExtension::DebugDraw(UCanvas* Canvas, APlayerController* PlayController)
 {
-	if (RootDebugBlock)
+	if (RootDebugBlock && VisualizedWorld)
 	{
-		UWorld* World = PlayController->GetWorld();
-		FCameraDebugRenderer CameraDebugRenderer(World, Canvas->Canvas);
+		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas->Canvas);
 		RootDebugBlock->RootDebugDraw(CameraDebugRenderer);
 	}
 }

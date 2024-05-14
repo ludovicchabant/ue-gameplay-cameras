@@ -36,25 +36,25 @@ class UActivateCameraRigFunctions : public UBlueprintFunctionLibrary
 public:
 
 	/** Activates the given camera rig in the base layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static void ActivateBaseCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(WorldContext="WorldContextObject"))
+	static void ActivateBaseCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig in the global layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static void ActivateGlobalCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
+	static void ActivateGlobalCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig in the visual layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static void ActivateVisualCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig);
+	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
+	static void ActivateVisualCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig in the given layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static void ActivateCameraRig(APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
+	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
+	static void ActivateCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
 
 private:
 
 	static UE::Cameras::FCameraSystemEvaluator* FindCameraSystemEvaluator(APlayerController* PlayerController);
-	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> EnsureGlobalContext();
+	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> EnsureGlobalContext(UObject* WorldContextObject, APlayerController* PlayerController);
 
 private:
 

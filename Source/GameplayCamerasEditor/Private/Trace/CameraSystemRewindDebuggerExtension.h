@@ -44,6 +44,8 @@ private:
 	FDelegateHandle DebugDrawDelegateHandle;
 	double LastTraceTime = 0.f;
 
+	UWorld* VisualizedWorld = nullptr;
+
 	FCameraDebugBlockStorage DebugBlockStorage;
 	FRootCameraDebugBlock* RootDebugBlock = nullptr;
 
