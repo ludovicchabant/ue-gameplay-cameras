@@ -41,6 +41,21 @@ void SCameraRigAssetEditor::Construct(const FArguments& InArgs)
 	];
 }
 
+SCameraRigAssetEditor::~SCameraRigAssetEditor()
+{
+	if (!GExitPurge)
+	{
+		if (NodeGraph)
+		{
+			NodeGraph->RemoveFromRoot();
+		}
+		if (TransitionGraph)
+		{
+			TransitionGraph->RemoveFromRoot();
+		}
+	}
+}
+
 void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 {
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
