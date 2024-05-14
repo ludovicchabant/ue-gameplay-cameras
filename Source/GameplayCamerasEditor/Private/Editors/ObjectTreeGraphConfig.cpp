@@ -72,13 +72,43 @@ bool FObjectTreeGraphConfig::IsConnectable(FObjectProperty* InObjectProperty) co
 		return false;
 	}
 
+	if (InObjectProperty->GetBoolMetaData(TEXT("ObjectTreeGraphHidden")))
+	{
+		return false;
+	}
+
 	if (!IsConnectable(InObjectProperty->PropertyClass))
 	{
 		return false;
 	}
 
-	const bool bIsHidden = InObjectProperty->GetBoolMetaData(TEXT("ObjectTreeGraphHidden"));
-	return !bIsHidden;
+	return true;
+}
+
+bool FObjectTreeGraphConfig::IsConnectable(FArrayProperty* InArrayProperty) const
+{
+	if (!ensure(InArrayProperty))
+	{
+		return false;
+	}
+
+	if (InArrayProperty->GetBoolMetaData(TEXT("ObjectTreeGraphHidden")))
+	{
+		return false;
+	}
+
+	FObjectProperty* InnerProperty = CastField<FObjectProperty>(InArrayProperty->Inner);
+	if (!InnerProperty)
+	{
+		return false;
+	}
+
+	if (!IsConnectable(InnerProperty->PropertyClass))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void FObjectTreeGraphConfig::GetConnectableClasses(TArray<UClass*>& OutClasses, bool bPlaceableOnly)

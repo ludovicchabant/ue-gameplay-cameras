@@ -183,6 +183,14 @@ public:
 	bool IsConnectable(FObjectProperty* InObjectProperty) const;
 
 	/**
+	 * Returns whether the given object array property is connectable.
+	 *
+	 * It is connectable if the array's item type is for a connectable class, and if the array
+	 * property doesn't have the ObjectTreeGraphHidden metadata.
+	 */
+	bool IsConnectable(FArrayProperty* InArrayProperty) const;
+
+	/**
 	 * Gets all possible known connectable classes.
 	 *
 	 * @param bPlaceableOnly  If set, only return those that can be created.

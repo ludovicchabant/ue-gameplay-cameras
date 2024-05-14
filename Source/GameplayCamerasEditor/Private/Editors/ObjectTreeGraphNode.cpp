@@ -179,11 +179,12 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 		}
 		else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(*PropertyIt))
 		{
-			FObjectProperty* InnerProperty = CastField<FObjectProperty>(ArrayProperty->Inner);
-			if (!InnerProperty || !InnerProperty->PropertyClass || !OuterGraphConfig.IsConnectable(InnerProperty->PropertyClass))
+			if (!OuterGraphConfig.IsConnectable(ArrayProperty))
 			{
 				continue;
 			}
+
+			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
 
 			ChildPinType.PinSubCategory = UObjectTreeGraphSchema::PSC_ArrayProperty;
 			ChildPinType.ContainerType = EPinContainerType::Array;
@@ -631,7 +632,7 @@ void UObjectTreeGraphNode::OnGraphNodeMoved()
 
 UObjectTreeGraphNode::FNodeContext UObjectTreeGraphNode::GetNodeContext() const
 {
-	UObjectTreeGraph* OuterGraph = GetTypedOuter<UObjectTreeGraph>();
+	UObjectTreeGraph* OuterGraph = CastChecked<UObjectTreeGraph>(GetGraph());
 	const FObjectTreeGraphConfig& OuterGraphConfig = OuterGraph->GetConfig();
 
 	UClass* ObjectClass = Object->GetClass();
