@@ -6,6 +6,7 @@
 #include "Core/CameraNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphNode.h"
+#include "Editors/CameraRigInterfaceParameterGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 
 #include "ScopedTransaction.h"
@@ -221,6 +222,19 @@ bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGra
 	}
 	
 	return false;
+}
+
+void UCameraNodeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const
+{
+	Super::OnDeleteNodeFromGraph(Graph, Node);
+
+	UCameraRigAsset* CameraRig = CastChecked<UCameraRigAsset>(Graph->GetRootObject());
+	if (UCameraRigInterfaceParameterGraphNode* RigParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(Node))
+	{
+		UCameraRigInterfaceParameter* RigParameter = CastChecked<UCameraRigInterfaceParameter>(RigParameterNode->GetObject());
+		const int32 NumRemoved = CameraRig->Interface.InterfaceParameters.Remove(RigParameter);
+		ensure(NumRemoved == 1);
+	}
 }
 
 FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::FCameraNodeGraphSchemaAction_NewInterfaceParameterNode()

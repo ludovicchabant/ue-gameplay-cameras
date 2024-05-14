@@ -6,6 +6,7 @@
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "Core/ObjectTreeGraphObject.h"
+#include "Core/ObjectTreeGraphRootObject.h"
 #include "CoreTypes.h"
 #include "GameplayTagAssetInterface.h"
 #include "GameplayTagContainer.h"
@@ -139,6 +140,7 @@ class UCameraRigAsset
 	: public UObject
 	, public IGameplayTagAssetInterface
 	, public IObjectTreeGraphObject
+	, public IObjectTreeGraphRootObject
 {
 	GENERATED_BODY()
 
@@ -203,21 +205,37 @@ protected:
 	virtual void OnUpdateGraphNodeCommentText(const FString& NewComment) override;
 #endif
 
+#if WITH_EDITOR
+	virtual void AddConnectableObject(UObject* InObject) override;
+	virtual void RemoveConnectableObject(UObject* InObject) override;
+#endif
+
 	// UObject interface
+	virtual void PostLoad() override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 
 private:
 
 #if WITH_EDITORONLY_DATA
 
+	/** Position of the camera rig node in the graph editor. */
 	UPROPERTY()
 	int32 GraphNodePosX = 0;
 
+	/** Position of the camera rig node in the graph editor. */
 	UPROPERTY()
 	int32 GraphNodePosY = 0;
 
+	/** User-written comment in the graph editor. */
 	UPROPERTY()
 	FString GraphNodeComment;
+
+	/** 
+	 * A list of all the camera nodes, including the 'loose' ones that aren't connected
+	 * to the root node, and therefore would be GC'ed if we didn't hold them here.
+	 */
+	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
+	TArray<TObjectPtr<UCameraNode>> AllNodes;
 
 #endif  // WITH_EDITORONLY_DATA
 };

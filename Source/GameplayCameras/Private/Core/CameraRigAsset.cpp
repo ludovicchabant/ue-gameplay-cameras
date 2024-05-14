@@ -204,6 +204,28 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	}
 }
 
+void UCameraRigAsset::PostLoad()
+{
+#if WITH_EDITORONLY_DATA
+	if (AllNodes.IsEmpty())
+	{
+		// Rebuild the AllNodes array from scratch if this is old data.
+		TArray<UObject*> AllObjects;
+		UPackage* Package = GetOutermost();
+		GetObjectsWithPackage(Package, AllObjects);
+		for (UObject* Obj : AllObjects)
+		{
+			if (UCameraNode* CameraNode = Cast<UCameraNode>(Obj))
+			{
+				AllNodes.Add(CameraNode);
+			}
+		}
+	}
+#endif  // WITH_EDITORONLY_DATA
+
+	Super::PostLoad();
+}
+
 void UCameraRigAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 {
 #if WITH_EDITOR
@@ -260,6 +282,28 @@ const FString& UCameraRigAsset::GetGraphNodeCommentText() const
 void UCameraRigAsset::OnUpdateGraphNodeCommentText(const FString& NewComment)
 {
 	GraphNodeComment = NewComment;
+}
+
+void UCameraRigAsset::AddConnectableObject(UObject* InObject)
+{
+	// Camera nodes and rig parameters are shown on the graph editor. Handle the former case. The latter are
+	// already added to the interface struct even when not connected.
+	if (UCameraNode* CameraNode = Cast<UCameraNode>(InObject))
+	{
+		Modify();
+		const int32 Index = AllNodes.AddUnique(CameraNode);
+		ensure(Index == AllNodes.Num() - 1);
+	}
+}
+
+void UCameraRigAsset::RemoveConnectableObject(UObject* InObject)
+{
+	if (UCameraNode* CameraNode = Cast<UCameraNode>(InObject))
+	{
+		Modify();
+		const int32 NumRemoved = AllNodes.Remove(CameraNode);
+		ensure(NumRemoved == 1);
+	}
 }
 
 #endif  // WITH_EDITOR

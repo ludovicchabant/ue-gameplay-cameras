@@ -2,10 +2,13 @@
 
 #include "Editors/ObjectTreeGraphSchema.h"
 
+#include "Core/ObjectTreeGraphRootObject.h"
 #include "Editors/ObjectTreeConnectionDrawingPolicy.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
+#include "Serialization/ArchiveUObject.h"
 #include "ScopedTransaction.h"
+#include "UObject/FastReferenceCollector.h"
 #include "UObject/UObjectIterator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ObjectTreeGraphSchema)
@@ -18,6 +21,67 @@ const FName UObjectTreeGraphSchema::PC_Property("Property");
 const FName UObjectTreeGraphSchema::PSC_ObjectProperty("ObjectProperty");
 const FName UObjectTreeGraphSchema::PSC_ArrayProperty("ArrayProperty");
 const FName UObjectTreeGraphSchema::PSC_ArrayPropertyItem("ArrayPropertyItem");
+
+namespace UE::ObjectTreeGraph
+{
+
+struct FPackageReferenceCollector : public FArchiveUObject
+{
+	FPackageReferenceCollector(UObject* InRootObject, TArray<UObject*>& InOutReferencedObjects)
+		: FArchiveUObject()
+		, RootObject(InRootObject)
+		, PackageScope(InRootObject->GetOutermost())
+		, ReferencedObjects(InOutReferencedObjects)
+	{
+		SetIsPersistent(true);
+		SetIsSaving(true);
+		SetFilterEditorOnly(false);
+
+		ArIsObjectReferenceCollector = true;
+		ArShouldSkipBulkData = true;
+	}
+
+	void CollectReferences()
+	{
+		ObjectsToVisit.Reset();
+		VisitedObjects.Reset();
+
+		ObjectsToVisit.Add(RootObject);
+		while (ObjectsToVisit.Num() > 0)
+		{
+			UObject* CurObj = ObjectsToVisit.Pop(EAllowShrinking::No);
+			VisitedObjects.Add(CurObj);
+			CurObj->Serialize(*this);
+		}
+	}
+
+private:
+
+	virtual FArchive& operator<<(UObject*& ObjRef) override
+	{
+		if (ObjRef != nullptr && ObjRef->IsIn(PackageScope))
+		{
+			if (!VisitedObjects.Contains(ObjRef))
+			{
+				ReferencedObjects.Add(ObjRef);
+				ObjectsToVisit.Add(ObjRef);
+			}
+		}
+		return *this;
+	}
+
+private:
+
+	UObject* RootObject;
+	UPackage* PackageScope;
+
+	TArray<UObject*> ObjectsToVisit;
+	TSet<UObject*> VisitedObjects;
+
+	TArray<UObject*>& ReferencedObjects;
+};
+
+}  // namespace UE::ObjectTreeGraph
 
 UObjectTreeGraphSchema::UObjectTreeGraphSchema(const FObjectInitializer& ObjInit)
 	: Super(ObjInit)
@@ -49,11 +113,25 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 	}
 
 	TArray<UObject*> AllObjects;
-	UPackage* Package = RootObject->GetOutermost();
-	GetObjectsWithPackage(Package, AllObjects);
+	// Gather up all the objects we need for the graph. Start by all objects that are referenced (directly or
+	// indirectly) by the root object. Our custom reference collector will not collect references that go outside
+	// of the root object's package.
+	{
+		using namespace UE::ObjectTreeGraph;
 
-	ensure(AllObjects.Contains(RootObject));
+		// Make sure the root object itself is in there.
+		AllObjects.Add(RootObject);
 
+		FPackageReferenceCollector Collector(RootObject, AllObjects);
+		Collector.CollectReferences();
+	}
+	// Add any other custom objects the root object may want.
+	if (IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObject))
+	{
+		RootObjectInterface->GetExtraConnectableObjects(AllObjects);
+	}
+	
+	// Create all the nodes.
 	FCreatedNodes CreatedNodes;
 	for (UObject* Object : AllObjects)
 	{
@@ -63,6 +141,7 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 		}
 	}
 
+	// Grab the graph node for the root object.
 	InGraph->RootObjectNode = nullptr;
 	UObjectTreeGraphNode** CreatedRootObjectNode = CreatedNodes.CreatedNodes.Find(RootObject);
 	if (ensure(CreatedRootObjectNode))
@@ -70,6 +149,7 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 		InGraph->RootObjectNode = *CreatedRootObjectNode;
 	}
 
+	// Create all the connections.
 	for (TPair<UObject*, UObjectTreeGraphNode*> Pair : CreatedNodes.CreatedNodes)
 	{
 		CreateConnections(Pair.Value, CreatedNodes);
@@ -584,6 +664,34 @@ bool UObjectTreeGraphSchema::SupportsDropPinOnNode(UEdGraphNode* InTargetNode, c
 	return Super::SupportsDropPinOnNode(InTargetNode, InSourcePinType, InSourcePinDirection, OutErrorMessage);
 }
 
+bool UObjectTreeGraphSchema::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNode* Node) const
+{
+	if (!Graph || !Node)
+	{
+		return false;
+	}
+	
+	const FScopedTransaction Transaction(LOCTEXT("DeleteNode", "Delete Node"));
+
+	BreakNodeLinks(*Node);
+
+	UObjectTreeGraph* ObjectTreeGraph = CastChecked<UObjectTreeGraph>(Graph);
+	OnDeleteNodeFromGraph(ObjectTreeGraph, Node);
+	Node->DestroyNode();
+
+	return true;
+}
+
+void UObjectTreeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const
+{
+	UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(Node);
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(Graph->GetRootObject());
+	if (RootObjectInterface && ObjectNode)
+	{
+		RootObjectInterface->RemoveConnectableObject(ObjectNode->GetObject());
+	}
+}
+
 void UObjectTreeGraphSchema::ProcessDuplicatedNodes(UObjectTreeGraph* InGraph, const TMap<UEdGraphNode*, UEdGraphNode*>& NodeMap) const
 {
 	UPackage* RootObjectPackage = InGraph->GetRootObject()->GetOutermost();
@@ -670,12 +778,18 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 	const FScopedTransaction Transaction(LOCTEXT("CreateNewNodeAction", "Create New Node"));
 	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(ObjectTreeGraph->GetRootObject());
 
 	UObject* NewObject = CreateObject();
 
 	if (NewObject)
 	{
 		UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
+
+		if (RootObjectInterface)
+		{
+			RootObjectInterface->AddConnectableObject(NewObject);
+		}
 
 		NewGraphNode->NodePosX = Location.X;
 		NewGraphNode->NodePosY = Location.Y;

@@ -408,15 +408,14 @@ void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, cons
 
 void SObjectTreeGraphEditor::DeleteNodes(TArrayView<UObjectTreeGraphNode*> NodesToDelete)
 {
-	const UEdGraphSchema* Schema = GraphEditor->GetCurrentGraph()->GetSchema();
+	UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
+	const UEdGraphSchema* Schema = CurrentGraph->GetSchema();
 
 	for (UObjectTreeGraphNode* Node : NodesToDelete)
 	{
 		if (Node)
 		{
-			Node->Modify();
-
-			Schema->BreakNodeLinks(*Node);
+			Schema->SafeDeleteNodeFromGraph(CurrentGraph, Node);
 
 			Node->DestroyNode();
 		}

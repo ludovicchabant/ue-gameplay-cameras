@@ -31,6 +31,7 @@ protected:
 	virtual bool OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const override;
 	virtual bool OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const override;
 	virtual bool OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const override;
+	virtual void OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const override;
 };
 
 /**
