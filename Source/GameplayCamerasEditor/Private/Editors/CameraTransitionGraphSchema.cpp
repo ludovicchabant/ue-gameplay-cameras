@@ -14,10 +14,13 @@
 
 void UCameraTransitionGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
+	// Start with being able to create both enter and exit transitions.
 	bool bCanCreateEnterTransition = true;
-	bool bCanCreateExitTransition = false;
+	bool bCanCreateExitTransition = true;
 	if (const UEdGraphPin* DraggedPin = ContextMenuBuilder.FromPin)
 	{
+		// If we are creating a node from dragging a pin into an empty space, figure out which transition
+		// we can create based on the direction of the dragged pin.
 		bCanCreateEnterTransition = false;
 		bCanCreateExitTransition = false;
 
