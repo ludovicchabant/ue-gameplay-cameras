@@ -20,6 +20,7 @@ FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
 	, _CanCreateNew(true)
 	, _CanDuplicate(true)
 	, _CanDelete(true)
+	, _CreateCategoryMetaData(TEXT("ObjectTreeGraphCategory"))
 {
 }
 

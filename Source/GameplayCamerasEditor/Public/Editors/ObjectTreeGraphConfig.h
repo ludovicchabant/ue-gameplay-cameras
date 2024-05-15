@@ -69,6 +69,9 @@ public:
 	/** Whether users can delete objects of this class in the graph. */
 	OTGCC_FIELD(bool, CanDelete)
 
+	/** The metadata specifier to look for in order to categorize the 'create node' action for this class. */
+	OTGCC_FIELD(FName, CreateCategoryMetaData)
+
 public:
 
 	FObjectTreeGraphClassConfig();
