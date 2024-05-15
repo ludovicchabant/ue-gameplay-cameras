@@ -10,7 +10,7 @@
 /**
  * A camera node that moves the camera to the player pawn.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Attachment"))
 class UAttachToPlayerPawnCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

@@ -16,7 +16,7 @@ class FArchive;
 /**
  * The base class for a standard scren-space framing camera node.
  */
-UCLASS(MinimalAPI, Abstract)
+UCLASS(MinimalAPI, Abstract, meta=(CameraNodeCategories="Framing"))
 class UBaseFramingCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

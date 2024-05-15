@@ -10,7 +10,7 @@
 /**
  * A camera node that offsets the location of the camera.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Transform"))
 class UDampenPositionCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

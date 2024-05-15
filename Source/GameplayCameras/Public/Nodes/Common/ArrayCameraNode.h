@@ -10,7 +10,7 @@
 /**
  * A camera node that runs a list of other camera nodes.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Utility"))
 class UArrayCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

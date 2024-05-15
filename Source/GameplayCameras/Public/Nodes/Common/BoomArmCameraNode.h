@@ -10,7 +10,7 @@
 /**
  * A camera node that can rotate the camera in yaw and pitch based on player input.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Transform"))
 class UBoomArmCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

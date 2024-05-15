@@ -10,7 +10,7 @@
 
 class UMaterialInterface;
 
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Collision"))
 class UOcclusionMaterialCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

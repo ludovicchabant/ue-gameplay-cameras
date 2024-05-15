@@ -11,7 +11,7 @@
 /**
  * A camera node that sets parameter values on the camera lens.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Lens"))
 class ULensParametersCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

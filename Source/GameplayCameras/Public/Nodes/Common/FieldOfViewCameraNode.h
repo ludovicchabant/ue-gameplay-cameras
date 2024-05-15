@@ -11,7 +11,7 @@
 /**
  * A camera node that sets the field of view of the camera.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Lens"))
 class UFieldOfViewCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
