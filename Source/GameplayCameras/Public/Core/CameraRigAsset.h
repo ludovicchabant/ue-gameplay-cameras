@@ -113,7 +113,7 @@ struct FCameraRigInterface
 public:
 
 	/** The list of exposed parameters on the camera rig. */
-	UPROPERTY()
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigInterfaceParameter>> InterfaceParameters;
 
 public:
@@ -153,7 +153,7 @@ public:
 public:
 
 	/** Root camera node. */
-	UPROPERTY(EditAnywhere, Instanced, Category=Common)
+	UPROPERTY(Instanced)
 	TObjectPtr<UCameraNode> RootNode;
 
 	/** The gameplay tags on this camera rig. */
@@ -165,11 +165,11 @@ public:
 	FCameraRigInterface Interface;
 
 	/** List of enter transitions for this camera rig. */
-	UPROPERTY(EditAnywhere, Category=Blending)
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
 
 	/** List of exist transitions for this camera rig. */
-	UPROPERTY(EditAnywhere, Category=Blending)
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
 
 	/** Allocation information for all the nodes and variables in this camera rig. */

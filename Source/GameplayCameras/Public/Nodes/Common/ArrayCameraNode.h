@@ -24,7 +24,7 @@ protected:
 public:
 
 	/** The camera nodes to run. */
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY()
 	TArray<TObjectPtr<UCameraNode>> Children;
 };
 

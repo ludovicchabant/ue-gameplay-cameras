@@ -89,11 +89,11 @@ class UCameraRigTransition
 public:
 
 	/** The list of conditions that must pass for this transition to be used. */
-	UPROPERTY(EditAnywhere, Instanced, Category=Common)
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransitionCondition>> Conditions;
 
 	/** The blend to use to blend a given camera rig in or out. */
-	UPROPERTY(EditAnywhere, Instanced, Category=Common)
+	UPROPERTY(Instanced)
 	TObjectPtr<UBlendCameraNode> Blend;
 
 protected:
