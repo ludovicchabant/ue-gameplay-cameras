@@ -54,6 +54,8 @@ void FBlueprintCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 
 		EvaluatorBlueprint->NativeRunCameraDirector(BlueprintParams, BlueprintResult);
 
+		// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
+		// make them run in our own owner context.
 		for (UCameraRigAsset* ActiveCameraRig : BlueprintResult.ActiveCameraRigs)
 		{
 			OutResult.Add(Params.OwnerContext, ActiveCameraRig);
@@ -70,7 +72,7 @@ void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollect
 
 void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params, FBlueprintCameraDirectorEvaluationResult& OutResult)
 {
-	RunCameraDirector(Params, OutResult.ActiveCameraRigs);
+	RunCameraDirector(Params, OutResult);
 }
 
 FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const

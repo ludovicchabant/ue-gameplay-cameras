@@ -55,7 +55,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Evaluation")
 	void RunCameraDirector(
 			const FBlueprintCameraDirectorEvaluationParams& Params, 
-			TArray<UCameraRigAsset*>& OutActiveCameraRigs);
+			FBlueprintCameraDirectorEvaluationResult& OutResult);
 
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(
