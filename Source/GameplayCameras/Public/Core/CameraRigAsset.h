@@ -17,6 +17,8 @@
 class UCameraNode;
 class UCameraVariableAsset;
 
+namespace UE::Cameras { class FCameraRigAssetBuilder; }
+
 /**
  *
  */
@@ -234,9 +236,11 @@ private:
 	 * A list of all the camera nodes, including the 'loose' ones that aren't connected
 	 * to the root node, and therefore would be GC'ed if we didn't hold them here.
 	 */
-	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
+	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
 	TArray<TObjectPtr<UCameraNode>> AllNodes;
 
 #endif  // WITH_EDITORONLY_DATA
+
+	friend class UE::Cameras::FCameraRigAssetBuilder;
 };
 
