@@ -27,6 +27,12 @@ private:
 	TCameraParameterReader<FRotator3d> RotationReader;
 };
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+// For unit tests.
+int32 GOffsetCameraNodeEvaluatorSizeof = sizeof(FOffsetCameraNodeEvaluator);
+int32 GOffsetCameraNodeEvaluatorAlignof = alignof(FOffsetCameraNodeEvaluator);
+#endif
+
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FOffsetCameraNodeEvaluator)
 
 void FOffsetCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)

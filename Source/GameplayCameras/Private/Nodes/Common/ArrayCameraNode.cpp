@@ -26,6 +26,12 @@ private:
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FArrayCameraNodeEvaluator)
 
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+// For unit tests.
+int32 GArrayCameraNodeEvaluatorSizeof = sizeof(FArrayCameraNodeEvaluator);
+int32 GArrayCameraNodeEvaluatorAlignof = alignof(FArrayCameraNodeEvaluator);
+#endif
+
 FCameraNodeEvaluatorChildrenView FArrayCameraNodeEvaluator::OnGetChildren()
 {
 	return FCameraNodeEvaluatorChildrenView(Children);
