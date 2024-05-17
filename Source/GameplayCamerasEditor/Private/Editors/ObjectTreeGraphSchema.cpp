@@ -576,6 +576,7 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 	const bool bHandled = OnBreakPinLinks(TargetPin, bSendsNodeNotification);
 	if (bHandled)
 	{
+		Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
 		return;
 	}
 
@@ -632,6 +633,7 @@ void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraph
 	const bool bHandled = OnBreakSinglePinLink(SourcePin, TargetPin);
 	if (bHandled)
 	{
+		Super::BreakSinglePinLink(SourcePin, TargetPin);
 		return;
 	}
 
