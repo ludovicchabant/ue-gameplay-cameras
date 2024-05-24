@@ -8,6 +8,7 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
+#include "Kismet/GameplayStatics.h"
 #include "Logging/MessageLog.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UnrealType.h"
@@ -87,6 +88,74 @@ void UGameplayCameraSystemComponent::OnRegister()
 		PreviewMeshComponent->RegisterComponentWithWorld(GetWorld());
 	}
 #endif	// WITH_EDITORONLY_DATA
+}
+
+void UGameplayCameraSystemComponent::Deactivate()
+{
+	DeactivateCameraSystem();
+
+	Super::Deactivate();
+}
+
+void UGameplayCameraSystemComponent::ActivateCameraSystem(int32 PlayerIndex)
+{
+	if (ActivatedForPlayerIndex == PlayerIndex)
+	{
+		return;
+	}
+
+	if (ActivatedForPlayerIndex >= 0)
+	{
+		DeactivateCameraSystem();
+	}
+
+	AActor* OwningActor = GetOwner();
+	if (!OwningActor)
+	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no owning actor found!"));
+		return;
+	}
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, PlayerIndex);
+	if (!PC)
+	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no player controller found!"));
+		return;
+	}
+
+	Activate();
+
+	PC->SetViewTarget(OwningActor);
+	ActivatedForPlayerIndex = PlayerIndex;
+}
+
+void UGameplayCameraSystemComponent::DeactivateCameraSystem(AActor* NextViewTarget)
+{
+	if (ActivatedForPlayerIndex < 0)
+	{
+		return;
+	}
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, ActivatedForPlayerIndex);
+	if (PC)
+	{
+		PC->SetViewTarget(NextViewTarget);
+	}
+
+	ActivatedForPlayerIndex = INDEX_NONE;
+
+	Deactivate();
+}
+
+void UGameplayCameraSystemComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
+	{
+		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
+		ActivateCameraSystem(PlayerIndex);
+	}
 }
 
 void UGameplayCameraSystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

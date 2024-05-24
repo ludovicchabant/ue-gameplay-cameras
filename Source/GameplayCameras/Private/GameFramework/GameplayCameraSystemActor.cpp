@@ -6,7 +6,6 @@
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "Kismet/GameplayStatics.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraSystemActor)
 
@@ -17,17 +16,6 @@ AGameplayCameraSystemActor::AGameplayCameraSystemActor(const FObjectInitializer&
 {
 	CameraSystemComponent = CreateDefaultSubobject<UGameplayCameraSystemComponent>(TEXT("CameraSystemComponent"));
 	RootComponent = CameraSystemComponent;
-}
-
-void AGameplayCameraSystemActor::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_Client)
-	{
-		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
-		ActivateForPlayer(PlayerIndex);
-	}
 }
 
 void AGameplayCameraSystemActor::BecomeViewTarget(APlayerController* PC)
@@ -47,15 +35,6 @@ void AGameplayCameraSystemActor::EndViewTarget(APlayerController* PC)
 	CameraSystemComponent->OnEndViewTarget();
 
 	Super::EndViewTarget(PC);
-}
-
-void AGameplayCameraSystemActor::ActivateForPlayer(int32 PlayerIndex)
-{
-	APlayerController* PC = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	if (PC)
-	{
-		PC->SetViewTarget(this);
-	}
 }
 
 #undef LOCTEXT_NAMESPACE

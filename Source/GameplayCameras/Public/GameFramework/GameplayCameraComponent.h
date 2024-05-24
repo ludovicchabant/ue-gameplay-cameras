@@ -32,12 +32,22 @@ public:
 
 	UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
 
+public:
+
+	/** 
+	 * Activates the camera for the given player.
+	 * This looks up the current player camera manager and/or view target in order to find
+	 * the active camera system for the given player. If found, it adds its own camera asset
+	 * as the active one.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void ActivateCamera(int32 PlayerIndex = 0);
 
+	/** Deactivates the camera for the last player it was activated for. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void DeactivateCamera();
 
+	/** Gets the initial evaluation result for this component's context. */
 	UFUNCTION(BlueprintPure, Category=Camera)
 	GAMEPLAYCAMERAS_API UCameraEvaluationResultInterop* GetInitialResult() const;
 
@@ -45,6 +55,8 @@ public:
 
 	// UActorComponent interface
 	virtual void OnRegister() override;
+	virtual void Deactivate() override;
+	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
@@ -61,8 +73,16 @@ private:
 
 public:
 
+	/** The camera asset to run. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Camera)
 	TObjectPtr<UCameraAsset> Camera;
+
+	/**
+	 * If set, auto-activates this component's camera for the given player.
+	 * This is equivalent to calling ActivateCamera on BeginPlay.
+	 */
+	UPROPERTY(EditAnywhere, Category=Camera)
+	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
 protected:
 

@@ -10,6 +10,8 @@
 #include "GameFramework/CameraEvaluationResultInterop.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
+#include "GameplayCameras.h"
+#include "Kismet/GameplayStatics.h"
 #include "Logging/MessageLog.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UnrealType.h"
@@ -37,27 +39,22 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 
 void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
 {
-	if (ActivatedForPlayerIndex >= 0 && ActivatedForPlayerIndex != PlayerIndex)
-	{
-		DeactivateCamera();
-	}
-
-	UWorld* World = GetWorld();
-	if (!ensure(World))
+	if (ActivatedForPlayerIndex == PlayerIndex)
 	{
 		return;
 	}
 
-	PlayerIndex = FMath::Max(0, PlayerIndex);
-	if (ensure(PlayerIndex < World->GetNumPlayerControllers()))
+	if (ActivatedForPlayerIndex >= 0)
 	{
-		FConstPlayerControllerIterator It = World->GetPlayerControllerIterator();
-		It += PlayerIndex;
-		if (APlayerController* PlayerController = It->Get())
-		{
-			ActivateCamera(PlayerController);
-			ActivatedForPlayerIndex = PlayerIndex;
-		}
+		DeactivateCamera();
+	}
+
+	Activate();
+
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, PlayerIndex))
+	{
+		ActivateCamera(PC);
+		ActivatedForPlayerIndex = PlayerIndex;
 	}
 }
 
@@ -68,42 +65,37 @@ void UGameplayCameraComponent::DeactivateCamera()
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!ensure(World))
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, ActivatedForPlayerIndex))
 	{
-		return;
-	}
-
-	if (ensure(ActivatedForPlayerIndex < World->GetNumPlayerControllers()))
-	{
-		FConstPlayerControllerIterator It = World->GetPlayerControllerIterator();
-		It += ActivatedForPlayerIndex;
-		if (APlayerController* PlayerController = It->Get())
-		{
-			DeactivateCamera(PlayerController);
-		}
+		DeactivateCamera(PC);
 	}
 
 	ActivatedForPlayerIndex = INDEX_NONE;
+
+	Deactivate();
 }
 
 void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerController)
 {
 	using namespace UE::Cameras;
 
-	if (!ensure(PlayerController && PlayerController->PlayerCameraManager))
+	if (!ensureMsgf(
+				PlayerController && PlayerController->PlayerCameraManager,
+				TEXT("Can't activate gameplay camera component: invalid player controller!")))
 	{
 		return;
 	}
 	
 	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
-	if (!ensure(CameraSystem))
+	if (!CameraSystem)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system found on the view target!"));
 		return;
 	}
 
-	if (!ensure(Camera))
+	if (!Camera)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera asset was set!"));
 		return;
 	}
 
@@ -175,6 +167,24 @@ void UGameplayCameraComponent::OnRegister()
 
 	UpdatePreviewMeshTransform();
 #endif	// WITH_EDITORONLY_DATA
+}
+
+void UGameplayCameraComponent::Deactivate()
+{
+	DeactivateCamera();
+
+	Super::Deactivate();
+}
+
+void UGameplayCameraComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
+	{
+		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
+		ActivateCamera(PlayerIndex);
+	}
 }
 
 void UGameplayCameraComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)

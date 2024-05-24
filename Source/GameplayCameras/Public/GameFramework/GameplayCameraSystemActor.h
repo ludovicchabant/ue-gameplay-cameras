@@ -26,16 +26,15 @@ public:
 
 	AGameplayCameraSystemActor(const FObjectInitializer& ObjectInit);
 
-	UFUNCTION(BlueprintCallable, Category=Camera)
-	void ActivateForPlayer(int32 PlayerIndex);
+public:
 
+	/** Gets the camera system component. */
 	UFUNCTION(BlueprintGetter, Category=Camera)
 	UGameplayCameraSystemComponent* GetCameraSystemComponent() const { return CameraSystemComponent; }
 
 public:
 
-	// AActor interface
-	virtual void BeginPlay() override;
+	// AActor interface.
 	virtual void BecomeViewTarget(APlayerController* PC) override;
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
 	virtual void EndViewTarget(APlayerController* PC) override;
@@ -44,8 +43,5 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category=Camera, BlueprintGetter="GetCameraSystemComponent", meta=(ExposeFunctionCategories="CameraSystem"))
 	TObjectPtr<UGameplayCameraSystemComponent> CameraSystemComponent;
-
-	UPROPERTY(EditAnywhere, Category=Camera)
-	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 };
 

@@ -37,14 +37,26 @@ public:
 
 	UGameplayCameraSystemComponent(const FObjectInitializer& ObjectInit);
 
+	/** Gets the camera system evaluator. */
 	TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator() { return Evaluator; }
 
+	/** Updates the camera system and returns the computed view. */
 	GAMEPLAYCAMERAS_API void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView);
+
+	/** Sets this component's actor as the view target for the given player. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	void ActivateCameraSystem(int32 PlayerIndex = 0);
+
+	/** Removes this component's actor from being the view target. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	void DeactivateCameraSystem(AActor* NextViewTarget = nullptr);
 
 public:
 
 	// UActorComponent interface
 	virtual void OnRegister() override;
+	virtual void Deactivate() override;
+	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
@@ -68,9 +80,20 @@ private:
 	void DebugDraw(UCanvas* Canvas, APlayerController* PlayController);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
+public:
+
+	/**
+	 * If set, auto-activates the camera system for the given player.
+	 * This sets this actor as the view target, and is equivalent to calling ActivateCameraSystem on BeginPlay.
+	 */
+	UPROPERTY(EditAnywhere, Category=Camera)
+	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
+
 private:
 	
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+
+	int32 ActivatedForPlayerIndex = INDEX_NONE;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FDelegateHandle DebugDrawDelegateHandle;

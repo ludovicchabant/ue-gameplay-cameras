@@ -24,20 +24,18 @@ public:
 
 	AGameplayCameraActor(const FObjectInitializer& ObjectInit);
 
-	virtual USceneComponent* GetDefaultAttachComponent() const override;
-
 public:
 
-	UFUNCTION(BlueprintGetter, Category=Camera)
-	USceneComponent* GetSceneComponent() const { return SceneComponent; }
-
+	/** Gets the camera component. */
 	UFUNCTION(BlueprintGetter, Category=Camera)
 	UGameplayCameraComponent* GetCameraComponent() const { return CameraComponent; }
 
-private:
+public:
 
-	UPROPERTY(VisibleAnywhere, Category=Camera, BluePrintGetter="GetSceneComponent")
-	TObjectPtr<USceneComponent> SceneComponent;
+	// AActor interface.
+	virtual USceneComponent* GetDefaultAttachComponent() const override;
+
+private:
 
 	UPROPERTY(VisibleAnywhere, Category=Camera, BlueprintGetter="GetCameraComponent", meta=(ExposeFunctionCategories="Camera"))
 	TObjectPtr<UGameplayCameraComponent> CameraComponent;

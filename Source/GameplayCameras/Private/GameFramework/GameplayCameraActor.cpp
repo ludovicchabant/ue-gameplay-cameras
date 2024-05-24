@@ -15,11 +15,8 @@
 AGameplayCameraActor::AGameplayCameraActor(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
-	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
-	RootComponent = SceneComponent;
-
 	CameraComponent = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(SceneComponent);
+	RootComponent = CameraComponent;
 }
 
 USceneComponent* AGameplayCameraActor::GetDefaultAttachComponent() const
