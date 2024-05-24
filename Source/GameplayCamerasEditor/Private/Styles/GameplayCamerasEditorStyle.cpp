@@ -6,6 +6,7 @@
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
 #include "Styling/AppStyle.h"
+#include "Styling/CoreStyle.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Styling/SlateStyleMacros.h"
 #include "Styling/SlateTypes.h"
@@ -30,6 +31,8 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	SetContentRoot(ContentDir);
 	SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
 
+	const FTextBlockStyle& NormalText = FAppStyle::Get().GetWidgetStyle<FTextBlockStyle>("NormalText");
+
 	// Camera rig editor icons.
 	Set("CameraRigAssetEditor.Tabs.Toolbox", new IMAGE_BRUSH_SVG("Icons/CameraRig-Toolbox", Icon16x16));
 	Set("CameraRigAssetEditor.Tabs.Search", new CORE_IMAGE_BRUSH_SVG("Starship/Common/search", Icon16x16));
@@ -51,6 +54,17 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("CameraRigAssetEditor.LiveUpdate", new IMAGE_BRUSH_SVG("Icons/CameraRig-LiveUpdate", Icon20x20));
 	Set("CameraRigAssetEditor.Apply", new IMAGE_BRUSH_SVG("CameraEditor-Apply", Icon20x20));
 	Set("CameraRigAssetEditor.FindInCameraRig", new CORE_IMAGE_BRUSH_SVG("Starship/Common/Search", Icon20x20));
+
+	// Camera parameters icons.
+	Set("CameraParameter.VariableBrowser", new IMAGE_BRUSH_SVG("Icons/CameraParameter-Variable", Icon16x16));
+
+	// Camera variable collection icons.
+	Set("CameraVariableCollectionEditor.CreateVariable", new CORE_IMAGE_BRUSH_SVG("Starship/Common/plus", Icon16x16));
+	Set("CameraVariableCollectionEditor.DeleteVariable", new CORE_IMAGE_BRUSH_SVG("Starship/Common/minus", Icon16x16));
+
+	Set("CameraVariableCollectionEditor.Entry.Name", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Bold", 12)));
+	Set("CameraVariableCollectionEditor.Entry.Type", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Italic", 10)));
+	Set("CameraVariableCollectionEditor.Entry.Value", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Regular", 10)));
 
 	// Debugger tool icons.
 	Set("Debugger.EnableDebugInfo.Icon", new IMAGE_BRUSH("Icons/EnableDebugInfo", Icon16x16));

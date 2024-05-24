@@ -11,6 +11,8 @@ class UCameraAsset;
 class UCameraAssetEditor;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
+class UCameraVariableCollection;
+class UCameraVariableCollectionEditor;
 
 DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPanel, const FString&);
 
@@ -46,6 +48,9 @@ public:
 
 	/** Creates an editor for the given camera rig asset */
 	virtual UCameraRigAssetEditor* CreateCameraRigEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraRigAsset* CameraRig) = 0;
+
+	/** Creates an editor for the given variable collection */
+	virtual UCameraVariableCollectionEditor* CreateCameraVariableCollectionEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraVariableCollection* VariableCollection) = 0;
 
 public:
 

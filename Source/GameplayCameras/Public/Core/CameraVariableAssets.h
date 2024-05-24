@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "Containers/UnrealString.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
-#include "Engine/DataAsset.h"
 #include "Math/MathFwd.h"
 
 #include "CameraVariableAssets.generated.h"
@@ -13,7 +13,7 @@
  * The base asset class for all camera variables.
  */
 UCLASS(Abstract)
-class GAMEPLAYCAMERAS_API UCameraVariableAsset : public UDataAsset
+class GAMEPLAYCAMERAS_API UCameraVariableAsset : public UObject
 {
 	GENERATED_BODY()
 
@@ -27,6 +27,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
 	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
+#endif  // WITH_EDITOR
 
 public:
 
@@ -42,13 +46,19 @@ private:
 
 public:
 
-	/** Whether this variable is private and shouldn't be propagated with evaluation results. */
-	UPROPERTY()
-	bool bIsPrivate = false;
+#if WITH_EDITORONLY_DATA
+	/** The name of the variable. */
+	UPROPERTY(EditAnywhere, Category=Camera)
+	FString DisplayName;
+#endif  // WITH_EDITORONLY_DATA
 
 	/** Whether this variable auto-resets to its default value every frame. */
 	UPROPERTY(EditAnywhere, Category=Camera)
 	bool bAutoReset = false;
+
+	/** Whether this variable is private and shouldn't be propagated with evaluation results. */
+	UPROPERTY()
+	bool bIsPrivate = false;
 
 private:
 
@@ -68,6 +78,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Boolean; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&bDefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return LexToString(bDefaultValue); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -89,6 +103,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Integer32; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return LexToString(DefaultValue); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -108,6 +126,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Float; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return LexToString(DefaultValue); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -129,6 +151,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Double; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return LexToString(DefaultValue); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -148,6 +174,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector2f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -169,6 +199,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector2d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -188,6 +222,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -209,6 +247,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -228,6 +270,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector4f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -249,6 +295,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector4d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -268,6 +318,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Rotator3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
 
 public:
 
@@ -289,6 +343,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Rotator3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -309,6 +367,10 @@ public:
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Transform3f; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
 
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The default value of this variable. */
@@ -328,6 +390,10 @@ public:
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Transform3d; }
 	virtual const uint8* GetDefaultValuePtr() const override { return reinterpret_cast<const uint8*>(&DefaultValue); }
+
+#if WITH_EDITOR
+	virtual FString FormatDefaultValue() const override { return DefaultValue.ToString(); }
+#endif  // WITH_EDITOR
 
 public:
 

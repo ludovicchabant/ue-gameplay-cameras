@@ -4,9 +4,12 @@
 
 #include "AssetTools/CameraAssetEditor.h"
 #include "AssetTools/CameraRigAssetEditor.h"
+#include "AssetTools/CameraVariableCollectionEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
+#include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
+#include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
@@ -20,6 +23,7 @@
 #include "ISettingsModule.h"
 #include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
+#include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
@@ -59,6 +63,8 @@ public:
 		RegisterSettings();
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
+		RegisterDetailsCustomizations();
+
 		InitializeLiveEditManager();
 
 		UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(
@@ -73,11 +79,14 @@ public:
 
 		FCameraAssetEditorCommands::Unregister();
 		FCameraRigAssetEditorCommands::Unregister();
+		FCameraVariableCollectionEditorCommands::Unregister();
 		FGameplayCamerasDebuggerCommands::Unregister();
 
 		UnregisterSettings();
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
+		UnregisterDetailsCustomizations();
+
 		TeardownLiveEditManager();
 
 		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
@@ -97,6 +106,14 @@ public:
 		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
 		UCameraRigAssetEditor* AssetEditor = NewObject<UCameraRigAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
 		AssetEditor->Initialize(CameraRig);
+		return AssetEditor;
+	}
+
+	virtual UCameraVariableCollectionEditor* CreateCameraVariableCollectionEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraVariableCollection* VariableCollection) override
+	{
+		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		UCameraVariableCollectionEditor* AssetEditor = NewObject<UCameraVariableCollectionEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
+		AssetEditor->Initialize(VariableCollection);
 		return AssetEditor;
 	}
 
@@ -250,6 +267,7 @@ private:
 
 		FCameraAssetEditorCommands::Register();
 		FCameraRigAssetEditorCommands::Register();	
+		FCameraVariableCollectionEditorCommands::Register();
 		FGameplayCamerasDebuggerCommands::Register();
 	}
 
@@ -277,6 +295,22 @@ private:
 		ModularFeatures.UnregisterModularFeature(RewindDebugger::IRewindDebuggerTrackCreator::ModularFeatureName, RewindDebuggerTrackCreator.Get());
 		ModularFeatures.UnregisterModularFeature(TraceServices::ModuleFeatureName, TraceModule.Get());
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
+	}
+
+	void RegisterDetailsCustomizations()
+	{
+		using namespace UE::Cameras;
+
+		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+		FCameraParameterDetailsCustomization::Register(PropertyEditorModule);
+	}
+
+	void UnregisterDetailsCustomizations()
+	{
+		using namespace UE::Cameras;
+
+		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+		FCameraParameterDetailsCustomization::Unregister(PropertyEditorModule);
 	}
 
 	void InitializeLiveEditManager()
