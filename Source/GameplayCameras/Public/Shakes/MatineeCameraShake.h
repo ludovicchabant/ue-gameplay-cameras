@@ -6,5 +6,6 @@
 
 #include "CoreTypes.h"
 
-COMPILE_WARNING("UMatineeCameraShake has been renamed to ULegacyCameraShake, change to #include \"LegacyCameraShake.h\" and rename references")
+UE_DEPRECATED_HEADER(5.5, "Use LegacyCameraShake.h instead of MatineeCameraShake.h")
+
 #include "LegacyCameraShake.h"
