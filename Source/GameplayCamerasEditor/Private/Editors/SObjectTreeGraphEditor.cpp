@@ -362,6 +362,13 @@ void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, cons
 
 		PastedNode->SnapToGrid(SNodePanel::GetSnapGridSize());
 
+		// Notify object nodes of having been moved so that we save the new position
+		// in the underlying data.
+		if (UObjectTreeGraphNode* PastedObjectNode = Cast<UObjectTreeGraphNode>(PastedNode))
+		{
+			PastedObjectNode->OnGraphNodeMoved(false);
+		}
+
 		GraphEditor->SetNodeSelection(PastedNode, true);
 	}
 
