@@ -88,7 +88,7 @@ void SObjectTreeGraphToolboxEntry::Construct(const FArguments& InArgs)
 			SNew(SBorder)
 			.BorderImage(this, &SObjectTreeGraphToolboxEntry::GetBorder)
 			.Cursor(EMouseCursor::GrabHand)
-			.ToolTip(EntryToolTip )
+			.ToolTip(EntryToolTip)
 		]
 	];
 }

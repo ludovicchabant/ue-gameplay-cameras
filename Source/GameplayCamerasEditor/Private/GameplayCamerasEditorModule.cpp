@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "GameplayCamerasEditorSettings.h"
+#include "IGameplayCamerasEditorModule.h"
 
 #include "AssetTools/CameraAssetEditor.h"
 #include "AssetTools/CameraRigAssetEditor.h"
@@ -16,6 +16,7 @@
 #include "Debugger/SGameplayCamerasDebugger.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
+#include "GameplayCamerasEditorSettings.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"

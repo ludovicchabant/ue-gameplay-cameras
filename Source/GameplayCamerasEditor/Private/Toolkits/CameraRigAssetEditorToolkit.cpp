@@ -361,8 +361,8 @@ FText FCameraRigAssetEditorToolkit::GetBaseToolkitName() const
 
 FName FCameraRigAssetEditorToolkit::GetToolkitFName() const
 {
-	static FName SequencerName("CameraRigAssetEditor");
-	return SequencerName;
+	static FName ToolkitName("CameraRigAssetEditor");
+	return ToolkitName;
 }
 
 FString FCameraRigAssetEditorToolkit::GetWorldCentricTabPrefix() const
@@ -372,7 +372,7 @@ FString FCameraRigAssetEditorToolkit::GetWorldCentricTabPrefix() const
 
 FLinearColor FCameraRigAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
-	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
+	return FLinearColor(0.7f, 0.0f, 0.0f, 0.5f);
 }
 
 void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
