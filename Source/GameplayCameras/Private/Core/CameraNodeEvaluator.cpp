@@ -23,9 +23,13 @@ void FCameraNodeEvaluationResult::Reset()
 
 FCameraNodeEvaluator* FCameraNodeEvaluatorBuildParams::BuildEvaluator(const UCameraNode* InNode) const
 {
-	FCameraNodeEvaluator* NewEvaluator = InNode->BuildEvaluator(Builder);
-	NewEvaluator->Build(*this);
-	return NewEvaluator;
+	if (InNode)
+	{
+		FCameraNodeEvaluator* NewEvaluator = InNode->BuildEvaluator(Builder);
+		NewEvaluator->Build(*this);
+		return NewEvaluator;
+	}
+	return nullptr;
 }
 
 FCameraNodeEvaluator::FCameraNodeEvaluator()
