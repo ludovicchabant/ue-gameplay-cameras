@@ -140,7 +140,7 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 		return;
 	}
 
-	TArray<UObject*> AllObjects;
+	TSet<UObject*> AllObjects;
 	// Gather up all the objects we need for the graph. Start by all objects that are referenced (directly or
 	// indirectly) by the root object. Our custom reference collector will not collect references that go outside
 	// of the root object's package.
@@ -150,13 +150,16 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 		// Make sure the root object itself is in there.
 		AllObjects.Add(RootObject);
 
-		FPackageReferenceCollector Collector(RootObject, AllObjects);
+		TArray<UObject*> ReferencedObjects;
+		FPackageReferenceCollector Collector(RootObject, ReferencedObjects);
 		Collector.CollectReferences();
+		AllObjects.Append(ReferencedObjects);
 	}
 	// Add any other custom objects the root object may want.
 	if (IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObject))
 	{
-		RootObjectInterface->GetExtraConnectableObjects(AllObjects);
+		const FName GraphName = InGraph->GetConfig().GraphName;
+		RootObjectInterface->GetConnectableObjects(GraphName, AllObjects);
 	}
 	
 	// Create all the nodes.
@@ -273,10 +276,10 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNode(UObjectTreeGraph*
 		return nullptr;
 	}
 
-	return CreateObjectNodeImpl(InGraph, InObject);
+	return OnCreateObjectNode(InGraph, InObject);
 }
 
-UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNodeImpl(UObjectTreeGraph* InGraph, UObject* InObject) const
+UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
 {
 	const FObjectTreeGraphConfig& Config = InGraph->GetConfig();
 	const FObjectTreeGraphClassConfig& ClassConfig = Config.GetObjectClassConfig(InObject->GetClass());
@@ -292,6 +295,39 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNodeImpl(UObjectTreeGr
 	NewNode->Initialize(InObject);
 	GraphNodeCreator.Finalize();
 	return NewNode;
+}
+
+void UObjectTreeGraphSchema::AddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
+{
+	UObjectTreeGraphNode* RootObjectNode = InGraph->GetRootObjectNode();
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObjectNode->GetObject());
+	if (RootObjectInterface)
+	{
+		const FName GraphName = InGraph->GetConfig().GraphName;
+		RootObjectInterface->AddConnectableObject(GraphName, InNewNode->GetObject());
+	}
+
+	OnAddConnectableObject(InGraph, InNewNode);
+}
+
+void UObjectTreeGraphSchema::OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
+{
+}
+
+void UObjectTreeGraphSchema::RemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
+{
+	const FName GraphName = InGraph->GetConfig().GraphName;
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(InGraph->GetRootObject());
+	if (RootObjectInterface)
+	{
+		RootObjectInterface->RemoveConnectableObject(GraphName, InRemovedNode->GetObject());
+	}
+
+	OnRemoveConnectableObject(InGraph, InRemovedNode);
+}
+
+void UObjectTreeGraphSchema::OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
+{
 }
 
 void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
@@ -740,10 +776,9 @@ bool UObjectTreeGraphSchema::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNo
 void UObjectTreeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const
 {
 	UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(Node);
-	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(Graph->GetRootObject());
-	if (RootObjectInterface && ObjectNode)
+	if (ObjectNode)
 	{
-		RootObjectInterface->RemoveConnectableObject(ObjectNode->GetObject());
+		RemoveConnectableObject(Graph, ObjectNode);
 	}
 }
 
@@ -839,30 +874,26 @@ void UObjectTreeGraphSchema::ImportNodesFromText(UObjectTreeGraph* InGraph, cons
 	TempPackage->RemoveFromRoot();
 
 	// Finish setting up the new objects: clear the transient flag from the transient package we used above,
-	// move the objects under the our graph root, and optionally add them via the root interface.
+	// and move the objects under the our graph root.
 	UObject* GraphRootObject = InGraph->GetRootObject();
-	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(GraphRootObject);
 	if (ensure(GraphRootObject))
 	{
 		for (UObject* Object : ImportedObjects)
 		{
 			Object->ClearFlags(RF_Transient);
 			Object->Rename(nullptr, GraphRootObject);
-
-			if (RootObjectInterface)
-			{
-				RootObjectInterface->AddConnectableObject(Object);
-			}
 		}
 	}
 
-	// Create nodes for all the imported objects.
+	// Create nodes for all the imported objects, and add them to the root object if it supports the root interface.
 	FCreatedNodes CreatedNodes;
 	for (UObject* Object : ImportedObjects)
 	{
 		if (UObjectTreeGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
 		{
 			CreatedNodes.CreatedNodes.Add(Object, GraphNode);
+
+			AddConnectableObject(InGraph, GraphNode);
 		}
 	}
 
@@ -934,9 +965,9 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 		return nullptr;
 	}
 
-	const FScopedTransaction Transaction(LOCTEXT("CreateNewNodeAction", "Create New Node"));
+	const FScopedTransaction Transaction(FText::Format(LOCTEXT("CreateNewNodeAction", "Create {0} Node"), ObjectClass->GetDisplayNameText()));
+
 	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
-	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(ObjectTreeGraph->GetRootObject());
 
 	UObject* NewObject = CreateObject();
 
@@ -944,10 +975,7 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 	{
 		UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
 
-		if (RootObjectInterface)
-		{
-			RootObjectInterface->AddConnectableObject(NewObject);
-		}
+		Schema->AddConnectableObject(ObjectTreeGraph, NewGraphNode);
 
 		NewGraphNode->NodePosX = Location.X;
 		NewGraphNode->NodePosY = Location.Y;

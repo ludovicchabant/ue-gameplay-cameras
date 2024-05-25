@@ -196,6 +196,12 @@ public:
 	// IGameplayTagAssetInterface.
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
+public:
+
+	// Graph names for ObjectTreeGraph API.
+	GAMEPLAYCAMERAS_API static const FName NodeTreeGraphName;
+	GAMEPLAYCAMERAS_API static const FName TransitionsGraphName;
+
 protected:
 
 	// IObjectTreeGraphObject interface.
@@ -208,12 +214,12 @@ protected:
 #endif
 
 #if WITH_EDITOR
-	virtual void AddConnectableObject(UObject* InObject) override;
-	virtual void RemoveConnectableObject(UObject* InObject) override;
+	virtual void GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const override;
+	virtual void AddConnectableObject(FName InGraphName, UObject* InObject) override;
+	virtual void RemoveConnectableObject(FName InGraphName, UObject* InObject) override;
 #endif
 
 	// UObject interface
-	virtual void PostLoad() override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 
 private:
@@ -237,7 +243,13 @@ private:
 	 * to the root node, and therefore would be GC'ed if we didn't hold them here.
 	 */
 	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
-	TArray<TObjectPtr<UCameraNode>> AllNodes;
+	TArray<TObjectPtr<UObject>> AllNodeTreeObjects;
+
+	/**
+	 * Similar to AllNodeTreeObjects, but for the transitions graph.
+	 */
+	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
+	TArray<TObjectPtr<UObject>> AllTransitionsObjects;
 
 #endif  // WITH_EDITORONLY_DATA
 

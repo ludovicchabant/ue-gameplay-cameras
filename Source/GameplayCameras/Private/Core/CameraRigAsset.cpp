@@ -41,6 +41,9 @@ bool FCameraRigInterface::HasInterfaceParameter(const FString& ParameterName) co
 	return FindInterfaceParameterByName(ParameterName) != nullptr;
 }
 
+const FName UCameraRigAsset::NodeTreeGraphName(TEXT("NodeTree"));
+const FName UCameraRigAsset::TransitionsGraphName(TEXT("Transitions"));
+
 void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
 {
 	TagContainer.AppendTags(GameplayTags);
@@ -52,28 +55,6 @@ void UCameraRigAsset::BuildCameraRig()
 
 	FCameraRigAssetBuilder Builder;
 	Builder.BuildCameraRig(this);
-}
-
-void UCameraRigAsset::PostLoad()
-{
-#if WITH_EDITORONLY_DATA
-	if (AllNodes.IsEmpty())
-	{
-		// Rebuild the AllNodes array from scratch if this is old data.
-		TArray<UObject*> AllObjects;
-		UPackage* Package = GetOutermost();
-		GetObjectsWithPackage(Package, AllObjects);
-		for (UObject* Obj : AllObjects)
-		{
-			if (UCameraNode* CameraNode = Cast<UCameraNode>(Obj))
-			{
-				AllNodes.Add(CameraNode);
-			}
-		}
-	}
-#endif  // WITH_EDITORONLY_DATA
-
-	Super::PostLoad();
 }
 
 void UCameraRigAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
@@ -134,24 +115,46 @@ void UCameraRigAsset::OnUpdateGraphNodeCommentText(const FString& NewComment)
 	GraphNodeComment = NewComment;
 }
 
-void UCameraRigAsset::AddConnectableObject(UObject* InObject)
+void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const
 {
-	// Camera nodes and rig parameters are shown on the graph editor. Handle the former case. The latter are
-	// already added to the interface struct even when not connected.
-	if (UCameraNode* CameraNode = Cast<UCameraNode>(InObject))
+	if (InGraphName == NodeTreeGraphName)
 	{
-		Modify();
-		const int32 Index = AllNodes.AddUnique(CameraNode);
-		ensure(Index == AllNodes.Num() - 1);
+		OutObjects.Append(AllNodeTreeObjects);
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		OutObjects.Append(AllTransitionsObjects);
 	}
 }
 
-void UCameraRigAsset::RemoveConnectableObject(UObject* InObject)
+void UCameraRigAsset::AddConnectableObject(FName InGraphName, UObject* InObject)
 {
-	if (UCameraNode* CameraNode = Cast<UCameraNode>(InObject))
+	Modify();
+
+	if (InGraphName == NodeTreeGraphName)
 	{
-		Modify();
-		const int32 NumRemoved = AllNodes.Remove(CameraNode);
+		const int32 Index = AllNodeTreeObjects.AddUnique(InObject);
+		ensure(Index == AllNodeTreeObjects.Num() - 1);
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		const int32 Index = AllTransitionsObjects.AddUnique(InObject);
+		ensure(Index == AllTransitionsObjects.Num() - 1);
+	}
+}
+
+void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObject)
+{
+	Modify();
+
+	if (InGraphName == NodeTreeGraphName)
+	{
+		const int32 NumRemoved = AllNodeTreeObjects.Remove(InObject);
+		ensure(NumRemoved == 1);
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		const int32 NumRemoved = AllTransitionsObjects.Remove(InObject);
 		ensure(NumRemoved == 1);
 	}
 }

@@ -4,9 +4,11 @@
 
 #include "CoreTypes.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "GraphEditor.h"
 
 #include "ObjectTreeGraphSchema.generated.h"
 
+class IObjectTreeGraphRootObject;
 class UEdGraph;
 class UObjectTreeGraph;
 class UObjectTreeGraphNode;
@@ -49,6 +51,12 @@ public:
 	/** Creates an object graph node for the given object. */
 	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
 
+	/** Adds an object to the underlying data after it has been added to the graph. */
+	void AddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
+
+	/** Removes an object from the underlying data after it has been removed from the graph. */
+	void RemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
+
 	/** Export the given selection into a text suitable for copy/pasting. */
 	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes) const;
 
@@ -75,13 +83,6 @@ public:
 	virtual bool SupportsDropPinOnNode(UEdGraphNode* InTargetNode, const FEdGraphPinType& InSourcePinType, EEdGraphPinDirection InSourcePinDirection, FText& OutErrorMessage) const override;
 	virtual bool SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNode* Node) const override;
 
-	// UObjectTreeGraphSchema interface.
-	virtual bool OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const;
-	virtual bool OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const;
-	virtual bool OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
-	virtual void OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const;
-	virtual void FilterGraphContextPlaceableClasses(TArray<UClass*>& InOutClasses) const;
-
 protected:
 
 	struct FCreatedNodes
@@ -91,8 +92,15 @@ protected:
 
 	// UObjectTreeGraphSchema interface.
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
-	virtual UObjectTreeGraphNode* CreateObjectNodeImpl(UObjectTreeGraph* InGraph, UObject* InObject) const;
+	virtual UObjectTreeGraphNode* OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
+	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
+	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
 	virtual void CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const;
+	virtual bool OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const;
+	virtual bool OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const;
+	virtual bool OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
+	virtual void OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const;
+	virtual void FilterGraphContextPlaceableClasses(TArray<UClass*>& InOutClasses) const;
 
 protected:
 

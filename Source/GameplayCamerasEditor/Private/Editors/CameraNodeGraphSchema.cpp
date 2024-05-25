@@ -21,10 +21,10 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 {
 	Super::OnCreateAllNodes(InGraph, InCreatedNodes);
 
-	UCameraRigAsset* CameraRigAsset = Cast<UCameraRigAsset>(InGraph->GetRootObject());
-	if (ensure(CameraRigAsset))
+	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
+	if (ensure(CameraRig))
 	{
-		for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRigAsset->Interface.InterfaceParameters)
+		for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
 		{
 			UObjectTreeGraphNode* const* InterfaceParameterNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter);
 			UObjectTreeGraphNode* const* CameraNodeNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter->Target);
@@ -34,6 +34,40 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 				UEdGraphPin* CameraParameterPin = Cast<UCameraNodeGraphNode>(*CameraNodeNode)->GetPinForCameraParameterProperty(InterfaceParameter->TargetPropertyName);
 				InterfaceParameterSelfPin->MakeLinkTo(CameraParameterPin);
 			}
+		}
+	}
+}
+
+void UCameraNodeGraphSchema::OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
+{
+	Super::OnAddConnectableObject(InGraph, InNewNode);
+
+	if (UCameraRigInterfaceParameter* InterfaceParameter = Cast<UCameraRigInterfaceParameter>(InNewNode->GetObject()))
+	{
+		UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
+		if (ensure(CameraRig))
+		{
+			CameraRig->Modify();
+
+			const int32 Index = CameraRig->Interface.InterfaceParameters.AddUnique(InterfaceParameter);
+			ensure(Index == CameraRig->Interface.InterfaceParameters.Num() - 1);
+		}
+	}
+}
+
+void UCameraNodeGraphSchema::OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
+{
+	Super::OnRemoveConnectableObject(InGraph, InRemovedNode);
+
+	if (UCameraRigInterfaceParameter* InterfaceParameter = Cast<UCameraRigInterfaceParameter>(InRemovedNode->GetObject()))
+	{
+		UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
+		if (ensure(CameraRig))
+		{
+			CameraRig->Modify();
+
+			const int32 NumRemoved = CameraRig->Interface.InterfaceParameters.Remove(InterfaceParameter);
+			ensure(NumRemoved == 1);
 		}
 	}
 }
@@ -220,23 +254,6 @@ bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGra
 	return false;
 }
 
-void UCameraNodeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const
-{
-	Super::OnDeleteNodeFromGraph(Graph, Node);
-
-	UCameraRigAsset* CameraRig = CastChecked<UCameraRigAsset>(Graph->GetRootObject());
-	if (UCameraRigInterfaceParameterGraphNode* RigParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(Node))
-	{
-		UCameraRigInterfaceParameter* RigParameter = CastChecked<UCameraRigInterfaceParameter>(RigParameterNode->GetObject());
-
-		CameraRig->Modify();
-		RigParameter->Modify();
-
-		const int32 NumRemoved = CameraRig->Interface.InterfaceParameters.Remove(RigParameter);
-		ensure(NumRemoved == 1);
-	}
-}
-
 FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::FCameraNodeGraphSchemaAction_NewInterfaceParameterNode()
 {
 }
@@ -260,19 +277,20 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 		return nullptr;
 	}
 
-	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
-
 	const FScopedTransaction Transaction(LOCTEXT("CreateNewNodeAction", "Create New Node"));
 
-	CameraRig->Modify();
+	const FName GraphName = ObjectTreeGraph->GetConfig().GraphName;
+	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
 
 	UCameraRigInterfaceParameter* NewInterfaceParameter = NewObject<UCameraRigInterfaceParameter>(CameraRig, NAME_None, RF_Transactional);
 	NewInterfaceParameter->Target = Target;
 	NewInterfaceParameter->TargetPropertyName = TargetPropertyName;
 	NewInterfaceParameter->InterfaceParameterName = TargetPropertyName.ToString();
-	CameraRig->Interface.InterfaceParameters.Add(NewInterfaceParameter);
 
 	UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewInterfaceParameter);
+
+	Schema->AddConnectableObject(ObjectTreeGraph, NewGraphNode);
+
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
 	NewGraphNode->OnGraphNodeMoved(false);

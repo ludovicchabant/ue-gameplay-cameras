@@ -131,6 +131,11 @@ struct FObjectTreeGraphConfig
 public:
 
 	/**
+	 * The name of the graph, passed to some APIs like IObjectTreeGraphRootObject.
+	 */
+	FName GraphName;
+
+	/**
 	 * The list of connectable object classes.
 	 *
 	 * Objects whose class is connectable (which includes sub-classes) will be eligible 

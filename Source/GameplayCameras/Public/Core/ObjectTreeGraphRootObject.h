@@ -21,9 +21,9 @@ public:
 
 #if WITH_EDITOR
 
-	virtual void AddConnectableObject(UObject* InObject) {}
-	virtual void RemoveConnectableObject(UObject* InObject) {}
-	virtual void GetExtraConnectableObjects(TArray<UObject*>& OutObjects) const {}
+	virtual void GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const {}
+	virtual void AddConnectableObject(FName InGraphName, UObject* InObject) {}
+	virtual void RemoveConnectableObject(FName InGraphName, UObject* InObject) {}
 
 #endif  // WITH_EDITOR
 
