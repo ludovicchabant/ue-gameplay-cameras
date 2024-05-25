@@ -17,7 +17,7 @@ void UCameraRigTransitionCondition::GetGraphNodePosition(int32& NodePosX, int32&
 	NodePosY = GraphNodePosY;
 }
 
-void UCameraRigTransitionCondition::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY)
+void UCameraRigTransitionCondition::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
 	GraphNodePosX = NodePosX;
 	GraphNodePosY = NodePosY;
@@ -39,7 +39,7 @@ void UCameraRigTransition::GetGraphNodePosition(int32& NodePosX, int32& NodePosY
 	NodePosY = GraphNodePosY;
 }
 
-void UCameraRigTransition::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY)
+void UCameraRigTransition::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
 	GraphNodePosX = NodePosX;
 	GraphNodePosY = NodePosY;

@@ -55,7 +55,7 @@ protected:
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
 	virtual void GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY) override;
+	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
 	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags() const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
 	virtual const FString& GetGraphNodeCommentText() const override;
 	virtual void OnUpdateGraphNodeCommentText(const FString& NewComment) override;

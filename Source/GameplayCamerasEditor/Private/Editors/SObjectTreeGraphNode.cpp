@@ -20,7 +20,7 @@ void SObjectTreeGraphNode::MoveTo(const FVector2D& NewPosition, FNodeSet& NodeFi
 
 	if (ObjectGraphNode)
 	{
-		ObjectGraphNode->OnGraphNodeMoved();
+		ObjectGraphNode->OnGraphNodeMoved(bMarkDirty);
 	}
 }
 

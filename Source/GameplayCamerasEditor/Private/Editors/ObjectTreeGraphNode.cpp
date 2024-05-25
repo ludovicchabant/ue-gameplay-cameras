@@ -533,14 +533,13 @@ void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
 	}
 }
 
-void UObjectTreeGraphNode::OnGraphNodeMoved()
+void UObjectTreeGraphNode::OnGraphNodeMoved(bool bMarkDirty)
 {
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	if (GraphObject)
 	{
-		const FScopedTransaction Transaction(LOCTEXT("MoveNode", "Move Node"));
-		Object->Modify();
-		GraphObject->OnGraphNodeMoved(NodePosX, NodePosY);
+		Object->Modify(bMarkDirty);
+		GraphObject->OnGraphNodeMoved(NodePosX, NodePosY, bMarkDirty);
 	}
 }
 

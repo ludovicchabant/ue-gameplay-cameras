@@ -79,7 +79,7 @@ public:
 	virtual void OnUpdateCommentText(const FString& NewComment) override;
 
 	// UObjectTreeGraphNode interface.
-	virtual void OnGraphNodeMoved();
+	virtual void OnGraphNodeMoved(bool bMarkDirty);
 	virtual void OnDoubleClicked() {}
 
 public:

@@ -951,7 +951,7 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 		NewGraphNode->NodePosX = Location.X;
 		NewGraphNode->NodePosY = Location.Y;
-		NewGraphNode->OnGraphNodeMoved();
+		NewGraphNode->OnGraphNodeMoved(false);
 
 		AutoSetupNewNode(NewGraphNode, FromPin);
 

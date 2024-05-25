@@ -32,7 +32,7 @@ void UCameraNode::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
 	NodePosY = GraphNodePosY;
 }
 
-void UCameraNode::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY)
+void UCameraNode::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
 	GraphNodePosX = NodePosX;
 	GraphNodePosY = NodePosY;

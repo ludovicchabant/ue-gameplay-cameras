@@ -47,7 +47,7 @@ public:
 	/** Gets the canvas position for the graph node representing this object. */
 	virtual void GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const {}
 	/** Called to save the canvas position of the graph node representing this object. */
-	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY) {}
+	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty) {}
 
 	// Optional API.
 

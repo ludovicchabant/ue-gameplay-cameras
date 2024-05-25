@@ -275,7 +275,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 	UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewInterfaceParameter);
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
-	NewGraphNode->OnGraphNodeMoved();
+	NewGraphNode->OnGraphNodeMoved(false);
 	NewGraphNode->AutowireNewNode(FromPin);
 
 	return NewGraphNode;
