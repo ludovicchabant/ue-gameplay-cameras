@@ -17,7 +17,11 @@
 class UCameraNode;
 class UCameraVariableAsset;
 
-namespace UE::Cameras { class FCameraRigAssetBuilder; }
+namespace UE::Cameras
+{
+	class FCameraRigAssetBuilder;
+	class FCameraRigAssetBuildLog;
+}
 
 /**
  *
@@ -190,6 +194,11 @@ public:
 	 * camera variables for any exposed parameters.
 	 */
 	GAMEPLAYCAMERAS_API void BuildCameraRig();
+
+	/**
+	 * Builds this camera rig, similar to BuildCameraRig() but using a given build log.
+	 */
+	GAMEPLAYCAMERAS_API void BuildCameraRig(UE::Cameras::FCameraRigAssetBuildLog& InBuildLog);
 
 public:
 

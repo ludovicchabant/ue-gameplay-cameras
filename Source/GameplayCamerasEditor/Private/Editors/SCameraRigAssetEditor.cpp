@@ -255,6 +255,23 @@ void SCameraRigAssetEditor::JumpToNode(UEdGraphNode* InGraphNode)
 	}
 }
 
+bool SCameraRigAssetEditor::FindAndJumpToObjectNode(UObject* InObject)
+{
+	if (UObjectTreeGraphNode* NodeGraphObjectNode = NodeGraph->FindObjectNode(InObject))
+	{
+		SetEditorMode(ECameraRigAssetEditorMode::NodeGraph);
+		NodeGraphEditor->JumpToNode(NodeGraphObjectNode);
+		return true;
+	}
+	if (UObjectTreeGraphNode* TransitionGraphObjectNode = TransitionGraph->FindObjectNode(InObject))
+	{
+		SetEditorMode(ECameraRigAssetEditorMode::TransitionGraph);
+		TransitionGraphEditor->JumpToNode(TransitionGraphObjectNode);
+		return true;
+	}
+	return false;
+}
+
 FText SCameraRigAssetEditor::GetCameraRigAssetName() const
 {
 	return FText::FromString(CameraRigAsset->GetName());

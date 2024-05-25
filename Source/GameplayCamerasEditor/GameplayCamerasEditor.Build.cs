@@ -41,9 +41,9 @@ public class GameplayCamerasEditor : ModuleRules
 				"TimeManagement",
 				"ToolMenus",
 				"TraceAnalysis",
+				"TraceInsights",
 				"TraceLog",
 				"TraceServices",
-				"TraceInsights",
 				"UnrealEd",
 			}
 		);

@@ -8,6 +8,9 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableAssets.h"
 #include "Misc/CString.h"
+#include "Misc/UObjectToken.h"
+
+#define LOCTEXT_NAMESPACE "CameraRigAssetBuilder"
 
 namespace UE::Cameras
 {
@@ -68,8 +71,14 @@ struct FPrivateVariableBuilder
 		CameraRig = Owner.CameraRig;
 	}
 
-	void ReportError()
+	void ReportError(FText&& ErrorMessage)
 	{
+		ReportError(nullptr, MoveTemp(ErrorMessage));
+	}
+
+	void ReportError(UObject* Object, FText&& ErrorMessage)
+	{
+		Owner.BuildLog.AddMessage(EMessageSeverity::Error, MoveTemp(ErrorMessage));
 		Owner.bHasErrors = true;
 	}
 
@@ -130,12 +139,14 @@ void SetupPrivateVariable(
 		{
 			// If this parameter is driven by a user-defined variable, emit an error, and replace that 
 			// driving variable with our private variable.
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Camera node parameter '%s.%s' in camera rig '%s' is both exposed and driven by a variable!."), 
-					*InterfaceParameter->Target->GetName(), 
-					*InterfaceParameter->TargetPropertyName.ToString(),
-					*Builder.CameraRig->GetPathName());
-			Builder.ReportError();
+			Builder.ReportError(
+					InterfaceParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"CameraParameterDrivenTwice", 
+							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
+						FText::FromName(InterfaceParameter->Target->GetFName()), 
+						FText::FromName(InterfaceParameter->TargetPropertyName)));
 		}
 	}
 
@@ -190,6 +201,79 @@ void SetupPrivateVariable(
 
 }  // namespace Internal
 
+FString FCameraRigAssetBuildLogMessage::ToString() const
+{
+	TStringBuilder<256> StringBuilder;
+	if (Object)
+	{
+		StringBuilder.Append(Object->GetName());
+		StringBuilder.Append(TEXT(": "));
+	}
+	StringBuilder.Append(Text.ToString());
+	return StringBuilder.ToString();
+}
+
+void FCameraRigAssetBuildLogMessage::SendToLogging(const FString& InLoggingPrefix) const
+{
+#define UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Verbosity)\
+	UE_LOG(LogCameraSystem, Verbosity, TEXT("%s%s"), *InLoggingPrefix, *ToString());
+
+	switch (Severity)
+	{
+	case EMessageSeverity::Error:
+		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Error);
+		break;
+	case EMessageSeverity::PerformanceWarning:
+	case EMessageSeverity::Warning:
+		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Warning);
+		break;
+	case EMessageSeverity::Info:
+	default:
+		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Log);
+		break;
+	};
+
+#undef UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE
+}
+
+void FCameraRigAssetBuildLog::SetLoggingPrefix(const FString& InPrefix)
+{
+	if (InPrefix.IsEmpty())
+	{
+		LoggingPrefix.Empty();
+	}
+	else
+	{
+		LoggingPrefix = InPrefix + FString(": ");
+	}
+}
+
+void FCameraRigAssetBuildLog::SetForwardMessagesToLogging(bool bInForwardToLogging)
+{
+	bForwardToLogging = bInForwardToLogging;
+}
+
+void FCameraRigAssetBuildLog::AddMessage(EMessageSeverity::Type InSeverity, FText&& InText)
+{
+	AddMessage(InSeverity, nullptr, MoveTemp(InText));
+}
+
+void FCameraRigAssetBuildLog::AddMessage(EMessageSeverity::Type InSeverity, UObject* InObject, FText&& InText)
+{
+	Messages.Add(FCameraRigAssetBuildLogMessage{ InSeverity, InObject, MoveTemp(InText) });
+
+	if (bForwardToLogging)
+	{
+		const FCameraRigAssetBuildLogMessage& LastMessage = Messages.Last();
+		LastMessage.SendToLogging(LoggingPrefix);
+	}
+}
+
+FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraRigAssetBuildLog& InBuildLog)
+	: BuildLog(InBuildLog)
+{
+}
+
 void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 {
 	if (!ensure(InCameraRig))
@@ -200,9 +284,11 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 	CameraRig = InCameraRig;
 	bHasErrors = false;
 	bHasWarnings = false;
+	BuildLog.SetLoggingPrefix(InCameraRig->GetPathName() + TEXT(": "));
 	{
 		BuildCameraRigImpl();
 	}
+	BuildLog.SetLoggingPrefix(FString());
 	UpdateBuildStatus();
 }
 
@@ -210,7 +296,7 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 {
 	if (!CameraRig->RootNode)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Camera rig '%s' has no root node."), *CameraRig->GetPathName());
+		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingRootNode", "Camera rig has no root node set."));
 		bHasErrors = true;
 		return;
 	}
@@ -324,27 +410,40 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 	for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
 	{
 		// Do some basic validation.
-		if (!InterfaceParameter || !InterfaceParameter->Target)
+		if (!InterfaceParameter)
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter target in camera rig: '%s'."),
-					*CameraRigPathName);
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					LOCTEXT("InvalidInterfaceParameter", "Invalid interface parameter or target."));
 			bHasErrors = true;
+			continue;
+		}
+		if (!InterfaceParameter->Target)
+		{
+			BuildLog.AddMessage(EMessageSeverity::Warning,
+					InterfaceParameter,
+					LOCTEXT(
+						"DisconnectedInterfaceParameter", 
+						"Interface parameter isn't connected: setting overrides for it will not do anything."));
+			bHasWarnings = true;
 			continue;
 		}
 		if (InterfaceParameter->TargetPropertyName.IsNone())
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter target property name in camera rig: '%s'."), 
-					*CameraRigPathName);
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					InterfaceParameter,
+					LOCTEXT(
+						"InvalidInterfaceParameterTargetPropertyName", 
+						"Invalid interface parameter target property name."));
 			bHasErrors = true;
 			continue;
 		}
 		if (InterfaceParameter->InterfaceParameterName.IsEmpty())
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter name in camera rig '%s'."), 
-					*CameraRigPathName);
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					InterfaceParameter,
+					LOCTEXT(
+						"InvalidInterfaceParameterName",
+						"Invalid interface parameter name."));
 			bHasErrors = true;
 			continue;
 		}
@@ -352,10 +451,12 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 		// Check duplicate parameter names.
 		if (UsedInterfaceParameterNames.Contains(InterfaceParameter->InterfaceParameterName))
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Multiple interface parameters named '%s' in camera rig '%s'. Ignoring duplicates."), 
-					*InterfaceParameter->InterfaceParameterName, 
-					*CameraRigPathName);
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					InterfaceParameter,
+					FText::Format(LOCTEXT(
+						"InterfaceParameterNameCollision",
+						"Multiple interface parameters named '{0}'. Ignoring duplicates."),
+						FText::FromString(InterfaceParameter->InterfaceParameterName)));
 			bHasErrors = true;
 			continue;
 		}
@@ -367,11 +468,14 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 		FProperty* TargetProperty = TargetClass->FindPropertyByName(InterfaceParameter->TargetPropertyName);
 		if (!TargetProperty)
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter in camera rig '%s': no property '%s' on camera node '%s'."), 
-					*CameraRigPathName, 
-					*InterfaceParameter->InterfaceParameterName, 
-					*Target->GetName());
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					Target,
+					FText::Format(LOCTEXT(
+						"InvalidInterfaceParameterTargetProperty",
+						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but no such property found."),
+						FText::FromString(InterfaceParameter->InterfaceParameterName), 
+						FText::FromName(InterfaceParameter->TargetPropertyName),
+						FText::FromName(Target->GetFName())));
 			bHasErrors = true;
 			continue;
 		}
@@ -379,11 +483,14 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 		FStructProperty* TargetStructProperty = CastField<FStructProperty>(TargetProperty);
 		if (!TargetStructProperty)
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter in camera rig '%s': property '%s' on camera node '%s' is not a camera parameter."),
-					*CameraRigPathName, 
-					*InterfaceParameter->InterfaceParameterName, 
-					*Target->GetName());
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					Target,
+					FText::Format(LOCTEXT(
+						"InvalidCameraNodeProperty",
+						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but it's not a camera parameter."),
+						FText::FromString(InterfaceParameter->InterfaceParameterName), 
+						FText::FromName(InterfaceParameter->TargetPropertyName),
+						FText::FromName(Target->GetFName())));
 			bHasErrors = true;
 			continue;
 		}
@@ -401,11 +508,13 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid interface parameter in camera rig '%s': property '%s' on camera node '%s' is not a camera parameter."), 
-					*CameraRigPathName, 
-					*InterfaceParameter->InterfaceParameterName,
-					*Target->GetName());
+			BuildLog.AddMessage(EMessageSeverity::Error,
+					FText::Format(LOCTEXT(
+						"InvalidCameraNodeProperty",
+						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but it's not a camera parameter."),
+						FText::FromString(InterfaceParameter->InterfaceParameterName), 
+						FText::FromName(InterfaceParameter->TargetPropertyName),
+						FText::FromName(Target->GetFName())));
 			bHasErrors = true;
 			continue;
 		}
@@ -514,4 +623,6 @@ void FCameraRigAssetBuilder::UpdateBuildStatus()
 }
 
 }  // namespace UE::Cameras
+
+#undef LOCTEXT_NAMESPACE
 

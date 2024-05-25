@@ -37,6 +37,10 @@ public:
 	UObject* GetRootObject() const { return WeakRootObject.Get(); }
 	/** Gets the root object's graph node. */
 	UObjectTreeGraphNode* GetRootObjectNode() const { return RootObjectNode; }
+
+	/** Finds a node for the given object. */
+	UObjectTreeGraphNode* FindObjectNode(UObject* InObject) const;
+
 	/** Gets the graph configuration. */
 	const FObjectTreeGraphConfig& GetConfig() const;
 

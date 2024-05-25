@@ -6,6 +6,7 @@
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetBuilder.h"
 #include "EditorModeManager.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
@@ -20,6 +21,7 @@
 #include "IMessageLogListing.h"
 #include "MessageLogInitializationOptions.h"
 #include "MessageLogModule.h"
+#include "Misc/UObjectToken.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -217,6 +219,7 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	LogOptions.bAllowClear = false;
 	LogOptions.MaxPageCount = 1;
 	MessageListing = MessageLogModule.CreateLogListing("CameraRigAssetEditorStats", LogOptions);
+	MessageListing->OnMessageTokenClicked().AddSP(this, &FCameraRigAssetEditorToolkit::OnMessageTokenClicked);
 
 	MessagesWidget = MessageLogModule.CreateLogListingWidget(MessageListing.ToSharedRef());
 }
@@ -380,11 +383,30 @@ void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent&
 	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
 }
 
+void FCameraRigAssetEditorToolkit::OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken)
+{
+	if (InMessageToken->GetType() == EMessageToken::Object)
+	{
+		const TSharedRef<FUObjectToken> ObjectToken = StaticCastSharedRef<FUObjectToken>(InMessageToken);
+		if (UObject* Object = ObjectToken->GetObject().Get())
+		{
+			CameraRigEditorWidget->FindAndJumpToObjectNode(Object);
+		}
+	}
+}
+
 void FCameraRigAssetEditorToolkit::OnBuild()
 {
 	using namespace UE::Cameras;
 
-	CameraRigAsset->BuildCameraRig();
+	FCameraRigAssetBuildLog BuildLog;
+	CameraRigAsset->BuildCameraRig(BuildLog);
+	GetBuildMessageLogListing(BuildLog);
+
+	if (CameraRigAsset->BuildStatus != ECameraRigBuildStatus::Clean)
+	{
+		TabManager->TryInvokeTab(MessagesTabId);
+	}
 
 	FCameraRigPackages BuiltPackages;
 	CameraRigAsset->GatherPackages(BuiltPackages);
@@ -394,6 +416,37 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 		LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
 	}
 }
+
+void FCameraRigAssetEditorToolkit::GetBuildMessageLogListing(FCameraRigAssetBuildLog& InBuildLog)
+{
+	if (MessageListing.IsValid())
+	{
+		MessageListing->ClearMessages();
+	}
+
+	for (const FCameraRigAssetBuildLogMessage& Message : InBuildLog.GetMessages())
+	{
+		TSharedRef<FTokenizedMessage> TokenizedMessage = FTokenizedMessage::Create(Message.Severity);
+
+		if (Message.Object)
+		{
+			TSharedRef<FUObjectToken> ObjectToken = FUObjectToken::Create(
+					Message.Object, FText::FromName(Message.Object->GetFName()));
+
+			// Suppress default activation callback that opens the content browser. We handle that
+			// sort of stuff in a more general fashion in OnMessageTokenClicked.
+			static auto DummyActivation = [](const TSharedRef<class IMessageToken>&) {};
+			ObjectToken->OnMessageTokenActivated(FOnMessageTokenActivated::CreateLambda(DummyActivation));
+			
+			TokenizedMessage->AddToken(ObjectToken);
+		}
+
+		TokenizedMessage->AddToken(FTextToken::Create(Message.Text));
+
+		MessageListing->AddMessage(TokenizedMessage);
+	}
+}
+
 
 void FCameraRigAssetEditorToolkit::OnFindInCameraRig()
 {

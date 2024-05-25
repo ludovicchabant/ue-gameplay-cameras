@@ -21,6 +21,7 @@ class UEdGraphNode;
 namespace UE::Cameras
 {
 
+class FCameraRigAssetBuildLog;
 class IGameplayCamerasLiveEditManager;
 class SCameraRigAssetEditor;
 
@@ -75,6 +76,9 @@ private:
 
 	FSlateIcon GetBuildButtonIcon() const;
 	FText GetBuildButtonTooltip() const;
+
+	void OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken);
+	void GetBuildMessageLogListing(FCameraRigAssetBuildLog& InBuildLog);
 
 	void OnBuild();
 	void OnFindInCameraRig();

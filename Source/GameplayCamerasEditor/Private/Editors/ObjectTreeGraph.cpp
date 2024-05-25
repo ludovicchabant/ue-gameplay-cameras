@@ -28,6 +28,21 @@ void UObjectTreeGraph::Initialize(TObjectPtr<UObject> InRootObject, const FObjec
 	}
 }
 
+UObjectTreeGraphNode* UObjectTreeGraph::FindObjectNode(UObject* InObject) const
+{
+	for (UEdGraphNode* Node : Nodes)
+	{
+		if (UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(Node))
+		{
+			if (ObjectNode->GetObject() == InObject)
+			{
+				return ObjectNode;
+			}
+		}
+	}
+	return nullptr;
+}
+
 const FObjectTreeGraphConfig& UObjectTreeGraph::GetConfig() const
 {
 	return Config;
