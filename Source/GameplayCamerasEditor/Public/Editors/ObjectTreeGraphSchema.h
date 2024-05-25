@@ -43,10 +43,20 @@ public:
 	/** Creates a new schema. */
 	UObjectTreeGraphSchema(const FObjectInitializer& ObjInit);
 
+	/** Rebuilds the graph from scratch. */
 	void RebuildGraph(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const;
 
 	/** Creates an object graph node for the given object. */
 	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
+
+	/** Export the given selection into a text suitable for copy/pasting. */
+	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes) const;
+
+	/** Imports the given text into the given graph. */
+	void ImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport, TArray<UEdGraphNode*>& OutPastedNodes) const;
+
+	/** Checks if the given text is suitable for importing. */
+	bool CanImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport) const;
 
 public:
 
@@ -71,7 +81,6 @@ public:
 	virtual bool OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
 	virtual void OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const;
 	virtual void FilterGraphContextPlaceableClasses(TArray<UClass*>& InOutClasses) const;
-	virtual void ProcessDuplicatedNodes(UObjectTreeGraph* InGraph, const TMap<UEdGraphNode*, UEdGraphNode*>& NodeMap) const;
 
 protected:
 
@@ -83,6 +92,7 @@ protected:
 	// UObjectTreeGraphSchema interface.
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
 	virtual UObjectTreeGraphNode* CreateObjectNodeImpl(UObjectTreeGraph* InGraph, UObject* InObject) const;
+	virtual void CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const;
 
 protected:
 

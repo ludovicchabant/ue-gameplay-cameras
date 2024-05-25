@@ -35,6 +35,8 @@
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
+DEFINE_LOG_CATEGORY(LogCameraSystemEditor);
+
 const FName IGameplayCamerasEditorModule::GameplayCamerasEditorAppIdentifier("GameplayCamerasEditorApp");
 const FName IGameplayCamerasEditorModule::CameraRigAssetEditorToolBarName("CameraRigAssetEditor.ToolBar");
 

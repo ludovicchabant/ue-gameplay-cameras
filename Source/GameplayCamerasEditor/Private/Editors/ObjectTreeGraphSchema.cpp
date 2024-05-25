@@ -6,10 +6,15 @@
 #include "Editors/ObjectTreeConnectionDrawingPolicy.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
-#include "Serialization/ArchiveUObject.h"
+#include "Exporters/Exporter.h"
+#include "Factories.h"
+#include "GameplayCameras.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "ScopedTransaction.h"
+#include "Serialization/ArchiveUObject.h"
 #include "UObject/FastReferenceCollector.h"
 #include "UObject/UObjectIterator.h"
+#include "UnrealExporter.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ObjectTreeGraphSchema)
 
@@ -79,6 +84,29 @@ private:
 	TSet<UObject*> VisitedObjects;
 
 	TArray<UObject*>& ReferencedObjects;
+};
+
+class FObjectTextFactory : public FCustomizableTextObjectFactory
+{
+public:
+	FObjectTextFactory()
+		: FCustomizableTextObjectFactory(GWarn)
+	{
+	}
+
+	// FCustomizableTextObjectFactory interface.
+	virtual bool CanCreateClass(UClass* ObjectClass, bool& bOmitSubObjs) const override
+	{
+		return true;
+	}
+
+	virtual void ProcessConstructedObject(UObject* NewObject) override
+	{
+		check(NewObject);
+		CreatedObjects.Add(NewObject);
+	}
+
+	TArray<UObject*> CreatedObjects;
 };
 
 }  // namespace UE::ObjectTreeGraph
@@ -719,42 +747,145 @@ void UObjectTreeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdG
 	}
 }
 
-void UObjectTreeGraphSchema::ProcessDuplicatedNodes(UObjectTreeGraph* InGraph, const TMap<UEdGraphNode*, UEdGraphNode*>& NodeMap) const
+FString UObjectTreeGraphSchema::ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes) const
 {
-	UPackage* RootObjectPackage = InGraph->GetRootObject()->GetOutermost();
+	// Gather up the nodes we need to copy from.
+	TSet<UObject*> ObjectsToExport;
+	TSet<UObject*> OtherNodesToExport;
 
-	// Create object duplicates for all the new nodes.
-	for (TPair<UEdGraphNode*, UEdGraphNode*> Pair : NodeMap)
+	for (FGraphPanelSelectionSet::TConstIterator NodeIt(Nodes); NodeIt; ++NodeIt)
 	{
-		const UObjectTreeGraphNode* OldNode = Cast<UObjectTreeGraphNode>(Pair.Key);
-		UObjectTreeGraphNode* NewNode = Cast<UObjectTreeGraphNode>(Pair.Value);
-
-		if (OldNode && NewNode)
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt);
+		if (Node && 
+				(!bOnlyCanDuplicateNodes || Node->CanDuplicateNode()) &&
+				(!bOnlyCanDeleteNodes || Node->CanUserDeleteNode()))
 		{
-			ensure(OldNode->GetObject() == NewNode->GetObject());
+			Node->PrepareForCopying();
 
-			UObject* NewNodeObject = DuplicateObject<UObject>(OldNode->GetObject(), RootObjectPackage);
-			NewNode->Initialize(NewNodeObject);
+			if (UObjectTreeGraphNode* ObjectTreeNode = Cast<UObjectTreeGraphNode>(Node))
+			{
+				ObjectsToExport.Add(ObjectTreeNode->GetObject());
+			}
+			else
+			{
+				OtherNodesToExport.Add(Node);
+			}
 		}
 	}
 
-	// Patch-up property references on the new nodes' objects.
-	for (TPair<UEdGraphNode*, UEdGraphNode*> Pair : NodeMap)
+	if (ObjectsToExport.IsEmpty() && OtherNodesToExport.IsEmpty())
 	{
-		UObjectTreeGraphNode* NewNode = Cast<UObjectTreeGraphNode>(Pair.Value);
-		if (NewNode)
+		return FString();
+	}
+
+	// Clear the mark state for saving.
+	UnMarkAllObjects(EObjectMark(OBJECTMARK_TagExp | OBJECTMARK_TagImp));
+
+	FStringOutputDevice Archive;
+	const FExportObjectInnerContext Context;
+
+	UObject* LastOuter = nullptr;
+	for (UObject* ObjectToExport : ObjectsToExport)
+	{
+		// The nodes should all be from the same scope.
+		UObject* ThisOuter = ObjectToExport->GetOuter();
+		if (LastOuter != nullptr && ThisOuter != LastOuter)
 		{
-			NewNode->PostDuplicateObject(NodeMap);
+			UE_LOG(LogCameraSystemEditor, Warning,
+					TEXT("Cannot copy objects from different outers. Only copying from %s"), *LastOuter->GetName());
+			continue;
+		}
+		LastOuter = ThisOuter;
+
+		UExporter::ExportToOutputDevice(
+				&Context,
+				ObjectToExport, 
+				nullptr, // no exporter
+				Archive, 
+				TEXT("copy"), // file type
+				0, // indent
+				PPF_ExportsNotFullyQualified | PPF_Copy | PPF_Delimited, // port flags
+				false, // selected only
+				ThisOuter // export root scope
+				);
+	}
+
+	if (!OtherNodesToExport.IsEmpty())
+	{
+		CopyNonObjectNodes(OtherNodesToExport.Array(), Archive);
+	}
+
+	return Archive;
+}
+
+void UObjectTreeGraphSchema::CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const
+{
+}
+
+void UObjectTreeGraphSchema::ImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport, TArray<UEdGraphNode*>& OutPastedNodes) const
+{
+	using namespace UE::ObjectTreeGraph;
+
+	TArray<UObject*> ImportedObjects;
+
+	// Import the given text as new objects.
+	UPackage* TempPackage = NewObject<UPackage>(nullptr, TEXT("/Engine/GameplayCamerasEditor/Transient"), RF_Transient);
+	TempPackage->AddToRoot();
+	{
+		FObjectTextFactory Factory;
+		Factory.ProcessBuffer(TempPackage, RF_Transactional, TextToImport);
+		ImportedObjects = Factory.CreatedObjects;
+	}
+	TempPackage->RemoveFromRoot();
+
+	// Finish setting up the new objects: clear the transient flag from the transient package we used above,
+	// move the objects under the our graph root, and optionally add them via the root interface.
+	UObject* GraphRootObject = InGraph->GetRootObject();
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(GraphRootObject);
+	if (ensure(GraphRootObject))
+	{
+		for (UObject* Object : ImportedObjects)
+		{
+			Object->ClearFlags(RF_Transient);
+			Object->Rename(nullptr, GraphRootObject);
+
+			if (RootObjectInterface)
+			{
+				RootObjectInterface->AddConnectableObject(Object);
+			}
 		}
 	}
 
-	// Notify for everything.
-	for (TPair<UEdGraphNode*, UEdGraphNode*> Pair : NodeMap)
+	// Create nodes for all the imported objects.
+	FCreatedNodes CreatedNodes;
+	for (UObject* Object : ImportedObjects)
 	{
-		UObjectTreeGraphNode* NewNode = Cast<UObjectTreeGraphNode>(Pair.Value);
-		InGraph->NotifyNodeChanged(NewNode);
+		if (UObjectTreeGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
+		{
+			CreatedNodes.CreatedNodes.Add(Object, GraphNode);
+		}
 	}
-	InGraph->NotifyGraphChanged();
+
+	// Create all the connections.
+	for (TPair<UObject*, UObjectTreeGraphNode*> Pair : CreatedNodes.CreatedNodes)
+	{
+		CreateConnections(Pair.Value, CreatedNodes);
+	}
+
+	OnCreateAllNodes(InGraph, CreatedNodes);
+
+	for (const TTuple<UObject*, UObjectTreeGraphNode*>& Pair : CreatedNodes.CreatedNodes)
+	{
+		OutPastedNodes.Add(Pair.Value);
+	}
+}
+
+bool UObjectTreeGraphSchema::CanImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport) const
+{
+	using namespace UE::ObjectTreeGraph;
+
+	FObjectTextFactory Factory;
+	return Factory.CanCreateObjectsFromText(TextToImport);
 }
 
 const FObjectTreeGraphClassConfig& UObjectTreeGraphSchema::GetObjectClassConfig(const UObjectTreeGraphNode* InNode) const

@@ -74,7 +74,6 @@ public:
 	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
 	virtual bool GetCanRenameNode() const override;
 	virtual void OnRenameNode(const FString& NewName) override;
-	virtual bool CanDuplicateNode() const override;
 	virtual bool CanUserDeleteNode() const override;
 	virtual bool SupportsCommentBubble() const override;
 	virtual void OnUpdateCommentText(const FString& NewComment) override;
@@ -86,7 +85,6 @@ public:
 public:
 
 	// Internal API.
-	void PostDuplicateObject(const TMap<UEdGraphNode*, UEdGraphNode*>& NodeMap);
 	void CreateNewItemPin(FArrayProperty& InArrayProperty);
 	void CreateNewItemPin(UEdGraphPin* InParentArrayPin);
 	void RemoveItemPin(UEdGraphPin* InItemPin);

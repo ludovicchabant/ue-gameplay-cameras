@@ -65,8 +65,6 @@ public:
 	/** Whether users can create new objects of this class in the graph. */
 	OTGCC_FIELD(bool, CanCreateNew)
 	/** Whether users can duplicate objects of this class in the graph. */
-	OTGCC_FIELD(bool, CanDuplicate)
-	/** Whether users can delete objects of this class in the graph. */
 	OTGCC_FIELD(bool, CanDelete)
 
 	/** The metadata specifier to look for in order to categorize the 'create node' action for this class. */
@@ -76,7 +74,7 @@ public:
 
 	FObjectTreeGraphClassConfig();
 
-	/** A shortcut for disabling CanCreateNew, CanDuplicate, and CanDelete. */
+	/** A shortcut for disabling CanCreateNew and CanDelete. */
 	FObjectTreeGraphClassConfig& OnlyAsRoot();
 
 public:

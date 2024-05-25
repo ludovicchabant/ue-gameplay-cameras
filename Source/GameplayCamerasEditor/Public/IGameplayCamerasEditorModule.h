@@ -71,3 +71,5 @@ public:
 	virtual void UnregisterDebugCategoryPanel(const FString& InCategoryName) = 0;
 };
 
+DECLARE_LOG_CATEGORY_EXTERN(LogCameraSystemEditor, Log, All);
+

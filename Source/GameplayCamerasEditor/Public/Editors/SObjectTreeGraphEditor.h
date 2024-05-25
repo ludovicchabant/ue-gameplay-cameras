@@ -65,6 +65,7 @@ protected:
 
 	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes);
 	void ImportNodesFromText(const FVector2D& Location, const FString& TextToImport);
+	bool CanImportNodesFromText(const FString& TextToImport);
 	void DeleteNodes(TArrayView<UObjectTreeGraphNode*> NodesToDelete);
 
 	void SelectAllNodes();

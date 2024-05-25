@@ -78,7 +78,6 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 		.SelfPinDirection(EGPD_Output)
 		.SelfPinName(NAME_None)  // No self pin name, we just want the title
 		.CanCreateNew(false)
-		.CanDuplicate(false)
 		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);

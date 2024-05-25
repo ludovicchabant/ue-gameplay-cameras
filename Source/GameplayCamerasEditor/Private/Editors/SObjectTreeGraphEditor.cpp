@@ -5,7 +5,6 @@
 #include "Algo/AnyOf.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
-#include "EdGraphUtilities.h"
 #include "Editor.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
@@ -317,24 +316,10 @@ void SObjectTreeGraphEditor::OnDoubleClicked()
 
 FString SObjectTreeGraphEditor::ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes)
 {
-	FString ExportedText;
-	TSet<UObject*> NodesToExport;
+	UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
+	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(CurrentGraph->GetSchema());
 
-	for (FGraphPanelSelectionSet::TConstIterator NodeIt(Nodes); NodeIt; ++NodeIt)
-	{
-		UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt);
-		if (Node && 
-				(!bOnlyCanDuplicateNodes || Node->CanDuplicateNode()) &&
-				(!bOnlyCanDeleteNodes || Node->CanUserDeleteNode()))
-		{
-			Node->PrepareForCopying();
-			NodesToExport.Add(Node);
-		}
-	}
-
-	FEdGraphUtilities::ExportNodesToText(NodesToExport, ExportedText);
-
-	return ExportedText;
+	return Schema->ExportNodesToText(Nodes, bOnlyCanDuplicateNodes, bOnlyCanDeleteNodes);
 }
 
 void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, const FString& TextToImport)
@@ -348,32 +333,10 @@ void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, cons
 	UPackage* ObjectPackage = Graph->GetRootObject()->GetOutermost();
 	ObjectPackage->Modify();
 
-	// Import the nodes
-	TSet<UEdGraphNode*> PastedNodes;
-	FEdGraphUtilities::ImportNodesFromText(Graph, TextToImport, PastedNodes);
-
-	// Process all the new nodes.
-	TMap<FGuid, UEdGraphNode*> GuidToNode;
-	for (UEdGraphNode* Node : Graph->Nodes)
-	{
-		GuidToNode.Add(Node->NodeGuid, Node);
-	}
-	
-	TMap<UEdGraphNode*, UEdGraphNode*> PastedNodeMap;
-	for (UEdGraphNode* PastedNode : PastedNodes)
-	{
-		const FGuid OldNodeGuid = PastedNode->NodeGuid;
-		PastedNode->CreateNewGuid();
-
-		UEdGraphNode** OldNode = GuidToNode.Find(OldNodeGuid);
-		if (ensure(OldNode))
-		{
-			PastedNodeMap.Add(*OldNode, PastedNode);
-		}
-	}
-	
+	// Import the nodes.
+	TArray<UEdGraphNode*> PastedNodes;
 	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(Graph->GetSchema());
-	Schema->ProcessDuplicatedNodes(Graph, PastedNodeMap);
+	Schema->ImportNodesFromText(Graph, TextToImport, PastedNodes);
 
 	// Compute the center of the pasted nodes.
 	FVector2D PastedNodesClusterCenter(FVector2D::ZeroVector);
@@ -404,6 +367,14 @@ void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, cons
 
 	// Update the UI.
 	GraphEditor->NotifyGraphChanged();
+}
+
+bool SObjectTreeGraphEditor::CanImportNodesFromText(const FString& TextToImport)
+{
+	UObjectTreeGraph* CurrentGraph = CastChecked<UObjectTreeGraph>(GraphEditor->GetCurrentGraph());
+	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(CurrentGraph->GetSchema());
+
+	return Schema->CanImportNodesFromText(CurrentGraph, TextToImport);
 }
 
 void SObjectTreeGraphEditor::DeleteNodes(TArrayView<UObjectTreeGraphNode*> NodesToDelete)
@@ -447,6 +418,9 @@ void SObjectTreeGraphEditor::DeleteSelectedNodes()
 	}
 	
 	DeleteNodes(NodesToDelete);
+
+	// Remove deleted nodes from the details view.
+	GraphEditor->ClearSelectionSet();
 }
 
 bool SObjectTreeGraphEditor::CanDeleteSelectedNodes()
@@ -514,7 +488,7 @@ bool SObjectTreeGraphEditor::CanPasteNodes()
 	FString ClipboardContent;
 	FPlatformApplicationMisc::ClipboardPaste(ClipboardContent);
 
-	return FEdGraphUtilities::CanImportNodesFromText(GraphEditor->GetCurrentGraph(), ClipboardContent);
+	return CanImportNodesFromText(ClipboardContent);
 }
 
 void SObjectTreeGraphEditor::DuplicateNodes()

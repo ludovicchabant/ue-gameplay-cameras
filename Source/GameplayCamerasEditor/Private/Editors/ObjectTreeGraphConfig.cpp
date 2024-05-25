@@ -18,7 +18,6 @@ FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
 	, _DefaultPropertyPinDirection(EGPD_Output)
 	, _NodeTitleUsesObjectName(false)
 	, _CanCreateNew(true)
-	, _CanDuplicate(true)
 	, _CanDelete(true)
 	, _CreateCategoryMetaData(TEXT("ObjectTreeGraphCategory"))
 {
@@ -27,7 +26,6 @@ FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
 FObjectTreeGraphClassConfig& FObjectTreeGraphClassConfig::OnlyAsRoot()
 {
 	_CanCreateNew = false;
-	_CanDuplicate = false;
 	_CanDelete = false;
 	return *this;
 }

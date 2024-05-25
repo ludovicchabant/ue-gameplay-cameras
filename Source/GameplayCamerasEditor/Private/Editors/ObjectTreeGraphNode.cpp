@@ -33,81 +33,6 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 	}
 }
 
-void UObjectTreeGraphNode::PostDuplicateObject(const TMap<UEdGraphNode*, UEdGraphNode*>& NodeMap)
-{
-	if (!ensure(Object))
-	{
-		return;
-	}
-
-	// Set the correct values on our object.
-	UClass* ObjectClass = Object->GetClass();
-	for (TArray<UEdGraphPin*>::TIterator It(Pins.CreateIterator()); It; ++It)
-	{
-		UEdGraphPin* Pin = *It;
-		if (!ensure(Pin))
-		{
-			continue;
-		}
-		if (Pin->PinType.PinCategory != UObjectTreeGraphSchema::PC_Property)
-		{
-			continue;
-		}
-
-		if (Pin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ObjectProperty)
-		{
-			// Set the underlying object property to the duplicated object pointed to by the connected
-			// duplicated node.
-			FObjectProperty* ObjectProperty = CastFieldChecked<FObjectProperty>(ObjectClass->FindPropertyByName(Pin->GetFName()));
-			if (!Pin->LinkedTo.IsEmpty())
-			{
-				ensure(Pin->LinkedTo.Num() == 1);
-				UObjectTreeGraphNode* LinkedNode = CastChecked<UObjectTreeGraphNode>(Pin->LinkedTo[0]->GetOwningNode());
-				UObject* LinkedObject = LinkedNode->GetObject();
-
-				ObjectProperty->SetValue_InContainer(Object, TObjectPtr<UObject>(LinkedObject));
-			}
-			else
-			{
-				ObjectProperty->ClearValue_InContainer(Object);
-			}
-		}
-		else if (Pin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayPropertyItem)
-		{
-			// Do as above, but in the appropriate place in the value array.
-			// Note that we can have unconnected pins here if we didn't duplicate some of the nodes.
-			// In that case, we need to delete the pin, and remove the null item from the value array.
-			UEdGraphPin* ParentPin = Pin->ParentPin;
-			check(ParentPin);
-			FArrayProperty* ArrayProperty = CastFieldChecked<FArrayProperty>(ObjectClass->FindPropertyByName(ParentPin->GetFName()));
-			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
-			FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(Object));
-
-			const int32 PinIndex = ParentPin->SubPins.Find(Pin);
-			check(PinIndex != INDEX_NONE);
-
-			if (!Pin->LinkedTo.IsEmpty())
-			{
-				ensure(Pin->LinkedTo.Num() == 1);
-				UObjectTreeGraphNode* LinkedNode = CastChecked<UObjectTreeGraphNode>(Pin->LinkedTo[0]->GetOwningNode());
-				UObject* LinkedObject = LinkedNode->GetObject();
-
-				InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(PinIndex), LinkedObject);
-			}
-			else
-			{
-				It.RemoveCurrent();
-				ParentPin->SubPins.Remove(Pin);
-				Pin->MarkAsGarbage();
-
-				ArrayHelper.RemoveValues(PinIndex, 1);
-			}
-		}
-	}
-
-	RefreshArrayPropertyPinNames();
-}
-
 FText UObjectTreeGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
 	if (Object)
@@ -576,17 +501,6 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 		Object->Modify();
 		GraphObject->OnRenameGraphNode(NewName);
 	}
-}
-
-bool UObjectTreeGraphNode::CanDuplicateNode() const
-{
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
-	if (!ObjectClassConfig.CanCreateNew() || !ObjectClassConfig.CanDuplicate())
-	{
-		return false;
-	}
-
-	return Super::CanDuplicateNode();
 }
 
 bool UObjectTreeGraphNode::CanUserDeleteNode() const
