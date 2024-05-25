@@ -48,10 +48,22 @@ SCameraRigAssetEditor::~SCameraRigAssetEditor()
 		if (NodeGraph)
 		{
 			NodeGraph->RemoveFromRoot();
+
+			if (NodeGraphChangedHandle.IsValid())
+			{
+				NodeGraph->RemoveOnGraphChangedHandler(NodeGraphChangedHandle);
+				NodeGraphChangedHandle.Reset();
+			}
 		}
 		if (TransitionGraph)
 		{
 			TransitionGraph->RemoveFromRoot();
+
+			if (TransitionGraphChangedHandle.IsValid())
+			{
+				TransitionGraph->RemoveOnGraphChangedHandler(TransitionGraphChangedHandle);
+				TransitionGraphChangedHandle.Reset();
+			}
 		}
 	}
 }
@@ -86,6 +98,9 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
 	NodeGraph->AddToRoot();
 	NodeGraph->Initialize(CameraRigAsset, GraphConfig);
 	NodeGraph->RebuildGraph(EObjectTreeGraphBuildSource::RootObjectPackage);
+
+	NodeGraphChangedHandle = NodeGraph->AddOnGraphChangedHandler(
+			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));
 
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = LOCTEXT("CameraRigGraphText", "CAMERA RIG");
@@ -132,6 +147,9 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor(const FArguments& InArgs
 	TransitionGraph->AddToRoot();
 	TransitionGraph->Initialize(CameraRigAsset, GraphConfig);
 	TransitionGraph->RebuildGraph(EObjectTreeGraphBuildSource::RootObjectPackage);
+
+	TransitionGraphChangedHandle = TransitionGraph->AddOnGraphChangedHandler(
+			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));
 
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = LOCTEXT("TransitionGraphText", "TRANSITIONS");
@@ -275,6 +293,29 @@ bool SCameraRigAssetEditor::FindAndJumpToObjectNode(UObject* InObject)
 FText SCameraRigAssetEditor::GetCameraRigAssetName() const
 {
 	return FText::FromString(CameraRigAsset->GetName());
+}
+
+void SCameraRigAssetEditor::OnGraphChanged(const FEdGraphEditAction& InEditAction)
+{
+	OnAnyGraphChanged.Broadcast(InEditAction);
+}
+
+FDelegateHandle SCameraRigAssetEditor::AddOnAnyGraphChanged(FOnGraphChanged::FDelegate InAddDelegate)
+{
+	return OnAnyGraphChanged.Add(InAddDelegate);
+}
+
+void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(FDelegateHandle InDelegateHandle)
+{
+	if (InDelegateHandle.IsValid())
+	{
+		OnAnyGraphChanged.Remove(InDelegateHandle);
+	}
+}
+
+void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(const void* InUserObject)
+{
+	OnAnyGraphChanged.RemoveAll(InUserObject);
 }
 
 }  // namespace UE::Cameras

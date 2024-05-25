@@ -17,6 +17,7 @@ class SWidget;
 class UCameraRigAsset;
 class UCameraRigAssetEditor;
 class UEdGraphNode;
+struct FEdGraphEditAction;
 
 namespace UE::Cameras
 {
@@ -76,6 +77,8 @@ private:
 
 	FSlateIcon GetBuildButtonIcon() const;
 	FText GetBuildButtonTooltip() const;
+
+	void OnAnyGraphChanged(const FEdGraphEditAction& InEditAction);
 
 	void OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken);
 	void GetBuildMessageLogListing(FCameraRigAssetBuildLog& InBuildLog);

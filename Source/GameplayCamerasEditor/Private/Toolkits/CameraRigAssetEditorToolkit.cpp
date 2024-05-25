@@ -85,6 +85,10 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UCameraRigAssetEditor
 
 FCameraRigAssetEditorToolkit::~FCameraRigAssetEditorToolkit()
 {
+	if (CameraRigEditorWidget)
+	{
+		CameraRigEditorWidget->RemoveOnAnyGraphChanged(this);
+	}
 }
 
 void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
@@ -197,6 +201,8 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	CameraRigEditorWidget = SNew(SCameraRigAssetEditor)
 		.DetailsView(DetailsView)
 		.CameraRigAsset(CameraRigAsset);
+	CameraRigEditorWidget->AddOnAnyGraphChanged(FOnGraphChanged::FDelegate::CreateSP(
+				this, &FCameraRigAssetEditorToolkit::OnAnyGraphChanged));
 
 	// Create the toolbox, default to the rig editor items.
 	ToolboxWidget = SNew(SObjectTreeGraphToolbox)
@@ -379,6 +385,11 @@ FLinearColor FCameraRigAssetEditorToolkit::GetWorldCentricTabColorScale() const
 }
 
 void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
+{
+	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
+}
+
+void FCameraRigAssetEditorToolkit::OnAnyGraphChanged(const FEdGraphEditAction& InEditAction)
 {
 	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
 }

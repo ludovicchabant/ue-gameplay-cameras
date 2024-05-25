@@ -76,10 +76,19 @@ public:
 	/** Finds a node for the given object and, if so, jumps to it. */
 	bool FindAndJumpToObjectNode(UObject* InObject);
 
+	/** Adds a callback that will be invoked when a graph editor is changed. */
+	FDelegateHandle AddOnAnyGraphChanged(FOnGraphChanged::FDelegate InAddDelegate);
+	/** Removes a previous added callback. */
+	void RemoveOnAnyGraphChanged(FDelegateHandle InDelegateHandle);
+	/** Removes a previous added callback. */
+	void RemoveOnAnyGraphChanged(const void* InUserObject);
+
 protected:
 
 	void CreateNodeGraphEditor(const FArguments& InArgs);
 	void CreateTransitionGraphEditor(const FArguments& InArgs);
+
+	void OnGraphChanged(const FEdGraphEditAction& InEditAction);
 
 	FText GetCameraRigAssetName() const;
 
@@ -103,6 +112,13 @@ private:
 
 	/** The mode for the currently shown graph editor */
 	ECameraRigAssetEditorMode CurrentMode;
+
+	/** Handles for listening to changes in the graphs editors */
+	FDelegateHandle NodeGraphChangedHandle;
+	FDelegateHandle TransitionGraphChangedHandle;
+
+	/* Forwarding delegate for changes in any of the graphs */
+	FOnGraphChanged OnAnyGraphChanged;
 };
 
 }  // namespace UE::Cameras
