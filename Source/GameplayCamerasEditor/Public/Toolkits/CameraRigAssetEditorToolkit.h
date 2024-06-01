@@ -22,7 +22,7 @@ struct FEdGraphEditAction;
 namespace UE::Cameras
 {
 
-class FCameraRigAssetBuildLog;
+class FCameraBuildLog;
 class IGameplayCamerasLiveEditManager;
 class SCameraRigAssetEditor;
 
@@ -81,7 +81,7 @@ private:
 	void OnAnyGraphChanged(const FEdGraphEditAction& InEditAction);
 
 	void OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken);
-	void GetBuildMessageLogListing(FCameraRigAssetBuildLog& InBuildLog);
+	void GetBuildMessageLogListing(FCameraBuildLog& InBuildLog);
 
 	void OnBuild();
 	void OnFindInCameraRig();

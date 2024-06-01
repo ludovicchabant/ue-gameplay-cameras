@@ -7,8 +7,6 @@
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableAssets.h"
-#include "Misc/CString.h"
-#include "Misc/UObjectToken.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigAssetBuilder"
 
@@ -201,75 +199,7 @@ void SetupPrivateVariable(
 
 }  // namespace Internal
 
-FString FCameraRigAssetBuildLogMessage::ToString() const
-{
-	TStringBuilder<256> StringBuilder;
-	if (Object)
-	{
-		StringBuilder.Append(Object->GetName());
-		StringBuilder.Append(TEXT(": "));
-	}
-	StringBuilder.Append(Text.ToString());
-	return StringBuilder.ToString();
-}
-
-void FCameraRigAssetBuildLogMessage::SendToLogging(const FString& InLoggingPrefix) const
-{
-#define UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Verbosity)\
-	UE_LOG(LogCameraSystem, Verbosity, TEXT("%s%s"), *InLoggingPrefix, *ToString());
-
-	switch (Severity)
-	{
-	case EMessageSeverity::Error:
-		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Error);
-		break;
-	case EMessageSeverity::PerformanceWarning:
-	case EMessageSeverity::Warning:
-		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Warning);
-		break;
-	case EMessageSeverity::Info:
-	default:
-		UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Log);
-		break;
-	};
-
-#undef UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE
-}
-
-void FCameraRigAssetBuildLog::SetLoggingPrefix(const FString& InPrefix)
-{
-	if (InPrefix.IsEmpty())
-	{
-		LoggingPrefix.Empty();
-	}
-	else
-	{
-		LoggingPrefix = InPrefix + FString(": ");
-	}
-}
-
-void FCameraRigAssetBuildLog::SetForwardMessagesToLogging(bool bInForwardToLogging)
-{
-	bForwardToLogging = bInForwardToLogging;
-}
-
-void FCameraRigAssetBuildLog::AddMessage(EMessageSeverity::Type InSeverity, FText&& InText)
-{
-	AddMessage(InSeverity, nullptr, MoveTemp(InText));
-}
-
-void FCameraRigAssetBuildLog::AddMessage(EMessageSeverity::Type InSeverity, UObject* InObject, FText&& InText)
-{
-	Messages.Add(FCameraRigAssetBuildLogMessage{ InSeverity, InObject, MoveTemp(InText) });
-
-	if (bForwardToLogging)
-	{
-		const FCameraRigAssetBuildLogMessage& LastMessage = Messages.Last();
-		LastMessage.SendToLogging(LoggingPrefix);
-	}
-}
-
-FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraRigAssetBuildLog& InBuildLog)
+FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog)
 	: BuildLog(InBuildLog)
 {
 }
@@ -296,7 +226,7 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 {
 	if (!CameraRig->RootNode)
 	{
-		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingRootNode", "Camera rig has no root node set."));
+		BuildLog.AddMessage(EMessageSeverity::Error, CameraRig, LOCTEXT("MissingRootNode", "Camera rig has no root node set."));
 		bHasErrors = true;
 		return;
 	}
@@ -413,6 +343,7 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 		if (!InterfaceParameter)
 		{
 			BuildLog.AddMessage(EMessageSeverity::Error,
+					CameraRig,
 					LOCTEXT("InvalidInterfaceParameter", "Invalid interface parameter or target."));
 			bHasErrors = true;
 			continue;
@@ -509,6 +440,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 		{
 			BuildLog.AddMessage(EMessageSeverity::Error,
+					InterfaceParameter,
 					FText::Format(LOCTEXT(
 						"InvalidCameraNodeProperty",
 						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but it's not a camera parameter."),
@@ -605,14 +537,14 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 void FCameraRigAssetBuilder::UpdateBuildStatus()
 {
-	ECameraRigBuildStatus BuildStatus = ECameraRigBuildStatus::Clean;
+	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Clean;
 	if (bHasErrors)
 	{
-		BuildStatus = ECameraRigBuildStatus::WithErrors;
+		BuildStatus = ECameraBuildStatus::WithErrors;
 	}
 	else if (bHasWarnings)
 	{
-		BuildStatus = ECameraRigBuildStatus::CleanWithWarnings;
+		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}
 
 	if (CameraRig->BuildStatus != BuildStatus)

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraBuildStatus.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraVariableTableFwd.h"
@@ -19,21 +20,9 @@ class UCameraVariableAsset;
 
 namespace UE::Cameras
 {
+	class FCameraBuildLog;
 	class FCameraRigAssetBuilder;
-	class FCameraRigAssetBuildLog;
 }
-
-/**
- *
- */
-UENUM()
-enum class ECameraRigBuildStatus : uint8
-{
-	Clean,
-	CleanWithWarnings,
-	WithErrors,
-	Dirty
-};
 
 /**
  * Structure describing various allocations needed by a camera node.
@@ -145,6 +134,7 @@ UCLASS(MinimalAPI)
 class UCameraRigAsset
 	: public UObject
 	, public IGameplayTagAssetInterface
+	, public IHasCameraBuildStatus
 	, public IObjectTreeGraphObject
 	, public IObjectTreeGraphRootObject
 {
@@ -186,7 +176,7 @@ public:
 
 	/** The current build state of this camera rig. */
 	UPROPERTY(Transient)
-	ECameraRigBuildStatus BuildStatus = ECameraRigBuildStatus::Dirty;
+	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Dirty;
 
 	/**
 	 * Builds this camera rig.
@@ -198,12 +188,16 @@ public:
 	/**
 	 * Builds this camera rig, similar to BuildCameraRig() but using a given build log.
 	 */
-	GAMEPLAYCAMERAS_API void BuildCameraRig(UE::Cameras::FCameraRigAssetBuildLog& InBuildLog);
+	GAMEPLAYCAMERAS_API void BuildCameraRig(UE::Cameras::FCameraBuildLog& InBuildLog);
 
 public:
 
-	// IGameplayTagAssetInterface.
+	// IGameplayTagAssetInterface interface.
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+
+	// IHasCameraBuildStatus interface.
+	virtual ECameraBuildStatus GetBuildStatus() const override { return BuildStatus; }
+	virtual void DirtyBuildStatus() override;
 
 public:
 
@@ -222,6 +216,7 @@ protected:
 	virtual void OnUpdateGraphNodeCommentText(const FString& NewComment) override;
 #endif
 
+	// IObjectTreeGraphRootObject interface.
 #if WITH_EDITOR
 	virtual void GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const override;
 	virtual void AddConnectableObject(FName InGraphName, UObject* InObject) override;

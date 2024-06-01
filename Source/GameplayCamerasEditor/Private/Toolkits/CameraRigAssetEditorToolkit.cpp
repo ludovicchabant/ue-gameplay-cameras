@@ -298,13 +298,13 @@ FSlateIcon FCameraRigAssetEditorToolkit::GetBuildButtonIcon() const
 	switch (CameraRigAsset->BuildStatus)
 	{
 		default:
-		case ECameraRigBuildStatus::Dirty:
+		case ECameraBuildStatus::Dirty:
 			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusUnknown);
-		case ECameraRigBuildStatus::WithErrors:
+		case ECameraBuildStatus::WithErrors:
 			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusError);
-		case ECameraRigBuildStatus::Clean:
+		case ECameraBuildStatus::Clean:
 			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusGood);
-		case ECameraRigBuildStatus::CleanWithWarnings:
+		case ECameraBuildStatus::CleanWithWarnings:
 			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusWarning);
 	}
 }
@@ -319,13 +319,13 @@ FText FCameraRigAssetEditorToolkit::GetBuildButtonTooltip() const
 	switch (CameraRigAsset->BuildStatus)
 	{
 		default:
-		case ECameraRigBuildStatus::Dirty:
+		case ECameraBuildStatus::Dirty:
 			return LOCTEXT("BuildButtonStatusDirty", "Dirty or unknown, should rebuild");
-		case ECameraRigBuildStatus::WithErrors:
+		case ECameraBuildStatus::WithErrors:
 			return LOCTEXT("BuildButtonStatusWithErrors", "There were errors during the build, see the log window for details");
-		case ECameraRigBuildStatus::Clean:
+		case ECameraBuildStatus::Clean:
 			return LOCTEXT("BuildButtonStatusClean", "Good to go");
-		case ECameraRigBuildStatus::CleanWithWarnings:
+		case ECameraBuildStatus::CleanWithWarnings:
 			return LOCTEXT("BuildButtonStatusCleanWithWarnings", "There were warnings during the build, see the log window for details");
 	}
 }
@@ -387,12 +387,12 @@ FLinearColor FCameraRigAssetEditorToolkit::GetWorldCentricTabColorScale() const
 
 void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
 {
-	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
+	CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
 }
 
 void FCameraRigAssetEditorToolkit::OnAnyGraphChanged(const FEdGraphEditAction& InEditAction)
 {
-	CameraRigAsset->BuildStatus = ECameraRigBuildStatus::Dirty;
+	CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
 }
 
 void FCameraRigAssetEditorToolkit::OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken)
@@ -411,11 +411,11 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 {
 	using namespace UE::Cameras;
 
-	FCameraRigAssetBuildLog BuildLog;
+	FCameraBuildLog BuildLog;
 	CameraRigAsset->BuildCameraRig(BuildLog);
 	GetBuildMessageLogListing(BuildLog);
 
-	if (CameraRigAsset->BuildStatus != ECameraRigBuildStatus::Clean)
+	if (CameraRigAsset->BuildStatus != ECameraBuildStatus::Clean)
 	{
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
@@ -429,14 +429,14 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	}
 }
 
-void FCameraRigAssetEditorToolkit::GetBuildMessageLogListing(FCameraRigAssetBuildLog& InBuildLog)
+void FCameraRigAssetEditorToolkit::GetBuildMessageLogListing(FCameraBuildLog& InBuildLog)
 {
 	if (MessageListing.IsValid())
 	{
 		MessageListing->ClearMessages();
 	}
 
-	for (const FCameraRigAssetBuildLogMessage& Message : InBuildLog.GetMessages())
+	for (const FCameraBuildLogMessage& Message : InBuildLog.GetMessages())
 	{
 		TSharedRef<FTokenizedMessage> TokenizedMessage = FTokenizedMessage::Create(Message.Severity);
 

@@ -15,7 +15,7 @@ bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 	using namespace UE::Cameras::Test;
 
 	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("InvalidTest")).Get();
-	UTEST_EQUAL("Dirty status", CameraRig->BuildStatus, ECameraRigBuildStatus::Dirty);
+	UTEST_EQUAL("Dirty status", CameraRig->BuildStatus, ECameraBuildStatus::Dirty);
 
 	FStringFormatOrderedArguments ErrorArgs;
 	ErrorArgs.Add(CameraRig->GetPathName());
@@ -26,7 +26,7 @@ bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 			1,
 			false);
 	CameraRig->BuildCameraRig();
-	UTEST_EQUAL("Error status", CameraRig->BuildStatus, ECameraRigBuildStatus::WithErrors);
+	UTEST_EQUAL("Error status", CameraRig->BuildStatus, ECameraBuildStatus::WithErrors);
 
 	return true;
 }
