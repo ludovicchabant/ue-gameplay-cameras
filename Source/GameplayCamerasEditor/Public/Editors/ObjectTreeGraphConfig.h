@@ -7,6 +7,7 @@
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphSchema.h"
 #include "Misc/Optional.h"
 #include "Templates/SubclassOf.h"
 #include "Templates/UnrealTypeTraits.h"
@@ -16,10 +17,14 @@
 class FText;
 class UClass;
 class UObject;
+class UObjectTreeGraph;
 class UObjectTreeGraphNode;
+struct FObjectTreeGraphConfig;
 
+DECLARE_DELEGATE_OneParam(FOnBuildObjectTreeGraphConfig, FObjectTreeGraphConfig& InOutConfig);
 DECLARE_DELEGATE_RetVal_OneParam(FText, FOnGetObjectClassDisplayName, const UClass*);
 DECLARE_DELEGATE_TwoParams(FOnFormatObjectDisplayName, const UObject*, FText&);
+DECLARE_DELEGATE_TwoParams(FOnGetGraphDisplayInfo, const UObjectTreeGraph*, FGraphDisplayInfo&);
 
 #define OTGCC_FIELD(FieldType, FieldName)\
 	public:\
@@ -164,8 +169,23 @@ public:
 	/** A custom callback to format an object's display name. */
 	FOnFormatObjectDisplayName OnFormatObjectDisplayName;
 
+	/** The graph display information. */
+	FGraphDisplayInfo GraphDisplayInfo;
+
+	/** A custom callback to get the graph display information, to override GraphDisplayInfo. */
+	FOnGetGraphDisplayInfo OnGetGraphDisplayInfo;
+
 	/** Advanced, optional bits of configuration for specific classes and sub-classes of objects. */
 	TMap<UClass*, FObjectTreeGraphClassConfig> ObjectClassConfigs;
+
+	/** Stop auto-collection of initial objects at any object that is of the given types. */
+	TArray<UClass*> StopAutoCollectAtObjectClasses;
+
+	/** 
+	 * Whether to collect all objets in the graph automatically from the network of referenced
+	 * objects from the root.
+	 */
+	bool bAutoCollectInitialObjects = true;
 
 public:
 

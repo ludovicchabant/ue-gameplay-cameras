@@ -31,6 +31,7 @@ public:
 
 private:
 
+	UPROPERTY()
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 };
 

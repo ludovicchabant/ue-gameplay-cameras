@@ -52,6 +52,8 @@ public:
 	void Construct(const FArguments& InArgs);
 	~SCameraRigAssetEditor();
 
+	void SetCameraRigAsset(UCameraRigAsset* InCameraRig);
+
 public:
 
 	/** Gets the current editor mode. */
@@ -85,17 +87,25 @@ public:
 
 protected:
 
-	void CreateNodeGraphEditor(const FArguments& InArgs);
-	void CreateTransitionGraphEditor(const FArguments& InArgs);
+	void CreateGraphEditors();
+	void CreateNodeGraphEditor();
+	void CreateTransitionGraphEditor();
+	void DiscardGraphEditors();
+
+	void SetEditorModeImpl(ECameraRigAssetEditorMode InMode, bool bForceSet);
 
 	void OnGraphChanged(const FEdGraphEditAction& InEditAction);
 
-	FText GetCameraRigAssetName() const;
+	FText GetCameraRigAssetName(UObjectTreeGraph* ForGraph) const;
 
 private:
 
 	/** The asset being edited */
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
+
+	TSharedPtr<IDetailsView> DetailsView;
+
+	TWeakPtr<FAssetEditorToolkit> AssetEditorToolkit;
 
 	/** The node hierarchy graph */
 	TObjectPtr<UObjectTreeGraph> NodeGraph;

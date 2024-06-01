@@ -35,5 +35,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
 	FLinearColor CameraBlendNodeTitleColor;
+
+public:
+
+	UPROPERTY()
+	FName LastCameraAssetToolkitModeName;
 };
 

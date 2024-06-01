@@ -46,6 +46,11 @@ struct FPackageReferenceCollector : public FArchiveUObject
 		ArShouldSkipBulkData = true;
 	}
 
+	void StopAtObjectClasses(TArray<UClass*> InStopAtClasses)
+	{
+		StopAtClasses = TSet<UClass*>(InStopAtClasses);
+	}
+
 	void CollectReferences()
 	{
 		ObjectsToVisit.Reset();
@@ -62,9 +67,22 @@ struct FPackageReferenceCollector : public FArchiveUObject
 
 private:
 
+	bool ShouldStopAt(UObject* Obj)
+	{
+		UClass* ObjClass = Obj->GetClass();
+		for (UClass* StopAtClass : StopAtClasses)
+		{
+			if (ObjClass->IsChildOf(StopAtClass))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	virtual FArchive& operator<<(UObject*& ObjRef) override
 	{
-		if (ObjRef != nullptr && ObjRef->IsIn(PackageScope))
+		if (ObjRef != nullptr && ObjRef->IsIn(PackageScope) && !ShouldStopAt(ObjRef))
 		{
 			if (!VisitedObjects.Contains(ObjRef))
 			{
@@ -79,6 +97,7 @@ private:
 
 	UObject* RootObject;
 	UPackage* PackageScope;
+	TSet<UClass*> StopAtClasses;
 
 	TArray<UObject*> ObjectsToVisit;
 	TSet<UObject*> VisitedObjects;
@@ -135,15 +154,18 @@ void UObjectTreeGraphSchema::RemoveAllNodes(UObjectTreeGraph* InGraph) const
 void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const
 {
 	UObject* RootObject = InGraph->GetRootObject();
-	if (!ensure(RootObject))
+	if (!RootObject)
 	{
 		return;
 	}
+
+	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
 
 	TSet<UObject*> AllObjects;
 	// Gather up all the objects we need for the graph. Start by all objects that are referenced (directly or
 	// indirectly) by the root object. Our custom reference collector will not collect references that go outside
 	// of the root object's package.
+	if (GraphConfig.bAutoCollectInitialObjects)
 	{
 		using namespace UE::ObjectTreeGraph;
 
@@ -152,14 +174,14 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 
 		TArray<UObject*> ReferencedObjects;
 		FPackageReferenceCollector Collector(RootObject, ReferencedObjects);
+		Collector.StopAtObjectClasses(GraphConfig.StopAutoCollectAtObjectClasses);
 		Collector.CollectReferences();
 		AllObjects.Append(ReferencedObjects);
 	}
 	// Add any other custom objects the root object may want.
 	if (IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObject))
 	{
-		const FName GraphName = InGraph->GetConfig().GraphName;
-		RootObjectInterface->GetConnectableObjects(GraphName, AllObjects);
+		RootObjectInterface->GetConnectableObjects(GraphConfig.GraphName, AllObjects);
 	}
 	
 	// Create all the nodes.
@@ -174,10 +196,13 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 
 	// Grab the graph node for the root object.
 	InGraph->RootObjectNode = nullptr;
-	UObjectTreeGraphNode** CreatedRootObjectNode = CreatedNodes.CreatedNodes.Find(RootObject);
-	if (ensure(CreatedRootObjectNode))
+	if (!AllObjects.IsEmpty())
 	{
-		InGraph->RootObjectNode = *CreatedRootObjectNode;
+		UObjectTreeGraphNode** CreatedRootObjectNode = CreatedNodes.CreatedNodes.Find(RootObject);
+		if (ensure(CreatedRootObjectNode))
+		{
+			InGraph->RootObjectNode = *CreatedRootObjectNode;
+		}
 	}
 
 	// Create all the connections.
@@ -779,6 +804,28 @@ void UObjectTreeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdG
 	if (ObjectNode)
 	{
 		RemoveConnectableObject(Graph, ObjectNode);
+	}
+}
+
+void UObjectTreeGraphSchema::GetGraphDisplayInformation(const UEdGraph& Graph, FGraphDisplayInfo& OutDisplayInfo) const
+{
+	const UObjectTreeGraph* ObjectTreeGraph = CastChecked<const UObjectTreeGraph>(&Graph);
+	const FObjectTreeGraphConfig& GraphConfig = ObjectTreeGraph->GetConfig();
+
+	OutDisplayInfo = GraphConfig.GraphDisplayInfo;
+
+	if (OutDisplayInfo.PlainName.IsEmpty())
+	{
+		OutDisplayInfo.PlainName = FText::FromString(Graph.GetName());
+	}
+	if (OutDisplayInfo.DisplayName.IsEmpty())
+	{
+		OutDisplayInfo.DisplayName = OutDisplayInfo.PlainName;
+	}
+
+	if (GraphConfig.OnGetGraphDisplayInfo.IsBound())
+	{
+		GraphConfig.OnGetGraphDisplayInfo.Execute(ObjectTreeGraph, OutDisplayInfo);
 	}
 }
 

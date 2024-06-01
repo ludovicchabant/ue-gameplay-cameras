@@ -107,6 +107,9 @@ struct FCameraRigInterface
 
 public:
 
+	UPROPERTY()
+	FString DisplayName;
+
 	/** The list of exposed parameters on the camera rig. */
 	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigInterfaceParameter>> InterfaceParameters;
@@ -171,6 +174,12 @@ public:
 	/** Allocation information for all the nodes and variables in this camera rig. */
 	UPROPERTY()
 	FCameraRigAllocationInfo AllocationInfo;
+
+	/**
+	 * Gets the display name of this camera rig.
+	 * This is either the display name set on the interface object, or its internal name.
+	 */
+	GAMEPLAYCAMERAS_API FString GetDisplayName() const;
 
 public:
 

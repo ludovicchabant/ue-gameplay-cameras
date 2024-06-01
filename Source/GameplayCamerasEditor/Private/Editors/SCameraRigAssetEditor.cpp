@@ -2,19 +2,16 @@
 
 #include "Editors/SCameraRigAssetEditor.h"
 
-#include "Core/BlendCameraNode.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
 #include "EdGraph/EdGraphPin.h"
-#include "Editors/CameraNodeGraphNode.h"
 #include "Editors/CameraNodeGraphSchema.h"
-#include "Editors/CameraRigInterfaceParameterGraphNode.h"
-#include "Editors/CameraTransitionGraphSchema.h"
+#include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/ObjectTreeGraph.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
 #include "Editors/SObjectTreeGraphEditor.h"
-#include "GameplayCamerasEditorSettings.h"
 #include "ObjectEditorUtils.h"
 #include "Widgets/Layout/SBox.h"
 
@@ -26,11 +23,12 @@ namespace UE::Cameras
 void SCameraRigAssetEditor::Construct(const FArguments& InArgs)
 {
 	CameraRigAsset = InArgs._CameraRigAsset;
+	DetailsView = InArgs._DetailsView;
+	AssetEditorToolkit = InArgs._AssetEditorToolkit;
 
 	CurrentMode = ECameraRigAssetEditorMode::NodeGraph;
 
-	CreateNodeGraphEditor(InArgs);
-	CreateTransitionGraphEditor(InArgs);
+	CreateGraphEditors();
 
 	ChildSlot
 	[
@@ -45,108 +43,68 @@ SCameraRigAssetEditor::~SCameraRigAssetEditor()
 {
 	if (!GExitPurge)
 	{
-		if (NodeGraph)
-		{
-			NodeGraph->RemoveFromRoot();
-
-			if (NodeGraphChangedHandle.IsValid())
-			{
-				NodeGraph->RemoveOnGraphChangedHandler(NodeGraphChangedHandle);
-				NodeGraphChangedHandle.Reset();
-			}
-		}
-		if (TransitionGraph)
-		{
-			TransitionGraph->RemoveFromRoot();
-
-			if (TransitionGraphChangedHandle.IsValid())
-			{
-				TransitionGraph->RemoveOnGraphChangedHandler(TransitionGraphChangedHandle);
-				TransitionGraphChangedHandle.Reset();
-			}
-		}
+		DiscardGraphEditors();
 	}
 }
 
-void SCameraRigAssetEditor::CreateNodeGraphEditor(const FArguments& InArgs)
+void SCameraRigAssetEditor::SetCameraRigAsset(UCameraRigAsset* InCameraRig)
 {
-	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
+	if (CameraRigAsset != InCameraRig)
+	{
+		DiscardGraphEditors();
 
-	FObjectTreeGraphConfig GraphConfig;
-	GraphConfig.GraphName = UCameraRigAsset::NodeTreeGraphName;
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigAsset::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraNode::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigInterfaceParameter::StaticClass());
-	GraphConfig.NonConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
-		.OnlyAsRoot()
-		.HasSelfPin(false)
-		.NodeTitleUsesObjectName(true)
-		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
-		.StripDisplayNameSuffix(TEXT("Camera Node"))
-		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
-		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigInterfaceParameter::StaticClass())
-		.SelfPinDirection(EGPD_Output)
-		.SelfPinName(NAME_None)  // No self pin name, we just want the title
-		.CanCreateNew(false)
-		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
+		CameraRigAsset = InCameraRig;
+
+		CreateGraphEditors();
+
+		SetEditorModeImpl(CurrentMode, true);
+	}
+}
+
+void SCameraRigAssetEditor::CreateGraphEditors()
+{
+	CreateNodeGraphEditor();
+	CreateTransitionGraphEditor();
+}
+
+void SCameraRigAssetEditor::CreateNodeGraphEditor()
+{
+	FObjectTreeGraphConfig GraphConfig = UCameraNodeGraphSchema::BuildGraphConfig();
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
 	NodeGraph->Schema = UCameraNodeGraphSchema::StaticClass();
 	NodeGraph->AddToRoot();
-	NodeGraph->Initialize(CameraRigAsset, GraphConfig);
-	NodeGraph->RebuildGraph(EObjectTreeGraphBuildSource::RootObjectPackage);
+	NodeGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 
 	NodeGraphChangedHandle = NodeGraph->AddOnGraphChangedHandler(
 			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));
 
 	FGraphAppearanceInfo Appearance;
-	Appearance.CornerText = LOCTEXT("CameraRigGraphText", "CAMERA RIG");
+	Appearance.CornerText = LOCTEXT("CameraRigGraphText", "CAMERA NODES");
 
 	NodeGraphEditor = SNew(SObjectTreeGraphEditor)
 		.Appearance(Appearance)
-		.DetailsView(InArgs._DetailsView)
-		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName)
+		.DetailsView(DetailsView)
+		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName, NodeGraph.Get())
 		.GraphToEdit(NodeGraph)
-		.AssetEditorToolkit(InArgs._AssetEditorToolkit);
+		.AssetEditorToolkit(AssetEditorToolkit);
 }
 
-void SCameraRigAssetEditor::CreateTransitionGraphEditor(const FArguments& InArgs)
+void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 {
-	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
+	FCameraRigTransitionOwnerInfo OwnerInfo;
+	OwnerInfo.TransitionOwnerClass = UCameraRigAsset::StaticClass();
+	OwnerInfo.GraphName = UCameraRigAsset::TransitionsGraphName;
+	OwnerInfo.EnterTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraRigAsset, EnterTransitions);
+	OwnerInfo.ExitTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraRigAsset, ExitTransitions);
+	FObjectTreeGraphConfig GraphConfig = UCameraRigTransitionGraphSchema::BuildGraphConfig(OwnerInfo);
 
-	FObjectTreeGraphConfig GraphConfig;
-	GraphConfig.GraphName = UCameraRigAsset::TransitionsGraphName;
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigAsset::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransition::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransitionCondition::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
-		.HasSelfPin(false)
-		.OnlyAsRoot()
-		.SetPropertyPinDirection(GET_MEMBER_NAME_STRING_CHECKED(UCameraRigAsset, EnterTransitions), EGPD_Input)
-		.SetPropertyPinDirection(GET_MEMBER_NAME_STRING_CHECKED(UCameraRigAsset, ExitTransitions), EGPD_Output)
-		.NodeTitleUsesObjectName(true)
-		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransition::StaticClass())
-		.SetPropertyPinDirection(GET_MEMBER_NAME_STRING_CHECKED(UCameraRigTransition, Conditions), EGPD_Input)
-		.NodeTitleColor(Settings->CameraRigTransitionTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
-		.SelfPinDirection(EGPD_Output)
-		.DefaultPropertyPinDirection(EGPD_Input)
-		.StripDisplayNameSuffix(TEXT("Transition Condition"))
-		.NodeTitleColor(Settings->CameraRigTransitionConditionTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())
-		.StripDisplayNameSuffix(TEXT("Camera Node"))
-		.CreateCategoryMetaData(TEXT("CameraNodeCategories"));
+	GraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("TransitionGraphDisplayName", "Transitions");
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
-	TransitionGraph->Schema = UCameraTransitionGraphSchema::StaticClass();
+	TransitionGraph->Schema = UCameraRigTransitionGraphSchema::StaticClass();
 	TransitionGraph->AddToRoot();
-	TransitionGraph->Initialize(CameraRigAsset, GraphConfig);
-	TransitionGraph->RebuildGraph(EObjectTreeGraphBuildSource::RootObjectPackage);
+	TransitionGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 
 	TransitionGraphChangedHandle = TransitionGraph->AddOnGraphChangedHandler(
 			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));
@@ -156,10 +114,39 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor(const FArguments& InArgs
 
 	TransitionGraphEditor = SNew(SObjectTreeGraphEditor)
 		.Appearance(Appearance)
-		.DetailsView(InArgs._DetailsView)
-		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName)
+		.DetailsView(DetailsView)
+		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName, TransitionGraph.Get())
 		.GraphToEdit(TransitionGraph)
-		.AssetEditorToolkit(InArgs._AssetEditorToolkit);
+		.AssetEditorToolkit(AssetEditorToolkit);
+}
+
+void SCameraRigAssetEditor::DiscardGraphEditors()
+{
+	TArray<TTuple<UObjectTreeGraph*, FDelegateHandle>> Graphs 
+	{ 
+		{ NodeGraph, NodeGraphChangedHandle },
+		{ TransitionGraph, TransitionGraphChangedHandle } 
+	};
+	for (auto& Pair : Graphs)
+	{
+		UObjectTreeGraph* Graph(Pair.Key);
+		FDelegateHandle GraphChangedHandle(Pair.Value);
+		if (Graph)
+		{
+			Graph->RemoveFromRoot();
+
+			if (GraphChangedHandle.IsValid())
+			{
+				Graph->RemoveOnGraphChangedHandler(GraphChangedHandle);
+			}
+		}
+	}
+
+	NodeGraphChangedHandle.Reset();
+	TransitionGraphChangedHandle.Reset();
+
+	// WARNING: the graph editors (and their graphs) are still in use as widgets 
+	//			in the layout until they are replaced!
 }
 
 ECameraRigAssetEditorMode SCameraRigAssetEditor::GetEditorMode() const
@@ -174,7 +161,12 @@ bool SCameraRigAssetEditor::IsEditorMode(ECameraRigAssetEditorMode InMode) const
 
 void SCameraRigAssetEditor::SetEditorMode(ECameraRigAssetEditorMode InMode)
 {
-	if (InMode != CurrentMode)
+	SetEditorModeImpl(InMode, false);
+}
+
+void SCameraRigAssetEditor::SetEditorModeImpl(ECameraRigAssetEditorMode InMode, bool bForceSet)
+{
+	if (bForceSet || InMode != CurrentMode)
 	{
 		TSharedPtr<SObjectTreeGraphEditor> CurrentGraphEditor;
 		switch(InMode)
@@ -290,9 +282,14 @@ bool SCameraRigAssetEditor::FindAndJumpToObjectNode(UObject* InObject)
 	return false;
 }
 
-FText SCameraRigAssetEditor::GetCameraRigAssetName() const
+FText SCameraRigAssetEditor::GetCameraRigAssetName(UObjectTreeGraph* ForGraph) const
 {
-	return FText::FromString(CameraRigAsset->GetName());
+	if (CameraRigAsset && ForGraph)
+	{
+		const FObjectTreeGraphConfig& GraphConfig = TransitionGraph->GetConfig();
+		return GraphConfig.GetDisplayNameText(CameraRigAsset);
+	}
+	return LOCTEXT("NoCameraRig", "No Camera Rig");
 }
 
 void SCameraRigAssetEditor::OnGraphChanged(const FEdGraphEditAction& InEditAction)

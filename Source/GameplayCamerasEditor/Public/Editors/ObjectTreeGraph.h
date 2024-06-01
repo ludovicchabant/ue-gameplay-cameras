@@ -31,7 +31,10 @@ public:
 	UObjectTreeGraph(const FObjectInitializer& ObjInit);
 
 	/** Initializes the graph given a root object and a graph configuration. */
-	void Initialize(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig);
+	void Reset(
+			TObjectPtr<UObject> InRootObject, 
+			const FObjectTreeGraphConfig& InConfig, 
+			EObjectTreeGraphBuildSource InSource);
 
 	/** Gets the root object. */
 	UObject* GetRootObject() const { return WeakRootObject.Get(); }
@@ -44,7 +47,8 @@ public:
 	/** Gets the graph configuration. */
 	const FObjectTreeGraphConfig& GetConfig() const;
 
-	/** Rebuilds the node graph. */
+public:
+
 	void RebuildGraph(EObjectTreeGraphBuildSource InSource);
 
 private:

@@ -4,24 +4,23 @@
 
 #include "Tools/UAssetEditor.h"
 
-#include "CameraAssetEditor.generated.h"
+#include "CameraRigTransitionEditor.generated.h"
 
 class FBaseAssetToolkit;
-class UCameraAsset;
 
 /**
- * Editor for a camera asset.
+ * Editor for camera transitions.
  */
 UCLASS(Transient)
-class UCameraAssetEditor : public UAssetEditor
+class UCameraRigTransitionEditor : public UAssetEditor
 {
 	GENERATED_BODY()
 
 public:
 
-	void Initialize(TObjectPtr<UCameraAsset> InCameraAsset);
+	void Initialize(TObjectPtr<UObject> InTransitionOwner);
 
-	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
+	UObject* GetTransitionOwner() const { return TransitionOwner; }
 
 public:
 
@@ -32,6 +31,6 @@ public:
 private:
 
 	UPROPERTY()
-	TObjectPtr<UCameraAsset> CameraAsset;
+	TObjectPtr<UObject> TransitionOwner;
 };
 

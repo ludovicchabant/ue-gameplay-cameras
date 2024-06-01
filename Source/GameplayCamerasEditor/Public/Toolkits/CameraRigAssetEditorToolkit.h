@@ -3,41 +3,29 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Editors/ObjectTreeGraphConfig.h"
-#include "Misc/NotifyHook.h"
 #include "Tools/BaseAssetToolkit.h"
-#include "UObject/GCObject.h"
 
 #include "CameraRigAssetEditorToolkit.generated.h"
 
-class IMessageLogListing;
 class SFindInObjectTreeGraph;
-class SObjectTreeGraphToolbox;
-class SWidget;
 class UCameraRigAsset;
-class UCameraRigAssetEditor;
-class UEdGraphNode;
-struct FEdGraphEditAction;
 
 namespace UE::Cameras
 {
 
-class FCameraBuildLog;
+class FBuildButtonToolkit;
+class FCameraBuildLogToolkit;
+class FCameraRigAssetEditorToolkitBase;
 class IGameplayCamerasLiveEditManager;
-class SCameraRigAssetEditor;
 
-/**
- * Editor toolkit for a camera rig asset.
- */
-class FCameraRigAssetEditorToolkit 
+class FCameraRigAssetEditorToolkit
 	: public FBaseAssetToolkit
-	, public FGCObject
-	, public FNotifyHook
 {
 public:
 
-	FCameraRigAssetEditorToolkit(UCameraRigAssetEditor* InOwningAssetEditor);
-	~FCameraRigAssetEditorToolkit();
+	FCameraRigAssetEditorToolkit(UAssetEditor* InOwningAssetEditor);
+
+	void SetCameraRigAsset(UCameraRigAsset* InCameraRig);
 
 protected:
 
@@ -55,68 +43,29 @@ protected:
 	virtual FString GetWorldCentricTabPrefix() const override;
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
 
-	// FGCObject interface
-	virtual void AddReferencedObjects(FReferenceCollector& Collector) override
-	{
-		Collector.AddReferencedObject(CameraRigAsset);
-	}
-	virtual FString GetReferencerName() const override
-	{
-		return TEXT("FCameraRigAssetEditorToolkit");
-	}
-
-	// FNotifyHook interface
-	virtual void NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged) override;
-
 private:
 
-	TSharedRef<SDockTab> SpawnTab_Toolbox(const FSpawnTabArgs& Args);
-	TSharedRef<SDockTab> SpawnTab_CameraRigEditor(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
-
-	FSlateIcon GetBuildButtonIcon() const;
-	FText GetBuildButtonTooltip() const;
-
-	void OnAnyGraphChanged(const FEdGraphEditAction& InEditAction);
-
-	void OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken);
-	void GetBuildMessageLogListing(FCameraBuildLog& InBuildLog);
 
 	void OnBuild();
 	void OnFindInCameraRig();
 
 private:
 
-	static const FName ToolboxTabId;
-	static const FName CameraRigEditorTabId;
 	static const FName SearchTabId;
 	static const FName MessagesTabId;
-	static const FName DetailsViewTabId;
 
-	/** The asset being edited */
-	TObjectPtr<UCameraRigAsset> CameraRigAsset;
+	TSharedPtr<FCameraRigAssetEditorToolkitBase> Impl;
 
-	/** Command bindings */
-	TSharedRef<FUICommandList> CommandBindings;
-
-	/** Message log listing */
-	TSharedPtr<IMessageLogListing> MessageListing;
-
-	/** Camera rig editor widget */
-	TSharedPtr<SCameraRigAssetEditor> CameraRigEditorWidget;
-
-	/** Toolbox widget */
-	TSharedPtr<SObjectTreeGraphToolbox> ToolboxWidget;
-
-	/** Message log widget */
-	TSharedPtr<SWidget> MessagesWidget;
+	TSharedPtr<FBuildButtonToolkit> BuildButtonToolkit;
+	TSharedPtr<FCameraBuildLogToolkit> BuildLogToolkit;
 
 	/** Search widget */
 	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;
 
 	/** Live edit manager for updating the assets in the runtime */
-	TSharedPtr<UE::Cameras::IGameplayCamerasLiveEditManager> LiveEditManager;
+	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;
 };
 
 }  // namespace UE::Cameras
@@ -128,6 +77,6 @@ class UCameraRigAssetEditorMenuContext : public UObject
 
 public:
 
-	TWeakPtr<UE::Cameras::FCameraRigAssetEditorToolkit> CameraRigAssetEditorToolkit;
+	TWeakPtr<UE::Cameras::FCameraRigAssetEditorToolkit> Toolkit;
 };
 

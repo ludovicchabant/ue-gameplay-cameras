@@ -7,6 +7,7 @@
 #include "CameraNodeGraphSchema.generated.h"
 
 class UCameraNode;
+struct FObjectTreeGraphConfig;
 
 /**
  * Schema class for camera node graph.
@@ -19,6 +20,8 @@ class UCameraNodeGraphSchema : public UObjectTreeGraphSchema
 public:
 
 	static const FName PC_CameraParameter;			// A camera parameter pin.
+
+	static FObjectTreeGraphConfig BuildGraphConfig();
 
 protected:
 

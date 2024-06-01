@@ -2,29 +2,21 @@
 
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
 
-#include "AssetTools/CameraRigAssetEditor.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
-#include "Core/CameraNode.h"
+#include "Core/CameraBuildLog.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigAssetBuilder.h"
-#include "EditorModeManager.h"
-#include "Editors/ObjectTreeGraph.h"
-#include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SCameraRigAssetEditor.h"
 #include "Editors/SFindInObjectTreeGraph.h"
-#include "Editors/SObjectTreeGraphEditor.h"
-#include "Editors/SObjectTreeGraphToolbox.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
-#include "IMessageLogListing.h"
-#include "MessageLogInitializationOptions.h"
-#include "MessageLogModule.h"
-#include "Misc/UObjectToken.h"
 #include "Modules/ModuleManager.h"
-#include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "Toolkits/BuildButtonToolkit.h"
+#include "Toolkits/CameraBuildLogToolkit.h"
+#include "Toolkits/CameraRigAssetEditorToolkitBase.h"
+#include "Toolkits/StandardToolkitLayout.h"
 #include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 
@@ -35,78 +27,39 @@
 namespace UE::Cameras
 {
 
-const FName FCameraRigAssetEditorToolkit::ToolboxTabId(TEXT("CameraRigAssetEditor_Toolbox"));
-const FName FCameraRigAssetEditorToolkit::CameraRigEditorTabId(TEXT("CameraRigAssetEditor_CameraRigEditor"));
 const FName FCameraRigAssetEditorToolkit::SearchTabId(TEXT("CameraRigAssetEditor_Search"));
 const FName FCameraRigAssetEditorToolkit::MessagesTabId(TEXT("CameraRigAssetEditor_Messages"));
-const FName FCameraRigAssetEditorToolkit::DetailsViewTabId(TEXT("CameraRigAssetEditor_DetailsView"));
 
-FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UCameraRigAssetEditor* InOwningAssetEditor)
+FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
-	, CameraRigAsset(InOwningAssetEditor->GetCameraRigAsset())
-	, CommandBindings(new FUICommandList())
 {
+	Impl = MakeShared<FCameraRigAssetEditorToolkitBase>(TEXT("CameraRigAssetEditor_Layout_v6"));
+	BuildButtonToolkit = MakeShared<FBuildButtonToolkit>();
+	BuildLogToolkit = MakeShared<FCameraBuildLogToolkit>();
+
 	// Override base class default layout.
-	StandaloneDefaultLayout = FTabManager::NewLayout("CameraRigAssetEditor_Layout_v5")
-		->AddArea
-		(
-			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
-			->Split
-			(
-				FTabManager::NewSplitter()->SetOrientation(Orient_Horizontal)
-				->Split
-				(
-					FTabManager::NewStack()
-					->SetSizeCoefficient(0.2f)
-					->AddTab(ToolboxTabId, ETabState::OpenedTab)
-				)
-				->Split
-				(
-					FTabManager::NewStack()
-					->SetSizeCoefficient(0.6f)
-					->AddTab(CameraRigEditorTabId, ETabState::OpenedTab)
-					->SetHideTabWell(true)
-				)
-				->Split
-				(
-					FTabManager::NewStack()
-					->SetSizeCoefficient(0.2f)
-					->AddTab(DetailsViewTabId, ETabState::OpenedTab)
-				)
-			)
-			->Split
-			(
-				FTabManager::NewStack()
-				->SetSizeCoefficient(0.2f)
-				->AddTab(SearchTabId, ETabState::ClosedTab)
-				->AddTab(MessagesTabId, ETabState::ClosedTab)
-			)
-		);
-}
-
-FCameraRigAssetEditorToolkit::~FCameraRigAssetEditorToolkit()
-{
-	if (CameraRigEditorWidget)
+	TSharedPtr<FStandardToolkitLayout> StandardLayout = Impl->GetStandardLayout();
 	{
-		CameraRigEditorWidget->RemoveOnAnyGraphChanged(this);
+		StandardLayout->AddBottomTab(SearchTabId);
+		StandardLayout->AddBottomTab(MessagesTabId);
 	}
+	StandaloneDefaultLayout = StandardLayout->GetLayout();
 }
 
-void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
+void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRig)
+{
+	Impl->SetCameraRigAsset(InCameraRig);
+	BuildButtonToolkit->SetTarget(InCameraRig);
+}
+
+void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
+	Impl->RegisterTabSpawners(InTabManager, AssetEditorTabsCategory);
+
 	const FName CamerasStyleSetName = FGameplayCamerasEditorStyle::Get()->GetStyleSetName();
-
-	InTabManager->RegisterTabSpawner(ToolboxTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_Toolbox))
-		.SetDisplayName(LOCTEXT("Toolbox", "Toolbox"))
-		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
-		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Toolbox"));
-
-	InTabManager->RegisterTabSpawner(CameraRigEditorTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_CameraRigEditor))
-		.SetDisplayName(LOCTEXT("CameraRigEditor", "Camera Rig"))
-		.SetGroup(AssetEditorTabsCategory.ToSharedRef());
 
 	InTabManager->RegisterTabSpawner(SearchTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_Search))
 		.SetDisplayName(LOCTEXT("Search", "Search"))
@@ -117,33 +70,6 @@ void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabMana
 		.SetDisplayName(LOCTEXT("Messages", "Messages"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Messages"));
-
-	InTabManager->RegisterTabSpawner(DetailsViewTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_Details))
-		.SetDisplayName(LOCTEXT("Details", "Details"))
-		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
-		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details"));
-}
-
-TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Toolbox(const FSpawnTabArgs& Args)
-{
-	TSharedPtr<SDockTab> ToolboxTab = SNew(SDockTab)
-		.Label(LOCTEXT("ToolboxTabTitle", "Toolbox"))
-		[
-			ToolboxWidget.ToSharedRef()
-		];
-
-	return ToolboxTab.ToSharedRef();
-}
-
-TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_CameraRigEditor(const FSpawnTabArgs& Args)
-{
-	TSharedPtr<SDockTab> CameraRigEditorTab = SNew(SDockTab)
-		.Label(LOCTEXT("CameraRigEditorTabTitle", "Camera Rig Editor"))
-		[
-			CameraRigEditorWidget.ToSharedRef()
-		];
-
-	return CameraRigEditorTab.ToSharedRef();
 }
 
 TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Search(const FSpawnTabArgs& Args)
@@ -162,7 +88,7 @@ TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Messages(const FSpaw
 	TSharedPtr<SDockTab> MessagesTab = SNew(SDockTab)
 		.Label(LOCTEXT("MessagesTabTitle", "Messages"))
 		[
-			MessagesWidget.ToSharedRef()
+			BuildLogToolkit->GetMessagesWidget().ToSharedRef()
 		];
 
 	return MessagesTab.ToSharedRef();
@@ -172,44 +98,33 @@ void FCameraRigAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabMa
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
 	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
+	
+	Impl->UnregisterTabSpawners(InTabManager);
 
-	InTabManager->UnregisterTabSpawner(ToolboxTabId);
-	InTabManager->UnregisterTabSpawner(CameraRigEditorTabId);
 	InTabManager->UnregisterTabSpawner(SearchTabId);
 	InTabManager->UnregisterTabSpawner(MessagesTabId);
-	InTabManager->UnregisterTabSpawner(DetailsViewTabId);
 }
 
 void FCameraRigAssetEditorToolkit::CreateWidgets()
 {
-	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
+	// Skip FBaseAssetToolkit here because we don't want a viewport tab, and our base class
+	// has its own details view in order to get a notify hook.
 	// ...no up-call...
 
-	// Do most of FBaseAssetToolkit's work except for the viewport.
 	RegisterToolbar();
+	CreateEditorModeManager();
 	LayoutExtender = MakeShared<FLayoutExtender>();
-
-	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
-	DetailsViewArgs.bHideSelectionTip = true;
-	DetailsViewArgs.NotifyHook = this;
-	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
 	// Now do our custom stuff.
 
-	// Create the camera rig editor.
-	CameraRigEditorWidget = SNew(SCameraRigAssetEditor)
-		.DetailsView(DetailsView)
-		.CameraRigAsset(CameraRigAsset);
-	CameraRigEditorWidget->AddOnAnyGraphChanged(FOnGraphChanged::FDelegate::CreateSP(
-				this, &FCameraRigAssetEditorToolkit::OnAnyGraphChanged));
+	Impl->CreateWidgets();
 
-	// Create the toolbox, default to the rig editor items.
-	ToolboxWidget = SNew(SObjectTreeGraphToolbox)
-		.GraphConfig(CameraRigEditorWidget->GetFocusedGraphConfig());
+	// We need to set this for our FBaseAssetToolkit parent because otherwise it crashes
+	// unhappily in SetObjectsToEdit.
+	DetailsView = Impl->GetDetailsView();
 
 	// Create the search panel.
+	TSharedPtr<SCameraRigAssetEditor> CameraRigEditorWidget = Impl->GetCameraRigAssetEditor();
 	TArray<UEdGraph*> CameraRigGraphs;
 	CameraRigEditorWidget->GetGraphs(CameraRigGraphs);
 	SearchWidget = SNew(SFindInObjectTreeGraph)
@@ -219,16 +134,7 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 					CameraRigEditorWidget.ToSharedRef(), &SCameraRigAssetEditor::JumpToNode));
 
 	// Create the message log.
-	FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
-	FMessageLogInitializationOptions LogOptions;
-	LogOptions.bShowPages = false;
-	LogOptions.bShowFilters = false;
-	LogOptions.bAllowClear = false;
-	LogOptions.MaxPageCount = 1;
-	MessageListing = MessageLogModule.CreateLogListing("CameraRigAssetEditorStats", LogOptions);
-	MessageListing->OnMessageTokenClicked().AddSP(this, &FCameraRigAssetEditorToolkit::OnMessageTokenClicked);
-
-	MessagesWidget = MessageLogModule.CreateLogListingWidget(MessageListing.ToSharedRef());
+	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
 }
 
 void FCameraRigAssetEditorToolkit::RegisterToolbar()
@@ -239,35 +145,30 @@ void FCameraRigAssetEditorToolkit::RegisterToolbar()
 	if (!ToolMenus->IsMenuRegistered(MenuName))
 	{
 		FToolMenuOwnerScoped ToolMenuOwnerScope(this);
+		FToolMenuInsert InsertAfterAssetSection("Asset", EToolMenuInsertType::After);
 
 		UToolMenu* ToolbarMenu = UToolMenus::Get()->RegisterMenu(
 				MenuName, ParentName, EMultiBoxType::ToolBar);
 
-		FToolMenuInsert InsertAfterAssetSection("Asset", EToolMenuInsertType::After);
-		const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
-
 		ToolbarMenu->AddDynamicSection("Tools", FNewToolMenuDelegate::CreateLambda(
-				[&Commands](UToolMenu* InMenu)
+				[](UToolMenu* InMenu)
 				{
 					UCameraRigAssetEditorMenuContext* Context = InMenu->FindContext<UCameraRigAssetEditorMenuContext>();
-					FCameraRigAssetEditorToolkit* This = Context->CameraRigAssetEditorToolkit.Pin().Get();
+					FCameraRigAssetEditorToolkit* This = Context ? Context->Toolkit.Pin().Get() : nullptr;
+					if (!ensure(This))
+					{
+						return;
+					}
+
+					const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
 
 					FToolMenuSection& ToolsSection = InMenu->AddSection("Tools");
-
-					FToolMenuEntry BuildButton = FToolMenuEntry::InitToolBarButton(Commands.Build);
-					BuildButton.Icon = TAttribute<FSlateIcon>(This, &FCameraRigAssetEditorToolkit::GetBuildButtonIcon);
-					BuildButton.ToolTip = TAttribute<FText>(This, &FCameraRigAssetEditorToolkit::GetBuildButtonTooltip);
-					ToolsSection.AddEntry(BuildButton);
-
+					ToolsSection.AddEntry(This->BuildButtonToolkit->MakeToolbarButton(Commands.Build));
 					ToolsSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.FindInCameraRig));
 				}),
 				InsertAfterAssetSection);
 
-		FToolMenuSection& GraphsSection = ToolbarMenu->AddSection("Graphs", TAttribute<FText>(), InsertAfterAssetSection);
-
-		GraphsSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.FocusHome));
-		GraphsSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowNodeHierarchy));
-		GraphsSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowTransitions));
+		Impl->BuildToolbarMenu(ToolbarMenu);
 	}
 }
 
@@ -276,62 +177,14 @@ void FCameraRigAssetEditorToolkit::InitToolMenuContext(FToolMenuContext& MenuCon
 	FBaseAssetToolkit::InitToolMenuContext(MenuContext);
 
 	UCameraRigAssetEditorMenuContext* Context = NewObject<UCameraRigAssetEditorMenuContext>();
-	Context->CameraRigAssetEditorToolkit = SharedThis(this);
+	Context->Toolkit = SharedThis(this);
 	MenuContext.AddObject(Context);
-}
-
-FSlateIcon FCameraRigAssetEditorToolkit::GetBuildButtonIcon() const
-{
-	static const FName BuildStatusBackground("CameraRigAssetEditor.BuildStatus.Background");
-	static const FName BuildStatusError("CameraRigAssetEditor.BuildStatus.Overlay.Error");
-	static const FName BuildStatusGood("CameraRigAssetEditor.BuildStatus.Overlay.Good");
-	static const FName BuildStatusUnknown("CameraRigAssetEditor.BuildStatus.Overlay.Unknown");
-	static const FName BuildStatusWarning("CameraRigAssetEditor.BuildStatus.Overlay.Warning");
-
-	const FName CamerasStyleSetName = FGameplayCamerasEditorStyle::Get()->GetStyleSetName();
-
-	if (!CameraRigAsset)
-	{
-		return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusError);
-	}
-
-	switch (CameraRigAsset->BuildStatus)
-	{
-		default:
-		case ECameraBuildStatus::Dirty:
-			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusUnknown);
-		case ECameraBuildStatus::WithErrors:
-			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusError);
-		case ECameraBuildStatus::Clean:
-			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusGood);
-		case ECameraBuildStatus::CleanWithWarnings:
-			return FSlateIcon(CamerasStyleSetName, BuildStatusBackground, NAME_None, BuildStatusWarning);
-	}
-}
-
-FText FCameraRigAssetEditorToolkit::GetBuildButtonTooltip() const
-{
-	if (!CameraRigAsset)
-	{
-		return LOCTEXT("BuildButtonStatusNoAsset", "No asset is open");
-	}
-
-	switch (CameraRigAsset->BuildStatus)
-	{
-		default:
-		case ECameraBuildStatus::Dirty:
-			return LOCTEXT("BuildButtonStatusDirty", "Dirty or unknown, should rebuild");
-		case ECameraBuildStatus::WithErrors:
-			return LOCTEXT("BuildButtonStatusWithErrors", "There were errors during the build, see the log window for details");
-		case ECameraBuildStatus::Clean:
-			return LOCTEXT("BuildButtonStatusClean", "Good to go");
-		case ECameraBuildStatus::CleanWithWarnings:
-			return LOCTEXT("BuildButtonStatusCleanWithWarnings", "There were warnings during the build, see the log window for details");
-	}
 }
 
 void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 {
+	Impl->BindCommands(ToolkitCommands);
+
 	const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
 
 	ToolkitCommands->MapAction(
@@ -342,26 +195,46 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 		Commands.FindInCameraRig,
 		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkit::OnFindInCameraRig));
 
-	TSharedRef<SCameraRigAssetEditor> CameraRigEditor = CameraRigEditorWidget.ToSharedRef();
-
-	ToolkitCommands->MapAction(
-		Commands.FocusHome,
-		FExecuteAction::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::FocusHome));
-
-	ToolkitCommands->MapAction(
-		Commands.ShowNodeHierarchy,
-		FExecuteAction::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::SetEditorMode, ECameraRigAssetEditorMode::NodeGraph),
-		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::IsEditorMode, ECameraRigAssetEditorMode::NodeGraph));
-
-	ToolkitCommands->MapAction(
-		Commands.ShowTransitions,
-		FExecuteAction::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::SetEditorMode, ECameraRigAssetEditorMode::TransitionGraph),
-		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::IsEditorMode, ECameraRigAssetEditorMode::TransitionGraph));
+	BuildLogToolkit->OnRequestJumpToObject().BindSPLambda(this, [this](UObject* Object)
+		{
+			TSharedPtr<SCameraRigAssetEditor> CameraRigEditorWidget = Impl->GetCameraRigAssetEditor();
+			CameraRigEditorWidget->FindAndJumpToObjectNode(Object);
+		});
 
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+}
+
+void FCameraRigAssetEditorToolkit::OnBuild()
+{
+	UCameraRigAsset* CameraRigAsset = Impl->GetCameraRigAsset();
+	if (!CameraRigAsset)
+	{
+		return;
+	}
+
+	FCameraBuildLog BuildLog;
+	CameraRigAsset->BuildCameraRig(BuildLog);
+	BuildLogToolkit->PopulateMessageListing(BuildLog);
+
+	if (CameraRigAsset->BuildStatus != ECameraBuildStatus::Clean)
+	{
+		TabManager->TryInvokeTab(MessagesTabId);
+	}
+
+	FCameraRigPackages BuiltPackages;
+	CameraRigAsset->GatherPackages(BuiltPackages);
+
+	for (const UPackage* BuiltPackage : BuiltPackages)
+	{
+		LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
+	}
+}
+
+void FCameraRigAssetEditorToolkit::OnFindInCameraRig()
+{
+	TabManager->TryInvokeTab(SearchTabId);
+	SearchWidget->FocusSearchEditBox();
 }
 
 FText FCameraRigAssetEditorToolkit::GetBaseToolkitName() const
@@ -383,87 +256,6 @@ FString FCameraRigAssetEditorToolkit::GetWorldCentricTabPrefix() const
 FLinearColor FCameraRigAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
 	return FLinearColor(0.7f, 0.0f, 0.0f, 0.5f);
-}
-
-void FCameraRigAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
-{
-	CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
-}
-
-void FCameraRigAssetEditorToolkit::OnAnyGraphChanged(const FEdGraphEditAction& InEditAction)
-{
-	CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
-}
-
-void FCameraRigAssetEditorToolkit::OnMessageTokenClicked(const TSharedRef<IMessageToken>& InMessageToken)
-{
-	if (InMessageToken->GetType() == EMessageToken::Object)
-	{
-		const TSharedRef<FUObjectToken> ObjectToken = StaticCastSharedRef<FUObjectToken>(InMessageToken);
-		if (UObject* Object = ObjectToken->GetObject().Get())
-		{
-			CameraRigEditorWidget->FindAndJumpToObjectNode(Object);
-		}
-	}
-}
-
-void FCameraRigAssetEditorToolkit::OnBuild()
-{
-	using namespace UE::Cameras;
-
-	FCameraBuildLog BuildLog;
-	CameraRigAsset->BuildCameraRig(BuildLog);
-	GetBuildMessageLogListing(BuildLog);
-
-	if (CameraRigAsset->BuildStatus != ECameraBuildStatus::Clean)
-	{
-		TabManager->TryInvokeTab(MessagesTabId);
-	}
-
-	FCameraRigPackages BuiltPackages;
-	CameraRigAsset->GatherPackages(BuiltPackages);
-
-	for (const UPackage* BuiltPackage : BuiltPackages)
-	{
-		LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
-	}
-}
-
-void FCameraRigAssetEditorToolkit::GetBuildMessageLogListing(FCameraBuildLog& InBuildLog)
-{
-	if (MessageListing.IsValid())
-	{
-		MessageListing->ClearMessages();
-	}
-
-	for (const FCameraBuildLogMessage& Message : InBuildLog.GetMessages())
-	{
-		TSharedRef<FTokenizedMessage> TokenizedMessage = FTokenizedMessage::Create(Message.Severity);
-
-		if (Message.Object)
-		{
-			TSharedRef<FUObjectToken> ObjectToken = FUObjectToken::Create(
-					Message.Object, FText::FromName(Message.Object->GetFName()));
-
-			// Suppress default activation callback that opens the content browser. We handle that
-			// sort of stuff in a more general fashion in OnMessageTokenClicked.
-			static auto DummyActivation = [](const TSharedRef<class IMessageToken>&) {};
-			ObjectToken->OnMessageTokenActivated(FOnMessageTokenActivated::CreateLambda(DummyActivation));
-			
-			TokenizedMessage->AddToken(ObjectToken);
-		}
-
-		TokenizedMessage->AddToken(FTextToken::Create(Message.Text));
-
-		MessageListing->AddMessage(TokenizedMessage);
-	}
-}
-
-
-void FCameraRigAssetEditorToolkit::OnFindInCameraRig()
-{
-	TabManager->TryInvokeTab(SearchTabId);
-	SearchWidget->FocusSearchEditBox();
 }
 
 }  // namespace UE::Cameras

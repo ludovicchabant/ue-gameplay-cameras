@@ -2,12 +2,16 @@
 
 #include "Editors/CameraNodeGraphSchema.h"
 
-#include "Core/CameraRigAsset.h"
+#include "Core/BlendCameraNode.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraRigAsset.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphNode.h"
 #include "Editors/CameraRigInterfaceParameterGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
+#include "Editors/ObjectTreeGraphConfig.h"
+#include "Editors/ObjectTreeGraphNode.h"
+#include "GameplayCamerasEditorSettings.h"
 
 #include "ScopedTransaction.h"
 
@@ -16,6 +20,44 @@
 #define LOCTEXT_NAMESPACE "CameraNodeGraphSchema"
 
 const FName UCameraNodeGraphSchema::PC_CameraParameter("CameraParameter");
+
+FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig()
+{
+	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
+
+	FObjectTreeGraphConfig GraphConfig;
+	GraphConfig.GraphName = UCameraRigAsset::NodeTreeGraphName;
+	GraphConfig.ConnectableObjectClasses.Add(UCameraRigAsset::StaticClass());
+	GraphConfig.ConnectableObjectClasses.Add(UCameraNode::StaticClass());
+	GraphConfig.ConnectableObjectClasses.Add(UCameraRigInterfaceParameter::StaticClass());
+	GraphConfig.NonConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
+	GraphConfig.GraphDisplayInfo.PlainName = LOCTEXT("NodeGraphPlainName", "CameraNodes");
+	GraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("NodeGraphDisplayName", "Camera Nodes");
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
+		.OnlyAsRoot()
+		.HasSelfPin(false)
+		.NodeTitleUsesObjectName(true)
+		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
+		.StripDisplayNameSuffix(TEXT("Camera Node"))
+		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
+		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigInterfaceParameter::StaticClass())
+		.SelfPinDirection(EGPD_Output)
+		.SelfPinName(NAME_None)  // No self pin name, we just want the title
+		.CanCreateNew(false)
+		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
+	GraphConfig.OnFormatObjectDisplayName = FOnFormatObjectDisplayName::CreateLambda(
+			[](const UObject* Object, FText& InOutDisplayNameText)
+			{
+				if (const UCameraRigAsset* CameraRigAsset = Cast<UCameraRigAsset>(Object))
+				{
+					InOutDisplayNameText = FText::FromString(CameraRigAsset->GetDisplayName());
+				}
+			});
+
+	return GraphConfig;
+}
 
 void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const
 {

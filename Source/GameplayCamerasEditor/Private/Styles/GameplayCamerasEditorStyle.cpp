@@ -31,7 +31,26 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	SetContentRoot(ContentDir);
 	SetCoreContentRoot(FPaths::EngineContentDir() / TEXT("Slate"));
 
-	const FTextBlockStyle& NormalText = FAppStyle::Get().GetWidgetStyle<FTextBlockStyle>("NormalText");
+	const ISlateStyle& CoreStyle = FAppStyle::Get();
+	const FTextBlockStyle& NormalText = CoreStyle.GetWidgetStyle<FTextBlockStyle>("NormalText");
+	const FTableRowStyle AlternatingTableRowStyle = CoreStyle.GetWidgetStyle<FTableRowStyle>("TableView.AlternatingRow");
+
+	// Camera asset editor icons.
+	Set("CameraAssetEditor.ShowCameraDirector", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraDirector", Icon20x20));
+	Set("CameraAssetEditor.ShowCameraRigs", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraRigs", Icon20x20));
+	Set("CameraAssetEditor.ShowSharedTransitions", new IMAGE_BRUSH_SVG("Icons/CameraEditor-SharedTransitions", Icon20x20));
+	
+	Set("CameraAssetEditor.Tabs.Search", new CORE_IMAGE_BRUSH_SVG("Starship/Common/search", Icon16x16));
+	Set("CameraAssetEditor.Tabs.Messages", new CORE_IMAGE_BRUSH_SVG("Starship/Common/OutputLog", Icon16x16));
+	Set("CameraAssetEditor.Tabs.CameraRigs", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraRigs", Icon16x16));
+
+	Set("CameraAssetEditor.FindInCamera", new CORE_IMAGE_BRUSH_SVG("Starship/Common/Search", Icon20x20));
+
+	Set("CameraAssetEditor.AddCameraRig", new IMAGE_BRUSH_SVG("Icons/CameraEditor-AddCameraRig", Icon16x16));
+	Set("CameraAssetEditor.DeleteCameraRig", new IMAGE_BRUSH_SVG("Icons/CameraEditor-DeleteCameraRig", Icon16x16));
+	Set("CameraAssetEditor.RenameCameraRig", new IMAGE_BRUSH_SVG("Icons/CameraEditor-RenameCameraRig", Icon16x16));
+
+	Set("CameraAssetEditor.CameraRigsList.RowStyle", AlternatingTableRowStyle);
 
 	// Camera rig editor icons.
 	Set("CameraRigAssetEditor.Tabs.Toolbox", new IMAGE_BRUSH_SVG("Icons/CameraRig-Toolbox", Icon16x16));

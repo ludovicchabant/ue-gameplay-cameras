@@ -74,9 +74,9 @@ public:
 		/** The graphs to search. */
 		SLATE_ARGUMENT(TArray<UEdGraph*>, GraphsToSearch)
 		/** The callback to invoke when a search result wants to focus a node. */
-		SLATE_ARGUMENT(FOnJumpToNodeRequested, OnJumpToNodeRequested)
+		SLATE_EVENT(FOnJumpToNodeRequested, OnJumpToNodeRequested)
 		/** The callback to invoke when a search result wants to focus a pin. */
-		SLATE_ARGUMENT(FOnJumpToPinRequested, OnJumpToPinRequested)
+		SLATE_EVENT(FOnJumpToPinRequested, OnJumpToPinRequested)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);

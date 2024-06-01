@@ -16,16 +16,17 @@ UObjectTreeGraph::UObjectTreeGraph(const FObjectInitializer& ObjInit)
 	Schema = UObjectTreeGraphSchema::StaticClass();
 }
 
-void UObjectTreeGraph::Initialize(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig)
+void UObjectTreeGraph::Reset(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig, EObjectTreeGraphBuildSource InSource)
 {
 	WeakRootObject = InRootObject;
 
 	Config = InConfig;
-	ensureMsgf(Config.ConnectableObjectClasses.Num() > 0, TEXT("No connectable object classes specified... no graph can be created!"));
 	if (!Config.DefaultGraphNodeClass)
 	{
 		Config.DefaultGraphNodeClass = UObjectTreeGraphNode::StaticClass();
 	}
+
+	RebuildGraph(InSource);
 }
 
 UObjectTreeGraphNode* UObjectTreeGraph::FindObjectNode(UObject* InObject) const

@@ -50,6 +50,15 @@ void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) 
 	TagContainer.AppendTags(GameplayTags);
 }
 
+FString UCameraRigAsset::GetDisplayName() const
+{
+	if (!Interface.DisplayName.IsEmpty())
+	{
+		return Interface.DisplayName;
+	}
+	return GetName();
+}
+
 void UCameraRigAsset::BuildCameraRig()
 {
 	using namespace UE::Cameras;
@@ -175,3 +184,4 @@ void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObje
 }
 
 #endif  // WITH_EDITOR
+

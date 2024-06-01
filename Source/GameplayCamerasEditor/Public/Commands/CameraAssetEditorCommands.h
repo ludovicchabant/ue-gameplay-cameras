@@ -23,6 +23,19 @@ public:
 public:
 
 	TSharedPtr<FUICommandInfo> Build;
+
+	TSharedPtr<FUICommandInfo> ShowCameraDirector;
+	TSharedPtr<FUICommandInfo> ShowCameraRigs;
+	TSharedPtr<FUICommandInfo> ShowSharedTransitions;
+
+	TSharedPtr<FUICommandInfo> EditCameraRig;
+
+	TSharedPtr<FUICommandInfo> AddCameraRig;
+	TSharedPtr<FUICommandInfo> DeleteCameraRig;
+	TSharedPtr<FUICommandInfo> RenameCameraRig;
+
+	TSharedPtr<FUICommandInfo> ShowMessages;
+	TSharedPtr<FUICommandInfo> FindInCamera;
 };
 
 }  // namespace UE::Cameras
