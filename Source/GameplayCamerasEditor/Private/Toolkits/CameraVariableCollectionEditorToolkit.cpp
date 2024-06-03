@@ -18,7 +18,7 @@
 #include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
-#include "ToolMenuContext.h"
+#include "ToolMenus.h"
 #include "UObject/UObjectIterator.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Input/SButton.h"

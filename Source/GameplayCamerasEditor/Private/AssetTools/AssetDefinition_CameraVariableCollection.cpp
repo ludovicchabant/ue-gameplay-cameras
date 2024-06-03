@@ -5,6 +5,7 @@
 #include "Core/CameraVariableCollection.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "Toolkits/SimpleAssetEditor.h"
+#include "Modules/ModuleManager.h"
 
 #define LOCTEXT_NAMESPACE "AssetDefinition_CameraVariableCollection"
 

@@ -6,6 +6,7 @@
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/IToolkit.h"
+#include "Modules/ModuleManager.h"
 
 #define LOCTEXT_NAMESPACE "AssetDefinition_CameraAsset"
 
