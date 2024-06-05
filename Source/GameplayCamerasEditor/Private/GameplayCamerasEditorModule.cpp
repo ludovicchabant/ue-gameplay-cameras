@@ -315,8 +315,12 @@ private:
 	{
 		using namespace UE::Cameras;
 
-		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-		FCameraParameterDetailsCustomization::Unregister(PropertyEditorModule);
+		FPropertyEditorModule* PropertyEditorModule = FModuleManager::GetModulePtr<FPropertyEditorModule>("PropertyEditor");
+
+		if (PropertyEditorModule)
+		{
+			FCameraParameterDetailsCustomization::Unregister(*PropertyEditorModule);
+		}
 	}
 
 	void InitializeLiveEditManager()
