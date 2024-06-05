@@ -23,11 +23,9 @@ namespace UE::Cameras
 void SCameraRigTransitionEditor::Construct(const FArguments& InArgs)
 {
 	TransitionOwner = InArgs._TransitionOwner;
-	TransitionOwnerInfo = InArgs._TransitionOwnerInfo;
-	OnBuildTransitionGraphConfig = InArgs._OnBuildTransitionGraphConfig;
+	TransitionGraphSchemaClass = InArgs._TransitionGraphSchemaClass;
 	DetailsView = InArgs._DetailsView;
 	AssetEditorToolkit = InArgs._AssetEditorToolkit;
-	TransitionGraphDisplayInfo = InArgs._TransitionGraphDisplayInfo;
 	TransitionGraphEditorAppearance = InArgs._TransitionGraphEditorAppearance;
 
 	CreateTransitionGraphEditor();
@@ -66,15 +64,11 @@ void SCameraRigTransitionEditor::SetTransitionOwner(UObject* InTransitionOwner)
 
 void SCameraRigTransitionEditor::CreateTransitionGraphEditor()
 {
-	FObjectTreeGraphConfig GraphConfig = UCameraRigTransitionGraphSchema::BuildGraphConfig(TransitionOwnerInfo);
-	if (TransitionGraphDisplayInfo.IsSet())
-	{
-		GraphConfig.GraphDisplayInfo = TransitionGraphDisplayInfo.Get();
-	}
-	OnBuildTransitionGraphConfig.ExecuteIfBound(GraphConfig);
+	UCameraRigTransitionGraphSchemaBase* DefaultSchemaObject = TransitionGraphSchemaClass->GetDefaultObject<UCameraRigTransitionGraphSchemaBase>();
+	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
-	TransitionGraph->Schema = UCameraRigTransitionGraphSchema::StaticClass();
+	TransitionGraph->Schema = TransitionGraphSchemaClass;
 	TransitionGraph->AddToRoot();
 	TransitionGraph->Reset(TransitionOwner, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 

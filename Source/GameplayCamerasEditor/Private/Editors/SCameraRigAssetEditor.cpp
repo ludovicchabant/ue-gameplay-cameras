@@ -69,10 +69,12 @@ void SCameraRigAssetEditor::CreateGraphEditors()
 
 void SCameraRigAssetEditor::CreateNodeGraphEditor()
 {
-	FObjectTreeGraphConfig GraphConfig = UCameraNodeGraphSchema::BuildGraphConfig();
+	UClass* SchemaClass = UCameraNodeGraphSchema::StaticClass();
+	UCameraNodeGraphSchema* DefaultSchemaObject = SchemaClass->GetDefaultObject<UCameraNodeGraphSchema>();
+	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
-	NodeGraph->Schema = UCameraNodeGraphSchema::StaticClass();
+	NodeGraph->Schema = SchemaClass;
 	NodeGraph->AddToRoot();
 	NodeGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 
@@ -92,17 +94,12 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor()
 
 void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 {
-	FCameraRigTransitionOwnerInfo OwnerInfo;
-	OwnerInfo.TransitionOwnerClass = UCameraRigAsset::StaticClass();
-	OwnerInfo.GraphName = UCameraRigAsset::TransitionsGraphName;
-	OwnerInfo.EnterTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraRigAsset, EnterTransitions);
-	OwnerInfo.ExitTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraRigAsset, ExitTransitions);
-	FObjectTreeGraphConfig GraphConfig = UCameraRigTransitionGraphSchema::BuildGraphConfig(OwnerInfo);
-
-	GraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("TransitionGraphDisplayName", "Transitions");
+	UClass* SchemaClass = UCameraRigTransitionGraphSchema::StaticClass();
+	UCameraRigTransitionGraphSchema* DefaultSchemaObject = SchemaClass->GetDefaultObject<UCameraRigTransitionGraphSchema>();
+	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
-	TransitionGraph->Schema = UCameraRigTransitionGraphSchema::StaticClass();
+	TransitionGraph->Schema = SchemaClass;
 	TransitionGraph->AddToRoot();
 	TransitionGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 

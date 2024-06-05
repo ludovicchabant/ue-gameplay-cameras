@@ -4,6 +4,7 @@
 
 #include "Commands/CameraRigTransitionEditorCommands.h"
 #include "Core/CameraBuildStatus.h"
+#include "Editors/CameraRigTransitionGraphSchemaBase.h"
 #include "Editors/SCameraRigTransitionEditor.h"
 #include "Editors/SObjectTreeGraphToolbox.h"
 #include "Framework/Commands/UICommandList.h"
@@ -131,11 +132,7 @@ void FCameraRigTransitionEditorToolkitBase::CreateWidgets()
 	DetailsViewArgs.NotifyHook = this;
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
-	FCameraRigTransitionOwnerInfo TransitionOwnerInfo;
-	GetTransitionOwnerInfo(TransitionOwnerInfo);
-
-	FGraphDisplayInfo GraphDisplayInfo;
-	GetTransitionGraphDisplayInfo(GraphDisplayInfo);
+	TSubclassOf<UCameraRigTransitionGraphSchemaBase> SchemaClass = GetTransitionGraphSchemaClass();
 
 	FGraphAppearanceInfo GraphAppearanceInfo;
 	GetTransitionGraphAppearanceInfo(GraphAppearanceInfo);
@@ -144,8 +141,7 @@ void FCameraRigTransitionEditorToolkitBase::CreateWidgets()
 	TransitionEditorWidget = SNew(SCameraRigTransitionEditor)
 		.DetailsView(DetailsView)
 		.TransitionOwner(TransitionOwner)
-		.TransitionOwnerInfo(TransitionOwnerInfo)
-		.TransitionGraphDisplayInfo(GraphDisplayInfo)
+		.TransitionGraphSchemaClass(SchemaClass)
 		.TransitionGraphEditorAppearance(GraphAppearanceInfo);
 	TransitionEditorWidget->AddOnGraphChanged(FOnGraphChanged::FDelegate::CreateSP(
 				this, &FCameraRigTransitionEditorToolkitBase::OnTransitionGraphChanged));
@@ -153,6 +149,11 @@ void FCameraRigTransitionEditorToolkitBase::CreateWidgets()
 	// Create the toolbox, default to the rig editor items.
 	ToolboxWidget = SNew(SObjectTreeGraphToolbox)
 		.GraphConfig(TransitionEditorWidget->GetTransitionGraphConfig());
+}
+
+TSubclassOf<UCameraRigTransitionGraphSchemaBase> FCameraRigTransitionEditorToolkitBase::GetTransitionGraphSchemaClass()
+{
+	return UCameraRigTransitionGraphSchemaBase::StaticClass();
 }
 
 void FCameraRigTransitionEditorToolkitBase::BuildToolbarMenu(UToolMenu* ToolbarMenu)

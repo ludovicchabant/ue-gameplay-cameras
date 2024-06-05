@@ -15,6 +15,7 @@ class FWorkspaceItem;
 class IDetailsView;
 class SDockTab;
 class SObjectTreeGraphToolbox;
+class UCameraRigTransitionGraphSchemaBase;
 class UToolMenu;
 struct FEdGraphEditAction;
 
@@ -55,8 +56,7 @@ protected:
 	virtual void NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged) override;
 
 	// FCameraRigTransitionEditorToolkitBase interface
-	virtual void GetTransitionOwnerInfo(FCameraRigTransitionOwnerInfo& OutTransitionOwnerInfo) {}
-	virtual void GetTransitionGraphDisplayInfo(FGraphDisplayInfo& OutGraphDisplayInfo) {}
+	virtual TSubclassOf<UCameraRigTransitionGraphSchemaBase> GetTransitionGraphSchemaClass();
 	virtual void GetTransitionGraphAppearanceInfo(FGraphAppearanceInfo& OutGraphAppearanceInfo) {}
 
 private:

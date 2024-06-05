@@ -24,23 +24,6 @@ public:
 	FCameraRigTransitionEditorToolkitBaseImpl()
 		: FCameraRigTransitionEditorToolkitBase(TEXT("CameraRigTransitionEditor_Layout_v2"))
 	{}
-
-protected:
-
-	virtual void GetTransitionOwnerInfo(FCameraRigTransitionOwnerInfo& OutTransitionOwnerInfo) override
-	{
-		// TODO
-	}
-
-	virtual void GetTransitionGraphDisplayInfo(FGraphDisplayInfo& OutGraphDisplayInfo) override
-	{
-		// TODO
-	}
-
-	virtual void GetTransitionGraphAppearanceInfo(FGraphAppearanceInfo& OutGraphAppearanceInfo) override
-	{
-		// TODO
-	}
 };
 
 }  // namespace Internal

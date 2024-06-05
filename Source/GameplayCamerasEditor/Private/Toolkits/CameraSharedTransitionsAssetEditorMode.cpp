@@ -3,7 +3,7 @@
 #include "Toolkits/CameraSharedTransitionsAssetEditorMode.h"
 
 #include "Core/CameraAsset.h"
-#include "Editors/CameraRigTransitionGraphSchema.h"
+#include "Editors/CameraSharedTransitionGraphSchema.h"
 #include "Editors/SCameraRigTransitionEditor.h"
 #include "ToolMenus.h"
 #include "Toolkits/CameraRigTransitionEditorToolkitBase.h"
@@ -27,18 +27,9 @@ public:
 
 protected:
 
-	virtual void GetTransitionOwnerInfo(FCameraRigTransitionOwnerInfo& OutTransitionOwnerInfo) override
+	virtual TSubclassOf<UCameraRigTransitionGraphSchemaBase> GetTransitionGraphSchemaClass() override
 	{
-		OutTransitionOwnerInfo.TransitionOwnerClass = UCameraAsset::StaticClass();
-		OutTransitionOwnerInfo.GraphName = UCameraAsset::SharedTransitionsGraphName;
-		OutTransitionOwnerInfo.EnterTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraAsset, EnterTransitions);
-		OutTransitionOwnerInfo.ExitTransitionsPropertyName = GET_MEMBER_NAME_CHECKED(UCameraAsset, ExitTransitions);
-	}
-
-	virtual void GetTransitionGraphDisplayInfo(FGraphDisplayInfo& OutGraphDisplayInfo) override
-	{
-		OutGraphDisplayInfo.PlainName = LOCTEXT("SharedTransitionGraphPlainName", "SharedTransitions");
-		OutGraphDisplayInfo.DisplayName = LOCTEXT("SharedTransitionGraphDisplayName", "Shared Transitions");
+		return UCameraSharedTransitionGraphSchema::StaticClass();
 	}
 
 	virtual void GetTransitionGraphAppearanceInfo(FGraphAppearanceInfo& OutGraphAppearanceInfo) override

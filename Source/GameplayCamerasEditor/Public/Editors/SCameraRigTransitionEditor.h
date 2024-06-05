@@ -7,6 +7,7 @@
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "GraphEditor.h"
 #include "Templates/SharedPointerFwd.h"
+#include "Templates/SubclassOf.h"
 #include "UObject/ObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
 
@@ -33,20 +34,14 @@ public:
 	{}
 		/** The object owning the transitions. */
 		SLATE_ARGUMENT(UObject*, TransitionOwner)
-		/** Information about the transition owner. */
-		SLATE_ARGUMENT(FCameraRigTransitionOwnerInfo, TransitionOwnerInfo)
-		/** Callback to edit the transition graph config before it's used to build the editor. */
-		SLATE_EVENT(FOnBuildObjectTreeGraphConfig, OnBuildTransitionGraphConfig)
+		/** The graph schema class to use. */
+		SLATE_ARGUMENT(TSubclassOf<UCameraRigTransitionGraphSchemaBase>, TransitionGraphSchemaClass)
 		/** The details view to synchronize with the graph selection. */
 		SLATE_ARGUMENT(TSharedPtr<IDetailsView>, DetailsView)
 		/** The toolkit inside which this editor lives, if any. */
 		SLATE_ARGUMENT(TWeakPtr<FAssetEditorToolkit>, AssetEditorToolkit)
-		/** Display info for the transition graph. */
-		SLATE_ATTRIBUTE(FGraphDisplayInfo, TransitionGraphDisplayInfo)
 		/** Appearance info for the transition graph editor. */
 		SLATE_ATTRIBUTE(FGraphAppearanceInfo, TransitionGraphEditorAppearance)
-		/** Formatting of the transition owner's name. */
-		SLATE_ATTRIBUTE(FOnFormatObjectDisplayName, OnFormatTransitionOwnerName)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -90,11 +85,8 @@ private:
 	/** The asset being edited. */
 	UObject* TransitionOwner;
 
-	/** Info about the type of asset we can edit. */
-	FCameraRigTransitionOwnerInfo TransitionOwnerInfo;
-
-	/** Callback for tweaking the graph config. */
-	FOnBuildObjectTreeGraphConfig OnBuildTransitionGraphConfig;
+		/** The graph schema class to use. */
+	TSubclassOf<UCameraRigTransitionGraphSchemaBase> TransitionGraphSchemaClass;
 
 	/** The details view for this editor. */
 	TSharedPtr<IDetailsView> DetailsView;
@@ -106,9 +98,6 @@ private:
 	TObjectPtr<UObjectTreeGraph> TransitionGraph;
 	/** The transition graph editor. */
 	TSharedPtr<SObjectTreeGraphEditor> TransitionGraphEditor;
-
-	/** Appearance info for the transition graph editor. */
-	TAttribute<FGraphDisplayInfo> TransitionGraphDisplayInfo;
 
 	/** Appearance info for the transition graph editor. */
 	TAttribute<FGraphAppearanceInfo> TransitionGraphEditorAppearance;

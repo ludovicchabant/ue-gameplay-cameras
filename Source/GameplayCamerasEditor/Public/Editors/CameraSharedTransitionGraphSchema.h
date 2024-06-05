@@ -4,13 +4,13 @@
 
 #include "Editors/CameraRigTransitionGraphSchemaBase.h"
 
-#include "CameraRigTransitionGraphSchema.generated.h"
+#include "CameraSharedTransitionGraphSchema.generated.h"
 
 /**
- * Schema class for a camera rig's transition graph.
+ * Schema class for a camera asset's shared transition graph.
  */
 UCLASS()
-class UCameraRigTransitionGraphSchema : public UCameraRigTransitionGraphSchemaBase
+class UCameraSharedTransitionGraphSchema : public UCameraRigTransitionGraphSchemaBase
 {
 	GENERATED_BODY()
 

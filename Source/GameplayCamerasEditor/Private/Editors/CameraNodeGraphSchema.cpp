@@ -21,7 +21,7 @@
 
 const FName UCameraNodeGraphSchema::PC_CameraParameter("CameraParameter");
 
-FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig()
+FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
 {
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 

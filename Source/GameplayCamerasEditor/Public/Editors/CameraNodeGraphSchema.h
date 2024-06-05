@@ -21,7 +21,7 @@ public:
 
 	static const FName PC_CameraParameter;			// A camera parameter pin.
 
-	static FObjectTreeGraphConfig BuildGraphConfig();
+	FObjectTreeGraphConfig BuildGraphConfig() const;
 
 protected:
 

@@ -25,6 +25,9 @@ public:
 	FLinearColor CameraNodeTitleColor;
 
 	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraAssetTitleColor;
+
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
 	FLinearColor CameraRigAssetTitleColor;
 
 	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
