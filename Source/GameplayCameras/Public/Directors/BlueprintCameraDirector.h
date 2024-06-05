@@ -21,7 +21,7 @@ struct FBlueprintCameraDirectorEvaluationParams
 	float DeltaTime = 0.f;
 
 	/** The owner (if any) of the evaluation context we are running inside of. */
-	UPROPERTY(BlueprintReadWrite, Category = "Evaluation")
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
 	TObjectPtr<UObject> EvaluationContextOwner;
 };
 
@@ -33,9 +33,9 @@ struct FBlueprintCameraDirectorEvaluationResult
 {
 	GENERATED_BODY()
 
-	/** The list of camera rigs that should be active this frame. */
-	UPROPERTY(BlueprintReadWrite, Category = "Evaluation")
-	TArray<UCameraRigAsset*> ActiveCameraRigs;
+	/** The list of camera rigs (determined by name) that should be active this frame. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TArray<FString> ActiveCameraRigs;
 };
 
 /**
@@ -52,15 +52,26 @@ public:
 	 * Override this method in Blueprint to execute the custom logic that determines
 	 * what camera rig(s) should be active every frame.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Evaluation")
-	void RunCameraDirector(
-			const FBlueprintCameraDirectorEvaluationParams& Params, 
-			FBlueprintCameraDirectorEvaluationResult& OutResult);
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
+	void RunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params);
+
+	/**
+	 * Specifies a camera rig to be active this frame.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void ActivateCameraRig(const FString& InCameraRigName);
 
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(
-			const FBlueprintCameraDirectorEvaluationParams& Params, 
+			const FBlueprintCameraDirectorEvaluationParams& Params,
 			FBlueprintCameraDirectorEvaluationResult& OutResult);
+
+protected:
+
+	/** The current camera director evaluation result. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	FBlueprintCameraDirectorEvaluationResult CurrentResult;
+
 };
 
 /**
