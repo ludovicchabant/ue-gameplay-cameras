@@ -77,11 +77,11 @@ protected:
 
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
-	virtual void GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
-	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags() const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
-	virtual const FString& GetGraphNodeCommentText() const override;
-	virtual void OnUpdateGraphNodeCommentText(const FString& NewComment) override;
+	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
+	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
+	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
 #endif
 
 	// IObjectTreeGraphRootObject interface.
@@ -95,21 +95,15 @@ private:
 
 #if WITH_EDITORONLY_DATA
 
-	/** Position of the camera node in the transition editor. */
+	/** Position of the camera node in the shared transitions graph editor. */
 	UPROPERTY()
-	int32 GraphNodePosX = 0;
+	FIntVector2 TransitionGraphNodePos = FIntVector2::ZeroValue;
 
-	/** Position of the camera node in the graph editor. */
+	/** User-written comment in the transition graph editor. */
 	UPROPERTY()
-	int32 GraphNodePosY = 0;
+	FString TransitionGraphNodeComment;
 
-	/** User-written comment in the graph editor. */
-	UPROPERTY()
-	FString GraphNodeComment;
-
-	/**
-	 * Similar to AllNodeTreeObjects, but for the transitions graph.
-	 */
+	/** All nodes used in the shared transitions graph editor. */
 	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
 	TArray<TObjectPtr<UObject>> AllSharedTransitionsObjects;
 

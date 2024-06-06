@@ -45,26 +45,26 @@ public:
 	// Minimal API.
 	
 	/** Gets the canvas position for the graph node representing this object. */
-	virtual void GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const {}
+	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const {}
 	/** Called to save the canvas position of the graph node representing this object. */
-	virtual void OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty) {}
+	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) {}
 
 	// Optional API.
 
 	/** Gets optional APIs support flags. */
-	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags() const { return EObjectTreeGraphObjectSupportFlags::None; }
+	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const { return EObjectTreeGraphObjectSupportFlags::None; }
 	/** Gets whether this object supports the given optional API. */
-	bool HasSupportFlags(EObjectTreeGraphObjectSupportFlags InFlags) const { return EnumHasAllFlags(GetSupportFlags(), InFlags); }
+	bool HasSupportFlags(FName InGraphName, EObjectTreeGraphObjectSupportFlags InFlags) const { return EnumHasAllFlags(GetSupportFlags(InGraphName), InFlags); }
 
 	/** Gets the graph node's comment text. */
-	virtual const FString& GetGraphNodeCommentText() const { static const FString EmptyString; return EmptyString; }
+	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const { static const FString EmptyString; return EmptyString; }
 	/** Called to save a new comment text. */
-	virtual void OnUpdateGraphNodeCommentText(const FString& NewComment) {}
+	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) {}
 
 	/** Gets the custom name for the graph node. */
-	virtual const FString& GetGraphNodeName() const { static const FString EmptyString; return EmptyString; }
+	virtual const FString& GetGraphNodeName(FName InGraphName) const { static const FString EmptyString; return EmptyString; }
 	/** Called to save a new custom name. */
-	virtual void OnRenameGraphNode(const FString& NewName) {}
+	virtual void OnRenameGraphNode(FName InGraphName, const FString& NewName) {}
 
 #endif  // WITH_EDITOR
 };

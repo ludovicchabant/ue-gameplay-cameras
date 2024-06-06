@@ -26,10 +26,11 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 
 	Object = InObject;
 
+	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
-	if (GraphObject && GraphObject->HasSupportFlags(EObjectTreeGraphObjectSupportFlags::CommentText))
+	if (GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText))
 	{
-		NodeComment = GraphObject->GetGraphNodeCommentText();
+		NodeComment = GraphObject->GetGraphNodeCommentText(NodeContext.GraphConfig.GraphName);
 	}
 }
 
@@ -419,7 +420,8 @@ void UObjectTreeGraphNode::PostPlacedNewNode()
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(GetObject());
 	if (GraphObject)
 	{
-		GraphObject->GetGraphNodePosition(NodePosX, NodePosY);
+		const FNodeContext NodeContext = GetNodeContext();
+		GraphObject->GetGraphNodePosition(NodeContext.GraphConfig.GraphName, NodePosX, NodePosY);
 	}
 }
 
@@ -487,8 +489,9 @@ void UObjectTreeGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, clas
 
 bool UObjectTreeGraphNode::GetCanRenameNode() const
 {
+	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
-	return GraphObject && GraphObject->HasSupportFlags(EObjectTreeGraphObjectSupportFlags::CustomRename);
+	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename);
 }
 
 void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
@@ -498,8 +501,11 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 	if (IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object))
 	{
 		const FScopedTransaction Transaction(LOCTEXT("RenameNode", "Rename Node"));
+
 		Object->Modify();
-		GraphObject->OnRenameGraphNode(NewName);
+
+		const FNodeContext NodeContext = GetNodeContext();
+		GraphObject->OnRenameGraphNode(NodeContext.GraphConfig.GraphName, NewName);
 	}
 }
 
@@ -516,8 +522,9 @@ bool UObjectTreeGraphNode::CanUserDeleteNode() const
 
 bool UObjectTreeGraphNode::SupportsCommentBubble() const
 {
+	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
-	return GraphObject && GraphObject->HasSupportFlags(EObjectTreeGraphObjectSupportFlags::CommentText);
+	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText);
 }
 
 void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
@@ -528,8 +535,11 @@ void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
 	if (GraphObject)
 	{
 		const FScopedTransaction Transaction(LOCTEXT("UpdateNodeComment", "Update Node Comment"));
+
 		Object->Modify();
-		GraphObject->OnUpdateGraphNodeCommentText(NewComment);
+
+		const FNodeContext NodeContext = GetNodeContext();
+		GraphObject->OnUpdateGraphNodeCommentText(NodeContext.GraphConfig.GraphName, NewComment);
 	}
 }
 
@@ -539,7 +549,9 @@ void UObjectTreeGraphNode::OnGraphNodeMoved(bool bMarkDirty)
 	if (GraphObject)
 	{
 		Object->Modify(bMarkDirty);
-		GraphObject->OnGraphNodeMoved(NodePosX, NodePosY, bMarkDirty);
+
+		const FNodeContext NodeContext = GetNodeContext();
+		GraphObject->OnGraphNodeMoved(NodeContext.GraphConfig.GraphName, NodePosX, NodePosY, bMarkDirty);
 	}
 }
 

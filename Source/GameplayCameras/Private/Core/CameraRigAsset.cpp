@@ -14,16 +14,16 @@
 
 #if WITH_EDITOR
 
-void UCameraRigInterfaceParameter::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+void UCameraRigInterfaceParameter::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
 {
-	NodePosX = GraphNodePosX;
-	NodePosY = GraphNodePosY;
+	NodePosX = GraphNodePos.X;
+	NodePosY = GraphNodePos.Y;
 }
 
-void UCameraRigInterfaceParameter::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+void UCameraRigInterfaceParameter::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
-	GraphNodePosX = NodePosX;
-	GraphNodePosY = NodePosY;
+	GraphNodePos.X = NodePosX;
+	GraphNodePos.Y = NodePosY;
 }
 
 #endif
@@ -44,6 +44,23 @@ bool FCameraRigInterface::HasInterfaceParameter(const FString& ParameterName) co
 
 const FName UCameraRigAsset::NodeTreeGraphName(TEXT("NodeTree"));
 const FName UCameraRigAsset::TransitionsGraphName(TEXT("Transitions"));
+
+void UCameraRigAsset::PostLoad()
+{
+#if WITH_EDITORONLY_DATA
+
+	if (GraphNodePosX_DEPRECATED != 0 || GraphNodePosY_DEPRECATED != 0)
+	{
+		NodeGraphNodePos = FIntVector2(GraphNodePosX_DEPRECATED, GraphNodePosY_DEPRECATED);
+
+		GraphNodePosX_DEPRECATED = 0;
+		GraphNodePosY_DEPRECATED = 0;
+	}
+
+#endif
+
+	Super::PostLoad();
+}
 
 void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
 {
@@ -84,11 +101,13 @@ void UCameraRigAsset::DirtyBuildStatus()
 void UCameraRigAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 {
 #if WITH_EDITOR
+
 	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
 	{
 		// Build on save.
 		BuildCameraRig();
 	}
+
 #endif
 
 	Super::PreSave(ObjectSaveContext);
@@ -117,26 +136,61 @@ void UCameraRigAsset::GatherPackages(FCameraRigPackages& OutPackages) const
 	}
 }
 
-void UCameraRigAsset::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+void UCameraRigAsset::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
 {
-	NodePosX = GraphNodePosX;
-	NodePosY = GraphNodePosY;
+	if (InGraphName == NodeTreeGraphName)
+	{
+		NodePosX = NodeGraphNodePos.X;
+		NodePosY = NodeGraphNodePos.Y;
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		NodePosX = TransitionGraphNodePos.X;
+		NodePosY = TransitionGraphNodePos.Y;
+	}
 }
 
-void UCameraRigAsset::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+void UCameraRigAsset::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
-	GraphNodePosX = NodePosX;
-	GraphNodePosY = NodePosY;
+	Modify(bMarkDirty);
+
+	if (InGraphName == NodeTreeGraphName)
+	{
+		NodeGraphNodePos.X = NodePosX;
+		NodeGraphNodePos.Y = NodePosY;
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		TransitionGraphNodePos.X = NodePosX;
+		TransitionGraphNodePos.Y = NodePosY;
+	}
 }
 
-const FString& UCameraRigAsset::GetGraphNodeCommentText() const
+const FString& UCameraRigAsset::GetGraphNodeCommentText(FName InGraphName) const
 {
-	return GraphNodeComment;
+	if (InGraphName == NodeTreeGraphName)
+	{
+		return NodeGraphNodeComment;
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		return TransitionGraphNodeComment;
+	}
+
+	static FString InvalidString;
+	return InvalidString;
 }
 
-void UCameraRigAsset::OnUpdateGraphNodeCommentText(const FString& NewComment)
+void UCameraRigAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
-	GraphNodeComment = NewComment;
+	if (InGraphName == NodeTreeGraphName)
+	{
+		NodeGraphNodeComment = NewComment;
+	}
+	else if (InGraphName == TransitionsGraphName)
+	{
+		TransitionGraphNodeComment = NewComment;
+	}
 }
 
 void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const

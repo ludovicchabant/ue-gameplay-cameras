@@ -33,26 +33,28 @@ void UCameraAsset::DirtyBuildStatus()
 
 #if WITH_EDITOR
 
-void UCameraAsset::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+void UCameraAsset::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
 {
-	NodePosX = GraphNodePosX;
-	NodePosY = GraphNodePosY;
+	NodePosX = TransitionGraphNodePos.X;
+	NodePosY = TransitionGraphNodePos.Y;
 }
 
-void UCameraAsset::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+void UCameraAsset::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
-	GraphNodePosX = NodePosX;
-	GraphNodePosY = NodePosY;
+	Modify(bMarkDirty);
+
+	TransitionGraphNodePos.X = NodePosX;
+	TransitionGraphNodePos.Y = NodePosY;
 }
 
-const FString& UCameraAsset::GetGraphNodeCommentText() const
+const FString& UCameraAsset::GetGraphNodeCommentText(FName InGraphName) const
 {
-	return GraphNodeComment;
+	return TransitionGraphNodeComment;
 }
 
-void UCameraAsset::OnUpdateGraphNodeCommentText(const FString& NewComment)
+void UCameraAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
-	GraphNodeComment = NewComment;
+	TransitionGraphNodeComment = NewComment;
 }
 
 void UCameraAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const

@@ -6,6 +6,23 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNode)
 
+void UCameraNode::PostLoad()
+{
+#if WITH_EDITORONLY_DATA
+
+	if (GraphNodePosX_DEPRECATED != 0 || GraphNodePosY_DEPRECATED != 0)
+	{
+		GraphNodePos = FIntVector2(GraphNodePosX_DEPRECATED, GraphNodePosY_DEPRECATED);
+
+		GraphNodePosX_DEPRECATED = 0;
+		GraphNodePosY_DEPRECATED = 0;
+	}
+
+#endif
+
+	Super::PostLoad();
+}
+
 FCameraNodeChildrenView UCameraNode::GetChildren()
 {
 	return OnGetChildren();
@@ -26,24 +43,24 @@ FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder&
 
 #if WITH_EDITOR
 
-void UCameraNode::GetGraphNodePosition(int32& NodePosX, int32& NodePosY) const
+void UCameraNode::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
 {
-	NodePosX = GraphNodePosX;
-	NodePosY = GraphNodePosY;
+	NodePosX = GraphNodePos.X;
+	NodePosY = GraphNodePos.Y;
 }
 
-void UCameraNode::OnGraphNodeMoved(int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+void UCameraNode::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
-	GraphNodePosX = NodePosX;
-	GraphNodePosY = NodePosY;
+	GraphNodePos.X = NodePosX;
+	GraphNodePos.Y = NodePosY;
 }
 
-const FString& UCameraNode::GetGraphNodeCommentText() const
+const FString& UCameraNode::GetGraphNodeCommentText(FName InGraphName) const
 {
 	return GraphNodeComment;
 }
 
-void UCameraNode::OnUpdateGraphNodeCommentText(const FString& NewComment)
+void UCameraNode::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
 	GraphNodeComment = NewComment;
 }
