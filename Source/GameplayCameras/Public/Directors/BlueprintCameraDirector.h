@@ -59,7 +59,7 @@ public:
 	 * Specifies a camera rig to be active this frame.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(const FString& InCameraRigName);
+	void ActivateCameraRig(UPARAM(meta=(UseCameraRigNamePicker="true")) const FString& InCameraRigName);
 
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(

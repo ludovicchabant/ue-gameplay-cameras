@@ -15,6 +15,7 @@
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
 #include "Debugger/SGameplayCamerasDebugger.h"
+#include "Editors/GameplayCamerasGraphPanelPinFactory.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
 #include "GameplayCamerasEditorSettings.h"
@@ -68,6 +69,7 @@ public:
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
 		RegisterDetailsCustomizations();
+		RegisterEdGraphUtilities();
 
 		InitializeLiveEditManager();
 
@@ -91,6 +93,7 @@ public:
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
 		UnregisterDetailsCustomizations();
+		UnregisterEdGraphUtilities();
 
 		TeardownLiveEditManager();
 
@@ -323,6 +326,22 @@ private:
 		}
 	}
 
+	void RegisterEdGraphUtilities()
+	{
+		using namespace UE::Cameras;
+
+		GraphPanelPinFactory = MakeShared<FGameplayCamerasGraphPanelPinFactory>();
+		FEdGraphUtilities::RegisterVisualPinFactory(GraphPanelPinFactory);
+	}
+
+	void UnregisterEdGraphUtilities()
+	{
+		if (GraphPanelPinFactory)
+		{
+			FEdGraphUtilities::UnregisterVisualPinFactory(GraphPanelPinFactory);
+		}
+	}
+
 	void InitializeLiveEditManager()
 	{
 		using namespace UE::Cameras;
@@ -352,6 +371,8 @@ private:
 private:
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasLiveEditManager> LiveEditManager;
+
+	TSharedPtr<UE::Cameras::FGameplayCamerasGraphPanelPinFactory> GraphPanelPinFactory;
 
 	TMap<FString, UE::Cameras::FCameraDebugCategoryInfo> DebugCategoryInfos;
 	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
