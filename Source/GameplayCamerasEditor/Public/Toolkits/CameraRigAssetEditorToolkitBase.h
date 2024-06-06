@@ -22,6 +22,7 @@ namespace UE::Cameras
 
 class FStandardToolkitLayout;
 class SCameraRigAssetEditor;
+enum class ECameraRigAssetEditorMode;
 
 /**
  * Editor toolkit for a camera rig asset.
@@ -57,6 +58,11 @@ protected:
 
 	// FNotifyHook interface
 	virtual void NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged) override;
+
+protected:
+
+	void SetCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode);
+	bool IsCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode) const;
 
 private:
 

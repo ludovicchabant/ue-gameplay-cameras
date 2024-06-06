@@ -166,15 +166,15 @@ void FCameraRigAssetEditorToolkitBase::BindCommands(TSharedRef<FUICommandList> C
 
 	CommandList->MapAction(
 		Commands.ShowNodeHierarchy,
-		FExecuteAction::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::SetEditorMode, ECameraRigAssetEditorMode::NodeGraph),
+		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkitBase::SetCameraRigEditorMode, ECameraRigAssetEditorMode::NodeGraph),
 		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::IsEditorMode, ECameraRigAssetEditorMode::NodeGraph));
+		FIsActionChecked::CreateSP(this, &FCameraRigAssetEditorToolkitBase::IsCameraRigEditorMode, ECameraRigAssetEditorMode::NodeGraph));
 
 	CommandList->MapAction(
 		Commands.ShowTransitions,
-		FExecuteAction::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::SetEditorMode, ECameraRigAssetEditorMode::TransitionGraph),
+		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkitBase::SetCameraRigEditorMode, ECameraRigAssetEditorMode::TransitionGraph),
 		FCanExecuteAction(),
-		FIsActionChecked::CreateSP(CameraRigEditor, &SCameraRigAssetEditor::IsEditorMode, ECameraRigAssetEditorMode::TransitionGraph));
+		FIsActionChecked::CreateSP(this, &FCameraRigAssetEditorToolkitBase::IsCameraRigEditorMode, ECameraRigAssetEditorMode::TransitionGraph));
 }
 
 void FCameraRigAssetEditorToolkitBase::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
@@ -184,6 +184,17 @@ void FCameraRigAssetEditorToolkitBase::NotifyPostChange(const FPropertyChangedEv
 	{
 		CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
 	}
+}
+
+void FCameraRigAssetEditorToolkitBase::SetCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode)
+{
+	CameraRigEditorWidget->SetEditorMode(InEditorMode);
+	ToolboxWidget->SetGraphConfig(CameraRigEditorWidget->GetFocusedGraphConfig());
+}
+
+bool FCameraRigAssetEditorToolkitBase::IsCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode) const
+{
+	return CameraRigEditorWidget->IsEditorMode(InEditorMode);
 }
 
 void FCameraRigAssetEditorToolkitBase::OnAnyGraphChanged(const FEdGraphEditAction& InEditAction)
