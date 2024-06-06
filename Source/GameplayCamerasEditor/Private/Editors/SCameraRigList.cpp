@@ -424,7 +424,7 @@ TSharedPtr<SWidget> SCameraRigList::OnListContextMenuOpening()
 		FToolMenuSection& Section = ContextMenu->AddSection("Actions");
 		Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					Commands.EditCameraRig,
-					LOCTEXT("AddCameraRigButton", "Edit")  // Shorter label
+					LOCTEXT("AddCameraRigButton", "Add")  // Shorter label
 				));
 		Section.AddEntry(FToolMenuEntry::InitMenuEntry(
 					Commands.RenameCameraRig,
