@@ -190,6 +190,7 @@ void SCameraRigList::Construct(const FArguments& InArgs)
 	if (!FilteredItemSource.IsEmpty())
 	{
 		ListView->SetSelection(FilteredItemSource[0]);
+		OnRequestEditCameraRig.ExecuteIfBound(FilteredItemSource[0]->CameraRigAsset);
 	}
 }
 
