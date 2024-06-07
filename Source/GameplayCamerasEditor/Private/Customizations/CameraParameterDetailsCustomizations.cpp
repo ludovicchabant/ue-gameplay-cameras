@@ -206,11 +206,14 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 void FCameraParameterDetailsCustomization::Unregister(FPropertyEditorModule& PropertyEditorModule)
 {
+	if (UObjectInitialized())
+	{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	PropertyEditorModule.UnregisterCustomPropertyTypeLayout(\
-			F##ValueName##CameraParameter::StaticStruct()->GetFName());
+		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(\
+				F##ValueName##CameraParameter::StaticStruct()->GetFName());
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+	}
 }
 
 void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils)
