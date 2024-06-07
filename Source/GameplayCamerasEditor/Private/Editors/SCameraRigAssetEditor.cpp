@@ -70,7 +70,7 @@ void SCameraRigAssetEditor::CreateGraphEditors()
 void SCameraRigAssetEditor::CreateNodeGraphEditor()
 {
 	UClass* SchemaClass = UCameraNodeGraphSchema::StaticClass();
-	UCameraNodeGraphSchema* DefaultSchemaObject = SchemaClass->GetDefaultObject<UCameraNodeGraphSchema>();
+	UCameraNodeGraphSchema* DefaultSchemaObject = Cast<UCameraNodeGraphSchema>(SchemaClass->GetDefaultObject());
 	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
@@ -95,7 +95,7 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor()
 void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 {
 	UClass* SchemaClass = UCameraRigTransitionGraphSchema::StaticClass();
-	UCameraRigTransitionGraphSchema* DefaultSchemaObject = SchemaClass->GetDefaultObject<UCameraRigTransitionGraphSchema>();
+	UCameraRigTransitionGraphSchema* DefaultSchemaObject = Cast<UCameraRigTransitionGraphSchema>(SchemaClass->GetDefaultObject());
 	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
