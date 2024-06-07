@@ -5,6 +5,7 @@
 #include "Core/CameraAsset.h"
 #include "Editors/CameraSharedTransitionGraphSchema.h"
 #include "Editors/SCameraRigTransitionEditor.h"
+#include "Editors/SFindInObjectTreeGraph.h"
 #include "ToolMenus.h"
 #include "Toolkits/CameraRigTransitionEditorToolkitBase.h"
 #include "Toolkits/StandardToolkitLayout.h"
@@ -51,6 +52,10 @@ FCameraSharedTransitionsAssetEditorMode::FCameraSharedTransitionsAssetEditorMode
 	Impl->SetTransitionOwner(CameraAsset);
 
 	DefaultLayout = Impl->GetStandardLayout()->GetLayout();
+
+	UClass* SharedTransitionSchemaClass = UCameraSharedTransitionGraphSchema::StaticClass();
+	UCameraSharedTransitionGraphSchema* DefaultTransitionGraphSchema = Cast<UCameraSharedTransitionGraphSchema>(SharedTransitionSchemaClass->GetDefaultObject());
+	TransitionGraphConfig = DefaultTransitionGraphSchema->BuildGraphConfig();
 }
 
 void FCameraSharedTransitionsAssetEditorMode::OnActivateMode(const FAssetEditorModeActivateParams& InParams)
@@ -75,15 +80,18 @@ void FCameraSharedTransitionsAssetEditorMode::OnDeactivateMode(const FAssetEdito
 	UToolMenus::UnregisterOwner(this);
 }
 
-bool FCameraSharedTransitionsAssetEditorMode::JumpToNode(UEdGraphNode* InNode)
+void FCameraSharedTransitionsAssetEditorMode::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	return false;
+	OutSources.Add(FFindInObjectTreeGraphSource{ CameraAsset, &TransitionGraphConfig });
 }
 
-bool FCameraSharedTransitionsAssetEditorMode::JumpToObject(UObject* InObject)
+bool FCameraSharedTransitionsAssetEditorMode::JumpToObject(UObject* InObject, FName PropertyName)
 {
-	TSharedPtr<SCameraRigTransitionEditor> TransitionEditor = Impl->GetCameraRigTransitionEditor();
-	return TransitionEditor->FindAndJumpToObjectNode(InObject);
+	if (TSharedPtr<SCameraRigTransitionEditor> TransitionEditor = Impl->GetCameraRigTransitionEditor())
+	{
+		return TransitionEditor->FindAndJumpToObjectNode(InObject);
+	}
+	return false;
 }
 
 }  // namespace UE::Cameras

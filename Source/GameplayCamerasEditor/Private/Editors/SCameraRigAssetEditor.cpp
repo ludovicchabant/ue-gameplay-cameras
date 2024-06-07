@@ -237,28 +237,7 @@ void SCameraRigAssetEditor::FocusHome()
 
 	if (Graph && GraphEditor)
 	{
-		if (UObjectTreeGraphNode* RootObjectNode = Graph->GetRootObjectNode())
-		{
-			JumpToNode(RootObjectNode);
-		}
-	}
-}
-
-void SCameraRigAssetEditor::JumpToNode(UEdGraphNode* InGraphNode)
-{
-	if (InGraphNode)
-	{
-		UEdGraph* Graph = InGraphNode->GetGraph();
-		if (Graph == NodeGraph)
-		{
-			SetEditorMode(ECameraRigAssetEditorMode::NodeGraph);
-			NodeGraphEditor->JumpToNode(InGraphNode);
-		}
-		else if (Graph == TransitionGraph)
-		{
-			SetEditorMode(ECameraRigAssetEditorMode::TransitionGraph);
-			TransitionGraphEditor->JumpToNode(InGraphNode);
-		}
+		FindAndJumpToObjectNode(CameraRigAsset);
 	}
 }
 

@@ -2,10 +2,13 @@
 
 #include "Editors/SFindInObjectTreeGraph.h"
 
+#include "Core/ObjectTreeGraphObject.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "Editors/ObjectTreeGraphConfig.h"
+#include "Editors/ObjectTreeGraphSearch.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/Images/SImage.h"
@@ -20,15 +23,25 @@ FFindInObjectTreeGraphResult::FFindInObjectTreeGraphResult(const FText& InCustom
 {
 }
 
-FFindInObjectTreeGraphResult::FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphNode* InGraphNode)
+FFindInObjectTreeGraphResult::FFindInObjectTreeGraphResult(
+		TSharedPtr<FFindInObjectTreeGraphResult>& InParent, 
+		const FFindInObjectTreeGraphSource& InSource, 
+		UObject* InObject)
 	: Parent(InParent)
-	, GraphNode(InGraphNode)
+	, WeakObject(InObject)
+	, Source(InSource)
 {
 }
 
-FFindInObjectTreeGraphResult::FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphPin* InGraphPin)
+FFindInObjectTreeGraphResult::FFindInObjectTreeGraphResult(
+		TSharedPtr<FFindInObjectTreeGraphResult>& InParent, 
+		const FFindInObjectTreeGraphSource& InSource, 
+		UObject* InObject, 
+		FName InPropertyName)
 	: Parent(InParent)
-	, GraphPin(InGraphPin)
+	, WeakObject(InObject)
+	, PropertyName(InPropertyName)
+	, Source(InSource)
 {
 }
 
@@ -37,13 +50,17 @@ TSharedRef<SWidget>	FFindInObjectTreeGraphResult::GetIcon() const
 	FSlateColor IconColor = FSlateColor::UseForeground();
 	const FSlateBrush* Brush = NULL;
 
-	if (UEdGraphPin* ResolvedPin = GraphPin.Get())
+	UObject* Object = WeakObject.Get();
+
+	if (Object && !PropertyName.IsNone())
 	{
-		if (ResolvedPin->PinType.IsArray())
+		UClass* ObjectClass = Object->GetClass();
+		FProperty* Property = ObjectClass->FindPropertyByName(PropertyName);
+		if (Property->IsA<FArrayProperty>())
 		{
 			Brush = FAppStyle::GetBrush(TEXT("GraphEditor.ArrayPinIcon"));
 		}
-		else if (ResolvedPin->PinType.bIsReference)
+		else if (Property->IsA<FObjectProperty>())
 		{
 			Brush = FAppStyle::GetBrush(TEXT("GraphEditor.RefPinIcon"));
 		}
@@ -51,11 +68,8 @@ TSharedRef<SWidget>	FFindInObjectTreeGraphResult::GetIcon() const
 		{
 			Brush = FAppStyle::GetBrush(TEXT("GraphEditor.PinIcon"));
 		}
-
-		const UEdGraphSchema* Schema = ResolvedPin->GetSchema();
-		IconColor = Schema->GetPinTypeColor(ResolvedPin->PinType);
 	}
-	else if (GraphNode.IsValid())
+	else if (Object)
 	{
 		Brush = FAppStyle::GetBrush(TEXT("GraphEditor.NodeGlyph"));
 	}
@@ -68,63 +82,54 @@ TSharedRef<SWidget>	FFindInObjectTreeGraphResult::GetIcon() const
 
 FText FFindInObjectTreeGraphResult::GetCategory() const
 {
-	if (GraphNode.IsValid())
+	if (WeakObject.IsValid())
 	{
-		return LOCTEXT("NodeCategory", "Node");
-	}
-	else if (GraphPin.Get())
-	{
-		return LOCTEXT("PinCategory", "Pin");
+		if (PropertyName.IsNone())
+		{
+			return LOCTEXT("NodeCategory", "Node");
+		}
+		else
+		{
+			return LOCTEXT("PinCategory", "Pin");
+		}
 	}
 	return FText::GetEmpty();
 }
 
 FText FFindInObjectTreeGraphResult::GetText() const
 {
-	if (UEdGraphNode* ResolvedNode = GraphNode.Get())
+	UObject* Object = WeakObject.Get();
+	if (Object)
 	{
-		const FText NodeFullTitle = ResolvedNode->GetNodeTitle(ENodeTitleType::FullTitle);
-		const FText NodeListViewTitle = ResolvedNode->GetNodeTitle(ENodeTitleType::ListView);
-		if (NodeFullTitle.EqualToCaseIgnored(NodeListViewTitle))
+		if (PropertyName.IsNone())
 		{
-			return NodeFullTitle;
+			const FText DisplayNameText = Source.GraphConfig->GetDisplayNameText(Object);
+			return DisplayNameText;
 		}
-		return FText::Format(LOCTEXT("NodeResultFmt", "{0} - {1}"), NodeListViewTitle, NodeFullTitle);
-	}
-	else if (UEdGraphPin* ResolvedPin = GraphPin.Get())
-	{
-		const UEdGraphSchema* GraphSchema = ResolvedPin->GetSchema();
-		return GraphSchema->GetPinDisplayName(ResolvedPin);
+		else
+		{
+			UClass* ObjectClass = Object->GetClass();
+			FProperty* Property = ObjectClass->FindPropertyByName(PropertyName);
+			return Property->GetDisplayNameText();
+		}
 	}
 	return CustomText;
 }
 
 FText FFindInObjectTreeGraphResult::GetCommentText() const
 {
-	if (UEdGraphNode* ResolvedNode = GraphNode.Get())
+	if (IObjectTreeGraphObject* ObjectInterface = Cast<IObjectTreeGraphObject>(WeakObject.Get()))
 	{
-		return FText::FromString(ResolvedNode->NodeComment);
+		return FText::FromString(ObjectInterface->GetGraphNodeCommentText(Source.GraphConfig->GraphName));
 	}
 	return FText::GetEmpty();
 }
 
 FReply FFindInObjectTreeGraphResult::OnClick(TSharedRef<SFindInObjectTreeGraph> FindInObjectTreeGraph)
 {
-	if (UEdGraphNode* ResolvedNode = GraphNode.Get())
+	if (UObject* Object = WeakObject.Get())
 	{
-		FindInObjectTreeGraph->OnJumpToNodeRequested.ExecuteIfBound(ResolvedNode);
-		return FReply::Handled();
-	}
-	else if (UEdGraphPin* ResolvedPin = GraphPin.Get())
-	{
-		if (FindInObjectTreeGraph->OnJumpToPinRequested.IsBound())
-		{
-			FindInObjectTreeGraph->OnJumpToPinRequested.Execute(ResolvedPin);
-		}
-		else
-		{
-			FindInObjectTreeGraph->OnJumpToNodeRequested.ExecuteIfBound(ResolvedPin->GetOwningNode());
-		}
+		FindInObjectTreeGraph->OnJumpToObjectRequested.ExecuteIfBound(Object, PropertyName);
 		return FReply::Handled();
 	}
 	return FReply::Unhandled();
@@ -132,10 +137,8 @@ FReply FFindInObjectTreeGraphResult::OnClick(TSharedRef<SFindInObjectTreeGraph> 
 
 void SFindInObjectTreeGraph::Construct(const FArguments& InArgs)
 {
-	GraphsToSearch = InArgs._GraphsToSearch;
-
-	OnJumpToNodeRequested = InArgs._OnJumpToNodeRequested;
-	OnJumpToPinRequested = InArgs._OnJumpToPinRequested;
+	OnGetRootObjectsToSearch = InArgs._OnGetRootObjectsToSearch;
+	OnJumpToObjectRequested = InArgs._OnJumpToObjectRequested;
 
 	ChildSlot
 	[
@@ -267,12 +270,71 @@ void SFindInObjectTreeGraph::StartSearch()
 
 	Results.Empty();
 	HighlightText = FText::GetEmpty();
+	TArray<FObjectTreeGraphSearchResult> SearchResults;
 	if (Tokens.Num() > 0)
 	{
 		HighlightText = FText::FromString(SearchQuery);
-		for (UEdGraph* Graph : GraphsToSearch)
+
+		TArray<FFindInObjectTreeGraphSource> Sources;
+		OnGetRootObjectsToSearch.ExecuteIfBound(Sources);
+
+		FObjectTreeGraphSearch Searcher;
+		for (const FFindInObjectTreeGraphSource& Source : Sources)
 		{
-			MatchTokensInGraph(Graph, Tokens);
+			Searcher.AddRootObject(Source.RootObject, Source.GraphConfig);
+		}
+
+		Searcher.Search(Tokens, SearchResults);
+	}
+
+	// Convert simple flat search results to hierarchical results, where property results
+	// are always under an object result, object results are always under a graph result, 
+	// and so on. We do this by creating blank results if we need to, although it makes
+	// the assumption that the flat results come ordered (e.g. an object result won't be
+	// found after a property result for that object).
+	{
+		TMap<UObject*, FResultPtr> RootObjectToWidgetResult;
+		TMap<UObject*, FResultPtr> ObjectToWidgetResult;
+		for (const FObjectTreeGraphSearchResult& SearchResult : SearchResults)
+		{
+			FFindInObjectTreeGraphSource CurSource{ SearchResult.RootObject, SearchResult.GraphConfig };
+
+			FResultPtr GraphResult;
+			if (SearchResult.RootObject)
+			{
+				GraphResult = RootObjectToWidgetResult.FindRef(SearchResult.RootObject);
+				if (!GraphResult)
+				{
+					const FText RootObjectDisplayText = SearchResult.GraphConfig->GetDisplayNameText(SearchResult.RootObject);
+					const FText& GraphDisplayName = SearchResult.GraphConfig->GraphDisplayInfo.DisplayName;
+					const FText GraphResultText = FText::Format(
+							LOCTEXT("GraphResultFmt", "{0}: {1}"), { RootObjectDisplayText, GraphDisplayName });
+					GraphResult = MakeShared<FFindInObjectTreeGraphResult>(GraphResultText);
+					RootObjectToWidgetResult.Add(SearchResult.RootObject, GraphResult);
+					Results.Add(GraphResult);
+				}
+			}
+
+			FResultPtr ObjectResult;
+			if (SearchResult.Object)
+			{
+				ObjectResult = ObjectToWidgetResult.FindRef(SearchResult.Object);
+				if (!ObjectResult)
+				{
+					ensure(GraphResult);
+					ObjectResult = MakeShared<FFindInObjectTreeGraphResult>(GraphResult, CurSource, SearchResult.Object);
+					ObjectToWidgetResult.Add(SearchResult.Object, ObjectResult);
+					Results.Add(ObjectResult);
+				}
+			}
+
+			if (!SearchResult.PropertyName.IsNone())
+			{
+				ensure(ObjectResult);
+				FResultPtr PropertyResult = MakeShared<FFindInObjectTreeGraphResult>(
+						ObjectResult, CurSource, SearchResult.Object, SearchResult.PropertyName);
+				Results.Add(PropertyResult);
+			}
 		}
 	}
 	
@@ -286,93 +348,6 @@ void SFindInObjectTreeGraph::StartSearch()
 	{
 		ResultTreeView->SetItemExpansion(Result, true);
 	}
-}
-
-void SFindInObjectTreeGraph::MatchTokensInGraph(UEdGraph* Graph, TArrayView<FString> Tokens)
-{
-	FResultPtr GraphResult(new FFindInObjectTreeGraphResult(FText::FromName(Graph->GetFName())));
-
-	const UEdGraphSchema* GraphSchema = Graph->GetSchema();
-
-	for (UEdGraphNode* Node : Graph->Nodes)
-	{
-		const bool bNodeMatches = GraphNodeMatchesSearchTokens(GraphSchema, Node, Tokens);
-
-		TArray<UEdGraphPin*> MatchingPins;
-		for (UEdGraphPin* Pin : Node->Pins)
-		{
-			if (GraphPinMatchesSearchTokens(GraphSchema, Pin, Tokens))
-			{
-				MatchingPins.Add(Pin);
-			}
-		}
-
-		if (bNodeMatches || MatchingPins.Num() > 0)
-		{
-			FResultPtr NodeResult(new FFindInObjectTreeGraphResult(GraphResult, Node));
-			Results.Add(NodeResult);
-
-			for (UEdGraphPin* Pin : MatchingPins)
-			{
-				FResultPtr PinResult(new FFindInObjectTreeGraphResult(NodeResult, Pin));
-			}
-		}
-	}
-
-	for (UEdGraph* SubGraph : Graph->SubGraphs)
-	{
-		MatchTokensInGraph(SubGraph, Tokens);
-	}
-}
-
-bool SFindInObjectTreeGraph::GraphNodeMatchesSearchTokens(const UEdGraphSchema* GraphSchema, UEdGraphNode* GraphNode, TArrayView<FString> Tokens)
-{
-	const FString NodeFullTitle = GraphNode->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
-	if (StringMatchesSearchTokens(NodeFullTitle, Tokens))
-	{
-		return true;
-	}
-
-	const FString NodeListViewTitle = GraphNode->GetNodeTitle(ENodeTitleType::ListView).ToString();
-	if (StringMatchesSearchTokens(NodeListViewTitle, Tokens))
-	{
-		return true;
-	}
-
-	if (StringMatchesSearchTokens(GraphNode->NodeComment, Tokens))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool SFindInObjectTreeGraph::GraphPinMatchesSearchTokens(const UEdGraphSchema* GraphSchema, UEdGraphPin* GraphPin, TArrayView<FString> Tokens)
-{
-	const FString PinDisplayName = GraphSchema->GetPinDisplayName(GraphPin).ToString();
-	if (StringMatchesSearchTokens(PinDisplayName, Tokens))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool SFindInObjectTreeGraph::StringMatchesSearchTokens(const FString& ComparisonString, TArrayView<FString> Tokens)
-{
-	if (ComparisonString.IsEmpty())
-	{
-		return false;
-	}
-
-	for (const FString& Token : Tokens)
-	{
-		if (!ComparisonString.Contains(Token))
-		{
-			return false;
-		}
-	}
-	return true;
 }
 
 #undef LOCTEXT_NAMESPACE

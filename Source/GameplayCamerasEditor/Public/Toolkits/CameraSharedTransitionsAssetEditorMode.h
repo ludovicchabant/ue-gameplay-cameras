@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Toolkits/AssetEditorMode.h"
 
 class UCameraAsset;
 class UEdGraphNode;
+struct FFindInObjectTreeGraphSource;
 
 namespace UE::Cameras
 {
@@ -22,8 +24,8 @@ public:
 
 	FCameraSharedTransitionsAssetEditorMode(UCameraAsset* InCameraAsset);
 
-	bool JumpToNode(UEdGraphNode* InNode);
-	bool JumpToObject(UObject* InObject);
+	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	bool JumpToObject(UObject* InObject, FName PropertyName);
 
 protected:
 
@@ -35,6 +37,8 @@ private:
 	UCameraAsset* CameraAsset;
 
 	TSharedPtr<FCameraRigTransitionEditorToolkitBase> Impl;
+
+	FObjectTreeGraphConfig TransitionGraphConfig;
 
 	bool bInitializedToolkit = false;
 };

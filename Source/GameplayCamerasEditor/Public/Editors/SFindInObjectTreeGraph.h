@@ -11,12 +11,23 @@
 #include "Widgets/Views/STableViewBase.h"
 #include "Widgets/Views/STreeView.h"
 
+class SFindInObjectTreeGraph;
+class SSearchBox;
 class UEdGraph;
 class UEdGraphNode;
 class UEdGraphSchema;
-class SSearchBox;
+struct FObjectTreeGraphConfig;
 
-class SFindInObjectTreeGraph;
+/**
+ * Struct describing one source of possible results for a search.
+ */
+struct FFindInObjectTreeGraphSource
+{
+	/** The root object a result was found in. */
+	UObject* RootObject = nullptr;
+	/** The config for the object tree graph a result was found in. */
+	const FObjectTreeGraphConfig* GraphConfig = nullptr;
+};
 
 /** 
  * Structure for a search result inside an object tree graph.
@@ -32,19 +43,26 @@ public:
 
 	/** Custom text for this result. */
 	FText CustomText;
-	/** The graph node that this result refers to. */
-	TWeakObjectPtr<UEdGraphNode> GraphNode;
-	/** The graph pin that this result refers to. */
-	FEdGraphPinReference GraphPin;
+	/** The object that this result refers to. */
+	TWeakObjectPtr<> WeakObject;
+	/** The property name that this result refers to. */
+	FName PropertyName;
 
 public:
 
 	/** Creates a new result with a custom text. */
 	FFindInObjectTreeGraphResult(const FText& InCustomText);
-	/** Creates a new result referring to a graph node, under a parent result. */
-	FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphNode* InGraphNode);
-	/** Creates a new result referring to a graph pin, under a parent result. */
-	FFindInObjectTreeGraphResult(TSharedPtr<FFindInObjectTreeGraphResult>& InParent, UEdGraphPin* InGraphPin);
+	/** Creates a new result referring to an object, under a parent result. */
+	FFindInObjectTreeGraphResult(
+			TSharedPtr<FFindInObjectTreeGraphResult>& InParent, 
+			const FFindInObjectTreeGraphSource& InSource, 
+			UObject* InObject);
+	/** Creates a new result referring to an object's property, under a parent result. */
+	FFindInObjectTreeGraphResult(
+			TSharedPtr<FFindInObjectTreeGraphResult>& InParent, 
+			const FFindInObjectTreeGraphSource& InSource, 
+			UObject* InObject, 
+			FName InPropertyName);
 
 	/** Gets the icon for this result. */
 	TSharedRef<SWidget>	GetIcon() const;
@@ -57,6 +75,10 @@ public:
 
 	/** Go to the graph node, pin, etc. */
 	FReply OnClick(TSharedRef<SFindInObjectTreeGraph> FindInObjectTreeGraph);
+
+private:
+
+	FFindInObjectTreeGraphSource Source;
 };
 
 /**
@@ -66,17 +88,15 @@ class SFindInObjectTreeGraph : public SCompoundWidget
 {
 public:
 
-	DECLARE_DELEGATE_OneParam(FOnJumpToNodeRequested, UEdGraphNode*);
-	DECLARE_DELEGATE_OneParam(FOnJumpToPinRequested, UEdGraphPin*);
+	DECLARE_DELEGATE_OneParam(FOnGetRootObjectsToSearch, TArray<FFindInObjectTreeGraphSource>&);
+	DECLARE_DELEGATE_TwoParams(FOnJumpToObjectRequested, UObject*, FName);
 
 	SLATE_BEGIN_ARGS(SFindInObjectTreeGraph)
 	{}
-		/** The graphs to search. */
-		SLATE_ARGUMENT(TArray<UEdGraph*>, GraphsToSearch)
-		/** The callback to invoke when a search result wants to focus a node. */
-		SLATE_EVENT(FOnJumpToNodeRequested, OnJumpToNodeRequested)
-		/** The callback to invoke when a search result wants to focus a pin. */
-		SLATE_EVENT(FOnJumpToPinRequested, OnJumpToPinRequested)
+		/** The callback to get the graphs to search. */
+		SLATE_EVENT(FOnGetRootObjectsToSearch, OnGetRootObjectsToSearch)
+		/** The callback to invoke when a search result wants to focus an object node or one of its pins. */
+		SLATE_EVENT(FOnJumpToObjectRequested, OnJumpToObjectRequested)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -99,12 +119,11 @@ protected:
 protected:
 
 	void StartSearch();
-	void MatchTokensInGraph(UEdGraph* Graph, TArrayView<FString> Tokens);
-	bool GraphNodeMatchesSearchTokens(const UEdGraphSchema* GraphSchema, UEdGraphNode* GraphNode, TArrayView<FString> Tokens);
-	bool GraphPinMatchesSearchTokens(const UEdGraphSchema* GraphSchema, UEdGraphPin* GraphPin, TArrayView<FString> Tokens);
-	bool StringMatchesSearchTokens(const FString& ComparisonString, TArrayView<FString> Tokens);
 
 protected:
+
+	FOnGetRootObjectsToSearch OnGetRootObjectsToSearch;
+	FOnJumpToObjectRequested OnJumpToObjectRequested;
 
 	TSharedPtr<SSearchBox> SearchBox;
 	TSharedPtr<SResultTreeView> ResultTreeView;
@@ -113,11 +132,6 @@ protected:
 	TArray<FResultPtr> Results;
 
 	FText HighlightText;
-
-	TArray<UEdGraph*> GraphsToSearch;
-
-	FOnJumpToNodeRequested OnJumpToNodeRequested;
-	FOnJumpToPinRequested OnJumpToPinRequested;
 
 	friend struct FFindInObjectTreeGraphResult;
 };

@@ -73,8 +73,6 @@ public:
 
 	/** Focuses the current graph to the root object node. */
 	void FocusHome();
-	/** Jumps the current graph to the given node. */
-	void JumpToNode(UEdGraphNode* InGraphNode);
 	/** Finds a node for the given object and, if so, jumps to it. */
 	bool FindAndJumpToObjectNode(UObject* InObject);
 

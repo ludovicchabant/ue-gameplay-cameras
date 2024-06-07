@@ -15,6 +15,7 @@ class UCameraAssetEditor;
 class UEdGraph;
 class UEdGraphNode;
 class UGameplayCamerasEditorSettings;
+struct FFindInObjectTreeGraphSource;
 
 namespace UE::Cameras
 {
@@ -64,11 +65,12 @@ private:
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
 
-	void JumpToNode(UEdGraphNode* Node);
-	void JumpToObject(UObject* Object);
-
 	void OnBuild();
 	void OnFindInCamera();
+
+	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnJumpToObject(UObject* Object);
+	void OnJumpToObject(UObject* Object, FName PropertyName);
 
 private:
 

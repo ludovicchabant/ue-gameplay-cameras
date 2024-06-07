@@ -6,6 +6,7 @@
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
@@ -137,33 +138,11 @@ void FCameraAssetEditorToolkit::CreateWidgets()
 
 	// Create the search panel.
 	SearchWidget = SNew(SFindInObjectTreeGraph)
-		.OnJumpToNodeRequested(this, &FCameraAssetEditorToolkit::JumpToNode);
+		.OnGetRootObjectsToSearch(this, &FCameraAssetEditorToolkit::OnGetRootObjectsToSearch)
+		.OnJumpToObjectRequested(this, &FCameraAssetEditorToolkit::OnJumpToObject);
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraAssetBuildMessages");
-}
-
-void FCameraAssetEditorToolkit::JumpToNode(UEdGraphNode* Node)
-{
-}
-
-void FCameraAssetEditorToolkit::JumpToObject(UObject* Object)
-{
-	TSharedPtr<FCameraRigsAssetEditorMode> CameraRigsMode = StaticCastSharedPtr<FCameraRigsAssetEditorMode>(
-			GetEditorMode(FCameraRigsAssetEditorMode::ModeName));
-	if (CameraRigsMode->JumpToObject(Object))
-	{
-		SetEditorMode(FCameraRigsAssetEditorMode::ModeName);
-		return;
-	}
-
-	TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = StaticCastSharedPtr<FCameraSharedTransitionsAssetEditorMode>(
-			GetEditorMode(FCameraSharedTransitionsAssetEditorMode::ModeName));
-	if (SharedTransitionsMode->JumpToObject(Object))
-	{
-		SetEditorMode(FCameraSharedTransitionsAssetEditorMode::ModeName);
-		return;
-	}
 }
 
 void FCameraAssetEditorToolkit::RegisterToolbar()
@@ -248,7 +227,7 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 		Commands.FindInCamera,
 		FExecuteAction::CreateSP(this, &FCameraAssetEditorToolkit::OnFindInCamera));
 
-	BuildLogToolkit->OnRequestJumpToObject().BindSP(this, &FCameraAssetEditorToolkit::JumpToObject);
+	BuildLogToolkit->OnRequestJumpToObject().BindSP(this, &FCameraAssetEditorToolkit::OnJumpToObject);
 
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
@@ -297,6 +276,63 @@ void FCameraAssetEditorToolkit::OnFindInCamera()
 	TabManager->TryInvokeTab(SearchTabId);
 	SearchWidget->FocusSearchEditBox();
 }
+
+void FCameraAssetEditorToolkit::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+{
+	TSharedPtr<FCameraRigsAssetEditorMode> CameraRigsMode = GetTypedEditorMode<FCameraRigsAssetEditorMode>(
+			FCameraRigsAssetEditorMode::ModeName);
+	CameraRigsMode->OnGetRootObjectsToSearch(OutSources);
+
+	TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
+			FCameraSharedTransitionsAssetEditorMode::ModeName);
+	SharedTransitionsMode->OnGetRootObjectsToSearch(OutSources);
+}
+
+void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object)
+{
+	OnJumpToObject(Object, NAME_None);
+}
+
+void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyName)
+{
+	bool bFindInCameraRig = false;
+	bool bFindInSharedTranstions = false;
+	UObject* CurOuter = Object;
+	while (CurOuter != nullptr)
+	{
+		if (CurOuter->IsA<UCameraRigAsset>())
+		{
+			bFindInCameraRig = true;
+			break;
+		}
+		if (CurOuter == CameraAsset)
+		{
+			bFindInSharedTranstions = true;
+			break;
+		}
+
+		CurOuter = CurOuter->GetOuter();
+	}
+	
+	if (bFindInCameraRig)
+	{
+		TSharedPtr<FCameraRigsAssetEditorMode> CameraRigsMode = GetTypedEditorMode<FCameraRigsAssetEditorMode>(
+				FCameraRigsAssetEditorMode::ModeName);
+		SetEditorMode(FCameraRigsAssetEditorMode::ModeName);
+		CameraRigsMode->JumpToObject(Object, PropertyName);
+		return;
+	}
+
+	if (bFindInSharedTranstions)
+	{
+		TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
+				FCameraSharedTransitionsAssetEditorMode::ModeName);
+		SetEditorMode(FCameraSharedTransitionsAssetEditorMode::ModeName);
+		SharedTransitionsMode->JumpToObject(Object, PropertyName);
+		return;
+	}
+}
+
 
 FText FCameraAssetEditorToolkit::GetBaseToolkitName() const
 {

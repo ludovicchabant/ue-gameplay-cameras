@@ -47,6 +47,12 @@ protected:
 	bool IsEditorMode(FName InModeName) const;
 	FName GetCurrentEditorModeName() const;
 
+	template<typename EditorModeClass>
+	TSharedPtr<EditorModeClass> GetTypedEditorMode(FName InModeName) const
+	{
+		return StaticCastSharedPtr<EditorModeClass>(GetEditorMode(InModeName));
+	}
+
 private:
 
 	TMap<FName, TSharedPtr<FAssetEditorMode>> EditorModes;

@@ -2,7 +2,12 @@
 
 #include "Toolkits/CameraRigsAssetEditorMode.h"
 
+#include "Core/CameraAsset.h"
+#include "Core/CameraRigAsset.h"
+#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/SCameraRigAssetEditor.h"
+#include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/TabManager.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -30,6 +35,14 @@ FCameraRigsAssetEditorMode::FCameraRigsAssetEditorMode(UCameraAsset* InCameraAss
 		StandardLayout->AddLeftTab(CameraRigsTabId);
 	}
 	DefaultLayout = StandardLayout->GetLayout();
+
+	UClass* NodeGraphSchemaClass = UCameraNodeGraphSchema::StaticClass();
+	UCameraNodeGraphSchema* DefaultNodeGraphSchema = Cast<UCameraNodeGraphSchema>(NodeGraphSchemaClass->GetDefaultObject());
+	NodeGraphConfig = DefaultNodeGraphSchema->BuildGraphConfig();
+
+	UClass* TransitionSchemaClass = UCameraRigTransitionGraphSchema::StaticClass();
+	UCameraRigTransitionGraphSchema* DefaultTransitionGraphSchema = Cast<UCameraRigTransitionGraphSchema>(TransitionSchemaClass->GetDefaultObject());
+	TransitionGraphConfig = DefaultTransitionGraphSchema->BuildGraphConfig();
 }
 
 void FCameraRigsAssetEditorMode::OnActivateMode(const FAssetEditorModeActivateParams& InParams)
@@ -91,7 +104,16 @@ void FCameraRigsAssetEditorMode::OnCameraRigEditRequested(UCameraRigAsset* InCam
 	Impl->SetCameraRigAsset(InCameraRig);
 }
 
-bool FCameraRigsAssetEditorMode::JumpToObject(UObject* InObject)
+void FCameraRigsAssetEditorMode::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+{
+	for (UCameraRigAsset* CameraRig : CameraAsset->CameraRigs)
+	{
+		OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &NodeGraphConfig });
+		OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &TransitionGraphConfig });
+	}
+}
+
+bool FCameraRigsAssetEditorMode::JumpToObject(UObject* InObject, FName PropertyName)
 {
 	UCameraRigAsset* FindInCameraRig = nullptr;
 	UObject* CurOuter = InObject;
@@ -111,8 +133,11 @@ bool FCameraRigsAssetEditorMode::JumpToObject(UObject* InObject)
 
 	Impl->SetCameraRigAsset(FindInCameraRig);
 
-	TSharedPtr<SCameraRigAssetEditor> CameraRigAssetEditor = Impl->GetCameraRigAssetEditor();
-	return CameraRigAssetEditor->FindAndJumpToObjectNode(InObject);
+	if (TSharedPtr<SCameraRigAssetEditor> CameraRigAssetEditor = Impl->GetCameraRigAssetEditor())
+	{
+		return CameraRigAssetEditor->FindAndJumpToObjectNode(InObject);
+	}
+	return false;
 }
 
 }  // namespace UE::Cameras

@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Tools/BaseAssetToolkit.h"
 
 #include "CameraRigAssetEditorToolkit.generated.h"
 
 class SFindInObjectTreeGraph;
 class UCameraRigAsset;
+struct FFindInObjectTreeGraphSource;
 
 namespace UE::Cameras
 {
@@ -51,14 +53,25 @@ private:
 	void OnBuild();
 	void OnFindInCameraRig();
 
+	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnJumpToObject(UObject* Object, FName PropertyName);
+
 private:
 
 	static const FName SearchTabId;
 	static const FName MessagesTabId;
 
+	/** Base implementation */
 	TSharedPtr<FCameraRigAssetEditorToolkitBase> Impl;
 
+	/** Cached config for the node graph */
+	FObjectTreeGraphConfig NodeGraphConfig;
+	/** Cached config for the transition graph */
+	FObjectTreeGraphConfig TransitionGraphConfig;
+
+	/** The build button */
 	TSharedPtr<FBuildButtonToolkit> BuildButtonToolkit;
+	/** The output log */
 	TSharedPtr<FCameraBuildLogToolkit> BuildLogToolkit;
 
 	/** Search widget */

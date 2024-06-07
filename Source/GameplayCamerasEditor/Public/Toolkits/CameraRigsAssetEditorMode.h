@@ -3,14 +3,16 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Toolkits/AssetEditorMode.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SCameraRigList.h"
+#include "Toolkits/AssetEditorMode.h"
 
 class FDocumentTabFactory;
 class FDocumentTracker;
 class UCameraAsset;
 class UCameraRigAsset;
 class UEdGraphNode;
+struct FFindInObjectTreeGraphSource;
 
 namespace UE::Cameras
 {
@@ -26,8 +28,8 @@ public:
 
 	FCameraRigsAssetEditorMode(UCameraAsset* InCameraAsset);
 
-	bool JumpToNode(UEdGraphNode* InNode);
-	bool JumpToObject(UObject* InObject);
+	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	bool JumpToObject(UObject* InObject, FName PropertyName);
 
 protected:
 
@@ -50,6 +52,9 @@ private:
 	TSharedPtr<FCameraRigAssetEditorToolkitBase> Impl;
 
 	TSharedPtr<SCameraRigList> CameraRigsListWidget;
+
+	FObjectTreeGraphConfig NodeGraphConfig;
+	FObjectTreeGraphConfig TransitionGraphConfig;
 
 	bool bInitializedToolkit = false;
 };
