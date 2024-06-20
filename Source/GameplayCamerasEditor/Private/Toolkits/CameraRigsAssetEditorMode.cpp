@@ -54,7 +54,8 @@ void FCameraRigsAssetEditorMode::OnActivateMode(const FAssetEditorModeActivatePa
 		CameraRigsListWidget = SNew(SCameraRigList)
 			.CameraAsset(CameraAsset)
 			.OnCameraRigListChanged(this, &FCameraRigsAssetEditorMode::OnCameraRigListChanged)
-			.OnRequestEditCameraRig(this, &FCameraRigsAssetEditorMode::OnCameraRigEditRequested);
+			.OnRequestEditCameraRig(this, &FCameraRigsAssetEditorMode::OnCameraRigEditRequested)
+			.OnCameraRigDeleted(this, &FCameraRigsAssetEditorMode::OnCameraRigDeleted);
 
 		bInitializedToolkit = true;
 	}
@@ -102,6 +103,14 @@ void FCameraRigsAssetEditorMode::OnCameraRigListChanged(TArrayView<UCameraRigAss
 void FCameraRigsAssetEditorMode::OnCameraRigEditRequested(UCameraRigAsset* InCameraRig)
 {
 	Impl->SetCameraRigAsset(InCameraRig);
+}
+
+void FCameraRigsAssetEditorMode::OnCameraRigDeleted(const TArray<UCameraRigAsset*>& InCameraRigs)
+{
+	if (InCameraRigs.Contains(Impl->GetCameraRigAsset()))
+	{
+		Impl->SetCameraRigAsset(nullptr);
+	}
 }
 
 void FCameraRigsAssetEditorMode::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)

@@ -120,6 +120,7 @@ void SCameraRigList::Construct(const FArguments& InArgs)
 
 	OnCameraRigListChanged = InArgs._OnCameraRigListChanged;
 	OnRequestEditCameraRig = InArgs._OnRequestEditCameraRig;
+	OnCameraRigDeleted = InArgs._OnCameraRigDeleted;
 
 	CommandList = MakeShared<FUICommandList>();
 
@@ -313,6 +314,7 @@ void SCameraRigList::OnDeleteCameraRig()
 		CameraAsset->Modify();
 
 		TStringBuilder<256> StringBuilder;
+		TArray<UCameraRigAsset*> DeletedCameraRigs;
 
 		for (TSharedPtr<FCameraRigListItem> Item : SelectedItems)
 		{
@@ -328,10 +330,14 @@ void SCameraRigList::OnDeleteCameraRig()
 
 				const int32 NumRemoved = CameraAsset->CameraRigs.Remove(CameraRigAsset);
 				ensure(NumRemoved == 1);
+
+				DeletedCameraRigs.Add(CameraRigAsset);
 			}
 		}
 
 		bUpdateItemSource = true;
+
+		OnCameraRigDeleted.ExecuteIfBound(DeletedCameraRigs);
 	}
 }
 

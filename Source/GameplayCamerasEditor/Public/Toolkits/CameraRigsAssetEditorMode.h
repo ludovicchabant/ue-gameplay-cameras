@@ -42,6 +42,7 @@ private:
 
 	void OnCameraRigListChanged(TArrayView<UCameraRigAsset* const> InCameraRigs);
 	void OnCameraRigEditRequested(UCameraRigAsset* InCameraRig);
+	void OnCameraRigDeleted(const TArray<UCameraRigAsset*>& InCameraRigs);
 
 private:
 

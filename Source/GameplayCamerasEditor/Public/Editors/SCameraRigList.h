@@ -21,7 +21,8 @@ namespace UE::Cameras
 
 DECLARE_DELEGATE(FOnRequestRenameCameraRig);
 DECLARE_DELEGATE_OneParam(FOnCameraRigListChanged, TArrayView<UCameraRigAsset* const>);
-DECLARE_DELEGATE_OneParam(FOnRequestEditCameraRig, UCameraRigAsset*);
+DECLARE_DELEGATE_OneParam(FOnCameraRigEvent, UCameraRigAsset*);
+DECLARE_DELEGATE_OneParam(FOnMultiCameraRigEvent, const TArray<UCameraRigAsset*>&);
 
 /**
  * List item for the list view in SCameraRigList.
@@ -75,7 +76,8 @@ public:
 	{}
 		SLATE_ARGUMENT(UCameraAsset*, CameraAsset)
 		SLATE_EVENT(FOnCameraRigListChanged, OnCameraRigListChanged)
-		SLATE_EVENT(FOnRequestEditCameraRig, OnRequestEditCameraRig)
+		SLATE_EVENT(FOnCameraRigEvent, OnRequestEditCameraRig)
+		SLATE_EVENT(FOnMultiCameraRigEvent, OnCameraRigDeleted)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -120,7 +122,8 @@ private:
 	TObjectPtr<UCameraAsset> CameraAsset;
 
 	FOnCameraRigListChanged OnCameraRigListChanged;
-	FOnRequestEditCameraRig OnRequestEditCameraRig;
+	FOnCameraRigEvent OnRequestEditCameraRig;
+	FOnMultiCameraRigEvent OnCameraRigDeleted;
 
 	TSharedPtr<FUICommandList> CommandList;
 
