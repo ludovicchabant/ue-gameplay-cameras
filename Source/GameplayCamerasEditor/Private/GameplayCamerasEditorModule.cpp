@@ -11,6 +11,7 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
+#include "Customizations/SingleCameraDirectorDetailsCustomization.h"
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
@@ -325,6 +326,8 @@ private:
 
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		FCameraParameterDetailsCustomization::Register(PropertyEditorModule);
+		PropertyEditorModule.RegisterCustomClassLayout("SingleCameraDirector", FOnGetDetailCustomizationInstance::CreateStatic(
+					&FSingleCameraDirectorDetailsCustomization::MakeInstance));
 	}
 
 	void UnregisterDetailsCustomizations()
@@ -336,6 +339,7 @@ private:
 		if (PropertyEditorModule)
 		{
 			FCameraParameterDetailsCustomization::Unregister(*PropertyEditorModule);
+			PropertyEditorModule->UnregisterCustomClassLayout("SingleCameraDirector");
 		}
 	}
 
