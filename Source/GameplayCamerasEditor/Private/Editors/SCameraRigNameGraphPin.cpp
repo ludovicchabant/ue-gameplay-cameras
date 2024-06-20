@@ -2,13 +2,15 @@
 
 #include "Editors/SCameraRigNameGraphPin.h"
 
-#include "Algo/Transform.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
+#include "Editors/CameraRigPickerConfig.h"
 #include "Framework/Views/ITypedTableView.h"
 #include "IContentBrowserSingleton.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Modules/ModuleManager.h"
 #include "ScopedTransaction.h"
 #include "SGraphPin.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -16,7 +18,6 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/Text/STextBlock.h"
@@ -133,22 +134,17 @@ FText SCameraRigNameGraphPin::OnGetComboToolTipText() const
 
 TSharedRef<SWidget> SCameraRigNameGraphPin::OnBuildCameraRigNamePicker()
 {
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>("ContentBrowser");
-
-	FAssetPickerConfig AssetPickerConfig;
-	AssetPickerConfig.bAllowDragging = false;
-	AssetPickerConfig.bAllowNullSelection = false;
-	AssetPickerConfig.SelectionMode = ESelectionMode::Multi;
-	AssetPickerConfig.InitialAssetViewType = EAssetViewType::List;
-	AssetPickerConfig.Filter.ClassPaths.Add(UCameraAsset::StaticClass()->GetClassPathName());
-	AssetPickerConfig.Filter.bRecursiveClasses = true;
-	AssetPickerConfig.SaveSettingsName = TEXT("CameraRigNamePicker");
-	AssetPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SCameraRigNameGraphPin::OnPickerAssetSelected);
-	AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentAssetPickerSelection);
+	FCameraRigPickerConfig CameraRigPickerConfig;
+	CameraRigPickerConfig.bCanSelectCameraAsset = true;
+	CameraRigPickerConfig.CameraAssetSelectionMode = ESelectionMode::Multi;
+	CameraRigPickerConfig.CameraAssetViewType = EAssetViewType::List;
+	CameraRigPickerConfig.CameraAssetSaveSettingsName = TEXT("CameraRigNamePicker");
+	CameraRigPickerConfig.OnCameraRigSelected = FOnCameraRigSelected::CreateSP(this, &SCameraRigNameGraphPin::OnPickerAssetSelected);
 
 	if (TSharedPtr<SGraphNode> OwnerNodeWidget = OwnerNodePtr.Pin())
 	{
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
 		UEdGraphNode* OwnerNode = OwnerNodeWidget->GetNodeObj();
 		UBlueprint* OwnerBlueprint = FBlueprintEditorUtils::FindBlueprintForNode(OwnerNode);
 
@@ -160,65 +156,26 @@ TSharedRef<SWidget> SCameraRigNameGraphPin::OnBuildCameraRigNamePicker()
 		if (!ReferencerAssetData.IsEmpty())
 		{
 			//TODO: multi-select all referencers.
-			AssetPickerConfig.InitialAssetSelection = ReferencerAssetData[0];
+			CameraRigPickerConfig.InitialCameraAssetSelection = ReferencerAssetData[0];
 		}
-
-		UpdateListItemsSource(ReferencerAssetData);
 	}
-
-	TSharedRef<SWidget> PickerWidget = SNew(SBox)
-		.HeightOverride(400)
-		.WidthOverride(350)
-		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::GetBrush("Menu.Background"))
-			[
-				SNew(SVerticalBox)
-				+SVerticalBox::Slot()
-				.FillHeight(0.55f)
-				[
-					ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
-				]
-				+SVerticalBox::Slot()
-				.FillHeight(0.45f)
-				[
-					SAssignNew(CameraRigNameListView, SListView<TSharedPtr<FString>>)
-					.ListItemsSource(&CameraRigsItemsSource)
-					.OnGenerateRow(this, &SCameraRigNameGraphPin::OnCameraRigListGenerateRow)
-					.OnSelectionChanged(this, &SCameraRigNameGraphPin::OnCameraRigListSelectionChanged)
-				]
-			]
-		];
 
 	if (GraphPinObj && !GraphPinObj->DefaultValue.IsEmpty())
 	{
-		TSharedPtr<FString>* FoundItem = CameraRigsItemsSource.FindByPredicate(
-				[this](const TSharedPtr<FString>& Item)
-				{
-					return GraphPinObj->DefaultValue == *Item.Get();
-				});
-		if (FoundItem)
-		{
-			bSuppressCameraRigListSelectionChanged = true;
-			CameraRigNameListView->SetSelection(*FoundItem);
-			CameraRigNameListView->RequestScrollIntoView(*FoundItem);
-			bSuppressCameraRigListSelectionChanged = false;
-		}
+		CameraRigPickerConfig.InitialCameraRigSelectionName = GraphPinObj->DefaultValue;
 	}
 
-	return PickerWidget;
+	IGameplayCamerasEditorModule& CamerasEditorModule = FModuleManager::LoadModuleChecked<IGameplayCamerasEditorModule>("GameplayCamerasEditor");
+	return CamerasEditorModule.CreateCameraRigPicker(CameraRigPickerConfig);
 }
 
-void SCameraRigNameGraphPin::OnPickerAssetSelected(const FAssetData& AssetData)
+void SCameraRigNameGraphPin::OnPickerAssetSelected(UCameraRigAsset* SelectedItem)
 {
-	TArray<FAssetData> SelectedAssets;
-	if (GetCurrentAssetPickerSelection.IsBound())
+	if (SelectedItem)
 	{
-		SelectedAssets = GetCurrentAssetPickerSelection.Execute();
+		CameraRigPickerButton->SetIsOpen(false);
+		SetCameraRigName(SelectedItem->GetDisplayName());
 	}
-
-	UpdateListItemsSource(SelectedAssets);
-	CameraRigNameListView->RequestListRefresh();
 }
 
 FReply SCameraRigNameGraphPin::OnResetButtonClicked()
@@ -226,79 +183,6 @@ FReply SCameraRigNameGraphPin::OnResetButtonClicked()
 	CameraRigPickerButton->SetIsOpen(false);
 	SetCameraRigName(FString());
 	return FReply::Handled();
-}
-
-TSharedRef<ITableRow> SCameraRigNameGraphPin::OnCameraRigListGenerateRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable)
-{
-	TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasStyle = FGameplayCamerasEditorStyle::Get();
-
-	const FText DisplayName = FText::FromString(*Item);
-
-	return SNew(STableRow<TSharedPtr<FString>>, OwnerTable)
-		.Padding(FMargin(0.f, 4.f))
-		[
-			SNew(SBorder)
-			.Padding(FMargin(4.f))
-			.BorderImage(FAppStyle::GetBrush("NoBorder"))
-			[
-				SNew(SHorizontalBox)
-				+SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(SImage)
-					.ColorAndOpacity(FSlateColor::UseForeground())
-					.Image(GameplayCamerasStyle->GetBrush("CameraAssetEditor.ShowCameraRigs"))
-				]
-				+SHorizontalBox::Slot()
-				.FillWidth(1.f)
-				.Padding(4.f, 2.f)
-				[
-					SNew(STextBlock)
-					.Text(DisplayName)
-				]
-			]
-		];
-}
-
-void SCameraRigNameGraphPin::OnCameraRigListSelectionChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo)
-{
-	if (!bSuppressCameraRigListSelectionChanged && Item)
-	{
-		CameraRigPickerButton->SetIsOpen(false);
-		SetCameraRigName(*Item.Get());
-	}
-}
-
-void SCameraRigNameGraphPin::UpdateListItemsSource(const TArray<FAssetData>& Assets)
-{
-	// Only show the names that are in common between all selected camera assets.
-	TSet<FString> CommonNames;
-	bool bCommonNamesInitialized = false;
-	for (const FAssetData& SelectedAsset : Assets)
-	{
-		if (const UCameraAsset* CameraAsset = Cast<UCameraAsset>(SelectedAsset.GetAsset()))
-		{
-			TSet<FString> SelectedAssetNames;
-			Algo::Transform(CameraAsset->CameraRigs, SelectedAssetNames, 
-					[](const UCameraRigAsset* Item) { return Item->GetDisplayName(); });
-
-			if (!bCommonNamesInitialized)
-			{
-				CommonNames.Append(SelectedAssetNames);
-				bCommonNamesInitialized = true;
-			}
-			else
-			{
-				CommonNames = CommonNames.Intersect(SelectedAssetNames);
-			}
-		}
-	}
-
-	CameraRigsItemsSource.Reset();
-	for (const FString& CommonName : CommonNames)
-	{
-		CameraRigsItemsSource.Add(MakeShared<FString>(CommonName));
-	}
 }
 
 void SCameraRigNameGraphPin::SetCameraRigName(const FString& InCameraRigName)

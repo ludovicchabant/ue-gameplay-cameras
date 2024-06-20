@@ -18,6 +18,7 @@
 #include "Directors/BlueprintCameraDirector.h"
 #include "EdGraph/EdGraph.h"
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
+#include "Editors/SCameraRigPicker.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
 #include "GameplayCamerasEditorSettings.h"
@@ -127,6 +128,14 @@ public:
 		UCameraVariableCollectionEditor* AssetEditor = NewObject<UCameraVariableCollectionEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
 		AssetEditor->Initialize(VariableCollection);
 		return AssetEditor;
+	}
+
+	virtual TSharedRef<SWidget> CreateCameraRigPicker(const FCameraRigPickerConfig& InPickerConfig) override
+	{
+		using namespace UE::Cameras;
+
+		return SNew(SCameraRigPicker)
+			.CameraRigPickerConfig(InPickerConfig);
 	}
 
 	virtual void RegisterDebugCategory(const UE::Cameras::FCameraDebugCategoryInfo& InCategoryInfo) override

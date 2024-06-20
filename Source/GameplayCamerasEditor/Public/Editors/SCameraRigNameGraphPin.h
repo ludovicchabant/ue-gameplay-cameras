@@ -6,7 +6,8 @@
 
 #include "ContentBrowserModule.h"
 #include "Widgets/Input/SComboButton.h"
-#include "Widgets/Views/SListView.h"
+
+class UCameraRigAsset;
 
 namespace UE::Cameras
 {
@@ -48,25 +49,15 @@ private:
 	FText OnGetComboToolTipText() const;
 
 	TSharedRef<SWidget> OnBuildCameraRigNamePicker();
-	void OnPickerAssetSelected(const FAssetData& AssetData);
+	void OnPickerAssetSelected(UCameraRigAsset* SelectedItem);
 
 	FReply OnResetButtonClicked();
-
-	TSharedRef<ITableRow> OnCameraRigListGenerateRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
-	void OnCameraRigListSelectionChanged(TSharedPtr<FString> Item, ESelectInfo::Type SelectInfo);
-	void UpdateListItemsSource(const TArray<FAssetData>& Assets);
 
 	void SetCameraRigName(const FString& InCameraRigName);
 
 private:
 
 	TSharedPtr<SComboButton> CameraRigPickerButton;
-
-	FGetCurrentSelectionDelegate GetCurrentAssetPickerSelection;
-
-	TSharedPtr<SListView<TSharedPtr<FString>>> CameraRigNameListView;
-	TArray<TSharedPtr<FString>> CameraRigsItemsSource;
-	bool bSuppressCameraRigListSelectionChanged = false;
 };
 
 }  // namespace UE::Cameras

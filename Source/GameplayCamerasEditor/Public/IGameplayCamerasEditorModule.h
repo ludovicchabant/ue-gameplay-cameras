@@ -7,6 +7,7 @@
 #include "Modules/ModuleInterface.h"
 #include "Toolkits/AssetEditorToolkit.h"
 
+class SWidget;
 class UCameraAsset;
 class UCameraAssetEditor;
 class UCameraRigAsset;
@@ -18,6 +19,8 @@ DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPane
 
 namespace UE::Cameras
 {
+
+struct FCameraRigPickerConfig;
 
 struct FCameraDebugCategoryInfo
 {
@@ -43,6 +46,8 @@ public:
 
 public:
 
+	using FCameraRigPickerConfig = UE::Cameras::FCameraRigPickerConfig;
+
 	/** Creates an editor for the given camera asset */
 	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) = 0;
 
@@ -51,6 +56,9 @@ public:
 
 	/** Creates an editor for the given variable collection */
 	virtual UCameraVariableCollectionEditor* CreateCameraVariableCollectionEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraVariableCollection* VariableCollection) = 0;
+
+	/** Creates a new camera rig asset picker widget */
+	virtual TSharedRef<SWidget> CreateCameraRigPicker(const FCameraRigPickerConfig& InPickerConfig) = 0;
 
 public:
 
