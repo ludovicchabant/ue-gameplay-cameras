@@ -2,13 +2,11 @@
 
 #include "Core/CameraAssetBuilder.h"
 
-#include "Core/CameraNode.h"
+#include "Core/CameraDirector.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
-#include "Core/CameraParameters.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetBuilder.h"
-#include "Core/CameraVariableAssets.h"
 #include "Logging/TokenizedMessage.h"
 
 #define LOCTEXT_NAMESPACE "CameraAssetBuilder"
@@ -39,7 +37,11 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
 
 void FCameraAssetBuilder::BuildCameraImpl()
 {
-	if (!CameraAsset->CameraDirector)
+	if (CameraAsset->CameraDirector)
+	{
+		CameraAsset->CameraDirector->BuildCameraDirector(BuildLog);
+	}
+	else
 	{
 		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingDirector", "Camera has no director set."));
 	}

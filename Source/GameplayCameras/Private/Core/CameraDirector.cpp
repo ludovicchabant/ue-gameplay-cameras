@@ -12,3 +12,7 @@ FCameraDirectorEvaluatorPtr UCameraDirector::BuildEvaluator(FCameraDirectorEvalu
 	return NewEvaluator;
 }
 
+void UCameraDirector::BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
+{
+	OnBuildCameraDirector(BuildLog);
+}
