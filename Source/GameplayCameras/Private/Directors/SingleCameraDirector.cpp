@@ -2,6 +2,7 @@
 
 #include "Directors/SingleCameraDirector.h"
 
+#include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -48,6 +49,21 @@ void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& 
 		BuildLog.AddMessage(EMessageSeverity::Error, this, LOCTEXT("MissingCameraRig", "No camera rig is set."));
 	}
 }
+
+#if WITH_EDITOR
+
+void USingleCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
+{
+	// Automatically set ourselves to use the first camera rig available.
+	if (UCameraAsset* OuterCameraAsset = GetTypedOuter<UCameraAsset>())
+	{
+		if (OuterCameraAsset->CameraRigs.Num() > 0)
+		{
+			CameraRig = OuterCameraAsset->CameraRigs[0];
+		}
+	}
+}
+
 #endif
 
 #undef LOCTEXT_NAMESPACE

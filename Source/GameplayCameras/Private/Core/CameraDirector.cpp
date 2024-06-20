@@ -16,3 +16,13 @@ void UCameraDirector::BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog
 {
 	OnBuildCameraDirector(BuildLog);
 }
+
+#if WITH_EDITOR
+
+void UCameraDirector::FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
+{
+	OnFactoryCreateAsset(InParams);
+}
+
+#endif
+

@@ -4,6 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraRigAsset.h"
 #include "ClassViewerFilter.h"
 #include "ClassViewerModule.h"
 #include "Directors/BlueprintCameraDirector.h"
@@ -58,11 +59,20 @@ UCameraAssetFactory::UCameraAssetFactory(const FObjectInitializer& ObjectInitial
 UObject* UCameraAssetFactory::FactoryCreateNew(UClass* Class, UObject* Parent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
 	UCameraAsset* NewCameraAsset = NewObject<UCameraAsset>(Parent, Class, Name, Flags | RF_Transactional);
+
+	UCameraRigAsset* FirstCameraRig = NewObject<UCameraRigAsset>(NewCameraAsset, TEXT("NewCameraRig"));
+	NewCameraAsset->CameraRigs.Add(FirstCameraRig);
+
 	if (CameraDirectorClass)
 	{
 		UCameraDirector* NewCameraDirector = NewObject<UCameraDirector>(NewCameraAsset, CameraDirectorClass, NAME_None, Flags | RF_Transactional);
 		NewCameraAsset->CameraDirector = NewCameraDirector;
+
+		// Let the camera director do some scaffolding.
+		FCameraDirectorFactoryCreateParams CreateParams;
+		NewCameraDirector->FactoryCreateAsset(CreateParams);
 	}
+
 	return NewCameraAsset;
 }
 
