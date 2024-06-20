@@ -324,7 +324,7 @@ void SFindInObjectTreeGraph::StartSearch()
 					ensure(GraphResult);
 					ObjectResult = MakeShared<FFindInObjectTreeGraphResult>(GraphResult, CurSource, SearchResult.Object);
 					ObjectToWidgetResult.Add(SearchResult.Object, ObjectResult);
-					Results.Add(ObjectResult);
+					GraphResult->Children.Add(ObjectResult);
 				}
 			}
 
@@ -333,7 +333,7 @@ void SFindInObjectTreeGraph::StartSearch()
 				ensure(ObjectResult);
 				FResultPtr PropertyResult = MakeShared<FFindInObjectTreeGraphResult>(
 						ObjectResult, CurSource, SearchResult.Object, SearchResult.PropertyName);
-				Results.Add(PropertyResult);
+				ObjectResult->Children.Add(PropertyResult);
 			}
 		}
 	}
