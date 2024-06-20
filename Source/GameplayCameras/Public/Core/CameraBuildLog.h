@@ -54,12 +54,20 @@ public:
 	/** Gets the list of received messages so far. */
 	TArrayView<const FCameraBuildLogMessage> GetMessages() const { return Messages; }
 
+	/** Returns whether any warning has been logged. */
+	bool HasWarnings() const { return bHasWarnings; }
+	/** Returns whether any error has been logged. */
+	bool HasErrors() const { return bHasErrors; }
+
 private:
 
 	TArray<FCameraBuildLogMessage> Messages;
 
 	FString LoggingPrefix;
 	bool bForwardToLogging = true;
+
+	bool bHasWarnings = false;
+	bool bHasErrors = false;
 };
 
 }  // namespace UE::Cameras

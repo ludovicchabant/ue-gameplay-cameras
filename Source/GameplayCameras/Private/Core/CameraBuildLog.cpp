@@ -3,6 +3,7 @@
 #include "Core/CameraBuildLog.h"
 
 #include "GameplayCameras.h"
+#include "Logging/TokenizedMessage.h"
 #include "Misc/CString.h"
 #include "Misc/UObjectToken.h"
 
@@ -69,6 +70,19 @@ void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, FText&& InTe
 void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, UObject* InObject, FText&& InText)
 {
 	Messages.Add(FCameraBuildLogMessage{ InSeverity, InObject, MoveTemp(InText) });
+
+	switch (InSeverity)
+	{
+		case EMessageSeverity::Warning:
+		case EMessageSeverity::PerformanceWarning:
+			bHasWarnings = true;
+			break;
+		case EMessageSeverity::Error:
+			bHasErrors = true;
+			break;
+		default:
+			break;
+	}
 
 	if (bForwardToLogging)
 	{

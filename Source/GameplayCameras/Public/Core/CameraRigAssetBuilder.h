@@ -39,9 +39,6 @@ public:
 	/** Builds the given camera rig. */
 	void BuildCameraRig(UCameraRigAsset* InCameraRig);
 
-	bool LastBuildHadErrors() const { return bHasErrors; }
-	bool LastBuildHadWarnings() const { return bHasWarnings; }
-
 private:
 
 	void BuildCameraRigImpl();
@@ -69,9 +66,6 @@ private:
 	TMap<FDrivenParameterKey, UCameraVariableAsset*> OldDrivenParameters;
 
 	FCameraRigAllocationInfo AllocationInfo;
-
-	bool bHasErrors;
-	bool bHasWarnings;
 
 	friend struct Internal::FPrivateVariableBuilder;
 };

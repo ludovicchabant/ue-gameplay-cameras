@@ -35,9 +35,6 @@ private:
 	FCameraBuildLog& BuildLog;
 
 	UCameraAsset* CameraAsset = nullptr;
-
-	bool bHasErrors;
-	bool bHasWarnings;
 };
 
 }  // namespace UE::Cameras

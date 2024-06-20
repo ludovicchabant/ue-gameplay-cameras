@@ -29,8 +29,6 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
 	}
 
 	CameraAsset = InCameraAsset;
-	bHasErrors = false;
-	bHasWarnings = false;
 	BuildLog.SetLoggingPrefix(InCameraAsset->GetPathName() + TEXT(": "));
 	{
 		BuildCameraImpl();
@@ -44,32 +42,28 @@ void FCameraAssetBuilder::BuildCameraImpl()
 	if (!CameraAsset->CameraDirector)
 	{
 		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingDirector", "Camera has no director set."));
-		bHasErrors = true;
 	}
 
 	if (CameraAsset->CameraRigs.IsEmpty())
 	{
 		BuildLog.AddMessage(EMessageSeverity::Warning, LOCTEXT("MissingRigs", "Camera has no camera rigs defined."));
-		bHasWarnings = true;
 	}
 
 	for (UCameraRigAsset* CameraRig : CameraAsset->CameraRigs)
 	{
 		FCameraRigAssetBuilder CameraRigBuilder(BuildLog);
 		CameraRigBuilder.BuildCameraRig(CameraRig);
-		bHasErrors |= CameraRigBuilder.LastBuildHadErrors();
-		bHasWarnings |= CameraRigBuilder.LastBuildHadWarnings();
 	}
 }
 
 void FCameraAssetBuilder::UpdateBuildStatus()
 {
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Clean;
-	if (bHasErrors)
+	if (BuildLog.HasErrors())
 	{
 		BuildStatus = ECameraBuildStatus::WithErrors;
 	}
-	else if (bHasWarnings)
+	else if (BuildLog.HasWarnings())
 	{
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}

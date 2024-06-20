@@ -77,7 +77,6 @@ struct FPrivateVariableBuilder
 	void ReportError(UObject* Object, FText&& ErrorMessage)
 	{
 		Owner.BuildLog.AddMessage(EMessageSeverity::Error, MoveTemp(ErrorMessage));
-		Owner.bHasErrors = true;
 	}
 
 	template<typename ExpectedVariableAssetType>
@@ -212,8 +211,6 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 	}
 
 	CameraRig = InCameraRig;
-	bHasErrors = false;
-	bHasWarnings = false;
 	BuildLog.SetLoggingPrefix(InCameraRig->GetPathName() + TEXT(": "));
 	{
 		BuildCameraRigImpl();
@@ -227,7 +224,6 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 	if (!CameraRig->RootNode)
 	{
 		BuildLog.AddMessage(EMessageSeverity::Error, CameraRig, LOCTEXT("MissingRootNode", "Camera rig has no root node set."));
-		bHasErrors = true;
 		return;
 	}
 
@@ -345,7 +341,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 			BuildLog.AddMessage(EMessageSeverity::Error,
 					CameraRig,
 					LOCTEXT("InvalidInterfaceParameter", "Invalid interface parameter or target."));
-			bHasErrors = true;
 			continue;
 		}
 		if (!InterfaceParameter->Target)
@@ -355,7 +350,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 					LOCTEXT(
 						"DisconnectedInterfaceParameter", 
 						"Interface parameter isn't connected: setting overrides for it will not do anything."));
-			bHasWarnings = true;
 			continue;
 		}
 		if (InterfaceParameter->TargetPropertyName.IsNone())
@@ -365,7 +359,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 					LOCTEXT(
 						"InvalidInterfaceParameterTargetPropertyName", 
 						"Invalid interface parameter target property name."));
-			bHasErrors = true;
 			continue;
 		}
 		if (InterfaceParameter->InterfaceParameterName.IsEmpty())
@@ -375,7 +368,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 					LOCTEXT(
 						"InvalidInterfaceParameterName",
 						"Invalid interface parameter name."));
-			bHasErrors = true;
 			continue;
 		}
 
@@ -388,7 +380,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 						"InterfaceParameterNameCollision",
 						"Multiple interface parameters named '{0}'. Ignoring duplicates."),
 						FText::FromString(InterfaceParameter->InterfaceParameterName)));
-			bHasErrors = true;
 			continue;
 		}
 		UsedInterfaceParameterNames.Add(InterfaceParameter->InterfaceParameterName);
@@ -407,7 +398,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 						FText::FromString(InterfaceParameter->InterfaceParameterName), 
 						FText::FromName(InterfaceParameter->TargetPropertyName),
 						FText::FromName(Target->GetFName())));
-			bHasErrors = true;
 			continue;
 		}
 
@@ -422,7 +412,6 @@ void FCameraRigAssetBuilder::BuildNewDrivenParameters()
 						FText::FromString(InterfaceParameter->InterfaceParameterName), 
 						FText::FromName(InterfaceParameter->TargetPropertyName),
 						FText::FromName(Target->GetFName())));
-			bHasErrors = true;
 			continue;
 		}
 
@@ -447,7 +436,6 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 						FText::FromString(InterfaceParameter->InterfaceParameterName), 
 						FText::FromName(InterfaceParameter->TargetPropertyName),
 						FText::FromName(Target->GetFName())));
-			bHasErrors = true;
 			continue;
 		}
 	}
@@ -538,11 +526,11 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 void FCameraRigAssetBuilder::UpdateBuildStatus()
 {
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Clean;
-	if (bHasErrors)
+	if (BuildLog.HasErrors())
 	{
 		BuildStatus = ECameraBuildStatus::WithErrors;
 	}
-	else if (bHasWarnings)
+	else if (BuildLog.HasWarnings())
 	{
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}
