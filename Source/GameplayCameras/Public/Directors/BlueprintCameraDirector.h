@@ -8,6 +8,9 @@
 
 #include "BlueprintCameraDirector.generated.h"
 
+class UCameraRigProxyAsset;
+class UCameraRigProxyTable;
+
 /**
  * Parameter struct for the Blueprint camera director evaluator.
  */
@@ -33,9 +36,9 @@ struct FBlueprintCameraDirectorEvaluationResult
 {
 	GENERATED_BODY()
 
-	/** The list of camera rigs (determined by name) that should be active this frame. */
+	/** The list of camera rigs that should be active this frame. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<FString> ActiveCameraRigs;
+	TArray<UCameraRigProxyAsset*> ActiveCameraRigs;
 };
 
 /**
@@ -59,7 +62,7 @@ public:
 	 * Specifies a camera rig to be active this frame.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(UPARAM(meta=(UseCameraRigNamePicker="true")) const FString& InCameraRigName);
+	void ActivateCameraRig(UCameraRigProxyAsset* CameraRigProxy);
 
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(
@@ -88,9 +91,20 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evaluation")
 	TSubclassOf<UBlueprintCameraDirectorEvaluator> CameraDirectorEvaluatorClass;
 
+	/** 
+	 * The table that maps camera rig proxies (used in the evaluator Blueprint graph)
+	 * to actual camera rigs.
+	 */
+	UPROPERTY(EditAnywhere, Instanced, Category="Evaluation")
+	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable;
+
 protected:
 
 	// UCameraDirector interface.
 	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const override;
+	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) override;
+#if WITH_EDITOR
+	virtual void OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams) override;
+#endif
 };
 
