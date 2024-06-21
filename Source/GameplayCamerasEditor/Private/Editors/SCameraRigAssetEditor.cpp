@@ -88,6 +88,7 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor()
 		.Appearance(Appearance)
 		.DetailsView(DetailsView)
 		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName, NodeGraph.Get())
+		.IsEnabled(this, &SCameraRigAssetEditor::IsGraphEditorEnabled)
 		.GraphToEdit(NodeGraph)
 		.AssetEditorToolkit(AssetEditorToolkit);
 }
@@ -113,6 +114,7 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 		.Appearance(Appearance)
 		.DetailsView(DetailsView)
 		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName, TransitionGraph.Get())
+		.IsEnabled(this, &SCameraRigAssetEditor::IsGraphEditorEnabled)
 		.GraphToEdit(TransitionGraph)
 		.AssetEditorToolkit(AssetEditorToolkit);
 }
@@ -266,6 +268,11 @@ FText SCameraRigAssetEditor::GetCameraRigAssetName(UObjectTreeGraph* ForGraph) c
 		return GraphConfig.GetDisplayNameText(CameraRigAsset);
 	}
 	return LOCTEXT("NoCameraRig", "No Camera Rig");
+}
+
+bool SCameraRigAssetEditor::IsGraphEditorEnabled() const
+{
+	return CameraRigAsset != nullptr;
 }
 
 void SCameraRigAssetEditor::OnGraphChanged(const FEdGraphEditAction& InEditAction)

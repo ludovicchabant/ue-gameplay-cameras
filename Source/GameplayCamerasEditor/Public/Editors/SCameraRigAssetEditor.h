@@ -95,6 +95,7 @@ protected:
 	void OnGraphChanged(const FEdGraphEditAction& InEditAction);
 
 	FText GetCameraRigAssetName(UObjectTreeGraph* ForGraph) const;
+	bool IsGraphEditorEnabled() const;
 
 private:
 
