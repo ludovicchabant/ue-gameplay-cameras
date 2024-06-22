@@ -23,7 +23,7 @@ public:
 
 	FCameraDirectorAssetEditorMode(UCameraAsset* InCameraAsset);
 
-	bool JumpToObject(UObject* InObject);
+	bool JumpToObject(UObject* InObject, FName InPropertyName);
 
 protected:
 

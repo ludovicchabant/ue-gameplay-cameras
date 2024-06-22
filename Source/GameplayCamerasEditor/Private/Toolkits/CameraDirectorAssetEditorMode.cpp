@@ -67,7 +67,7 @@ void FCameraDirectorAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeac
 	InParams.TabManager->UnregisterTabSpawner(DirectorEditorTabId);
 }
 
-bool FCameraDirectorAssetEditorMode::JumpToObject(UObject* InObject)
+bool FCameraDirectorAssetEditorMode::JumpToObject(UObject* InObject, FName InPropertyName)
 {
 	if (InObject == CameraAsset->CameraDirector)
 	{
