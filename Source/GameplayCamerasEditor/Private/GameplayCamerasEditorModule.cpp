@@ -37,8 +37,10 @@
 #include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
+#include "Toolkits/BlueprintCameraDirectorAssetEditorMode.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
+#include "Toolkits/SingleCameraDirectorAssetEditorMode.h"
 #include "Trace/CameraSystemRewindDebuggerExtension.h"
 #include "Trace/CameraSystemRewindDebuggerTrack.h"
 #include "Trace/CameraSystemTraceModule.h"
@@ -49,6 +51,11 @@ DEFINE_LOG_CATEGORY(LogCameraSystemEditor);
 
 const FName IGameplayCamerasEditorModule::GameplayCamerasEditorAppIdentifier("GameplayCamerasEditorApp");
 const FName IGameplayCamerasEditorModule::CameraRigAssetEditorToolBarName("CameraRigAssetEditor.ToolBar");
+
+IGameplayCamerasEditorModule& IGameplayCamerasEditorModule::Get()
+{
+	return FModuleManager::LoadModuleChecked<IGameplayCamerasEditorModule>("GameplayCamerasEditor");
+}
 
 /**
  * Implements the FGameplayCamerasEditor module.
@@ -74,6 +81,7 @@ public:
 		FCoreDelegates::OnEnginePreExit.AddRaw(this, &FGameplayCamerasEditorModule::OnPreExit);
 
 		RegisterSettings();
+		RegisterCameraDirectorEditors();
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
 		RegisterDetailsCustomizations();
@@ -98,6 +106,7 @@ public:
 		FGameplayCamerasDebuggerCommands::Unregister();
 
 		UnregisterSettings();
+		UnregisterCameraDirectorEditors();
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
 		UnregisterDetailsCustomizations();
@@ -147,6 +156,26 @@ public:
 
 		return SNew(SCameraRigPicker)
 			.CameraRigPickerConfig(InPickerConfig);
+	}
+
+	virtual FDelegateHandle RegisterCameraDirectorEditor(FOnCreateCameraDirectorAssetEditorMode InOnCreateEditor) override
+	{
+		CameraDirectorEditorCreators.Add(InOnCreateEditor);
+		return CameraDirectorEditorCreators.Last().GetHandle();
+	}
+
+	virtual TArrayView<const FOnCreateCameraDirectorAssetEditorMode> GetCameraDirectorEditorCreators() const override
+	{
+		return CameraDirectorEditorCreators;
+	}
+
+	virtual void UnregisterCameraDirectorEditor(FDelegateHandle InHandle)
+	{
+		CameraDirectorEditorCreators.RemoveAll(
+				[=](const FOnCreateCameraDirectorAssetEditorMode& Delegate) 
+				{
+					return Delegate.GetHandle() == InHandle; 
+				});
 	}
 
 	virtual void RegisterDebugCategory(const UE::Cameras::FCameraDebugCategoryInfo& InCategoryInfo) override
@@ -235,6 +264,22 @@ private:
 		{
 			SettingsModule->UnregisterSettings("Editor", "Plugins", "Gameplay Cameras");
 		}
+	}
+
+	void RegisterCameraDirectorEditors()
+	{
+		using namespace UE::Cameras;
+
+		BuiltInDirectorCreatorHandles.Add(
+				RegisterCameraDirectorEditor(FOnCreateCameraDirectorAssetEditorMode::CreateStatic(
+						&FSingleCameraDirectorAssetEditorMode::CreateInstance)));
+		BuiltInDirectorCreatorHandles.Add(
+				RegisterCameraDirectorEditor(FOnCreateCameraDirectorAssetEditorMode::CreateStatic(
+						&FBlueprintCameraDirectorAssetEditorMode::CreateInstance)));
+	}
+
+	void UnregisterCameraDirectorEditors()
+	{
 	}
 
 	void RegisterCoreDebugCategories()
@@ -457,6 +502,9 @@ private:
 private:
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasLiveEditManager> LiveEditManager;
+
+	TArray<FOnCreateCameraDirectorAssetEditorMode> CameraDirectorEditorCreators;
+	TArray<FDelegateHandle> BuiltInDirectorCreatorHandles;
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasGraphPanelPinFactory> GraphPanelPinFactory;
 

@@ -17,11 +17,10 @@ class UCameraRigProxyAssetEditor;
 class UCameraVariableCollection;
 class UCameraVariableCollectionEditor;
 
-DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPanel, const FString&);
-
 namespace UE::Cameras
 {
 
+class FCameraDirectorAssetEditorMode;
 struct FCameraRigPickerConfig;
 
 struct FCameraDebugCategoryInfo
@@ -34,6 +33,9 @@ struct FCameraDebugCategoryInfo
 
 }  // namespace UE::Cameras
 
+DECLARE_DELEGATE_RetVal_OneParam(TSharedPtr<UE::Cameras::FCameraDirectorAssetEditorMode>, FOnCreateCameraDirectorAssetEditorMode, UCameraAsset*);
+DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPanel, const FString&);
+
 /**
  * The gameplay cameras editor module.
  */
@@ -43,6 +45,8 @@ public:
 
 	static const FName GameplayCamerasEditorAppIdentifier;
 	static const FName CameraRigAssetEditorToolBarName;
+
+	GAMEPLAYCAMERASEDITOR_API static IGameplayCamerasEditorModule& Get();
 
 	virtual ~IGameplayCamerasEditorModule() = default;
 
@@ -64,6 +68,15 @@ public:
 
 	/** Creates a new camera rig asset picker widget */
 	virtual TSharedRef<SWidget> CreateCameraRigPicker(const FCameraRigPickerConfig& InPickerConfig) = 0;
+
+public:
+
+	/** Registers a new camera director editor creator. */
+	virtual FDelegateHandle RegisterCameraDirectorEditor(FOnCreateCameraDirectorAssetEditorMode InOnCreateEditor) = 0;
+	/** Gets the registered camera director editor creators. */
+	virtual TArrayView<const FOnCreateCameraDirectorAssetEditorMode> GetCameraDirectorEditorCreators() const = 0;
+	/** Unregisters a camera director editor creator. */
+	virtual void UnregisterCameraDirectorEditor(FDelegateHandle InHandle) = 0;
 
 public:
 

@@ -6,14 +6,15 @@
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
+#include "Core/CameraDirector.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "GameplayCamerasEditorSettings.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
-#include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -196,8 +197,25 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 {
 	Settings = GetMutableDefault<UGameplayCamerasEditorSettings>();
 
+	IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
+
 	const FName CameraDirectorModeName = FCameraDirectorAssetEditorMode::ModeName;
-	AddEditorMode(MakeShared<FCameraDirectorAssetEditorMode>(CameraAsset));
+	{
+		TSharedPtr<FCameraDirectorAssetEditorMode> CameraDirectorEditor;
+		for (const FOnCreateCameraDirectorAssetEditorMode& EditorCreator : GameplayCamerasEditorModule.GetCameraDirectorEditorCreators())
+		{
+			CameraDirectorEditor = EditorCreator.Execute(CameraAsset);
+			if (CameraDirectorEditor)
+			{
+				break;
+			}
+		}
+		if (!CameraDirectorEditor)
+		{
+			CameraDirectorEditor = MakeShared<FCameraDirectorAssetEditorMode>(CameraAsset);
+		}
+		AddEditorMode(CameraDirectorEditor.ToSharedRef());
+	}
 
 	const FName CameraRigsModeName = FCameraRigsAssetEditorMode::ModeName;
 	AddEditorMode(MakeShared<FCameraRigsAssetEditorMode>(CameraAsset));
@@ -229,7 +247,7 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 
 	BuildLogToolkit->OnRequestJumpToObject().BindSP(this, &FCameraAssetEditorToolkit::OnJumpToObject);
 
-	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
+	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 
 	const FName InitialModeName = !Settings->LastCameraAssetToolkitModeName.IsNone() ? 

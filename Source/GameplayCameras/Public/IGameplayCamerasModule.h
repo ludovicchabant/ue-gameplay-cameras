@@ -23,7 +23,7 @@ public:
 	 *
 	 * @return The ICameraModule instance, loading the module on demand if needed
 	 */
-	static IGameplayCamerasModule& Get();
+	GAMEPLAYCAMERAS_API static IGameplayCamerasModule& Get();
 
 #if WITH_EDITOR
 	using IGameplayCamerasLiveEditManager = UE::Cameras::IGameplayCamerasLiveEditManager;
