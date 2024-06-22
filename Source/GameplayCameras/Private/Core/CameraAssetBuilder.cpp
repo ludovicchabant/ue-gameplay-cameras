@@ -37,21 +37,21 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
 
 void FCameraAssetBuilder::BuildCameraImpl()
 {
-	if (CameraAsset->CameraDirector)
+	if (UCameraDirector* CameraDirector = CameraAsset->GetCameraDirector())
 	{
-		CameraAsset->CameraDirector->BuildCameraDirector(BuildLog);
+		CameraDirector->BuildCameraDirector(BuildLog);
 	}
 	else
 	{
 		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingDirector", "Camera has no director set."));
 	}
 
-	if (CameraAsset->CameraRigs.IsEmpty())
+	if (CameraAsset->GetCameraRigs().IsEmpty())
 	{
 		BuildLog.AddMessage(EMessageSeverity::Warning, LOCTEXT("MissingRigs", "Camera has no camera rigs defined."));
 	}
 
-	for (UCameraRigAsset* CameraRig : CameraAsset->CameraRigs)
+	for (UCameraRigAsset* CameraRig : CameraAsset->GetCameraRigs())
 	{
 		FCameraRigAssetBuilder CameraRigBuilder(BuildLog);
 		CameraRigBuilder.BuildCameraRig(CameraRig);
@@ -70,10 +70,10 @@ void FCameraAssetBuilder::UpdateBuildStatus()
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}
 
-	if (CameraAsset->BuildStatus != BuildStatus)
+	if (CameraAsset->GetBuildStatus() != BuildStatus)
 	{
 		CameraAsset->Modify();
-		CameraAsset->BuildStatus = BuildStatus;
+		CameraAsset->SetBuildStatus(BuildStatus);
 	}
 }
 

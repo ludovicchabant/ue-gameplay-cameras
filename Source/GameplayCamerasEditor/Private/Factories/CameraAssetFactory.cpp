@@ -61,12 +61,12 @@ UObject* UCameraAssetFactory::FactoryCreateNew(UClass* Class, UObject* Parent, F
 	UCameraAsset* NewCameraAsset = NewObject<UCameraAsset>(Parent, Class, Name, Flags | RF_Transactional);
 
 	UCameraRigAsset* FirstCameraRig = NewObject<UCameraRigAsset>(NewCameraAsset, TEXT("NewCameraRig"));
-	NewCameraAsset->CameraRigs.Add(FirstCameraRig);
+	NewCameraAsset->AddCameraRig(FirstCameraRig);
 
 	if (CameraDirectorClass)
 	{
 		UCameraDirector* NewCameraDirector = NewObject<UCameraDirector>(NewCameraAsset, CameraDirectorClass, NAME_None, Flags | RF_Transactional);
-		NewCameraAsset->CameraDirector = NewCameraDirector;
+		NewCameraAsset->SetCameraDirector(NewCameraDirector);
 
 		// Let the camera director do some scaffolding.
 		FCameraDirectorFactoryCreateParams CreateParams;

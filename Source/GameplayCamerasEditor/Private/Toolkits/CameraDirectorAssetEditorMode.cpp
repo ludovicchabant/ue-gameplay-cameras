@@ -44,7 +44,7 @@ void FCameraDirectorAssetEditorMode::OnActivateMode(const FAssetEditorModeActiva
 		bInitializedToolkit = true;
 	}
 
-	DetailsView->SetObject(CameraAsset->CameraDirector);
+	DetailsView->SetObject(CameraAsset->GetCameraDirector());
 
 	InParams.TabManager->RegisterTabSpawner(DirectorEditorTabId, FOnSpawnTab::CreateSP(this, &FCameraDirectorAssetEditorMode::SpawnTab_DirectorEditor))
 		.SetDisplayName(LOCTEXT("CameraDirectorEditor", "Camera Director"))
@@ -69,7 +69,7 @@ void FCameraDirectorAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeac
 
 bool FCameraDirectorAssetEditorMode::JumpToObject(UObject* InObject, FName InPropertyName)
 {
-	if (InObject == CameraAsset->CameraDirector)
+	if (InObject == CameraAsset->GetCameraDirector())
 	{
 		return true;
 	}

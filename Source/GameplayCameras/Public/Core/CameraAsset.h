@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
+#include "Core/CameraEventHandler.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "Core/ObjectTreeGraphRootObject.h"
@@ -11,10 +12,32 @@
 
 #include "CameraAsset.generated.h"
 
+class UCameraAsset;
 class UCameraDirector;
 class UCameraRigAsset;
 
-namespace UE::Cameras { class FCameraBuildLog; }
+namespace UE::Cameras
+{
+	class FCameraBuildLog;
+
+	/**
+	 * Interface for listening to changes on a camera asset.
+	 */
+	class ICameraAssetEventHandler
+	{
+	public:
+		virtual ~ICameraAssetEventHandler() {}
+
+		/** Called when the camera director has been changed. */
+		virtual void OnCameraDirectorChanged(UCameraAsset* InCameraAsset, const TCameraPropertyChangedEvent<UCameraDirector*>& Event) {}
+		/** Changed when the camera rigs have been changed. */
+		virtual void OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event) {}
+		/* Changed when the enter transitions have been changed. */
+		virtual void OnEnterTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
+		/* Changed when the exit transitions have been changed. */
+		virtual void OnExitTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
+	};
+}
 
 /**
  * A complete camera asset.
@@ -30,27 +53,33 @@ class UCameraAsset
 
 public:
 
-	/** The camera director to use in this camera. */
-	UPROPERTY(Instanced)
-	TObjectPtr<UCameraDirector> CameraDirector;
+	/** Gets the camera director. */
+	UCameraDirector* GetCameraDirector() const { return CameraDirector; }
+	/** Sets the camera director. */
+	GAMEPLAYCAMERAS_API void SetCameraDirector(UCameraDirector* InCameraDirector);
 
-	/** The list of camera rigs used by this camera. */
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs;
+	/** Gets the camera rigs. */
+	TArrayView<const TObjectPtr<UCameraRigAsset>> GetCameraRigs() const { return CameraRigs; }
+	/** Adds a a camera rig. */
+	GAMEPLAYCAMERAS_API void AddCameraRig(UCameraRigAsset* InCameraRig);
+	/** Removes a camera rig. */
+	GAMEPLAYCAMERAS_API int32 RemoveCameraRig(UCameraRigAsset* InCameraRig);
 
-	/** A list of default enter transitions for all the camera rigs in this asset. */
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
+	/** Gets the enter transitions. */
+	TArrayView<const TObjectPtr<UCameraRigTransition>> GetEnterTransitions() const { return EnterTransitions; }
+	/** Adds an enter transition. */
+	GAMEPLAYCAMERAS_API void AddEnterTransition(UCameraRigTransition* InTransition);
+	/** Removes an enter transition. */
+	GAMEPLAYCAMERAS_API int32 RemoveEnterTransition(UCameraRigTransition* InTransition);
 
-	/** A list of default exit transitions for all the camera rigs in this asset. */
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
+	/** Gets the exit transitions. */
+	TArrayView<const TObjectPtr<UCameraRigTransition>> GetExitTransitions() const { return ExitTransitions; }
+	/** Adds an exit transition. */
+	GAMEPLAYCAMERAS_API void AddExitTransition(UCameraRigTransition* InTransition);
+	/** Removes an exit transition. */
+	GAMEPLAYCAMERAS_API int32 RemoveExitTransition(UCameraRigTransition* InTransition);
 
 public:
-
-	/** The current build state of this camera asset. */
-	UPROPERTY(Transient)
-	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Dirty;
 
 	/**
 	 * Builds and validates this camera, including all its camera rigs.
@@ -73,6 +102,9 @@ public:
 	virtual ECameraBuildStatus GetBuildStatus() const override { return BuildStatus; }
 	virtual void DirtyBuildStatus() override;
 
+	/** Sets the build status. */
+	void SetBuildStatus(ECameraBuildStatus InBuildStatus) { BuildStatus = InBuildStatus; }
+
 protected:
 
 	// IObjectTreeGraphObject interface.
@@ -91,7 +123,35 @@ protected:
 	virtual void RemoveConnectableObject(FName InGraphName, UObject* InObject) override;
 #endif
 
+	// UObject interface.
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+public:
+
+	/** Event handlers to be notified of data changes. */
+	UE::Cameras::TCameraEventHandlerContainer<UE::Cameras::ICameraAssetEventHandler> EventHandlers;
+
 private:
+
+	/** The camera director to use in this camera. */
+	UPROPERTY(Instanced)
+	TObjectPtr<UCameraDirector> CameraDirector;
+
+	/** The list of camera rigs used by this camera. */
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs;
+
+	/** A list of default enter transitions for all the camera rigs in this asset. */
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
+
+	/** A list of default exit transitions for all the camera rigs in this asset. */
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
+
+	/** The current build state of this camera asset. */
+	UPROPERTY(Transient)
+	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Dirty;
 
 #if WITH_EDITORONLY_DATA
 
@@ -106,6 +166,9 @@ private:
 	/** All nodes used in the shared transitions graph editor. */
 	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
 	TArray<TObjectPtr<UObject>> AllSharedTransitionsObjects;
+
+	// Only specified here so that the schema can use GET_MEMBER_NAME_CHECKED...
+	friend class UCameraSharedTransitionGraphSchema;
 
 #endif  // WITH_EDITORONLY_DATA
 };

@@ -73,13 +73,13 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera!"));
 			return;
 		}
-		if (!CameraAsset->CameraDirector)
+		if (!CameraAsset->GetCameraDirector())
 		{
 			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera director!"));
 			return;
 		}
 
-		const UCameraDirector* CameraDirector = CameraAsset->CameraDirector;
+		const UCameraDirector* CameraDirector = CameraAsset->GetCameraDirector();
 		FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
 		DirectorEvaluator = CameraDirector->BuildEvaluator(DirectorBuilder);
 

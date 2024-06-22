@@ -9,6 +9,131 @@
 
 const FName UCameraAsset::SharedTransitionsGraphName("SharedTransitions");
 
+void UCameraAsset::SetCameraDirector(UCameraDirector* InCameraDirector)
+{
+	using namespace UE::Cameras;
+
+	if (CameraDirector != InCameraDirector)
+	{
+		CameraDirector = InCameraDirector;
+
+		TCameraPropertyChangedEvent<UCameraDirector*> ChangedEvent;
+		ChangedEvent.NewValue = CameraDirector;
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraDirectorChanged, this, ChangedEvent);
+	}
+}
+
+void UCameraAsset::AddCameraRig(UCameraRigAsset* InCameraRig)
+{
+	using namespace UE::Cameras;
+
+	ensure(InCameraRig);
+
+	CameraRigs.Add(InCameraRig);
+
+	TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent;
+	ChangedEvent.EventType = ECameraArrayChangedEventType::Add;
+	EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
+}
+
+int32 UCameraAsset::RemoveCameraRig(UCameraRigAsset* InCameraRig)
+{
+	using namespace UE::Cameras;
+
+	const int32 NumRemoved = CameraRigs.Remove(InCameraRig);
+	if (NumRemoved > 0)
+	{
+		TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent;
+		ChangedEvent.EventType = ECameraArrayChangedEventType::Remove;
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
+	}
+	return NumRemoved;
+}
+
+void UCameraAsset::AddEnterTransition(UCameraRigTransition* InTransition)
+{
+	using namespace UE::Cameras;
+
+	ensure(InTransition);
+
+	EnterTransitions.Add(InTransition);
+
+	TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent;
+	ChangedEvent.EventType = ECameraArrayChangedEventType::Add;
+	EventHandlers.Notify(&ICameraAssetEventHandler::OnEnterTransitionsChanged, this, ChangedEvent);
+}
+
+int32 UCameraAsset::RemoveEnterTransition(UCameraRigTransition* InTransition)
+{
+	using namespace UE::Cameras;
+	
+	const int32 NumRemoved = EnterTransitions.Remove(InTransition);
+	if (NumRemoved > 0)
+	{
+		TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent;
+		ChangedEvent.EventType = ECameraArrayChangedEventType::Remove;
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnEnterTransitionsChanged, this, ChangedEvent);
+	}
+	return NumRemoved;
+}
+
+void UCameraAsset::AddExitTransition(UCameraRigTransition* InTransition)
+{
+	using namespace UE::Cameras;
+
+	ensure(InTransition);
+
+	ExitTransitions.Add(InTransition);
+
+	TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent;
+	ChangedEvent.EventType = ECameraArrayChangedEventType::Add;
+	EventHandlers.Notify(&ICameraAssetEventHandler::OnExitTransitionsChanged, this, ChangedEvent);
+}
+
+int32 UCameraAsset::RemoveExitTransition(UCameraRigTransition* InTransition)
+{
+	using namespace UE::Cameras;
+
+	const int32 NumRemoved = ExitTransitions.Remove(InTransition);
+	if (NumRemoved > 0)
+	{
+		TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent;
+		ChangedEvent.EventType = ECameraArrayChangedEventType::Remove;
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnExitTransitionsChanged, this, ChangedEvent);
+	}
+	return NumRemoved;
+}
+
+void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	using namespace UE::Cameras;
+
+	const FName PropertyName = PropertyChangedEvent.GetPropertyName();
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, CameraDirector))
+	{
+		TCameraPropertyChangedEvent<UCameraDirector*> ChangedEvent;
+		ChangedEvent.NewValue = CameraDirector;
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraDirectorChanged, this, ChangedEvent);
+	}
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, CameraRigs))
+	{
+		TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent(PropertyChangedEvent.ChangeType);
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
+	}
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, EnterTransitions))
+	{
+		TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent(PropertyChangedEvent.ChangeType);
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnEnterTransitionsChanged, this, ChangedEvent);
+	}
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, ExitTransitions))
+	{
+		TCameraArrayChangedEvent<UCameraRigTransition*> ChangedEvent(PropertyChangedEvent.ChangeType);
+		EventHandlers.Notify(&ICameraAssetEventHandler::OnExitTransitionsChanged, this, ChangedEvent);
+	}
+
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+
 void UCameraAsset::BuildCamera()
 {
 	using namespace UE::Cameras;

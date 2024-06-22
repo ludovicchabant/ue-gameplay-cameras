@@ -115,7 +115,7 @@ void FCameraRigsAssetEditorMode::OnCameraRigDeleted(const TArray<UCameraRigAsset
 
 void FCameraRigsAssetEditorMode::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	for (UCameraRigAsset* CameraRig : CameraAsset->CameraRigs)
+	for (UCameraRigAsset* CameraRig : CameraAsset->GetCameraRigs())
 	{
 		OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &NodeGraphConfig });
 		OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &TransitionGraphConfig });

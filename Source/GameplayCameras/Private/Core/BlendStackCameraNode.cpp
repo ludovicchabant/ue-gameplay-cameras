@@ -349,7 +349,7 @@ const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 			if (FromCameraAsset)
 			{
 				TransitionToUse = FindTransition(
-						FromCameraAsset->ExitTransitions,
+						FromCameraAsset->GetExitTransitions(),
 						FromCameraRig, FromCameraAsset, false,
 						ToCameraRig, ToCameraAsset);
 				if (TransitionToUse)
@@ -373,7 +373,7 @@ const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(const
 		if (ToCameraAsset)
 		{
 			TransitionToUse = FindTransition(
-					ToCameraAsset->EnterTransitions,
+					ToCameraAsset->GetEnterTransitions(),
 					FromCameraRig, FromCameraAsset, TopEntry.bIsFrozen,
 					ToCameraRig, ToCameraAsset);
 			if (TransitionToUse)

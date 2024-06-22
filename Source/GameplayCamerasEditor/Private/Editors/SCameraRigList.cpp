@@ -87,7 +87,7 @@ bool SCameraRigListEntry::OnVerifyTextChanged(const FText& Text, FText& OutError
 	}
 
 	const FString TextString = Text.ToString();
-	TObjectPtr<UCameraRigAsset>* FoundItem = OwnerCamera->CameraRigs.FindByPredicate(
+	const TObjectPtr<UCameraRigAsset>* FoundItem = OwnerCamera->GetCameraRigs().FindByPredicate(
 			[&TextString](const UCameraRigAsset* Item) { return Item->GetDisplayName() == TextString; });
 	if (FoundItem)
 	{
@@ -283,7 +283,7 @@ void SCameraRigList::OnAddCameraRig()
 
 	const FName NewCameraRigName = MakeUniqueObjectName(CameraAsset, UCameraRigAsset::StaticClass(), TEXT("NewCameraRig"));
 	UCameraRigAsset* NewCameraRig = NewObject<UCameraRigAsset>(CameraAsset, NewCameraRigName, RF_Transactional);
-	CameraAsset->CameraRigs.Add(NewCameraRig);
+	CameraAsset->AddCameraRig(NewCameraRig);
 
 	bUpdateItemSource = true;
 }
@@ -331,7 +331,7 @@ void SCameraRigList::OnDeleteCameraRig()
 				StringBuilder.Append(CameraRigAsset->GetName());
 				CameraRigAsset->Rename(StringBuilder.ToString());
 
-				const int32 NumRemoved = CameraAsset->CameraRigs.Remove(CameraRigAsset);
+				const int32 NumRemoved = CameraAsset->RemoveCameraRig(CameraRigAsset);
 				ensure(NumRemoved == 1);
 
 				DeletedCameraRigs.Add(CameraRigAsset);
@@ -366,7 +366,7 @@ void SCameraRigList::UpdateItemSource()
 
 	if (CameraAsset)
 	{
-		for (UCameraRigAsset* CameraRigAsset : CameraAsset->CameraRigs)
+		for (UCameraRigAsset* CameraRigAsset : CameraAsset->GetCameraRigs())
 		{
 			TSharedPtr<FCameraRigListItem> Item = MakeShared<FCameraRigListItem>();
 			Item->CameraRigAsset = CameraRigAsset;
@@ -374,7 +374,7 @@ void SCameraRigList::UpdateItemSource()
 		}
 	}
 
-	OnCameraRigListChanged.ExecuteIfBound(CameraAsset->CameraRigs);
+	OnCameraRigListChanged.ExecuteIfBound(CameraAsset->GetCameraRigs());
 }
 
 void SCameraRigList::UpdateFilteredItemSource()

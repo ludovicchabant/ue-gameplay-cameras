@@ -254,12 +254,12 @@ void FCameraAssetEditorToolkit::OnBuild()
 	CameraAsset->BuildCamera(BuildLog);
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
 
-	if (CameraAsset->BuildStatus != ECameraBuildStatus::Clean)
+	if (CameraAsset->GetBuildStatus() != ECameraBuildStatus::Clean)
 	{
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
 
-	for (UCameraRigAsset* CameraRigAsset : CameraAsset->CameraRigs)
+	for (UCameraRigAsset* CameraRigAsset : CameraAsset->GetCameraRigs())
 	{
 		FCameraRigPackages BuiltPackages;
 		CameraRigAsset->GatherPackages(BuiltPackages);

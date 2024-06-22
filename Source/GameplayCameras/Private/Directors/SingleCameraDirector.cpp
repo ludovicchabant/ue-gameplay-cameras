@@ -57,9 +57,9 @@ void USingleCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCre
 	// Automatically set ourselves to use the first camera rig available.
 	if (UCameraAsset* OuterCameraAsset = GetTypedOuter<UCameraAsset>())
 	{
-		if (OuterCameraAsset->CameraRigs.Num() > 0)
+		if (OuterCameraAsset->GetCameraRigs().Num() > 0)
 		{
-			CameraRig = OuterCameraAsset->CameraRigs[0];
+			CameraRig = OuterCameraAsset->GetCameraRigs()[0];
 		}
 	}
 }

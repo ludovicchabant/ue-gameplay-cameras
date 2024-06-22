@@ -237,7 +237,7 @@ void SCameraRigPicker::UpdateCameraRigItemsSource(const TArray<FAssetData>& Asse
 	{
 		if (const UCameraAsset* CameraAsset = Cast<UCameraAsset>(SelectedAsset.GetAsset()))
 		{
-			CameraRigItemsSource.Append(CameraAsset->CameraRigs);
+			CameraRigItemsSource.Append(CameraAsset->GetCameraRigs());
 		}
 	}
 }
