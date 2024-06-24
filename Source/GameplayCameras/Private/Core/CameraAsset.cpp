@@ -104,6 +104,8 @@ int32 UCameraAsset::RemoveExitTransition(UCameraRigTransition* InTransition)
 	return NumRemoved;
 }
 
+#if WITH_EDITOR
+
 void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	using namespace UE::Cameras;
@@ -133,6 +135,8 @@ void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 }
+
+#endif
 
 void UCameraAsset::BuildCamera()
 {

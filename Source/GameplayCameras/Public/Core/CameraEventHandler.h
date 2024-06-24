@@ -107,7 +107,7 @@ private:
 
 	// Stub for when events are disabled.
 	template<typename ...ArgTypes>
-	void Trigger(ArgTypes&&...) const
+	void Notify(ArgTypes&&...) const
 	{}
 
 #endif  // UE_GAMEPLAY_CAMERAS_EVENT_HANDLERS
