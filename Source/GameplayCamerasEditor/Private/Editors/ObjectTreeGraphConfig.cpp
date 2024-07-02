@@ -228,5 +228,28 @@ void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, cons
 	OnFormatObjectDisplayName.ExecuteIfBound(InObject, InOutDisplayNameText);
 }
 
+EEdGraphPinDirection FObjectTreeGraphConfig::GetPropertyPinDirection(const UClass* InObjectClass, const FName& InPropertyName) const
+{
+	const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObjectClass);
+	TOptional<EEdGraphPinDirection> PinDirectionOverride = ClassConfig.GetPropertyPinDirectionOverride(InPropertyName);
+	if (PinDirectionOverride.IsSet())
+	{
+		return PinDirectionOverride.GetValue();
+	}
+
+	const FProperty* Property = InObjectClass->FindPropertyByName(InPropertyName);
+	const FString& CustomDirection = Property->GetMetaData(TEXT("ObjectTreeGraphPinDirection"));
+	if (CustomDirection == TEXT("Input"))
+	{
+		return EGPD_Input;
+	}
+	else if (CustomDirection == TEXT("Output"))
+	{
+		return EGPD_Output;
+	}
+
+	return ClassConfig.DefaultPropertyPinDirection();
+}
+
 #undef LOCTEXT_NAMESPACE
 

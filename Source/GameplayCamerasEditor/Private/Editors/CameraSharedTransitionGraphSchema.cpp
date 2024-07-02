@@ -24,8 +24,6 @@ void UCameraSharedTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConf
 	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraAsset::StaticClass())
 		.HasSelfPin(false)
 		.OnlyAsRoot()
-		.SetPropertyPinDirection(GET_MEMBER_NAME_CHECKED(UCameraAsset, EnterTransitions), EGPD_Input)
-		.SetPropertyPinDirection(GET_MEMBER_NAME_CHECKED(UCameraAsset, ExitTransitions), EGPD_Output)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraAssetTitleColor);
 }

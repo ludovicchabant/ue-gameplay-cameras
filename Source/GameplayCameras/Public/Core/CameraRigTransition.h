@@ -99,7 +99,7 @@ class UCameraRigTransition
 public:
 
 	/** The list of conditions that must pass for this transition to be used. */
-	UPROPERTY(Instanced)
+	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Input))
 	TArray<TObjectPtr<UCameraRigTransitionCondition>> Conditions;
 
 	/** The blend to use to blend a given camera rig in or out. */

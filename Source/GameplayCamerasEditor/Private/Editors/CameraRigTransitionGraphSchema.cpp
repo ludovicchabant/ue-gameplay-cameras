@@ -22,8 +22,6 @@ void UCameraRigTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig&
 	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
 		.HasSelfPin(false)
 		.OnlyAsRoot()
-		.SetPropertyPinDirection(GET_MEMBER_NAME_CHECKED(UCameraRigAsset, EnterTransitions), EGPD_Input)
-		.SetPropertyPinDirection(GET_MEMBER_NAME_CHECKED(UCameraRigAsset, ExitTransitions), EGPD_Output)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
 	InOutGraphConfig.OnFormatObjectDisplayName = FOnFormatObjectDisplayName::CreateLambda(

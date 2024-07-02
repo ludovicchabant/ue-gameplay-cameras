@@ -85,7 +85,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 	{
 		const FName PropertyName = PropertyIt->GetFName();
 
-		const EEdGraphPinDirection PinDirection = ObjectClassConfig.GetPropertyPinDirection(PropertyName);
+		const EEdGraphPinDirection PinDirection = OuterGraphConfig.GetPropertyPinDirection(NodeContext.ObjectClass, PropertyName);
 
 		FEdGraphPinType ChildPinType;
 		ChildPinType.PinCategory = UObjectTreeGraphSchema::PC_Property;
@@ -167,7 +167,7 @@ void UObjectTreeGraphNode::CreateNewItemPin(FArrayProperty& InArrayProperty)
 
 void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
 {
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
+	const FNodeContext NodeContext = GetNodeContext();
 
 	const FName PropertyName = InParentArrayPin->GetFName();
 	const int32 NewIndex = InParentArrayPin->SubPins.Num();
@@ -176,7 +176,7 @@ void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
 	ChildPinType.PinCategory = UObjectTreeGraphSchema::PC_Property;
 	ChildPinType.PinSubCategory = UObjectTreeGraphSchema::PSC_ArrayPropertyItem;
 
-	const EEdGraphPinDirection PinDirection = ObjectClassConfig.GetPropertyPinDirection(PropertyName);
+	const EEdGraphPinDirection PinDirection = NodeContext.GraphConfig.GetPropertyPinDirection(NodeContext.ObjectClass, PropertyName);
 
 	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, PropertyName);
 	ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);

@@ -102,29 +102,29 @@ public:
 	}
 
 	/** Gets the custom property pin directions for given named properties. */
-	const TMap<FName, EEdGraphPinDirection>& PropertyPinDirections() const { return _PropertyPinDirections; }
+	const TMap<FName, EEdGraphPinDirection>& PropertyPinDirectionOverrides() const { return _PropertyPinDirectionOverrides; }
 
 	/** Adds a new custom property pin direction for a given named property. */
-	FObjectTreeGraphClassConfig& SetPropertyPinDirection(const FName& InPropertyName, EEdGraphPinDirection InDirection)
+	FObjectTreeGraphClassConfig& SetPropertyPinDirectionOverride(const FName& InPropertyName, EEdGraphPinDirection InDirection)
 	{
-		_PropertyPinDirections.Add(InPropertyName, InDirection);
+		_PropertyPinDirectionOverrides.Add(InPropertyName, InDirection);
 		return *this;
 	}
 
 	/** Gets the custom property pin direction for a given named property. */
-	EEdGraphPinDirection GetPropertyPinDirection(const FName& InPropertyName) const
+	TOptional<EEdGraphPinDirection> GetPropertyPinDirectionOverride(const FName& InPropertyName) const
 	{
-		if (const EEdGraphPinDirection* PinDirection = _PropertyPinDirections.Find(InPropertyName))
+		if (const EEdGraphPinDirection* PinDirection = _PropertyPinDirectionOverrides.Find(InPropertyName))
 		{
 			return *PinDirection;
 		}
-		return _DefaultPropertyPinDirection;
+		return TOptional<EEdGraphPinDirection>();
 	}
 
 private:
 
 	TArray<FString> _StripDisplayNameSuffixes;
-	TMap<FName, EEdGraphPinDirection> _PropertyPinDirections;
+	TMap<FName, EEdGraphPinDirection> _PropertyPinDirectionOverrides;
 };
 
 /**
@@ -230,6 +230,9 @@ public:
 	FText GetDisplayNameText(const UObject* InObject) const;
 	/** Computes the display name of the given object class. */
 	FText GetDisplayNameText(const UClass* InClass) const;
+
+	/** Gets the custom property pin direction for a given named property. */
+	EEdGraphPinDirection GetPropertyPinDirection(const UClass* InObjectClass, const FName& InPropertyName) const;
 
 private:
 

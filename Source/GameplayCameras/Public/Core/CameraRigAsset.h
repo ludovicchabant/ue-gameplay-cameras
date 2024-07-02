@@ -161,11 +161,11 @@ public:
 	FCameraRigInterface Interface;
 
 	/** List of enter transitions for this camera rig. */
-	UPROPERTY(Instanced)
+	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Input))
 	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
 
 	/** List of exist transitions for this camera rig. */
-	UPROPERTY(Instanced)
+	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Output))
 	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
 
 	/** Allocation information for all the nodes and variables in this camera rig. */
