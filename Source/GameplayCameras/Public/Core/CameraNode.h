@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Core/CameraNodeEvaluatorBuilder.h"
-#include "Core/CameraVariableTableFwd.h"
 #include "Core/ObjectChildrenView.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "CoreTypes.h"
@@ -11,7 +10,10 @@
 
 #include "CameraNode.generated.h"
 
-struct FCameraRigAllocationInfo;
+namespace UE::Cameras
+{
+	struct FCameraRigBuildContext;
+}
 
 /** View on a camera node's children. */
 using FCameraNodeChildrenView = UE::Cameras::TObjectChildrenView<TObjectPtr<UCameraNode>>;
@@ -28,13 +30,14 @@ class GAMEPLAYCAMERAS_API UCameraNode
 
 public:
 	
+	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
 	using FCameraNodeEvaluatorBuilder = UE::Cameras::FCameraNodeEvaluatorBuilder;
 
 	/** Get the list of children under this node. */
 	FCameraNodeChildrenView GetChildren();
 
 	/** Gets optional info about this node's required allocations at runtime. */
-	void BuildAllocationInfo(FCameraRigAllocationInfo& AllocationInfo) const;
+	void Build(FCameraRigBuildContext& BuildContext);
 
 	/** Builds the evaluator for this node. */
 	FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
@@ -45,7 +48,7 @@ protected:
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
 
 	/** Gets optional info about this node's required allocations at runtime. */
-	virtual void OnBuildAllocationInfo(FCameraRigAllocationInfo& AllocationInfo) const {}
+	virtual void OnBuild(FCameraRigBuildContext& BuildContext) {}
 
 	/** Builds the evaluator for this node. */
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const { return nullptr; }

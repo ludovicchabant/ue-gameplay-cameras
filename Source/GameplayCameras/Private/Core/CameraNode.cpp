@@ -28,9 +28,9 @@ FCameraNodeChildrenView UCameraNode::GetChildren()
 	return OnGetChildren();
 }
 
-void UCameraNode::BuildAllocationInfo(FCameraRigAllocationInfo& AllocationInfo) const
+void UCameraNode::Build(FCameraRigBuildContext& BuildContext)
 {
-	OnBuildAllocationInfo(AllocationInfo);
+	OnBuild(BuildContext);
 }
 
 FCameraNodeEvaluatorPtr UCameraNode::BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const

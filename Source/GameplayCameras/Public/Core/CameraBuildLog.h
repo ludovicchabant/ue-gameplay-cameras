@@ -17,7 +17,7 @@ struct GAMEPLAYCAMERAS_API FCameraBuildLogMessage
 	/** Severity of the message. */
 	EMessageSeverity::Type Severity = EMessageSeverity::Info;
 	/** An optional object that the message relates to. */
-	UObject* Object = nullptr;
+	const UObject* Object = nullptr;
 	/** The actual message. */
 	FText Text;
 
@@ -49,7 +49,7 @@ public:
 	/** Adds a new message. */
 	void AddMessage(EMessageSeverity::Type InSeverity, FText&& InText);
 	/** Adds a new message. */
-	void AddMessage(EMessageSeverity::Type InSeverity, UObject* InObject, FText&& InText);
+	void AddMessage(EMessageSeverity::Type InSeverity, const UObject* InObject, FText&& InText);
 
 	/** Gets the list of received messages so far. */
 	TArrayView<const FCameraBuildLogMessage> GetMessages() const { return Messages; }

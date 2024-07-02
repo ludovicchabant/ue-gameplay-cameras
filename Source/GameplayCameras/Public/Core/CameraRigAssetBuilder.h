@@ -50,7 +50,7 @@ private:
 	void DiscardUnusedPrivateVariables();
 
 	void BuildAllocationInfo();
-	void BuildAllocationInfo(const UCameraNode* CameraNode);
+	void BuildAllocationInfo(UCameraNode* CameraNode);
 
 	void UpdateBuildStatus();
 

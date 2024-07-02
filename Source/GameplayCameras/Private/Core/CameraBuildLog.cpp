@@ -67,7 +67,7 @@ void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, FText&& InTe
 	AddMessage(InSeverity, nullptr, MoveTemp(InText));
 }
 
-void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, UObject* InObject, FText&& InText)
+void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, const UObject* InObject, FText&& InText)
 {
 	Messages.Add(FCameraBuildLogMessage{ InSeverity, InObject, MoveTemp(InText) });
 

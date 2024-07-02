@@ -5,6 +5,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraParameters.h"
+#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableAssets.h"
 
@@ -487,7 +488,7 @@ void FCameraRigAssetBuilder::BuildAllocationInfo()
 	CameraRig->AllocationInfo = AllocationInfo;
 }
 
-void FCameraRigAssetBuilder::BuildAllocationInfo(const UCameraNode* CameraNode)
+void FCameraRigAssetBuilder::BuildAllocationInfo(UCameraNode* CameraNode)
 {
 	// Look for properties that are camera parameters, and gather what camera variables they reference. 
 	// This is for both exposed rig parameters (which we just built in BuildNewDrivenParameters) and 
@@ -520,7 +521,8 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	}
 
 	// Let the camera node add any custom variables or extra memory.
-	CameraNode->BuildAllocationInfo(AllocationInfo);
+	FCameraRigBuildContext BuildContext(AllocationInfo, BuildLog);
+	CameraNode->Build(BuildContext);
 }
 
 void FCameraRigAssetBuilder::UpdateBuildStatus()
