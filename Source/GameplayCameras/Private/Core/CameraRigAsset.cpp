@@ -131,7 +131,10 @@ void UCameraRigAsset::GatherPackages(FCameraRigPackages& OutPackages) const
 		FCameraNodeChildrenView CurrentChildren = CurrentNode->GetChildren();
 		for (UCameraNode* CurrentChild : ReverseIterate(CurrentChildren))
 		{
-			NodeStack.Add(CurrentChild);
+			if (CurrentChild)
+			{
+				NodeStack.Add(CurrentChild);
+			}
 		}
 	}
 }
