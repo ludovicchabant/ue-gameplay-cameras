@@ -1,0 +1,46 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Templates/SharedPointer.h"
+
+class UCameraRigAsset;
+
+namespace UE::Cameras
+{
+
+class FCameraEvaluationContext;
+class FCameraNodeEvaluator;
+struct FCameraNodeEvaluationResult;
+
+/**
+ * A structure describing an active camera rig being evaluated, generally
+ * inside a blend stack.
+ */
+struct FCameraRigEvaluationInfo
+{
+	/** The camera rig being evaluated. */
+	const UCameraRigAsset* CameraRig;
+	/** The context inside which the evaluation occurs. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+	/** The last evaluated result for this camera rig. */
+	const FCameraNodeEvaluationResult& LastResult;
+	/** The root node evaluator of the camera rig. */
+	const FCameraNodeEvaluator* RootEvaluator;
+	/** Whether the camera rig is frozen. */
+	bool bIsFrozen = false;
+
+	FCameraRigEvaluationInfo(
+			const UCameraRigAsset* InCameraRig,
+			TSharedPtr<const FCameraEvaluationContext> InEvaluationContext,
+			const FCameraNodeEvaluationResult& InLastResult,
+			const FCameraNodeEvaluator* InRootEvaluator)
+		: CameraRig(InCameraRig)
+		, EvaluationContext(InEvaluationContext)
+		, LastResult(InLastResult)
+		, RootEvaluator(InRootEvaluator)
+	{}
+};
+
+}  // namespace UE::Cameras
+

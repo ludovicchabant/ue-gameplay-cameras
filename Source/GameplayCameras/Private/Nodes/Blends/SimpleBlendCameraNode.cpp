@@ -26,6 +26,12 @@ void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	BlendFactor = FactorResult.BlendFactor;
 }
 
+void FSimpleBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
+{
+	const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
+	OutResult.VariableTable.Lerp(ChildVariableTable, ECameraVariableTableFilter::Input, BlendFactor);
+}
+
 void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
 	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);

@@ -14,6 +14,7 @@ public class GameplayCameras : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"EnhancedInput",
 				"GameplayTags",
 				"HeadMountedDisplay",
 				"MovieScene",

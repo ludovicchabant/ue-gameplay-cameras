@@ -6,6 +6,7 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigEvaluationInfo.h"
 #include "Debug/CameraDebugBlock.h"
 #include "IGameplayCamerasLiveEditListener.h"
 
@@ -94,6 +95,9 @@ public:
 	/** Push a new camera rig onto the blend stack. */
 	void Push(const FBlendStackCameraPushParams& Params);
 
+	/** Returns information about the top (active) camera rig, if any. */
+	TOptional<FCameraRigEvaluationInfo> GetActiveCameraRigEvaluationInfo() const;
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
@@ -117,6 +121,8 @@ protected:
 
 protected:
 
+	struct FCameraRigEntry;
+
 	// Utility functions for finding an appropriate transition.
 	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
 	const UCameraRigTransition* FindTransition(
@@ -125,6 +131,15 @@ protected:
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
 	void PopEntries(int32 FirstIndexToKeep);
+
+	bool InitializeEntry(
+		FCameraRigEntry& NewEntry, 
+		const UCameraRigAsset* CameraRig,
+		FCameraSystemEvaluator* Evaluator,
+		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
+		UBlendStackRootCameraNode* EntryRootNode);
+
+	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
 
 protected:
 
@@ -140,10 +155,16 @@ protected:
 		FCameraNodeEvaluatorStorage EvaluatorStorage;
 		/** Root evaluator. */
 		FBlendStackRootCameraNodeEvaluator* RootEvaluator = nullptr;
+		/** Evaluators needing parameter update. */
+		TArray<FCameraNodeEvaluator*> ParameterEvaluators;
 		/** Result for this node tree. */
 		FCameraNodeEvaluationResult Result;
 		/** Whether this is the first frame this entry runs. */
 		bool bIsFirstFrame = false;
+		/** Whether input slots were run (possibly from a preview update). */
+		bool bInputRunThisFrame = false;
+		/** Whether the blend node was run (possibly from a preview update). */
+		bool bBlendRunThisFrame = false;
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
 

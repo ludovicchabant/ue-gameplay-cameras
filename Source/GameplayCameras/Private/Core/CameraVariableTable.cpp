@@ -89,6 +89,15 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 		NewEntry.ID = VariableDefinition.VariableID;
 		NewEntry.Type = VariableDefinition.VariableType;
 		NewEntry.Offset = NewEntryOffset;
+		NewEntry.Flags = EEntryFlags::None;
+		if (VariableDefinition.bIsPrivate)
+		{
+			NewEntry.Flags |= EEntryFlags::Private;
+		}
+		if (VariableDefinition.bIsInput)
+		{
+			NewEntry.Flags |= EEntryFlags::Input;
+		}
 #if WITH_EDITORONLY_DATA
 		NewEntry.DebugName = VariableDefinition.VariableName;
 #endif
@@ -237,30 +246,37 @@ void FCameraVariableTable::ClearAllWrittenThisFrameFlags()
 
 void FCameraVariableTable::OverrideAll(const FCameraVariableTable& OtherTable)
 {
-	InternalOverride(OtherTable, nullptr, false, nullptr, false);
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::All;
+	InternalOverride(OtherTable, Filter, nullptr, false, nullptr);
 }
 
-void FCameraVariableTable::OverrideChanged(const FCameraVariableTable& OtherTable)
+void FCameraVariableTable::Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter)
 {
-	InternalOverride(OtherTable, nullptr, false, nullptr, true);
+	InternalOverride(OtherTable, Filter, nullptr, false, nullptr);
 }
 
-void FCameraVariableTable::OverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask)
+void FCameraVariableTable::Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask)
 {
-	InternalOverride(OtherTable, &InMask, bInvertMask, &OutMask, true);
+	InternalOverride(OtherTable, Filter, &InMask, bInvertMask, &OutMask);
 }
 
-void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly)
+void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask)
 {
 	using namespace UE::Cameras::Private;
+
+	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
+	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
+	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
 
 	for (auto& OtherPair : OtherTable.Entries)
 	{
 		// Look for entries in the other table that have been written to, and aren't private.
 		const FEntry& OtherEntry  = OtherPair.Value;
 		const EEntryFlags OtherFlags = OtherEntry.Flags;
+		const bool bOtherEntryIsInput = EnumHasAnyFlags(OtherFlags, EEntryFlags::Input);
 		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::WrittenThisFrame))
+				&& ((bInputs && bOtherEntryIsInput) || (bOutputs && !bOtherEntryIsInput))
 				&& !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private)
 				&& IsVariableInMask(OtherEntry.ID, InMask, bInvertMask))
 		{
@@ -322,30 +338,37 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 
 void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor)
 {
-	InternalLerp(ToTable, Factor, nullptr, false, nullptr, false);
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::All;
+	InternalLerp(ToTable, Filter, Factor, nullptr, false, nullptr);
 }
 
-void FCameraVariableTable::LerpChanged(const FCameraVariableTable& ToTable, float Factor)
+void FCameraVariableTable::Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor)
 {
-	InternalLerp(ToTable, Factor, nullptr, false, nullptr, true);
+	InternalLerp(ToTable, Filter, Factor, nullptr, false, nullptr);
 }
 
-void FCameraVariableTable::LerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask)
+void FCameraVariableTable::Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask)
 {
-	InternalLerp(ToTable, Factor, &InMask, false, &OutMask, true);
+	InternalLerp(ToTable, Filter, Factor, &InMask, false, &OutMask);
 }
 
-void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly)
+void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask)
 {
 	using namespace UE::Cameras::Private;
+
+	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
+	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
+	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
 
 	for (auto& ToPair : ToTable.Entries)
 	{
 		// Look for entries in the other table that have been written to, and aren't private.
 		const FEntry& ToEntry  = ToPair.Value;
 		const EEntryFlags ToFlags = ToEntry.Flags;
+		const bool bToEntryIsInput = EnumHasAnyFlags(ToFlags, EEntryFlags::Input);
 		if (EnumHasAnyFlags(ToFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(ToFlags, EEntryFlags::WrittenThisFrame))
+				&& ((bInputs && bToEntryIsInput) || (bOutputs && !bToEntryIsInput))
 				&& !EnumHasAnyFlags(ToFlags, EEntryFlags::Private)
 				&& IsVariableInMask(ToEntry.ID, InMask, bInvertMask))
 		{

@@ -17,6 +17,10 @@
 	"Plugins":
 	[
 		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
 			"Name": "TemplateSequence",
 			"Enabled": true
 		}

@@ -13,6 +13,7 @@ class FPopBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 
 protected:
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult) override;
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) override;
 };
 
@@ -22,12 +23,19 @@ void FPopBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Para
 {
 }
 
+void FPopBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
+{
+	const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
+	OutResult.VariableTable.Override(ChildVariableTable, ECameraVariableTableFilter::Input);
+}
+
 void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
 	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
 	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);
 	
-	BlendedResult.CameraPose.OverrideChanged(ChildResult.CameraPose);
+	BlendedResult.CameraPose.OverrideAll(ChildResult.CameraPose);
+	BlendedResult.VariableTable.OverrideAll(ChildResult.VariableTable);
 	if (ChildResult.bIsCameraCut || Params.ChildParams.bIsFirstFrame)
 	{
 		BlendedResult.bIsCameraCut = true;

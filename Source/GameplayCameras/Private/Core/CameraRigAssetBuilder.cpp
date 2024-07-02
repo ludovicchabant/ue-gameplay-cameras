@@ -471,7 +471,6 @@ void FCameraRigAssetBuilder::BuildAllocationInfo()
 	// Build a mock tree of evaluators.
 	FCameraNodeEvaluatorTreeBuildParams BuildParams;
 	BuildParams.RootCameraNode = CameraRig->RootNode;
-	BuildParams.bInitialize = false;  // Don't initialize, we just want to know how much room they take.
 	FCameraNodeEvaluatorStorage Storage;
 	Storage.BuildEvaluatorTree(BuildParams);
 

@@ -20,6 +20,41 @@ namespace UE::Cameras
 {
 
 /**
+ * Parameter struct for blending camera node parameters.
+ */
+struct FCameraNodePreBlendParams
+{
+	FCameraNodePreBlendParams(
+			const FCameraNodeEvaluationParams& InEvaluationParams,
+			const FCameraPose& InLastCameraPose,
+			const FCameraVariableTable& InChildVariableTable)
+		: EvaluationParams(InEvaluationParams)
+		, LastCameraPose(InLastCameraPose)
+		, ChildVariableTable(InChildVariableTable)
+	{}
+
+	/** The parameters for the evaluation that will happen afterwards. */
+	const FCameraNodeEvaluationParams& EvaluationParams;
+	/** Last frame's camera pose. */
+	const FCameraPose& LastCameraPose;
+	/** The variable table of the node tree being blended. */
+	const FCameraVariableTable& ChildVariableTable;
+};
+
+/**
+ * Result struct for blending camera node parameters.
+ */
+struct FCameraNodePreBlendResult
+{
+	FCameraNodePreBlendResult(FCameraVariableTable& InVariableTable)
+		: VariableTable(InVariableTable)
+	{}
+
+	/** The variable table to received blended parameters. */
+	FCameraVariableTable& VariableTable;
+};
+
+/**
  * Parameter struct for blending camera node tree results.
  */
 struct FCameraNodeBlendParams
@@ -65,10 +100,16 @@ class FBlendCameraNodeEvaluator : public FCameraNodeEvaluator
 
 public:
 
+	/** Blend the parameters produced by a camera node tree over another set of values. */
+	void BlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult);
+
 	/** Blend the result of a camera node tree over another result. */
 	void BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult);
 
 protected:
+
+	/** Blend the parameters produced by a camera node tree over another set of values. */
+	virtual void OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult) {}
 
 	/** Blend the result of a camera node tree over another result. */
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) {}

@@ -41,6 +41,11 @@ void FCameraNodeEvaluator::SetPrivateCameraNode(TObjectPtr<const UCameraNode> In
 	PrivateCameraNode = InCameraNode;
 }
 
+void FCameraNodeEvaluator::SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags)
+{
+	PrivateFlags = InFlags;
+}
+
 FCameraNodeEvaluatorChildrenView FCameraNodeEvaluator::GetChildren()
 {
 	return OnGetChildren();
@@ -82,11 +87,45 @@ void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams
 	}
 }
 
+void FCameraNodeEvaluator::UpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
+{
+	if (!PrivateCameraNode || PrivateCameraNode->bIsEnabled)
+	{
+		if (EnumHasAnyFlags(PrivateFlags, ECameraNodeEvaluatorFlags::NeedsParameterUpdate))
+		{
+			OnUpdateParameters(Params, OutResult);
+		}
+		else
+		{
+			for (FCameraNodeEvaluator* Child : GetChildren())
+			{
+				if (Child)
+				{
+					Child->UpdateParameters(Params, OutResult);
+				}
+			}
+		}
+	}
+}
+
 void FCameraNodeEvaluator::Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	if (!PrivateCameraNode || PrivateCameraNode->bIsEnabled)
 	{
-		OnRun(Params, OutResult);
+		if (EnumHasAnyFlags(PrivateFlags, ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate))
+		{
+			OnRun(Params, OutResult);
+		}
+		else
+		{
+			for (FCameraNodeEvaluator* Child : GetChildren())
+			{
+				if (Child)
+				{
+					Child->Run(Params, OutResult);
+				}
+			}
+		}
 	}
 }
 

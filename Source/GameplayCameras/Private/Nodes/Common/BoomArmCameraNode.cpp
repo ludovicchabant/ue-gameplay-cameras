@@ -3,6 +3,8 @@
 #include "Nodes/Common/BoomArmCameraNode.h"
 
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraParameterReader.h"
+#include "Nodes/Input/CameraRigInput2DSlot.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
@@ -18,15 +20,46 @@ class FBoomArmCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	TCameraParameterReader<FVector3d> BoomOffsetReader;
+	FCameraRigInput2DSlotEvaluator* InputSlotEvaluator = nullptr;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
 
+void FBoomArmCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
+{
+	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
+	InputSlotEvaluator = Params.BuildEvaluatorAs<FCameraRigInput2DSlotEvaluator>(BoomArmNode->InputSlot);
+}
+
+void FBoomArmCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+{
+	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
+	BoomOffsetReader.Initialize(BoomArmNode->BoomOffset);
+}
+
+FCameraNodeEvaluatorChildrenView FBoomArmCameraNodeEvaluator::OnGetChildren()
+{
+	return FCameraNodeEvaluatorChildrenView({ InputSlotEvaluator });
+}
+
 void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	FRotator3d BoomRotation;
-	if (Params.EvaluationContext)
+	FRotator3d BoomRotation = FRotator3d::ZeroRotator;
+	if (InputSlotEvaluator)
+	{
+		InputSlotEvaluator->Run(Params, OutResult);
+		const FVector2d YawPitch = InputSlotEvaluator->GetInputValue();
+		BoomRotation = FRotator3d(YawPitch.Y, YawPitch.X, 0);
+	}
+	else if (Params.EvaluationContext)
 	{
 		if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 		{
@@ -48,7 +81,7 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 	// by using the fact that BoomRotation is, well, just a rotation, and CameraPose.Location is of
 	// course just a translation. So we can put them both in the same transform:
 	const FTransform3d BoomPivot(BoomRotation, OutResult.CameraPose.GetLocation());
-	const FTransform3d BoomOffset(BoomArmNode->BoomOffset);
+	const FTransform3d BoomOffset(BoomOffsetReader.Get(OutResult.VariableTable));
 
 	const FTransform3d FinalTransform(BoomOffset * BoomPivot);
 
@@ -56,6 +89,11 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 }
 
 }  // namespace UE::Cameras
+
+FCameraNodeChildrenView UBoomArmCameraNode::OnGetChildren()
+{
+	return FCameraNodeChildrenView({ InputSlot });
+}
 
 FCameraNodeEvaluatorPtr UBoomArmCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {

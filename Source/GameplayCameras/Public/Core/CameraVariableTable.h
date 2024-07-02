@@ -21,6 +21,26 @@ template<typename ValueType>
 struct TCameraVariableInterpolation;
 
 /**
+ * Filter for variable table operations.
+ */
+enum class ECameraVariableTableFilter
+{
+	None = 0,
+	/** Only include input variables. */
+	Input = 1 << 0,
+	/** Only include output variables (i.e. anything not an input). */
+	Output = 1 << 1,
+	/** Only include changed variables. */
+	ChangedOnly = 1 << 2,
+
+	/** All variables. */
+	All = Input | Output,
+	/** All changed variables. */
+	AllChanged = Input | Output | ChangedOnly
+};
+ENUM_CLASS_FLAGS(ECameraVariableTableFilter)
+
+/**
  * A structure that keeps track of which variables have been processed in a
  * camera variable table.
  */
@@ -107,12 +127,12 @@ public:
 	// Interpolation.
 	
 	void OverrideAll(const FCameraVariableTable& OtherTable);
-	void OverrideChanged(const FCameraVariableTable& OtherTable);
-	void OverrideChanged(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter);
+	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
 	void LerpAll(const FCameraVariableTable& ToTable, float Factor);
-	void LerpChanged(const FCameraVariableTable& ToTable, float Factor);
-	void LerpChanged(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor);
+	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
 public:
 
@@ -137,8 +157,8 @@ private:
 
 	void ReallocateBuffer(uint32 MinRequired = 0);
 
-	void InternalOverride(const FCameraVariableTable& OtherTable, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
-	void InternalLerp(const FCameraVariableTable& ToTable, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask, bool bChangedOnly);
+	void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+	void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 
 private:
 
@@ -146,8 +166,9 @@ private:
 	{
 		None = 0,
 		Private = 1 << 0,
-		Written = 1 << 1,
-		WrittenThisFrame = 1 << 2
+		Input = 1 << 1,
+		Written = 1 << 2,
+		WrittenThisFrame = 1 << 3
 	};
 	FRIEND_ENUM_CLASS_FLAGS(EEntryFlags)
 
@@ -195,20 +216,26 @@ const ValueType* FCameraVariableTable::FindValue(FCameraVariableID VariableID) c
 template<typename ValueType>
 const ValueType& FCameraVariableTable::GetValue(FCameraVariableID VariableID) const
 {
-	const FEntry& Entry = Entries.FindChecked(VariableID);
-	CheckVariableType<ValueType>(Entry.Type);
+	const FEntry* Entry = Entries.Find(VariableID);
+	if (ensureMsgf(Entry, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
+	{
+		CheckVariableType<ValueType>(Entry->Type);
 #if WITH_EDITORONLY_DATA
-	checkf(
-			EnumHasAnyFlags(Entry.Flags, EEntryFlags::Written),
-			TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
-			*Entry.DebugName);
+		checkf(
+				EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
+				TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+				*Entry->DebugName);
 #else
-	checkf(
-			EnumHasAnyFlags(Entry.Flags, EEntryFlags::Written),
-			TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
-			*LexToString(VariableID.GetValue()));
+		checkf(
+				EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
+				TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+				*LexToString(VariableID.GetValue()));
 #endif
-	return *reinterpret_cast<ValueType*>(Memory + Entry.Offset);
+		return *reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+	}
+
+	static ValueType DefaultValue = ValueType();
+	return DefaultValue;
 }
 
 template<typename ValueType>
@@ -235,11 +262,14 @@ bool FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ValueType& 
 template<typename ValueType>
 void FCameraVariableTable::SetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
-	FEntry& Entry = Entries.FindChecked(VariableID);
-	CheckVariableType<ValueType>(Entry.Type);
-	ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry.Offset);
-	*ValuePtr = Value;
-	Entry.Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+	FEntry* Entry = Entries.Find(VariableID);
+	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
+	{
+		CheckVariableType<ValueType>(Entry->Type);
+		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		*ValuePtr = Value;
+		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+	}
 }
 
 template<typename ValueType>

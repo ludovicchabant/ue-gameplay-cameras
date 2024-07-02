@@ -66,7 +66,7 @@ protected:
 	void* BuildObjectUninitialized(uint32 Sizeof, uint32 Alignof);
 
 	/**
-	 * Called to registered an object after it has been constructed.
+	 * Called to register an object after it has been constructed.
 	 */
 	void RegisterInitializedObject(BaseObjectType* BaseObjectPtr);
 
@@ -257,6 +257,7 @@ void TCameraObjectStorage<BaseObjectType>::GetAllocationInfo(uint32& OutTotalUse
 template<typename BaseObjectType>
 void TCameraObjectStorage<BaseObjectType>::AllocatePage(uint32 InCapacity, uint32 InAlignment)
 {
+	check(InCapacity > 0 && InAlignment > 0);
 	FAllocation& NewAllocation = Allocations.Emplace_GetRef();
 	NewAllocation.Memory = reinterpret_cast<uint8*>(FMemory::Malloc(InCapacity, InAlignment));
 	NewAllocation.Alignment = InAlignment;

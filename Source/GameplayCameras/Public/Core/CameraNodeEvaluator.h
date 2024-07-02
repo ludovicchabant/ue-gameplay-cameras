@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraRigEvaluationInfo.h"
 #include "Core/CameraObjectRtti.h"
 #include "Core/CameraPose.h"
 #include "Core/CameraVariableTable.h"
@@ -9,10 +10,12 @@
 #include "CoreTypes.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCameras.h"
+#include "Misc/Optional.h"
 #include "UObject/ObjectPtr.h"
 
 class FReferenceCollector;
 class UCameraNode;
+class UCameraRigAsset;
 
 namespace UE::Cameras
 {
@@ -20,23 +23,66 @@ namespace UE::Cameras
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraSystemEvaluator;
+struct FCameraNodeEvaluationParams;
 struct FCameraNodeEvaluatorBuilder;
+struct FCameraRigEvaluationInfo;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 struct FCameraDebugBlockBuilder;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
+ * Flags describing the needs of a camera node evaluator.
+ */
+enum class ECameraNodeEvaluatorFlags
+{
+	None = 0,
+	NeedsParameterUpdate = 1 << 0,
+	NeedsEvaluationUpdate = 1 << 1
+};
+ENUM_CLASS_FLAGS(ECameraNodeEvaluatorFlags)
+
+/**
+ * Parameter structure for updating the pre-blended parameters of a camera node.
+ */
+struct FCameraBlendedParameterUpdateParams
+{
+	FCameraBlendedParameterUpdateParams(const FCameraNodeEvaluationParams& InEvaluationParams, const FCameraPose& InLastCameraPose)
+		: EvaluationParams(InEvaluationParams)
+		, LastCameraPose(InLastCameraPose)
+	{}
+
+	/** Information about the evaluation pass that will happen afterwards. */
+	const FCameraNodeEvaluationParams& EvaluationParams;
+	/** Last frame's camera pose. */
+	const FCameraPose& LastCameraPose;
+};
+
+/**
+ * Result of updating the pre-blended parameters of a camera node.
+ */
+struct FCameraBlendedParameterUpdateResult
+{
+	FCameraBlendedParameterUpdateResult(FCameraVariableTable& InVariableTable)
+		: VariableTable(InVariableTable)
+	{}
+
+	/** Variable table in which parameters should be stored or obtained. */
+	FCameraVariableTable& VariableTable;
+};
+
+/**
  * Parameter structure for running a camera node evaluator.
  */
 struct FCameraNodeEvaluationParams
 {
-	/** The evaluation running this evaluation. */
+	/** The evaluator running this evaluation. */
 	FCameraSystemEvaluator* Evaluator = nullptr;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** The time interval for the evaluation. */
 	float DeltaTime = 0.f;
+	
 	/** Whether this is the first evaluation of this camera node hierarchy. */
 	bool bIsFirstFrame = false;
 };
@@ -92,6 +138,12 @@ struct FCameraNodeEvaluatorInitializeParams
 	FCameraSystemEvaluator* Evaluator = nullptr;
 	/** The evaluation context (if any) responsible for this branch of the evaluation. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/**
+	 * Information about the last active camera rig if the node tree being initialized
+	 * is being pushed on top of a non-empty blend stack.
+	 */
+	TOptional<FCameraRigEvaluationInfo> LastActiveCameraRig;
 };
 
 /** View on a camera node evaluator's children. */
@@ -130,11 +182,20 @@ public:
 	/** Get the list of children under this evaluator. */
 	FCameraNodeEvaluatorChildrenView GetChildren();
 
+	/** Called to update and store the blended parameters for this node. */
+	void UpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
+
 	/** Run this evaluator. */
 	void Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	/** Collect referenced UObjects. */
 	void AddReferencedObjects(FReferenceCollector& Collector);
+
+	/** Gets the flags for this evaluator. */
+	ECameraNodeEvaluatorFlags  GetNodeEvaluatorFlags() const { return PrivateFlags; }
+
+	/** Get the camera node. */
+	const UCameraNode* GetCameraNode() const { return PrivateCameraNode; }
 
 	/** Get the camera node. */
 	template<typename CameraNodeType>
@@ -155,6 +216,11 @@ public:
 
 protected:
 
+	/** Sets the flags for this evaluator. */
+	void SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
+
+protected:
+
 	/** Called to build any children evaluators. */
 	GAMEPLAYCAMERAS_API virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
 
@@ -162,7 +228,10 @@ protected:
 	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) {}
 
 	/** Get the list of children under this evaluator. */
-	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
+	GAMEPLAYCAMERAS_API virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
+
+	/** Called to update and store the blended parameters for this node. */
+	GAMEPLAYCAMERAS_API virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) {}
 
 	/** Run this evaluator. */
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
@@ -179,6 +248,9 @@ private:
 
 	/** The camera node to run. */
 	TObjectPtr<const UCameraNode> PrivateCameraNode;
+
+	/** The flags for this evaluator. */
+	ECameraNodeEvaluatorFlags PrivateFlags = ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate;
 };
 
 /** Utility base class for camera node evaluators of a specific camera node type. */
@@ -199,9 +271,11 @@ public:
 template<typename EvaluatorType>
 EvaluatorType* FCameraNodeEvaluatorBuildParams::BuildEvaluatorAs(const UCameraNode* InNode) const
 {
-	FCameraNodeEvaluator* NewEvaluator = BuildEvaluator(InNode);
-	check(NewEvaluator);
-	return NewEvaluator->CastThisChecked<EvaluatorType>();
+	if (FCameraNodeEvaluator* NewEvaluator = BuildEvaluator(InNode))
+	{
+		return NewEvaluator->CastThisChecked<EvaluatorType>();
+	}
+	return nullptr;
 }
 
 }  // namespace UE::Cameras

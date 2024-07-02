@@ -16,22 +16,16 @@ FCameraNodeEvaluatorPtr FCameraNodeEvaluatorStorage::BuildEvaluatorTree(const FC
 	{
 		const uint16 NewCapacity = Params.AllocationInfo->TotalSizeof;
 		const uint16 NewAlignment = Params.AllocationInfo->MaxAlignof;
-		Super::AllocatePage(NewCapacity, NewAlignment);
+		if (NewCapacity > 0 && NewAlignment > 0)
+		{
+			Super::AllocatePage(NewCapacity, NewAlignment);
+		}
 	}
 
 	FCameraNodeEvaluatorBuilder Builder(*this);
 	FCameraNodeEvaluatorBuildParams BuildParams(Builder);
 
 	FCameraNodeEvaluatorPtr RootEvaluator = BuildParams.BuildEvaluator(Params.RootCameraNode);
-
-	if (Params.bInitialize)
-	{
-		FCameraNodeEvaluatorInitializeParams InitParams;
-		InitParams.Evaluator = Params.Evaluator;
-		InitParams.EvaluationContext = Params.EvaluationContext;
-
-		RootEvaluator->Initialize(InitParams);
-	}
 
 	return RootEvaluator;
 }

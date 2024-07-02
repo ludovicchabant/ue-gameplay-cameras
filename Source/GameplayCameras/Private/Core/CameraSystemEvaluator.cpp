@@ -58,9 +58,15 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	ContextStack.Initialize(*this);
 
 	FCameraNodeEvaluatorTreeBuildParams BuildParams;
-	BuildParams.Evaluator = this;
 	BuildParams.RootCameraNode = RootNode;
 	RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
+
+	if (ensure(RootEvaluator))
+	{
+		FCameraNodeEvaluatorInitializeParams InitParams;
+		InitParams.Evaluator = this;
+		RootEvaluator->Initialize(InitParams);
+	}
 }
 
 void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector)

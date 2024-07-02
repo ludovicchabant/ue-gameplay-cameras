@@ -4,6 +4,7 @@
 
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
+#include "Templates/TypeHash.h"
 
 #include "CameraVariableTableFwd.generated.h"
 
@@ -108,10 +109,32 @@ struct FCameraVariableDefinition
 	UPROPERTY()
 	bool bIsPrivate = false;
 
+	UPROPERTY()
+	bool bIsInput = false;
+
 #if WITH_EDITORONLY_DATA
 	UPROPERTY()
 	FString VariableName;
 #endif
+
+	bool IsValid() const
+	{
+		return VariableID.IsValid();
+	}
+
+	FCameraVariableDefinition CreateVariant(const FString& VariantID) const
+	{
+		FCameraVariableDefinition VariantDefinition(*this);
+		VariantDefinition.VariableID = FCameraVariableID::FromHashValue(
+				HashCombineFast(VariableID.GetValue(), GetTypeHash(VariantID)));
+#if WITH_EDITORONLY_DATA
+		if (!VariableName.IsEmpty())
+		{
+			VariantDefinition.VariableName += FString::Format(TEXT("_{0}Variant"), { VariantID });
+		}
+#endif
+		return VariantDefinition;
+	}
 };
 
 USTRUCT()

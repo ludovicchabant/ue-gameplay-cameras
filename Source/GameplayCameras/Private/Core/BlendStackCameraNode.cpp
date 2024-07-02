@@ -92,18 +92,16 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 
 	// Make the new stack entry, and use its storage buffer to build the tree of evaluators.
 	FCameraRigEntry NewEntry;
-
-	FCameraNodeEvaluatorTreeBuildParams BuildParams;
-	BuildParams.RootCameraNode = EntryRootNode;
-	BuildParams.Evaluator = Params.Evaluator;
-	BuildParams.EvaluationContext = Params.EvaluationContext;
-	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
-
-	NewEntry.EvaluationContext = Params.EvaluationContext;
-	NewEntry.CameraRig = Params.CameraRig;
-	NewEntry.RootNode = EntryRootNode;
-	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
-	NewEntry.bIsFirstFrame = true;
+	const bool bInitialized = InitializeEntry(
+			NewEntry, 
+			Params.CameraRig,
+			Params.Evaluator,
+			Params.EvaluationContext,
+			EntryRootNode);
+	if (!bInitialized)
+	{
+		return;
+	}
 
 #if WITH_EDITOR
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
@@ -123,6 +121,88 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	// Important: we need to move the new entry here because copying evaluator storage
 	// is disabled.
 	Entries.Add(MoveTemp(NewEntry));
+}
+
+bool FBlendStackCameraNodeEvaluator::InitializeEntry(
+		FCameraRigEntry& NewEntry, 
+		const UCameraRigAsset* CameraRig,
+		FCameraSystemEvaluator* Evaluator,
+		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
+		UBlendStackRootCameraNode* EntryRootNode)
+{
+	// Generate the hierarchy of node evaluators inside our storage buffer.
+	FCameraNodeEvaluatorTreeBuildParams BuildParams;
+	BuildParams.RootCameraNode = EntryRootNode;
+	BuildParams.AllocationInfo = &CameraRig->AllocationInfo.EvaluatorInfo;
+	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
+	if (!ensureMsgf(RootEvaluator, TEXT("No root evaluator was created for new camera rig!")))
+	{
+		return false;
+	}
+
+	// Initialize the node evaluators.
+	FCameraNodeEvaluatorInitializeParams InitParams;
+	InitParams.Evaluator = Evaluator;
+	InitParams.EvaluationContext = EvaluationContext;
+	InitParams.LastActiveCameraRig = GetActiveCameraRigEvaluationInfo();
+	RootEvaluator->Initialize(InitParams);
+
+	// Gather blended parameter evaluators.
+	NewEntry.ParameterEvaluators.Reset();
+	GatherEntryParameterEvaluators(RootEvaluator, NewEntry.ParameterEvaluators);
+
+	// Allocate variables in the variable table.
+	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
+
+	// Wrap up!
+	NewEntry.EvaluationContext = EvaluationContext;
+	NewEntry.CameraRig = CameraRig;
+	NewEntry.RootNode = EntryRootNode;
+	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
+	NewEntry.bIsFirstFrame = true;
+
+	return true;
+}
+
+void FBlendStackCameraNodeEvaluator::GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators)
+{
+	TArray<FCameraNodeEvaluator*> EvaluatorStack;
+	EvaluatorStack.Add(RootEvaluator);
+	while (!EvaluatorStack.IsEmpty())
+	{
+		FCameraNodeEvaluator* CurEvaluator = EvaluatorStack.Pop();
+
+		if (EnumHasAnyFlags(CurEvaluator->GetNodeEvaluatorFlags(), ECameraNodeEvaluatorFlags::NeedsParameterUpdate))
+		{
+			OutParameterEvaluators.Add(CurEvaluator);
+		}
+		else
+		{
+			for (FCameraNodeEvaluator* Child : ReverseIterate(CurEvaluator->GetChildren()))
+			{
+				if (Child)
+				{
+					EvaluatorStack.Add(Child);
+				}
+			}
+		}
+	}
+}
+
+TOptional<FCameraRigEvaluationInfo> FBlendStackCameraNodeEvaluator::GetActiveCameraRigEvaluationInfo() const
+{
+	if (Entries.Num() > 0)
+	{
+		const FCameraRigEntry& ActiveEntry = Entries[0];
+		FCameraRigEvaluationInfo Info(
+				ActiveEntry.CameraRig, 
+				ActiveEntry.EvaluationContext.Pin(),
+				ActiveEntry.Result,
+				ActiveEntry.RootEvaluator);
+		Info.bIsFrozen = ActiveEntry.bIsFrozen;
+		return Info;
+	}
+	return TOptional<FCameraRigEvaluationInfo>();
 }
 
 FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
@@ -147,41 +227,46 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 {
 	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
 
-	// Start by evaluating all the root nodes in the stack.
-	for (FCameraRigEntry& Entry : Entries)
+	// Filter out invalid entries and go through other basic validation.
+	struct FValidEntry
 	{
+		FCameraRigEntry& Entry;
+		TSharedPtr<const FCameraEvaluationContext> Context;
+		int32 EntryIndex;
+	};
+
+	TArray<FValidEntry> ValidEntries;
+
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		FCameraRigEntry& Entry(Entries[Index]);
 		TSharedPtr<const FCameraEvaluationContext> CurContext = Entry.EvaluationContext.Pin();
-		if (UNLIKELY(!CurContext.IsValid()))
-		{
-			Entry.Result.bIsValid = false;
-
-#if UE_GAMEPLAY_CAMERAS_TRACE
-			if (Entry.bLogWarnings)
-			{
-				UE_LOG(LogCameraSystem, Warning,
-						TEXT("Can't update camera rig '%s' because its evaluation context isn't valid."),
-						*GetNameSafe(Entry.CameraRig));
-				Entry.bLogWarnings = false;
-			}
-#endif  // UE_GAMEPLAY_CAMERAS_TRACE
-
-			continue;
-		}
-
-		FCameraNodeEvaluationParams CurParams(Params);
-		CurParams.EvaluationContext = CurContext;
-		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
-
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
 		if (!Entry.bIsFrozen)
 		{
-			// If the context in which this camera rig runs doesn't have a valid result,
-			// skip it.
+			// Check that we still have a valid context.
+			if (UNLIKELY(!CurContext.IsValid()))
+			{
+				Entry.Result.bIsValid = false;
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+				if (Entry.bLogWarnings)
+				{
+					UE_LOG(LogCameraSystem, Warning,
+							TEXT("Can't update camera rig '%s' because its evaluation context isn't valid."),
+							*GetNameSafe(Entry.CameraRig));
+					Entry.bLogWarnings = false;
+				}
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
+
+				continue;
+			}
+
+			// Check that we have a valid result for this context.
 			const FCameraNodeEvaluationResult& ContextResult(CurContext->GetInitialResult());
 			if (UNLIKELY(!ContextResult.bIsValid))
 			{
-				CurResult.bIsValid = false;
+				Entry.Result.bIsValid = false;
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 				if (Entry.bLogWarnings)
@@ -195,48 +280,139 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 				continue;
 			}
-
-			// Start with the input given to us.
-			CurResult.CameraPose = OutResult.CameraPose;
-			CurResult.CameraPose.ClearAllChangedFlags();
-			CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
-			CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
-
-			// Override it with whatever the evaluation context has set on its result.
-			CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-			CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
-			CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
-			CurResult.bIsValid = true;
-
-			// Run the camera rig!
-			Entry.RootEvaluator->Run(CurParams, CurResult);
 		}
-		else
-		{
-			// Only evaluate the blend via the root node.
-			Entry.RootEvaluator->Run(CurParams, CurResult);
-		}
+		// else: frozen entries may have null contexts or invalid initial results
+		//       because we're not going to update them anyway. We will however blend
+		//       them so we add them to the valid entries.
+
+		// This entry is valid, we'll process it.
+		ValidEntries.Add({ Entry, CurContext, Index });
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
+		// This entry might have been temporarily invalid before. It's valid now, so let's
+		// re-enable warnings if it becomes invalid again in the future.
 		Entry.bLogWarnings = true;
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 
-	// Now blend all the results, keeping track of blends that have reached 100% so
-	// that we can remove any camera rigs below (since the would have been completely
-	// blended out by that).
-	int32 EntryIndex = 0;
-	int32 PopEntriesBelow = INDEX_NONE;
-	for (FCameraRigEntry& Entry : Entries)
+	// Gather parameters to pre-blend, and evaluate blend nodes.
+	for (FValidEntry& ValidEntry : ValidEntries)
 	{
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-		if (UNLIKELY(!CurResult.bIsValid))
+		FCameraRigEntry& Entry(ValidEntry.Entry);
+		TSharedPtr<const FCameraEvaluationContext> CurContext(ValidEntry.Context);
+
+		if (Entry.bIsFrozen)
 		{
 			continue;
 		}
 
 		FCameraNodeEvaluationParams CurParams(Params);
-		CurParams.EvaluationContext = Entry.EvaluationContext.Pin();
+		CurParams.EvaluationContext = CurContext;
+		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		// Gather input parameters.
+		if (!Entry.bInputRunThisFrame)
+		{
+			FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
+			FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
+
+			for (FCameraNodeEvaluator* ParameterEvaluator : Entry.ParameterEvaluators)
+			{
+				ParameterEvaluator->UpdateParameters(InputParams, InputResult);
+			}
+
+			Entry.bInputRunThisFrame = true;
+		}
+
+		// Run blends.
+		if (!Entry.bBlendRunThisFrame)
+		{
+			FBlendCameraNodeEvaluator* BlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (ensure(BlendEvaluator))
+			{
+				BlendEvaluator->Run(CurParams, CurResult);
+			}
+
+			Entry.bBlendRunThisFrame = true;
+		}
+	}
+
+	// Blend input variables.
+	for (FValidEntry& ValidEntry : ValidEntries)
+	{
+		FCameraRigEntry& Entry(ValidEntry.Entry);
+		TSharedPtr<const FCameraEvaluationContext> CurContext(ValidEntry.Context);
+
+		// Don't filter out frozen entries here, they still contribute to the blend
+		// using their last evaluated values.
+
+		if (!Entry.ParameterEvaluators.IsEmpty())
+		{
+			FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+			FCameraNodeEvaluationParams CurParams(Params);
+			CurParams.EvaluationContext = CurContext;
+			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+
+			FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
+
+			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (ensure(EntryBlendEvaluator))
+			{
+				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
+			}
+		}
+	}
+
+	// Run the root nodes. They will use the pre-blended inputs from the last step.
+	for (FValidEntry& ValidEntry : ValidEntries)
+	{
+		FCameraRigEntry& Entry(ValidEntry.Entry);
+		TSharedPtr<const FCameraEvaluationContext> CurContext(ValidEntry.Context);
+
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = CurContext;
+		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		// Start with the input given to us.
+		CurResult.CameraPose = OutResult.CameraPose;
+		CurResult.CameraPose.ClearAllChangedFlags();
+		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
+		CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
+
+		// Override it with whatever the evaluation context has set on its result.
+		const FCameraNodeEvaluationResult& ContextResult(CurContext->GetInitialResult());
+		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
+		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
+		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
+		CurResult.bIsValid = true;
+
+		// Run the camera rig's root node.
+		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
+		if (ensure(RootEvaluator))
+		{
+			RootEvaluator->Run(CurParams, CurResult);
+		}
+	}
+
+	// Now blend all the results, keeping track of blends that have reached 100% so
+	// that we can remove any camera rigs below (since the would have been completely
+	// blended out by that).
+	int32 PopEntriesBelow = INDEX_NONE;
+	for (FValidEntry& ValidEntry : ValidEntries)
+	{
+		FCameraRigEntry& Entry(ValidEntry.Entry);
+		TSharedPtr<const FCameraEvaluationContext> CurContext(ValidEntry.Context);
+
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = CurContext;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
@@ -249,17 +425,15 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 			if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
 			{
-				PopEntriesBelow = EntryIndex;
+				PopEntriesBelow = ValidEntry.EntryIndex;
 			}
 		}
 		else
 		{
-			OutResult.CameraPose.OverrideChanged(CurResult.CameraPose);
+			OutResult.CameraPose.OverrideAll(CurResult.CameraPose);
 
-			PopEntriesBelow = EntryIndex;
+			PopEntriesBelow = ValidEntry.EntryIndex;
 		}
-		
-		++EntryIndex;
 	}
 
 	// Pop out camera rigs that have been blended out.
@@ -268,10 +442,12 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		PopEntries(PopEntriesBelow);
 	}
 
-	// Reset first frame flags.
+	// Reset transient flags.
 	for (FCameraRigEntry& Entry : Entries)
 	{
 		Entry.bIsFirstFrame = false;
+		Entry.bInputRunThisFrame = false;
+		Entry.bBlendRunThisFrame = false;
 	}
 }
 
@@ -454,16 +630,17 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 			Entry.RootNode->Blend = NewObject<UPopBlendCameraNode>(Entry.RootNode, NAME_None);
 
 			// Rebuild the evaluator tree.
-			FCameraNodeEvaluatorTreeBuildParams BuildParams;
-			BuildParams.RootCameraNode = Entry.RootNode;
-			BuildParams.Evaluator = OwningEvaluator;
-			BuildParams.EvaluationContext = Entry.EvaluationContext.Pin();
-			FCameraNodeEvaluator* RootEvaluator = Entry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
-
-			Entry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
-
-			// This is the first frame for this new hierarchy of evaluators.
-			Entry.bIsFirstFrame = true;
+			const bool bInitialized = InitializeEntry(
+					Entry,
+					Entry.CameraRig,
+					OwningEvaluator,
+					Entry.EvaluationContext.Pin(),
+					Entry.RootNode);
+			if (!bInitialized)
+			{
+				Entry.bIsFrozen = true;
+				continue;
+			}
 		}
 	}
 }
