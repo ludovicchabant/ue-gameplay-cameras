@@ -21,7 +21,7 @@ public:
 
 	UCameraVariableAsset(const FObjectInitializer& ObjectInit);
 
-	FCameraVariableID GetVariableID() const { return VariableID; }
+	FCameraVariableID GetVariableID() const;
 
 	FCameraVariableDefinition GetVariableDefinition() const;
 
@@ -29,20 +29,20 @@ public:
 	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
 #if WITH_EDITOR
+	const FGuid& GetGuid() const { return Guid; }
+
+	FString GetDisplayName() const;
+	FText GetDisplayText() const;
+
 	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
 #endif  // WITH_EDITOR
 
 public:
 
 	// UObject interface
-	virtual void Serialize(FArchive& Ar) override;
+	virtual void PostLoad() override;
 	virtual void PostInitProperties() override;
-	virtual void PostRename(UObject* OldOuter, const FName OldName) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-
-private:
-
-	void RegenerateVariableID();
 
 public:
 
@@ -63,7 +63,7 @@ public:
 private:
 
 	UPROPERTY()
-	FCameraVariableID VariableID;
+	FGuid Guid;
 };
 
 /** Boolean camera variable. */

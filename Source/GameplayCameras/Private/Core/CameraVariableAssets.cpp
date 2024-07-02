@@ -9,9 +9,10 @@ UCameraVariableAsset::UCameraVariableAsset(const FObjectInitializer& ObjectInit)
 {
 }
 
-void UCameraVariableAsset::RegenerateVariableID()
+FCameraVariableID  UCameraVariableAsset::GetVariableID() const
 {
-	VariableID = FCameraVariableID::FromHashValue(GetTypeHash(GetFullName()));
+	ensure(Guid.IsValid());
+	return FCameraVariableID::FromHashValue(GetTypeHash(Guid));
 }
 
 FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
@@ -25,33 +26,55 @@ FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
 	return VariableDefinition;
 }
 
-void UCameraVariableAsset::Serialize(FArchive& Ar)
+void UCameraVariableAsset::PostLoad()
 {
-	Super::Serialize(Ar);
-
-#if WITH_EDITORONLY_DATA
-	if ((Ar.IsLoading() && !VariableID.IsValid()) || Ar.IsSaving())
+	if (!Guid.IsValid())
 	{
-		RegenerateVariableID();
+		Guid = FGuid::NewGuid();
 	}
-#endif
+
+	Super::PostLoad();
 }
 
 void UCameraVariableAsset::PostInitProperties()
 {
-	RegenerateVariableID();
 	Super::PostInitProperties();
-}
 
-void UCameraVariableAsset::PostRename(UObject* OldOuter, const FName OldName)
-{
-	RegenerateVariableID();
-	Super::PostRename(OldOuter, OldName);
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
+			!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
 }
 
 void UCameraVariableAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
-	RegenerateVariableID();
 	Super::PostDuplicate(DuplicateMode);
+
+	if (DuplicateMode == EDuplicateMode::Normal)
+	{
+		Guid = FGuid::NewGuid();
+	}
 }
 
+#if WITH_EDITOR
+
+FString UCameraVariableAsset::GetDisplayName() const
+{
+	if (!DisplayName.IsEmpty())
+	{
+		return DisplayName;
+	}
+	return GetName();
+}
+
+FText UCameraVariableAsset::GetDisplayText() const
+{
+	if (!DisplayName.IsEmpty())
+	{
+		return FText::FromString(DisplayName);
+	}
+	return FText::FromName(GetFName());
+}
+
+#endif  // WITH_EDITOR

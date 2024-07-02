@@ -172,6 +172,9 @@ public:
 	UPROPERTY()
 	FCameraRigAllocationInfo AllocationInfo;
 
+	/** Gets the camera rig's unique ID. */
+	const FGuid& GetGuid() const { return Guid; }
+
 	/**
 	 * Gets the display name of this camera rig.
 	 * This is either the display name set on the interface object, or its internal name.
@@ -213,9 +216,6 @@ public:
 
 protected:
 
-	// UObject interface.
-	virtual void PostLoad() override;
-
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
 	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
@@ -233,9 +233,15 @@ protected:
 #endif
 
 	// UObject interface
+	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 
 private:
+
+	UPROPERTY()
+	FGuid Guid;
 
 #if WITH_EDITORONLY_DATA
 
