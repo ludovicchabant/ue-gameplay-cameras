@@ -5,21 +5,23 @@
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetBuilder.h"
 #include "Editors/CameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/SCameraRigAssetEditor.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "Modules/ModuleManager.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "ToolMenus.h"
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
 #include "Toolkits/StandardToolkitLayout.h"
-#include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAssetEditorToolkit)
@@ -222,7 +224,19 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	}
 
 	FCameraBuildLog BuildLog;
-	CameraRigAsset->BuildCameraRig(BuildLog);
+	FCameraRigAssetBuilder Builder(BuildLog);
+	Builder.BuildCameraRig(
+			CameraRigAsset,
+			FCameraRigAssetBuilder::FCustomBuildStep::CreateLambda(
+				[](UCameraRigAsset* CameraRigAsset, FCameraBuildLog& BuildLog)
+				{
+					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
+					for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
+					{
+						Builder.ExecuteIfBound(CameraRigAsset, BuildLog);
+					}
+				}));
+
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
 
 	if (CameraRigAsset->BuildStatus != ECameraBuildStatus::Clean)

@@ -7,6 +7,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
+#include "GameplayCameras.h"
 #include "Templates/Tuple.h"
 
 class FStructProperty;
@@ -29,15 +30,20 @@ namespace Internal { struct FPrivateVariableBuilder; }
  *
  * Once the build process is done, the BuildStatus property is set on the camera rig.
  */
-class FCameraRigAssetBuilder
+class GAMEPLAYCAMERAS_API FCameraRigAssetBuilder
 {
 public:
+
+	DECLARE_DELEGATE_TwoParams(FCustomBuildStep, UCameraRigAsset*, FCameraBuildLog&);
 
 	/** Creates a new camera rig builder. */
 	FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog);
 
 	/** Builds the given camera rig. */
 	void BuildCameraRig(UCameraRigAsset* InCameraRig);
+
+	/** Builds the given camera rig. */
+	void BuildCameraRig(UCameraRigAsset* InCameraRig, FCustomBuildStep InCustomBuildStep);
 
 private:
 

@@ -5,6 +5,7 @@
 #include "AssetTools/CameraAssetEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
+#include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
 #include "Editors/ObjectTreeGraphConfig.h"
@@ -263,13 +264,34 @@ void FCameraAssetEditorToolkit::OnEditorToolkitModeActivated()
 
 void FCameraAssetEditorToolkit::OnBuild()
 {
+	using namespace UE::Cameras;
+
 	if (!CameraAsset)
 	{
 		return;
 	}
 
 	FCameraBuildLog BuildLog;
-	CameraAsset->BuildCamera(BuildLog);
+	FCameraAssetBuilder Builder(BuildLog);
+	Builder.BuildCamera(
+			CameraAsset,
+			FCameraAssetBuilder::FCustomBuildStep::CreateLambda(
+				[](UCameraAsset* CameraAsset, FCameraBuildLog& BuildLog)
+				{
+					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
+					for (const FOnBuildCameraAsset& Builder : GameplayCamerasEditorModule.GetCameraAssetBuilders())
+					{
+						Builder.ExecuteIfBound(CameraAsset, BuildLog);
+					}
+					for (UCameraRigAsset* CameraRig : CameraAsset->GetCameraRigs())
+					{
+						for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
+						{
+							Builder.ExecuteIfBound(CameraRig, BuildLog);
+						}
+					}
+				}));
+	
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
 
 	if (CameraAsset->GetBuildStatus() != ECameraBuildStatus::Clean)

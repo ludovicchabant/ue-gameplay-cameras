@@ -6,6 +6,7 @@
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "AssetTools/CameraRigProxyAssetEditor.h"
 #include "AssetTools/CameraVariableCollectionEditor.h"
+#include "Builders/BlueprintCameraDirectorEditorBuilder.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Commands/CameraRigTransitionEditorCommands.h"
@@ -82,6 +83,7 @@ public:
 
 		RegisterSettings();
 		RegisterCameraDirectorEditors();
+		RegisterBuilders();
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
 		RegisterDetailsCustomizations();
@@ -107,6 +109,7 @@ public:
 
 		UnregisterSettings();
 		UnregisterCameraDirectorEditors();
+		UnregisterBuilders();
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
 		UnregisterDetailsCustomizations();
@@ -169,12 +172,52 @@ public:
 		return CameraDirectorEditorCreators;
 	}
 
-	virtual void UnregisterCameraDirectorEditor(FDelegateHandle InHandle)
+	virtual void UnregisterCameraDirectorEditor(FDelegateHandle InHandle) override
 	{
 		CameraDirectorEditorCreators.RemoveAll(
 				[=](const FOnCreateCameraDirectorAssetEditorMode& Delegate) 
 				{
 					return Delegate.GetHandle() == InHandle; 
+				});
+	}
+
+	virtual FDelegateHandle RegisterCameraAssetBuilder(FOnBuildCameraAsset InOnBuildCameraAsset) override
+	{
+		CameraAssetBuilders.Add(InOnBuildCameraAsset);
+		return CameraAssetBuilders.Last().GetHandle();
+	}
+
+	virtual TArrayView<const FOnBuildCameraAsset> GetCameraAssetBuilders() const override
+	{
+		return CameraAssetBuilders;
+	}
+
+	virtual void UnregisterCameraAssetBuilder(FDelegateHandle InHandle) override
+	{
+		CameraAssetBuilders.RemoveAll(
+				[=](const FOnBuildCameraAsset& Delegate)
+				{
+					return Delegate.GetHandle() == InHandle;
+				});
+	}
+
+	virtual FDelegateHandle RegisterCameraRigAssetBuilder(FOnBuildCameraRigAsset InOnBuildCameraRigAsset) override
+	{
+		CameraRigAssetBuilders.Add(InOnBuildCameraRigAsset);
+		return CameraRigAssetBuilders.Last().GetHandle();
+	}
+	
+	virtual TArrayView<const FOnBuildCameraRigAsset> GetCameraRigAssetBuilders() const override
+	{
+		return CameraRigAssetBuilders;
+	}
+
+	virtual void UnregisterCameraRigAssetBuilder(FDelegateHandle InHandle) override
+	{
+		CameraRigAssetBuilders.RemoveAll(
+				[=](const FOnBuildCameraRigAsset& Delegate)
+				{
+					return Delegate.GetHandle() == InHandle;
 				});
 	}
 
@@ -280,6 +323,35 @@ private:
 
 	void UnregisterCameraDirectorEditors()
 	{
+		for (FDelegateHandle Handle : BuiltInDirectorCreatorHandles)
+		{
+			UnregisterCameraDirectorEditor(Handle);
+		}
+		BuiltInDirectorCreatorHandles.Reset();
+	}
+
+	void RegisterBuilders()
+	{
+		using namespace UE::Cameras;
+
+		BuiltInCameraAssetBuilders.Add(
+				RegisterCameraAssetBuilder(FOnBuildCameraAsset::CreateStatic(
+						&FBlueprintCameraDirectorEditorBuilder::OnBuildCameraAsset)));
+	}
+
+	void UnregisterBuilders()
+	{
+		for (FDelegateHandle Handle : BuiltInCameraAssetBuilders)
+		{
+			UnregisterCameraAssetBuilder(Handle);
+		}
+		BuiltInCameraAssetBuilders.Reset();
+
+		for (FDelegateHandle Handle : BuiltInCameraRigAssetBuilders)
+		{
+			UnregisterCameraRigAssetBuilder(Handle);
+		}
+		BuiltInCameraRigAssetBuilders.Reset();
 	}
 
 	void RegisterCoreDebugCategories()
@@ -505,6 +577,12 @@ private:
 
 	TArray<FOnCreateCameraDirectorAssetEditorMode> CameraDirectorEditorCreators;
 	TArray<FDelegateHandle> BuiltInDirectorCreatorHandles;
+
+	TArray<FOnBuildCameraAsset> CameraAssetBuilders;
+	TArray<FDelegateHandle> BuiltInCameraAssetBuilders;
+
+	TArray<FOnBuildCameraRigAsset> CameraRigAssetBuilders;
+	TArray<FDelegateHandle> BuiltInCameraRigAssetBuilders;
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasGraphPanelPinFactory> GraphPanelPinFactory;
 

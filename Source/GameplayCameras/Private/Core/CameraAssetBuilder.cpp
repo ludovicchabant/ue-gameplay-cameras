@@ -21,6 +21,11 @@ FCameraAssetBuilder::FCameraAssetBuilder(FCameraBuildLog& InBuildLog)
 
 void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
 {
+	BuildCamera(InCameraAsset, FCustomBuildStep::CreateLambda([](UCameraAsset*, FCameraBuildLog&) {}));
+}
+	
+void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildStep InCustomBuildStep)
+{
 	if (!ensure(InCameraAsset))
 	{
 		return;
@@ -30,6 +35,8 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
 	BuildLog.SetLoggingPrefix(InCameraAsset->GetPathName() + TEXT(": "));
 	{
 		BuildCameraImpl();
+
+		InCustomBuildStep.ExecuteIfBound(CameraAsset, BuildLog);
 	}
 	BuildLog.SetLoggingPrefix(FString());
 	UpdateBuildStatus();
