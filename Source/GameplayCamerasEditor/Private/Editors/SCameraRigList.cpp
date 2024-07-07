@@ -282,7 +282,11 @@ void SCameraRigList::OnAddCameraRig()
 	CameraAsset->Modify();
 
 	const FName NewCameraRigName = MakeUniqueObjectName(CameraAsset, UCameraRigAsset::StaticClass(), TEXT("NewCameraRig"));
-	UCameraRigAsset* NewCameraRig = NewObject<UCameraRigAsset>(CameraAsset, NewCameraRigName, RF_Transactional);
+	UCameraRigAsset* NewCameraRig = NewObject<UCameraRigAsset>(
+			CameraAsset, 
+			NewCameraRigName, 
+			RF_Transactional | RF_Public  // Must be referenceable from camera directors.
+			);
 	CameraAsset->AddCameraRig(NewCameraRig);
 
 	bUpdateItemSource = true;

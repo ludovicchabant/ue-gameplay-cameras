@@ -462,7 +462,12 @@ FLinearColor FCameraVariableCollectionEditorToolkit::GetWorldCentricTabColorScal
 
 void FCameraVariableCollectionEditorToolkit::OnCreateVariable(TSubclassOf<UCameraVariableAsset> InVariableClass)
 {
-	UCameraVariableAsset* NewVariable = NewObject<UCameraVariableAsset>(VariableCollection, InVariableClass.Get());
+	UCameraVariableAsset* NewVariable = NewObject<UCameraVariableAsset>(
+			VariableCollection, 
+			InVariableClass.Get(),
+			NAME_None,
+			RF_Transactional | RF_Public  // Must be referenceable by camera parameters.
+			);
 	VariableCollection->Variables.Add(NewVariable);
 
 	VariableCollectionEditorWidget->RequestListRefresh();

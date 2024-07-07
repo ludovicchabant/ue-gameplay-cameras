@@ -60,7 +60,7 @@ UObject* UCameraAssetFactory::FactoryCreateNew(UClass* Class, UObject* Parent, F
 {
 	UCameraAsset* NewCameraAsset = NewObject<UCameraAsset>(Parent, Class, Name, Flags | RF_Transactional);
 
-	UCameraRigAsset* FirstCameraRig = NewObject<UCameraRigAsset>(NewCameraAsset, TEXT("NewCameraRig"));
+	UCameraRigAsset* FirstCameraRig = NewObject<UCameraRigAsset>(NewCameraAsset, TEXT("NewCameraRig"), RF_Transactional | RF_Public);
 	NewCameraAsset->AddCameraRig(FirstCameraRig);
 
 	if (CameraDirectorClass)
