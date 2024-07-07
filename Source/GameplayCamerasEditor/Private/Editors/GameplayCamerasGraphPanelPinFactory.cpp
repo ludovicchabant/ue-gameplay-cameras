@@ -34,12 +34,19 @@ TSharedPtr<class SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdG
 		return nullptr;
 	}
 
-	if (!ParameterProperty->HasMetaData(TEXT("UseCameraRigNamePicker")))
+	if (ParameterProperty->HasMetaData(TEXT("UseCameraRigNamePicker")))
 	{
-		return nullptr;
+		return SNew(SCameraRigNameGraphPin, Pin)
+			.PinMode(ECameraRigNameGraphPinMode::NamePin);
 	}
 
-	return SNew(SCameraRigNameGraphPin, Pin);
+	if (ParameterProperty->HasMetaData(TEXT("UseCameraRigPicker")))
+	{
+		return SNew(SCameraRigNameGraphPin, Pin)
+			.PinMode(ECameraRigNameGraphPinMode::ReferencePin);
+	}
+
+	return nullptr;
 }
 
 }  // namespace UE::Cameras

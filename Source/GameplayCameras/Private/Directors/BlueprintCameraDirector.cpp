@@ -78,24 +78,49 @@ void FBlueprintCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 
 		EvaluatorBlueprint->NativeRunCameraDirector(BlueprintParams, BlueprintResult);
 
-		// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
-		// make them run in our own owner context.
-		for (const UCameraRigProxyAsset* ActiveCameraRigProxy : BlueprintResult.ActiveCameraRigs)
+		TArray<const UCameraRigAsset*, TInlineAllocator<2>> CameraRigs;
+		const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
+
+		// Gather camera rigs.
+		for (const UCameraRigAsset* ActiveCameraRig : BlueprintResult.ActiveCameraRigs)
+		{
+			if (ActiveCameraRig)
+			{
+				CameraRigs.Add(ActiveCameraRig);
+			}
+			else
+			{
+				UE_LOG(
+						LogCameraSystem, 
+						Error, 
+						TEXT("Null camera rig specified in camera director '%s'."),
+						*EvaluatorBlueprint->GetClass()->GetPathName());
+			}
+		}
+
+		// Resolve camera rig proxies.
+		for (const UCameraRigProxyAsset* ActiveCameraRigProxy : BlueprintResult.ActiveCameraRigProxies)
 		{
 			const UCameraRigAsset* ActiveCameraRig = FindCameraRigByProxy(ActiveCameraRigProxy);
 			if (ActiveCameraRig)
 			{
-				OutResult.Add(Params.OwnerContext, ActiveCameraRig);
+				CameraRigs.Add(ActiveCameraRig);
 			}
 			else
 			{
-				const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
 				UE_LOG(
 						LogCameraSystem, 
 						Error, 
 						TEXT("No camera rig found mapped to proxy '%s' in camera '%s'."),
 						*ActiveCameraRigProxy->GetPathName(), *CameraAsset->GetPathName());
 			}
+		}
+
+		// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
+		// make them run in our own owner context.
+		for (const UCameraRigAsset* ActiveCameraRig : CameraRigs)
+		{
+			OutResult.Add(Params.OwnerContext, ActiveCameraRig);
 		}
 	}
 	else
@@ -130,9 +155,14 @@ void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollect
 
 }  // namespace UE::Cameras
 
-void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigProxyAsset* CameraRigProxy)
+void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig)
 {
-	CurrentResult.ActiveCameraRigs.Add(CameraRigProxy);
+	CurrentResult.ActiveCameraRigs.Add(CameraRig);
+}
+
+void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy)
+{
+	CurrentResult.ActiveCameraRigProxies.Add(CameraRigProxy);
 }
 
 void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params, FBlueprintCameraDirectorEvaluationResult& OutResult)
@@ -154,13 +184,14 @@ FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDi
 
 void UBlueprintCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
 {
+	using namespace UE::Cameras;
+
+	// Check that a camera director evaluator Blueprint was specified.
 	if (!CameraDirectorEvaluatorClass)
 	{
 		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingBlueprintClass", "No evaluator Blueprint class is set."));
 		return;
 	}
-
-	// TODO: check that the proxy table is complete.
 }
 
 #if WITH_EDITOR

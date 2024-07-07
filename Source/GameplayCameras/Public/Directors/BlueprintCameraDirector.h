@@ -38,13 +38,17 @@ struct FBlueprintCameraDirectorEvaluationResult
 
 	/** The list of camera rigs that should be active this frame. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<UCameraRigProxyAsset*> ActiveCameraRigs;
+	TArray<UCameraRigProxyAsset*> ActiveCameraRigProxies;
+
+	/** The list of camera rigs that should be active this frame. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TArray<UCameraRigAsset*> ActiveCameraRigs;
 };
 
 /**
  * Base class for a Blueprint camera director evaluator.
  */
-UCLASS(MinimalAPI, Blueprintable)
+UCLASS(MinimalAPI, Blueprintable, Abstract)
 class UBlueprintCameraDirectorEvaluator : public UObject
 {
 	GENERATED_BODY()
@@ -58,11 +62,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
 	void RunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params);
 
+	/** Specifies a camera rig to be active this frame. */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void ActivateCameraRig(UPARAM(meta=(UseCameraRigPicker=true)) UCameraRigAsset* CameraRig);
+
 	/**
-	 * Specifies a camera rig to be active this frame.
+	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved
+	 * via the proxy table of the Blueprint camera director.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(UCameraRigProxyAsset* CameraRigProxy);
+	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
 
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(
@@ -74,7 +83,6 @@ protected:
 	/** The current camera director evaluation result. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
 	FBlueprintCameraDirectorEvaluationResult CurrentResult;
-
 };
 
 /**

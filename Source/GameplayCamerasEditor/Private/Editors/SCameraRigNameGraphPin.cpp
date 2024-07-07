@@ -7,6 +7,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Editors/CameraRigPickerConfig.h"
 #include "Framework/Views/ITypedTableView.h"
+#include "Helpers/CameraDirectorHelper.h"
 #include "IContentBrowserSingleton.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -30,6 +31,8 @@ namespace UE::Cameras
 void SCameraRigNameGraphPin::Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj)
 {
 	SGraphPin::Construct(SGraphPin::FArguments(), InGraphPinObj);
+
+	PinMode = InArgs._PinMode;
 }
 
 TSharedRef<SWidget>	SCameraRigNameGraphPin::GetDefaultValueWidget()
@@ -75,7 +78,7 @@ TSharedRef<SWidget>	SCameraRigNameGraphPin::GetDefaultValueWidget()
 			.ButtonColorAndOpacity(this, &SCameraRigNameGraphPin::OnGetWidgetBackground)
 			.OnClicked(this, &SCameraRigNameGraphPin::OnResetButtonClicked)
 			.ContentPadding(1.f)
-			.ToolTipText(LOCTEXT("ResetButtonToolTip", "Reset the name to an empty string."))
+			.ToolTipText(LOCTEXT("ResetButtonToolTip", "Reset the camera rig reference."))
 			.IsEnabled(this, &SGraphPin::IsEditingEnabled)
 			[
 				SNew(SImage)
@@ -119,9 +122,19 @@ FText SCameraRigNameGraphPin::OnGetComboText() const
 	
 	if (GraphPinObj != nullptr)
 	{
-		if (!GraphPinObj->DefaultValue.IsEmpty())
+		switch (PinMode)
 		{
-			Value = FText::FromString(GraphPinObj->DefaultValue);
+			case ECameraRigNameGraphPinMode::NamePin:
+				{
+					Value = FText::FromString(GraphPinObj->DefaultValue);
+				}
+				break;
+			case ECameraRigNameGraphPinMode::ReferencePin:
+				if (const UCameraRigAsset* CameraRig = Cast<const UCameraRigAsset>(GraphPinObj->DefaultObject))
+				{
+					Value = FText::FromString(CameraRig->GetDisplayName());
+				}
+				break;
 		}
 	}
 	return Value;
@@ -135,34 +148,64 @@ FText SCameraRigNameGraphPin::OnGetComboToolTipText() const
 TSharedRef<SWidget> SCameraRigNameGraphPin::OnBuildCameraRigNamePicker()
 {
 	FCameraRigPickerConfig CameraRigPickerConfig;
-	CameraRigPickerConfig.bCanSelectCameraAsset = true;
-	CameraRigPickerConfig.CameraAssetSelectionMode = ESelectionMode::Multi;
-	CameraRigPickerConfig.CameraAssetViewType = EAssetViewType::List;
-	CameraRigPickerConfig.CameraAssetSaveSettingsName = TEXT("CameraRigNamePicker");
+	CameraRigPickerConfig.bCanSelectCameraAsset = false;
+	CameraRigPickerConfig.bFocusCameraRigSearchBoxWhenOpened = true;
 	CameraRigPickerConfig.OnCameraRigSelected = FOnCameraRigSelected::CreateSP(this, &SCameraRigNameGraphPin::OnPickerAssetSelected);
 
-	if (TSharedPtr<SGraphNode> OwnerNodeWidget = OwnerNodePtr.Pin())
+	TSharedPtr<SGraphNode> OwnerNodeWidget = OwnerNodePtr.Pin();
+	check(OwnerNodeWidget);
+	
+	UEdGraphNode* OwnerNode = OwnerNodeWidget->GetNodeObj();
+	UBlueprint* OwnerBlueprint = FBlueprintEditorUtils::FindBlueprintForNode(OwnerNode);
+
+	TArray<UCameraAsset*> ReferencingCameraAssets;
+	FCameraDirectorHelper::GetReferencingCameraAssets(OwnerBlueprint, ReferencingCameraAssets);
+
+	if (ReferencingCameraAssets.Num() == 0)
 	{
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		CameraRigPickerConfig.WarningMessage = LOCTEXT("NoReferencingCameraAssetWarning",
+				"No camera asset references this Blueprint, so no camera rig list can be displayed. "
+				"Make a camera asset use this Blueprint as its camera director evaluator, or use "
+				"ActivateCameraRigViaProxy.");
+	}
+	else
+	{
+		CameraRigPickerConfig.InitialCameraAssetSelection = ReferencingCameraAssets[0];
 
-		UEdGraphNode* OwnerNode = OwnerNodeWidget->GetNodeObj();
-		UBlueprint* OwnerBlueprint = FBlueprintEditorUtils::FindBlueprintForNode(OwnerNode);
-
-		FARFilter Filter;
-		IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-		AssetRegistry.GetReferencers(OwnerBlueprint->GetOutermost()->GetFName(), Filter.PackageNames);
-		TArray<FAssetData> ReferencerAssetData;
-		AssetRegistry.GetAssets(Filter, ReferencerAssetData);
-		if (!ReferencerAssetData.IsEmpty())
+		if (ReferencingCameraAssets.Num() > 1)
 		{
-			//TODO: multi-select all referencers.
-			CameraRigPickerConfig.InitialCameraAssetSelection = ReferencerAssetData[0];
+			CameraRigPickerConfig.WarningMessage = LOCTEXT("ManyReferencingCameraAssetsWarning",
+				"More than one camera asset references this Blueprint. Only camera rigs from the first "
+				"one will be displayed. Even then, shared camera director Blueprints should use "
+				"ActivateCameraRigViaProxy instead.");
 		}
 	}
 
-	if (GraphPinObj && !GraphPinObj->DefaultValue.IsEmpty())
+	if (GraphPinObj)
 	{
-		CameraRigPickerConfig.InitialCameraRigSelectionName = GraphPinObj->DefaultValue;
+		switch (PinMode)
+		{
+			case ECameraRigNameGraphPinMode::NamePin:
+				if (!ReferencingCameraAssets.IsEmpty())
+				{
+					TArrayView<const TObjectPtr<UCameraRigAsset>> CameraRigs = ReferencingCameraAssets[0]->GetCameraRigs();
+					const TObjectPtr<UCameraRigAsset>* FoundItem = CameraRigs.FindByPredicate(
+							[this](UCameraRigAsset* Item)
+							{
+							return Item->GetDisplayName() == GraphPinObj->DefaultValue;
+							});
+					if (FoundItem)
+					{
+						CameraRigPickerConfig.InitialCameraRigSelection = *FoundItem;
+					}
+				}
+				break;
+			case ECameraRigNameGraphPinMode::ReferencePin:
+				{
+					CameraRigPickerConfig.InitialCameraRigSelection = Cast<UCameraRigAsset>(GraphPinObj->DefaultObject);
+				}
+				break;
+		}
 	}
 
 	IGameplayCamerasEditorModule& CamerasEditorModule = FModuleManager::LoadModuleChecked<IGameplayCamerasEditorModule>("GameplayCamerasEditor");
@@ -174,22 +217,32 @@ void SCameraRigNameGraphPin::OnPickerAssetSelected(UCameraRigAsset* SelectedItem
 	if (SelectedItem)
 	{
 		CameraRigPickerButton->SetIsOpen(false);
-		SetCameraRigName(SelectedItem->GetDisplayName());
+		SetCameraRig(SelectedItem);
 	}
 }
 
 FReply SCameraRigNameGraphPin::OnResetButtonClicked()
 {
 	CameraRigPickerButton->SetIsOpen(false);
-	SetCameraRigName(FString());
+	SetCameraRig(nullptr);
 	return FReply::Handled();
 }
 
-void SCameraRigNameGraphPin::SetCameraRigName(const FString& InCameraRigName)
+void SCameraRigNameGraphPin::SetCameraRig(UCameraRigAsset* SelectedCameraRig)
 {
 	const FScopedTransaction Transaction(LOCTEXT("ChangeObjectPinValue", "Change Object Pin Value"));
+
 	GraphPinObj->Modify();
-	GraphPinObj->GetSchema()->TrySetDefaultValue(*GraphPinObj, InCameraRigName);
+
+	switch (PinMode)
+	{
+		case ECameraRigNameGraphPinMode::NamePin:
+			GraphPinObj->GetSchema()->TrySetDefaultValue(*GraphPinObj, SelectedCameraRig->GetDisplayName());
+			break;
+		case ECameraRigNameGraphPinMode::ReferencePin:
+			GraphPinObj->GetSchema()->TrySetDefaultObject(*GraphPinObj, SelectedCameraRig);
+			break;
+	}
 }
 
 }  // namespace UE::Cameras

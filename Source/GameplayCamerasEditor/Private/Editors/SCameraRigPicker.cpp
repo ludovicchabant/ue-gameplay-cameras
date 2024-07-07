@@ -6,15 +6,19 @@
 #include "ContentBrowserModule.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
 #include "Editors/CameraRigPickerConfig.h"
 #include "Framework/Application/SlateApplication.h"
-#include "IContentBrowserSingleton.h"
+#include "Framework/Views/ITypedTableView.h"
 #include "Layout/WidgetPath.h"
 #include "PropertyHandle.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Types/SlateEnums.h"
+#include "Widgets/Input/SHyperlink.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/SBoxPanel.h"
 
 #define LOCTEXT_NAMESPACE "SCameraRigPicker"
 
@@ -25,12 +29,15 @@ void SCameraRigPicker::Construct(const FArguments& InArgs)
 {
 	const FCameraRigPickerConfig& PickerConfig = InArgs._CameraRigPickerConfig;
 
+	const ISlateStyle& AppStyle = FAppStyle::Get();
+
 	SearchTextFilter = MakeShareable(new FTextFilter(
 		FTextFilter::FItemToStringArray::CreateSP(this, &SCameraRigPicker::GetEntryStrings)));
 
-	// Camera asset picker.
 	TSharedRef<SVerticalBox> LayoutBox = SNew(SVerticalBox);
+	const float CamerRigPickerFillHeight = PickerConfig.bCanSelectCameraAsset ? 0.45f : 1.f;
 
+	// Camera asset picker.
 	if (PickerConfig.bCanSelectCameraAsset)
 	{
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -44,9 +51,10 @@ void SCameraRigPicker::Construct(const FArguments& InArgs)
 		AssetPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SCameraRigPicker::OnCameraAssetSelected);
 		AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentCameraAssetPickerSelection);
 
-		AssetPickerConfig.SelectionMode = PickerConfig.CameraAssetSelectionMode;
+		AssetPickerConfig.SelectionMode = ESelectionMode::Single;
 		AssetPickerConfig.InitialAssetViewType = PickerConfig.CameraAssetViewType;
 		AssetPickerConfig.SaveSettingsName = PickerConfig.CameraAssetSaveSettingsName;
+
 		AssetPickerConfig.InitialAssetSelection = PickerConfig.InitialCameraAssetSelection;
 
 		LayoutBox->AddSlot()
@@ -55,38 +63,98 @@ void SCameraRigPicker::Construct(const FArguments& InArgs)
 			ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig)
 		];
 	}
-
-	// Camera rig picker.
-	const float CamerRigPickerFillHeight = PickerConfig.bCanSelectCameraAsset ? 0.45f : 1.f;
-	LayoutBox->AddSlot()
-	.FillHeight(CamerRigPickerFillHeight)
-	[
-		SNew(SVerticalBox)
-		+SVerticalBox::Slot()
+	// Which camera asset is being shown.
+	else
+	{
+		LayoutBox->AddSlot()
 		.AutoHeight()
 		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-			.Padding(8.f)
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(4.f, 4.f, 0.f, 4.f)
 			[
-				SAssignNew(SearchBox, SSearchBox)
-				.HintText(LOCTEXT("SearchHint", "Search"))
-				.OnTextChanged(this, &SCameraRigPicker::OnSearchTextChanged)
-				.OnTextCommitted(this, &SCameraRigPicker::OnSearchTextCommitted)
-				.OnKeyDownHandler(this, &SCameraRigPicker::OnSearchKeyDown)
+				SNew(STextBlock)
+				.Text(LOCTEXT("CameraAssetInfo", "Showing camera rigs from "))
 			]
-		]
-		+SVerticalBox::Slot()
-		.Padding(0.f, 3.f)
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0.f, 4.f)
+			[
+				SNew(SHyperlink)
+				.Text(this, &SCameraRigPicker::GetSelectedCameraAssetName)
+				.OnNavigate(this, &SCameraRigPicker::NavigateToSelectedCameraAsset)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(4.f, 4.f, 4.f, 4.f)
+			[
+				SNew(SImage)
+				.ColorAndOpacity(FSlateColor::UseForeground())
+				.Image(FAppStyle::Get().GetBrush("Icons.BrowseContent"))
+			]
+		];
+	}
+
+	// Search box.
+	LayoutBox->AddSlot()
+	.AutoHeight()
+	[
+		SNew(SBorder)
+		.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
+		.Padding(8.f)
 		[
-			SAssignNew(CameraRigListView, SListView<UCameraRigAsset*>)
-			.ListItemsSource(&CameraRigFilteredItemsSource)
-			.OnGenerateRow(this, &SCameraRigPicker::OnCameraRigListGenerateRow)
-			.OnSelectionChanged(this, &SCameraRigPicker::OnCameraRigListSelectionChanged)
+			SAssignNew(SearchBox, SSearchBox)
+			.HintText(LOCTEXT("SearchHint", "Search"))
+			.OnTextChanged(this, &SCameraRigPicker::OnSearchTextChanged)
+			.OnTextCommitted(this, &SCameraRigPicker::OnSearchTextCommitted)
+			.OnKeyDownHandler(this, &SCameraRigPicker::OnSearchKeyDown)
 		]
 	];
+
+	// List of camera rig names.
+	LayoutBox->AddSlot()
+	.FillHeight(CamerRigPickerFillHeight)
+	.Padding(0.f, 3.f)
+	[
+		SAssignNew(CameraRigListView, SListView<UCameraRigAsset*>)
+		.ListItemsSource(&CameraRigFilteredItemsSource)
+		.OnGenerateRow(this, &SCameraRigPicker::OnCameraRigListGenerateRow)
+		.OnSelectionChanged(this, &SCameraRigPicker::OnCameraRigListSelectionChanged)
+	];
+
+	// Optional warning message.
+	if (!PickerConfig.WarningMessage.IsEmpty())
+	{
+		LayoutBox->AddSlot()
+		.AutoHeight()
+		[
+			SNew(STextBlock)
+			.ColorAndOpacity(AppStyle.GetSlateColor("Colors.Warning"))
+			.Margin(4.f)
+			.Text(PickerConfig.WarningMessage)
+			.AutoWrapText(true)
+		];
+	}
+
+	// Optional error message.
+	if (!PickerConfig.ErrorMessage.IsEmpty())
+	{
+		LayoutBox->AddSlot()
+		.AutoHeight()
+		[
+			SNew(STextBlock)
+			.ColorAndOpacity(AppStyle.GetSlateColor("Colors.Error"))
+			.Margin(4.f)
+			.Text(PickerConfig.ErrorMessage)
+			.AutoWrapText(true)
+		];
+	}
 	
-	// Full layout.
+	// Assemble it all.
 	ChildSlot
 	[
 		SNew(SBox)
@@ -101,26 +169,29 @@ void SCameraRigPicker::Construct(const FArguments& InArgs)
 		]
 	];
 
-	// If we have an initially selected camera asset, fill the list of camera rigs immediately.
-	if (PickerConfig.InitialCameraAssetSelection.IsValid())
+	// If we have an initially selected camera asset, set it up immediately.
+	if (!PickerConfig.bCanSelectCameraAsset)
 	{
-		UpdateCameraRigItemsSource(TArray<FAssetData>{ PickerConfig.InitialCameraAssetSelection });
+		FixedCameraAssetSelection = PickerConfig.InitialCameraAssetSelection;
 	}
-
+	UpdateCameraRigItemsSource();
 	UpdateCameraRigFilteredItemsSource();
 
 	// If we have an initially selected camera rig, select it in the list immediately too.
 	UCameraRigAsset* InitialCameraRigSelection = PickerConfig.InitialCameraRigSelection;
-	if (!PickerConfig.InitialCameraRigSelectionName.IsEmpty() && !InitialCameraRigSelection)
+	if (!InitialCameraRigSelection && PickerConfig.InitialCameraRigSelectionGuid.IsValid())
 	{
-		UCameraRigAsset** FoundItem = CameraRigFilteredItemsSource.FindByPredicate(
-				[&PickerConfig](UCameraRigAsset* Item)
-				{
-					return Item->GetDisplayName() == PickerConfig.InitialCameraRigSelectionName;
-				});
-		if (FoundItem)
+		if (UCameraAsset* CameraAsset = GetSelectedCameraAsset())
 		{
-			InitialCameraRigSelection = *FoundItem;
+			const TObjectPtr<UCameraRigAsset>* FoundItem = CameraAsset->GetCameraRigs().FindByPredicate(
+					[&PickerConfig](UCameraRigAsset* Item)
+					{
+						return Item->GetGuid() == PickerConfig.InitialCameraRigSelectionGuid;
+					});
+			if (FoundItem)
+			{
+				InitialCameraRigSelection = *FoundItem;
+			}
 		}
 	}
 	if (InitialCameraRigSelection)
@@ -147,8 +218,11 @@ EActiveTimerReturnType SCameraRigPicker::FocusCameraRigSearchBox(double InCurren
 		FWidgetPath WidgetToFocusPath;
 		FSlateApplication::Get().GeneratePathToWidgetUnchecked(SearchBox.ToSharedRef(), WidgetToFocusPath);
 		FSlateApplication::Get().SetKeyboardFocus(WidgetToFocusPath, EFocusCause::SetDirectly);
-		WidgetToFocusPath.GetWindow()->SetWidgetToFocusOnActivate(SearchBox);
-		return EActiveTimerReturnType::Stop;
+		if (WidgetToFocusPath.IsValid())
+		{
+			WidgetToFocusPath.GetWindow()->SetWidgetToFocusOnActivate(SearchBox);
+			return EActiveTimerReturnType::Stop;
+		}
 	}
 
 	return EActiveTimerReturnType::Continue;
@@ -158,11 +232,7 @@ void SCameraRigPicker::Tick(const FGeometry& AllottedGeometry, const double InCu
 {
 	if (bUpdateItemsSource)
 	{
-		if (GetCurrentCameraAssetPickerSelection.IsBound())
-		{
-			TArray<FAssetData> SelectedAssets = GetCurrentCameraAssetPickerSelection.Execute();
-			UpdateCameraRigItemsSource(SelectedAssets);
-		}
+		UpdateCameraRigItemsSource();
 	}
 	if (bUpdateFilteredItemsSource || bUpdateItemsSource)
 	{
@@ -179,11 +249,6 @@ void SCameraRigPicker::Tick(const FGeometry& AllottedGeometry, const double InCu
 	}
 
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
-}
-
-void SCameraRigPicker::OnCameraAssetSelected(const FAssetData& AssetData)
-{
-	bUpdateItemsSource = true;
 }
 
 TSharedRef<ITableRow> SCameraRigPicker::OnCameraRigListGenerateRow(UCameraRigAsset* Item, const TSharedRef<STableViewBase>& OwnerTable)
@@ -216,29 +281,90 @@ TSharedRef<ITableRow> SCameraRigPicker::OnCameraRigListGenerateRow(UCameraRigAss
 		];
 }
 
+UCameraAsset* SCameraRigPicker::GetSelectedCameraAsset() const
+{
+	if (GetCurrentCameraAssetPickerSelection.IsBound())
+	{
+		TArray<FAssetData> Selection = GetCurrentCameraAssetPickerSelection.Execute();
+		if (!Selection.IsEmpty())
+		{
+			return Cast<UCameraAsset>(Selection[0].GetAsset());
+		}
+		return nullptr;
+	}
+	else
+	{
+		return Cast<UCameraAsset>(FixedCameraAssetSelection.GetAsset());
+	}
+}
+
+FText SCameraRigPicker::GetSelectedCameraAssetName() const
+{
+	if (UCameraAsset* CameraAsset = GetSelectedCameraAsset())
+	{
+		return FText::FromName(CameraAsset->GetFName());
+	}
+	return LOCTEXT("NoCameraAssetName", "None");
+}
+
+void SCameraRigPicker::NavigateToSelectedCameraAsset() const
+{
+	if (UCameraAsset* CameraAsset = GetSelectedCameraAsset())
+	{
+		FAssetData AssetData(CameraAsset);
+		GEditor->SyncBrowserToObject(AssetData);
+	}
+}
+
+void SCameraRigPicker::OnCameraAssetSelected(const FAssetData& AssetData)
+{
+	bUpdateItemsSource = true;
+}
+
 void SCameraRigPicker::OnCameraRigListSelectionChanged(UCameraRigAsset* Item, ESelectInfo::Type SelectInfo)
 {
 	if (SelectInfo != ESelectInfo::Direct)
 	{
 		if (PropertyToSet)
 		{
-			PropertyToSet->SetValue(Item);
+			FProperty* Property = PropertyToSet->GetProperty();
+			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			{
+				if (ensure(ObjectProperty->PropertyClass && ObjectProperty->PropertyClass->IsChildOf<UCameraRigAsset>()))
+				{
+					PropertyToSet->SetValue(Item);
+				}
+			}
+			else if (FStrProperty* StringProperty = CastField<FStrProperty>(Property))
+			{
+				PropertyToSet->SetValue(Item->GetDisplayName());
+			}
+			else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+			{
+				if (StructProperty->Struct && StructProperty->Struct == TBaseStructure<FGuid>::Get())
+				{
+					PropertyToSet->SetValue(Item->GetGuid().ToString());
+				}
+			}
+			else
+			{
+				ensureMsgf(false, TEXT("Don't know how to set camera rig on property: %s"), *Property->GetFullName());
+			}
 		}
 
 		OnCameraRigSelected.ExecuteIfBound(Item);
 	}
 }
 
-void SCameraRigPicker::UpdateCameraRigItemsSource(const TArray<FAssetData>& Assets)
+void SCameraRigPicker::UpdateCameraRigItemsSource()
 {
-	CameraRigItemsSource.Reset();
-
-	for (const FAssetData& SelectedAsset : Assets)
+	if (UCameraAsset* CameraAsset = GetSelectedCameraAsset())
 	{
-		if (const UCameraAsset* CameraAsset = Cast<UCameraAsset>(SelectedAsset.GetAsset()))
-		{
-			CameraRigItemsSource.Append(CameraAsset->GetCameraRigs());
-		}
+		CameraRigItemsSource = CameraAsset->GetCameraRigs();
+	}
+	else
+	{
+		CameraRigItemsSource.Reset();
 	}
 }
 

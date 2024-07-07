@@ -12,6 +12,12 @@ class UCameraRigAsset;
 namespace UE::Cameras
 {
 
+enum class ECameraRigNameGraphPinMode
+{
+	NamePin,
+	ReferencePin
+};
+
 /**
  * A custom widget for a graph editor pin that shows a camera rig picker dialog.
  */
@@ -20,7 +26,9 @@ class SCameraRigNameGraphPin : public SGraphPin
 public:
 
 	SLATE_BEGIN_ARGS(SCameraRigNameGraphPin)
+		: _PinMode(ECameraRigNameGraphPinMode::NamePin)
 	{}
+		SLATE_ARGUMENT(ECameraRigNameGraphPinMode, PinMode)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
@@ -53,11 +61,12 @@ private:
 
 	FReply OnResetButtonClicked();
 
-	void SetCameraRigName(const FString& InCameraRigName);
+	void SetCameraRig(UCameraRigAsset* SelectedCameraRig);
 
 private:
 
 	TSharedPtr<SComboButton> CameraRigPickerButton;
+	ECameraRigNameGraphPinMode PinMode;
 };
 
 }  // namespace UE::Cameras
