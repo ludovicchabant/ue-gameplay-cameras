@@ -23,6 +23,10 @@ struct FCameraEvaluationContextStack
 {
 public:
 
+	~FCameraEvaluationContextStack();
+
+public:
+
 	/** Gets the active (top) context. */
 	TSharedPtr<FCameraEvaluationContext> GetActiveContext() const;
 
@@ -42,6 +46,9 @@ public:
 
 	/** The number of contexts on the stack. */
 	int32 NumContexts() const { return Entries.Num(); }
+
+	/** Empties the stack of all contexts. */
+	void Reset();
 
 public:
 

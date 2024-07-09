@@ -72,6 +72,8 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()
 {
+	ContextStack.Reset();
+
 	{
 		FCameraEvaluationServiceTeardownParams TeardownParams;
 		TeardownParams.Evaluator = this;

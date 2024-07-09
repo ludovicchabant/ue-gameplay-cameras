@@ -2,15 +2,17 @@
 
 #include "Core/CameraEvaluationContextStack.h"
 
-#include "Core/CameraAsset.h"
-#include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraSystemEvaluator.h"
-#include "UObject/Package.h"
 
 namespace UE::Cameras
 {
+
+FCameraEvaluationContextStack::~FCameraEvaluationContextStack()
+{
+	Reset();
+}
 
 TSharedPtr<FCameraEvaluationContext> FCameraEvaluationContextStack::GetActiveContext() const
 {
@@ -98,6 +100,19 @@ bool FCameraEvaluationContextStack::RemoveContext(TSharedRef<FCameraEvaluationCo
 void FCameraEvaluationContextStack::PopContext()
 {
 	Entries.Pop();
+}
+
+void FCameraEvaluationContextStack::Reset()
+{
+	for (FContextEntry& Entry : Entries)
+	{
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			FCameraEvaluationContextDeactivateParams DeactivateParams;
+			Context->Deactivate(DeactivateParams);
+		}
+	}
+	Entries.Reset();
 }
 
 void FCameraEvaluationContextStack::Initialize(FCameraSystemEvaluator& InEvaluator)
