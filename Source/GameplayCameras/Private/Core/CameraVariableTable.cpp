@@ -202,6 +202,35 @@ bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 	return Entries.Contains(VariableID);
 }
 
+void FCameraVariableTable::SetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr)
+{
+	FEntry* Entry = Entries.Find(VariableID);
+	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
+	{
+		check(ExpectedVariableType == Entry->Type);
+		uint32 SizeOf, AlignOf;
+		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
+		uint8* ValuePtr = Memory + Entry->Offset;
+		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
+		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+	}
+}
+
+bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr)
+{
+	if (FEntry* Entry = Entries.Find(VariableID))
+	{
+		check(ExpectedVariableType == Entry->Type);
+		uint32 SizeOf, AlignOf;
+		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
+		uint8* ValuePtr = Memory + Entry->Offset;
+		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
+		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+		return true;
+	}
+	return false;
+}
+
 bool FCameraVariableTable::IsValueWritten(FCameraVariableID VariableID) const
 {
 	if (const FEntry* Entry = Entries.Find(VariableID))

@@ -8,6 +8,8 @@
 
 #include "CameraVariableTableFwd.generated.h"
 
+class UCameraVariableAsset;
+
 #define UE_CAMERA_VARIABLE_FOR_ALL_TYPES()\
 	UE_CAMERA_VARIABLE_FOR_TYPE(bool, Boolean)\
 	UE_CAMERA_VARIABLE_FOR_TYPE(int32, Integer32)\
@@ -24,6 +26,12 @@
 	UE_CAMERA_VARIABLE_FOR_TYPE(FTransform3f, Transform3f)\
 	UE_CAMERA_VARIABLE_FOR_TYPE(FTransform3d, Transform3d)
 
+/**
+ * The type of a camera variable. 
+ *
+ * Only a fixed set of types are supported for camera variables because of
+ * simplicity, and because these types need to be blendable.
+ */
 UENUM()
 enum class ECameraVariableType
 {
@@ -43,6 +51,9 @@ enum class ECameraVariableType
 	Transform3d
 };
 
+/**
+ * The ID of a camera variable, used to refer to it in a camera variable table.
+ */
 USTRUCT()
 struct FCameraVariableID
 {
@@ -95,24 +106,41 @@ private:
 	uint32 Value;
 };
 
+/**
+ * A structure that describes a camera variable.
+ */
 USTRUCT()
 struct FCameraVariableDefinition
 {
 	GENERATED_BODY()
 
+	/** The ID of the variable. */
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	/** The type of the variable. */
 	UPROPERTY()
 	ECameraVariableType VariableType = ECameraVariableType::Boolean;
 
+	/**
+	 * Whether the variable is private. 
+	 *
+	 * Private variables are not propagated from one table to another when
+	 * interpolating or overriding a table.
+	 */
 	UPROPERTY()
 	bool bIsPrivate = false;
 
+	/**
+	 * Whether the variable is an input variable.
+	 *
+	 * Input variables are blended during the pre-blend parameter update phase.
+	 */
 	UPROPERTY()
 	bool bIsInput = false;
 
 #if WITH_EDITORONLY_DATA
+	/** The name of the variable, for debugging purposes. */
 	UPROPERTY()
 	FString VariableName;
 #endif
@@ -137,12 +165,20 @@ struct FCameraVariableDefinition
 	}
 };
 
+/**
+ * A structure that describes the required camera variable table setup of a camera rig.
+ */
 USTRUCT()
 struct FCameraVariableTableAllocationInfo
 {
 	GENERATED_BODY()
 
+	/** The list of variables that should be allocated in a table. */
 	UPROPERTY()
 	TArray<FCameraVariableDefinition> VariableDefinitions;
+
+	/** The list of variables that should be auto-reset to their default value every frame. */
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraVariableAsset>> AutoResetVariables;
 };
 

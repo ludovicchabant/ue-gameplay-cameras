@@ -17,6 +17,7 @@
 #include "Debug/RootCameraDebugBlock.h"
 #include "HAL/IConsoleManager.h"
 #include "IGameplayCamerasModule.h"
+#include "Services/AutoResetCameraVariableService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -68,6 +69,8 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 		InitParams.Evaluator = this;
 		RootEvaluator->Initialize(InitParams);
 	}
+
+	RegisterEvaluationService(MakeShared<FAutoResetCameraVariableService>());
 }
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()

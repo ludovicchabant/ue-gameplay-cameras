@@ -516,6 +516,10 @@ void FCameraRigAssetBuilder::BuildAllocationInfo(UCameraNode* CameraNode)
 			{\
 				FCameraVariableDefinition VariableDefinition = CameraParameterPtr->Variable->GetVariableDefinition();\
 				AllocationInfo.VariableTableInfo.VariableDefinitions.Add(VariableDefinition);\
+				if (CameraParameterPtr->Variable->bAutoReset)\
+				{\
+					AllocationInfo.VariableTableInfo.AutoResetVariables.Add(CameraParameterPtr->Variable);\
+				}\
 			}\
 		}\
 		else
