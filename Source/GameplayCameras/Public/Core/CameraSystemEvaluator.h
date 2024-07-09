@@ -24,7 +24,9 @@ namespace UE::Cameras
 {
 
 class FCameraEvaluationContext;
+class FCameraEvaluationService;
 class FRootCameraNodeEvaluator;
+struct FRootCameraNodeCameraRigEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 class FRootCameraDebugBlock;
@@ -89,6 +91,8 @@ public:
 	/** Initializes the camera system. */
 	GAMEPLAYCAMERAS_API void Initialize(const FCameraSystemEvaluatorCreateParams& Params);
 
+	GAMEPLAYCAMERAS_API ~FCameraSystemEvaluator();
+
 public:
 
 	/** Gets the owner of this camera system, if any, and if still valid. */
@@ -107,6 +111,13 @@ public:
 	FCameraEvaluationContextStack& GetEvaluationContextStack() { return ContextStack; }
 	/** Gets the context stack. */
 	const FCameraEvaluationContextStack& GetEvaluationContextStack() const { return ContextStack; }
+
+public:
+
+	/** Registers an evaluation service on this camera system. */
+	GAMEPLAYCAMERAS_API void RegisterEvaluationService(TSharedRef<FCameraEvaluationService> EvaluationService);
+	/** Unregisters an evaluation service from this camera system. */
+	GAMEPLAYCAMERAS_API void UnregisterEvaluationService(TSharedRef<FCameraEvaluationService> EvaluationService);
 
 public:
 
@@ -130,6 +141,10 @@ public:
 
 	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
+protected:
+
+	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
+
 private:
 
 	/** The owner (if any) of this camera system evaluator. */
@@ -140,6 +155,9 @@ private:
 
 	/** The stack of active evaluation context. */
 	FCameraEvaluationContextStack ContextStack;
+
+	/** The list of evaluation services. */
+	TArray<TSharedPtr<FCameraEvaluationService>> EvaluationServices;
 
 	/** Storage buffer for the root evaluator. */
 	FCameraNodeEvaluatorStorage RootEvaluatorStorage;
@@ -160,6 +178,8 @@ private:
 	/** The root debug drawing block. */
 	FRootCameraDebugBlock* RootDebugBlock = nullptr;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+	friend class FRootCameraNodeEvaluator;
 };
 
 }  // namespace UE::Cameras

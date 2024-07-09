@@ -4,6 +4,7 @@
 
 #include "Core/BlendStackCameraNode.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/RootCameraNodeObserver.h"
 #include "Debug/BlendStacksCameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/RootCameraDebugBlock.h"
@@ -51,10 +52,17 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FDefaultRootCameraNodeEvaluator)
 void FDefaultRootCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UDefaultRootCameraNode* Data = GetCameraNodeAs<UDefaultRootCameraNode>();
-	BaseLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->BaseLayer);
-	MainLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->MainLayer);
-	GlobalLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->GlobalLayer);
-	VisualLayer = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(Data->VisualLayer);
+	BaseLayer = BuildBlendStackEvaluator(Params, Data->BaseLayer);
+	MainLayer = BuildBlendStackEvaluator(Params, Data->MainLayer);
+	GlobalLayer = BuildBlendStackEvaluator(Params, Data->GlobalLayer);
+	VisualLayer = BuildBlendStackEvaluator(Params, Data->VisualLayer);
+}
+
+FBlendStackCameraNodeEvaluator* FDefaultRootCameraNodeEvaluator::BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode)
+{
+	FBlendStackCameraNodeEvaluator* BlendStackEvaluator = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(BlendStackNode);
+	BlendStackEvaluator->RegisterObserver(this);
+	return BlendStackEvaluator;
 }
 
 FCameraNodeEvaluatorChildrenView FDefaultRootCameraNodeEvaluator::OnGetChildren()
@@ -96,6 +104,46 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
 		TargetStack->Push(PushParams);
+	}
+}
+
+void FDefaultRootCameraNodeEvaluator::OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent)
+{
+	if (InEvent.EventType == EBlendStackCameraRigEventType::Pushed ||
+			InEvent.EventType == EBlendStackCameraRigEventType::Popped)
+	{
+		FRootCameraNodeCameraRigEvent RootEvent;
+		RootEvent.CameraRigInfo = InEvent.CameraRigInfo;
+		RootEvent.Transition = InEvent.Transition;
+
+		switch (InEvent.EventType)
+		{
+		case EBlendStackCameraRigEventType::Pushed:
+			RootEvent.EventType = ERootCameraNodeCameraRigEventType::Activated;
+			break;
+		case EBlendStackCameraRigEventType::Popped:
+			RootEvent.EventType = ERootCameraNodeCameraRigEventType::Deactivated;
+			break;
+		}
+
+		if (InEvent.BlendStackEvaluator == BaseLayer)
+		{
+			RootEvent.EventLayer = ECameraRigLayer::Base;
+		}
+		else if (InEvent.BlendStackEvaluator == MainLayer)
+		{
+			RootEvent.EventLayer = ECameraRigLayer::Main;
+		}
+		else if (InEvent.BlendStackEvaluator == GlobalLayer)
+		{
+			RootEvent.EventLayer = ECameraRigLayer::Global;
+		}
+		else if (InEvent.BlendStackEvaluator == VisualLayer)
+		{
+			RootEvent.EventLayer = ECameraRigLayer::Visual;
+		}
+
+		NotifyObservers(RootEvent);
 	}
 }
 

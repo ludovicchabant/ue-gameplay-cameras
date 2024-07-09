@@ -6,6 +6,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraEvaluationService.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/DefaultRootCameraNode.h"
 #include "Debug/CameraDebugBlock.h"
@@ -69,6 +70,19 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	}
 }
 
+FCameraSystemEvaluator::~FCameraSystemEvaluator()
+{
+	{
+		FCameraEvaluationServiceTeardownParams TeardownParams;
+		TeardownParams.Evaluator = this;
+		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+		{
+			EvaluationService->Teardown(TeardownParams);
+		}
+		EvaluationServices.Reset();
+	}
+}
+
 void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	Collector.AddReferencedObject(RootNode);
@@ -94,9 +108,57 @@ void FCameraSystemEvaluator::PopEvaluationContext()
 	ContextStack.PopContext();
 }
 
+void FCameraSystemEvaluator::RegisterEvaluationService(TSharedRef<FCameraEvaluationService> EvaluationService)
+{
+	EvaluationServices.Add(EvaluationService);
+	{
+		FCameraEvaluationServiceInitializeParams InitParams;
+		InitParams.Evaluator = this;
+		EvaluationService->Initialize(InitParams);
+	}
+}
+
+void FCameraSystemEvaluator::UnregisterEvaluationService(TSharedRef<FCameraEvaluationService> EvaluationService)
+{
+	{
+		FCameraEvaluationServiceTeardownParams TeardownParams;
+		TeardownParams.Evaluator = this;
+		EvaluationService->Teardown(TeardownParams);
+	}
+	EvaluationServices.Remove(EvaluationService);
+}
+
+void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
+{
+	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+	{
+		if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsRootCameraNodeEvents))
+		{
+			EvaluationService->NotifyRootCameraNodeEvent(InEvent);
+		}
+	}
+}
+
 void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& Params)
 {
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
+
+	// Pre-update all services.
+	{
+		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
+		ServiceUpdateParams.Evaluator = this;
+		ServiceUpdateParams.DeltaTime = Params.DeltaTime;
+
+		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
+
+		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+		{
+			if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPreUpdate))
+			{
+				EvaluationService->PreUpdate(ServiceUpdateParams, ServiceUpdateResult);
+			}
+		}
+	}
 
 	// Get the active evaluation context.
 	TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
@@ -145,6 +207,23 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 	Result.CameraPose = RootNodeResult.CameraPose;
 	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
 	Result.bIsValid = true;
+
+	// Post-update all services.
+	{
+		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
+		ServiceUpdateParams.Evaluator = this;
+		ServiceUpdateParams.DeltaTime = Params.DeltaTime;
+
+		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
+
+		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+		{
+			if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPostUpdate))
+			{
+				EvaluationService->PostUpdate(ServiceUpdateParams, ServiceUpdateResult);
+			}
+		}
+	}
 }
 
 void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)

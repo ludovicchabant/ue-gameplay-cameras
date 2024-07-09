@@ -40,6 +40,8 @@ namespace UE::Cameras
 
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
+class IRootCameraNodeObserver;
+struct FRootCameraNodeCameraRigEvent;
 
 /**
  * Parameter structure for activating a new camera rig.
@@ -69,10 +71,31 @@ public:
 	/** Activates a camera rig. */
 	void ActivateCameraRig(const FActivateCameraRigParams& Params);
 
-private:
+	/** Registers an observer to this root node. */
+	void RegisterObserver(IRootCameraNodeObserver* Observer);
+	/** Unregisters an observer from this root node. */
+	void UnregisterObserver(IRootCameraNodeObserver* Observer);
+
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+
+protected:
 
 	/** Activates a camera rig. */
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
+
+	bool HasObservers() const;
+	void NotifyObservers(const FRootCameraNodeCameraRigEvent& InEvent) const;
+
+private:
+
+	/** The camera system that owns this root node. */
+	FCameraSystemEvaluator* OwningEvaluator = nullptr;
+
+	/** The list of observers. */
+	TArray<IRootCameraNodeObserver*> Observers;
 };
 
 }  // namespace UE::Cameras

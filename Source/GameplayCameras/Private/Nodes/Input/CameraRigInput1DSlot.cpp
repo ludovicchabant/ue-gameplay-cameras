@@ -33,10 +33,10 @@ void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 	InputValue = 0.f;
 
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
-	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRig.IsSet())
+	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRig.IsValid())
 	{
-		const FCameraRigEvaluationInfo& LastActiveRig = Params.LastActiveCameraRig.GetValue();
-		LastActiveRig.LastResult.VariableTable.TryGetValue<double>(SlotNode->GetVariableID(), InputValue);
+		const FCameraVariableTable& LastActiveRigVariableTable = Params.LastActiveCameraRig.LastResult->VariableTable;
+		LastActiveRigVariableTable.TryGetValue<double>(SlotNode->GetVariableID(), InputValue);
 	}
 }
 

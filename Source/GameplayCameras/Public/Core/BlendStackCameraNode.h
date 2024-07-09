@@ -23,6 +23,8 @@ namespace UE::Cameras
 class FBlendStackRootCameraNodeEvaluator;
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
+class IBlendStackCameraNodeObserver;
+enum class EBlendStackCameraRigEventType;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 class FBlendStackCameraDebugBlock;
@@ -96,11 +98,18 @@ public:
 	void Push(const FBlendStackCameraPushParams& Params);
 
 	/** Returns information about the top (active) camera rig, if any. */
-	TOptional<FCameraRigEvaluationInfo> GetActiveCameraRigEvaluationInfo() const;
+	FCameraRigEvaluationInfo GetActiveCameraRigEvaluationInfo() const;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+public:
+
+	/** Register a blend stack observer. */
+	void RegisterObserver(IBlendStackCameraNodeObserver* Observer);
+	/** Unregister a blend stack observer. */
+	void UnregisterObserver(IBlendStackCameraNodeObserver* Observer);
 
 protected:
 
@@ -140,6 +149,8 @@ protected:
 		UBlendStackRootCameraNode* EntryRootNode);
 
 	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
+
+	void NotifyObservers(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
 
 protected:
 
@@ -182,6 +193,9 @@ protected:
 
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;
+
+	/** The list of observers for this blend stack. */
+	TArray<IBlendStackCameraNodeObserver*> Observers;
 
 #if WITH_EDITOR
 	TMap<const UPackage*, int32> AllListenedPackages;

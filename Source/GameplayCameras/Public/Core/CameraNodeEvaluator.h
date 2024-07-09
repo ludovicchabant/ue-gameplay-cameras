@@ -10,7 +10,6 @@
 #include "CoreTypes.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCameras.h"
-#include "Misc/Optional.h"
 #include "UObject/ObjectPtr.h"
 
 class FReferenceCollector;
@@ -143,7 +142,7 @@ struct FCameraNodeEvaluatorInitializeParams
 	 * Information about the last active camera rig if the node tree being initialized
 	 * is being pushed on top of a non-empty blend stack.
 	 */
-	TOptional<FCameraRigEvaluationInfo> LastActiveCameraRig;
+	FCameraRigEvaluationInfo LastActiveCameraRig;
 };
 
 /** View on a camera node evaluator's children. */

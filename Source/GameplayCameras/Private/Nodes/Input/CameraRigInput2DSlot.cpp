@@ -33,10 +33,10 @@ void FCameraRigInput2DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 	InputValue = FVector2d::ZeroVector;
 
 	const UCameraRigInput2DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput2DSlot>();
-	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRig.IsSet())
+	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRig.IsValid())
 	{
-		const FCameraRigEvaluationInfo& LastActiveRig = Params.LastActiveCameraRig.GetValue();
-		LastActiveRig.LastResult.VariableTable.TryGetValue<FVector2d>(SlotNode->GetVariableID(), InputValue);
+		const FCameraVariableTable& LastActiveRigVariableTable = Params.LastActiveCameraRig.LastResult->VariableTable;
+		LastActiveRigVariableTable.TryGetValue<FVector2d>(SlotNode->GetVariableID(), InputValue);
 	}
 }
 
