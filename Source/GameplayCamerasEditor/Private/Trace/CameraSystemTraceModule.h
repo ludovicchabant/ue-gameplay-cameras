@@ -8,8 +8,6 @@
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 
-namespace Insights { class ITimingViewSession; }
-
 namespace UE::Cameras
 {
 
