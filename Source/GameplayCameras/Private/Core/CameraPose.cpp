@@ -354,3 +354,8 @@ UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 }
 
+void FCameraPose::SerializeWithFlags(FArchive& Ar)
+{
+	FCameraPose::SerializeWithFlags(Ar, *this);
+}
+

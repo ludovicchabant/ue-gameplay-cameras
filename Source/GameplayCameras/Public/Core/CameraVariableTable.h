@@ -147,7 +147,11 @@ public:
 	bool IsValueWrittenThisFrame(FCameraVariableID VariableID) const;
 	void ClearAllWrittenThisFrameFlags();
 
+	void Serialize(FArchive& Ar);
+
 private:
+
+	struct FEntry;
 
 	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, uint32& OutSizeOf, uint32& OutAlignOf);
 
@@ -158,6 +162,9 @@ private:
 	}
 
 	void ReallocateBuffer(uint32 MinRequired = 0);
+
+	GAMEPLAYCAMERAS_API FEntry* FindEntry(FCameraVariableID VariableID);
+	GAMEPLAYCAMERAS_API const FEntry* FindEntry(FCameraVariableID VariableID) const;
 
 	void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 	void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
@@ -185,7 +192,8 @@ private:
 #endif
 	};
 
-	TMap<FCameraVariableID, FEntry> Entries;
+	TArray<FEntry> Entries;
+	TMap<FCameraVariableID, int32> EntryLookup;
 
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
@@ -204,7 +212,7 @@ ENUM_CLASS_FLAGS(FCameraVariableTable::EEntryFlags)
 template<typename ValueType>
 const ValueType* FCameraVariableTable::FindValue(FCameraVariableID VariableID) const
 {
-	if (const FEntry* Entry = Entries.Find(VariableID))
+	if (const FEntry* Entry = FindEntry(VariableID))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
 		if (EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
@@ -218,7 +226,7 @@ const ValueType* FCameraVariableTable::FindValue(FCameraVariableID VariableID) c
 template<typename ValueType>
 const ValueType& FCameraVariableTable::GetValue(FCameraVariableID VariableID) const
 {
-	const FEntry* Entry = Entries.Find(VariableID);
+	const FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
@@ -264,7 +272,7 @@ bool FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ValueType& 
 template<typename ValueType>
 void FCameraVariableTable::SetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
-	FEntry* Entry = Entries.Find(VariableID);
+	FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
@@ -277,7 +285,7 @@ void FCameraVariableTable::SetValue(FCameraVariableID VariableID, typename TCall
 template<typename ValueType>
 bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
-	if (FEntry* Entry = Entries.Find(VariableID))
+	if (FEntry* Entry = FindEntry(VariableID))
 	{
 		CheckVariableType<ValueType>(Entry->Type);
 		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);

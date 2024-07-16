@@ -175,7 +175,11 @@ public:
 
 public:
 
+	/** Serializes the given camera pose including the written-property flags. */
 	static void SerializeWithFlags(FArchive& Ar, FCameraPose& CameraPose);
+
+	/** Serializes this camera pose including the written-property flags. */
+	void SerializeWithFlags(FArchive& Ar);
 
 private:
 

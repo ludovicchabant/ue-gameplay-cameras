@@ -26,11 +26,8 @@ FVariableTableDebugBlock::FVariableTableDebugBlock(const FCameraVariableTable& I
 
 void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariableTable)
 {
-	for (const TPair<FCameraVariableID, FCameraVariableTable::FEntry>& Pair : InVariableTable.Entries)
+	for (const FCameraVariableTable::FEntry& Entry : InVariableTable.Entries)
 	{
-		const uint32 EntryID = Pair.Key.GetValue();
-		const FCameraVariableTable::FEntry& Entry = Pair.Value;
-
 		FString EntryName;
 #if WITH_EDITORONLY_DATA
 		EntryName = Entry.DebugName;
@@ -41,7 +38,7 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 			case ECameraVariableType::ValueName:\
 				if (EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written))\
 				{\
-					const ValueType EntryValue = InVariableTable.GetValue<ValueType>(FCameraVariableID::FromHashValue(EntryID));\
+					const ValueType EntryValue = InVariableTable.GetValue<ValueType>(FCameraVariableID::FromHashValue(Entry.ID.GetValue()));\
 					EntryValueStr = ToDebugString(EntryValue);\
 				}\
 				break;
@@ -51,7 +48,7 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 		}
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
-		FEntryDebugInfo EntryDebugInfo{ EntryID, EntryName, EntryValueStr };
+		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryValueStr};
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written);
 		EntryDebugInfo.bWrittenThisFrame = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::WrittenThisFrame);
 		Entries.Add(EntryDebugInfo);
