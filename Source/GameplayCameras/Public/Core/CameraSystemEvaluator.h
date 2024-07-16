@@ -18,14 +18,17 @@ class FCanvas;
 class UCameraDirector;
 class UCameraRigAsset;
 class URootCameraNode;
+enum class ECameraRigLayer : uint8;
 struct FMinimalViewInfo;
 
 namespace UE::Cameras
 {
 
+class FAutoResetCameraVariableService;
 class FCameraEvaluationContext;
 class FCameraEvaluationService;
 class FRootCameraNodeEvaluator;
+enum class ECameraEvaluationServiceFlags;
 struct FRootCameraNodeCameraRigEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -48,19 +51,22 @@ struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
 /**
  * Parameter structure for updating the camera system.
  */
-struct GAMEPLAYCAMERAS_API FCameraSystemEvaluationUpdateParams
+struct GAMEPLAYCAMERAS_API FCameraSystemEvaluationParams
 {
-	/** Time interface for the update. */
+	/** Time interval for the update. */
 	float DeltaTime = 0.f;
 };
 
 /**
  * Result structure for updating the camera system.
  */
-struct FCameraSystemEvaluationUpdateResult
+struct FCameraSystemEvaluationResult
 {
 	/** The result camera pose. */
 	FCameraPose CameraPose;
+
+	/** The result camera variable table. */
+	FCameraVariableTable VariableTable;
 
 	/** Whether this evaluation was a camera cut. */
 	bool bIsCameraCut = false;
@@ -122,26 +128,28 @@ public:
 public:
 
 	/** Run an update of the camera system. */
-	GAMEPLAYCAMERAS_API void Update(const FCameraSystemEvaluationUpdateParams& Params);
+	GAMEPLAYCAMERAS_API void Update(const FCameraSystemEvaluationParams& Params);
 
 	/** Returns the root node evaluator. */
 	FRootCameraNodeEvaluator* GetRootNodeEvaluator() const { return RootEvaluator; }
 
 	/** Gets the evaluated result. */
-	const FCameraSystemEvaluationUpdateResult& GetEvaluatedResult() const { return Result; }
+	const FCameraSystemEvaluationResult& GetEvaluatedResult() const { return Result; }
 
 	/** Get the last evaluated camera. */
 	GAMEPLAYCAMERAS_API void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
+
+	/** Collect reference objects for the garbage collector. */
+	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	GAMEPLAYCAMERAS_API void DebugUpdate(const FCameraSystemDebugUpdateParams& Params);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
-public:
+private:
 
-	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
-
-protected:
+	void PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);
+	void PostUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);
 
 	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
 
@@ -159,6 +167,9 @@ private:
 	/** The list of evaluation services. */
 	TArray<TSharedPtr<FCameraEvaluationService>> EvaluationServices;
 
+	/** Quick access to the variable auto-reset service. */
+	TSharedPtr<FAutoResetCameraVariableService> VariableAutoResetService;
+
 	/** Storage buffer for the root evaluator. */
 	FCameraNodeEvaluatorStorage RootEvaluatorStorage;
 
@@ -169,7 +180,7 @@ private:
 	FCameraNodeEvaluationResult RootNodeResult;
 
 	/** The current overall result of the camera system. */
-	FCameraSystemEvaluationUpdateResult Result;
+	FCameraSystemEvaluationResult Result;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Storage for debug drawing blocks. */

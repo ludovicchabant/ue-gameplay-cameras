@@ -2,8 +2,10 @@
 
 #include "Core/RootCameraNode.h"
 
+#include "Core/CameraEvaluationService.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNodeObserver.h"
+#include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RootCameraNode)
 
@@ -18,6 +20,25 @@ void FRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitialize
 void FRootCameraNodeEvaluator::ActivateCameraRig(const FActivateCameraRigParams& Params)
 {
 	OnActivateCameraRig(Params);
+}
+
+void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	// Before we do the actual evaluation we need to ask the system to auto-reset
+	// any camera variable that needs auto-resetting. Otherwise, we might end up with
+	// an update result that isn't representative of what would happen normally.
+	if (FCameraSystemEvaluator* Evaluator = Params.EvaluationParams.Evaluator)
+	{
+		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
+		ServiceUpdateParams.Evaluator = Evaluator;
+		ServiceUpdateParams.DeltaTime = Params.EvaluationParams.DeltaTime;
+
+		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(OutResult);
+
+		Evaluator->VariableAutoResetService->PreUpdate(ServiceUpdateParams, ServiceUpdateResult);
+	}
+
+	OnRunSingleCameraRig(Params, OutResult);
 }
 
 void FRootCameraNodeEvaluator::RegisterObserver(IRootCameraNodeObserver* Observer)

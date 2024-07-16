@@ -87,6 +87,31 @@ private:
 };
 
 /**
+ * Determines how a camera rig's initial orientation should be initialized.
+ */
+UENUM()
+enum class ECameraRigInitialOrientation
+{
+	/** Leave the camera rig to its default orientation. */
+	None,
+	/** Orient the camera rig in the same direction as its context's initial transform. */
+	ContextYawPitch,
+	/** Orient the camera rig in the same direction as the previously active camera rig. */
+	PreviousYawPitch,
+	/** 
+	 * Make the camera rig point at the same target as the previously active camera rig's 
+	 * last frame target.
+	 */
+	PreviousAbsoluteTarget,
+	/** 
+	 * Make the camera rig point at the same target as the previously active camera rig. 
+	 * Last frame's target will be moved and turned by an offset equal to how much the 
+	 * active evaluation context has moved and turned since last frame.
+	 */
+	PreviousRelativeTarget
+};
+
+/**
  * A camera transition.
  */
 UCLASS(MinimalAPI)
@@ -105,6 +130,14 @@ public:
 	/** The blend to use to blend a given camera rig in or out. */
 	UPROPERTY(Instanced)
 	TObjectPtr<UBlendCameraNode> Blend;
+
+	/** The orientation to set on the camera rig. */
+	UPROPERTY(EditAnywhere, Category="Transition", meta=(EditCondition="bOverrideInitialOrientation"))
+	ECameraRigInitialOrientation InitialOrientation = ECameraRigInitialOrientation::None;
+
+	/** Whether to override the default orientation to set on the camera rig. */
+	UPROPERTY(EditAnywhere, Category="Transition")
+	bool bOverrideInitialOrientation = false;
 
 protected:
 

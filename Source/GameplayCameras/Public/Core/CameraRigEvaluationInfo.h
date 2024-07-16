@@ -3,14 +3,17 @@
 #pragma once
 
 #include "Templates/SharedPointer.h"
+#include "UObject/ObjectPtr.h"
 
 class UCameraRigAsset;
 
 namespace UE::Cameras
 {
 
+class FBlendCameraNodeEvaluator;
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
+class FCameraNodeEvaluatorStorage;
 struct FCameraNodeEvaluationResult;
 
 /**
@@ -19,41 +22,28 @@ struct FCameraNodeEvaluationResult;
  */
 struct FCameraRigEvaluationInfo
 {
-	/** The camera rig being evaluated. */
-	const UCameraRigAsset* CameraRig = nullptr;
 	/** The context inside which the evaluation occurs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+	/** The camera rig being evaluated. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
 	/** The last evaluated result for this camera rig. */
 	const FCameraNodeEvaluationResult* LastResult = nullptr;
-	/** The root node evaluator of the camera rig. */
-	const FCameraNodeEvaluator* RootEvaluator;
-	/** Whether the camera rig is frozen. */
-	bool bIsFrozen = false;
+	/** The blend node evaluator of the camera rig. */
+	FCameraNodeEvaluator* RootEvaluator = nullptr;
 
 	FCameraRigEvaluationInfo()
 	{}
 
 	FCameraRigEvaluationInfo(
-			const UCameraRigAsset* InCameraRig,
 			TSharedPtr<const FCameraEvaluationContext> InEvaluationContext,
-			const FCameraNodeEvaluationResult& InLastResult,
-			const FCameraNodeEvaluator* InRootEvaluator)
-		: CameraRig(InCameraRig)
-		, EvaluationContext(InEvaluationContext)
-		, LastResult(&InLastResult)
+			TObjectPtr<const UCameraRigAsset> InCameraRig,
+			const FCameraNodeEvaluationResult* InLastResult,
+			FCameraNodeEvaluator* InRootEvaluator)
+		: EvaluationContext(InEvaluationContext)
+		, CameraRig(InCameraRig)
+		, LastResult(InLastResult)
 		, RootEvaluator(InRootEvaluator)
 	{}
-
-	/** 
-	 * Whether this evaluation info is valid.
-	 *
-	 * A valid evaluation info may not have a valid CameraRig, EvaluationContext, or RootEvaluator
-	 * if the related camera rig was frozen. However, it would always have a valid LastResult.
-	 */
-	bool IsValid() const
-	{
-		return LastResult != nullptr;
-	}
 };
 
 }  // namespace UE::Cameras

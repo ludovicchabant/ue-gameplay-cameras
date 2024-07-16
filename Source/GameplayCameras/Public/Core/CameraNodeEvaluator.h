@@ -5,6 +5,7 @@
 #include "Core/CameraRigEvaluationInfo.h"
 #include "Core/CameraObjectRtti.h"
 #include "Core/CameraPose.h"
+#include "Core/CameraRigJoints.h"
 #include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
@@ -22,6 +23,7 @@ namespace UE::Cameras
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
 class FCameraSystemEvaluator;
+struct FCameraOperation;
 struct FCameraNodeEvaluationParams;
 struct FCameraNodeEvaluatorBuilder;
 struct FCameraRigEvaluationInfo;
@@ -37,74 +39,13 @@ enum class ECameraNodeEvaluatorFlags
 {
 	None = 0,
 	NeedsParameterUpdate = 1 << 0,
-	NeedsEvaluationUpdate = 1 << 1
+	NeedsEvaluationUpdate = 1 << 1,
+	SupportsOperations = 1 << 2
 };
 ENUM_CLASS_FLAGS(ECameraNodeEvaluatorFlags)
 
-/**
- * Parameter structure for updating the pre-blended parameters of a camera node.
- */
-struct FCameraBlendedParameterUpdateParams
-{
-	FCameraBlendedParameterUpdateParams(const FCameraNodeEvaluationParams& InEvaluationParams, const FCameraPose& InLastCameraPose)
-		: EvaluationParams(InEvaluationParams)
-		, LastCameraPose(InLastCameraPose)
-	{}
-
-	/** Information about the evaluation pass that will happen afterwards. */
-	const FCameraNodeEvaluationParams& EvaluationParams;
-	/** Last frame's camera pose. */
-	const FCameraPose& LastCameraPose;
-};
-
-/**
- * Result of updating the pre-blended parameters of a camera node.
- */
-struct FCameraBlendedParameterUpdateResult
-{
-	FCameraBlendedParameterUpdateResult(FCameraVariableTable& InVariableTable)
-		: VariableTable(InVariableTable)
-	{}
-
-	/** Variable table in which parameters should be stored or obtained. */
-	FCameraVariableTable& VariableTable;
-};
-
-/**
- * Parameter structure for running a camera node evaluator.
- */
-struct FCameraNodeEvaluationParams
-{
-	/** The evaluator running this evaluation. */
-	FCameraSystemEvaluator* Evaluator = nullptr;
-	/** The evaluation context (if any) responsible for this branch of the evaluation. */
-	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
-	/** The time interval for the evaluation. */
-	float DeltaTime = 0.f;
-	
-	/** Whether this is the first evaluation of this camera node hierarchy. */
-	bool bIsFirstFrame = false;
-};
-
-/**
- * Input/output result structure for running a camera node evaluator.
- */
-struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
-{
-	/** The camera pose. */
-	FCameraPose CameraPose;
-
-	/** The variable table. */
-	FCameraVariableTable VariableTable;
-
-	/** Whether the current frame is a camera cut. */
-	bool bIsCameraCut = false;
-	/** Whether this result is valid. */
-	bool bIsValid = false;
-
-	/** Reset this result to its default (non-valid) state. */
-	void Reset();
-};
+/** View on a camera node evaluator's children. */
+using FCameraNodeEvaluatorChildrenView = TObjectChildrenView<FCameraNodeEvaluator*>;
 
 /**
  * Structure for building the tree of camera node evaluators.
@@ -142,11 +83,109 @@ struct FCameraNodeEvaluatorInitializeParams
 	 * Information about the last active camera rig if the node tree being initialized
 	 * is being pushed on top of a non-empty blend stack.
 	 */
-	FCameraRigEvaluationInfo LastActiveCameraRig;
+	FCameraRigEvaluationInfo LastActiveCameraRigInfo;
 };
 
-/** View on a camera node evaluator's children. */
-using FCameraNodeEvaluatorChildrenView = TObjectChildrenView<FCameraNodeEvaluator*>;
+/**
+ * Parameter structure for updating the pre-blended parameters of a camera node.
+ */
+struct FCameraBlendedParameterUpdateParams
+{
+	FCameraBlendedParameterUpdateParams(const FCameraNodeEvaluationParams& InEvaluationParams, const FCameraPose& InLastCameraPose)
+		: EvaluationParams(InEvaluationParams)
+		, LastCameraPose(InLastCameraPose)
+	{}
+
+	/** Information about the evaluation pass that will happen afterwards. */
+	const FCameraNodeEvaluationParams& EvaluationParams;
+	/** Last frame's camera pose. */
+	const FCameraPose& LastCameraPose;
+};
+
+/**
+ * Result of updating the pre-blended parameters of a camera node.
+ */
+struct FCameraBlendedParameterUpdateResult
+{
+	FCameraBlendedParameterUpdateResult(FCameraVariableTable& InVariableTable)
+		: VariableTable(InVariableTable)
+	{}
+
+	/** Variable table in which parameters should be stored or obtained. */
+	FCameraVariableTable& VariableTable;
+};
+
+/** The type of evaluation being run. */
+enum class ECameraNodeEvaluationType
+{
+	/** Normal evaluation. */
+	Standard,
+	/** Evaluation for IK aiming. */
+	IK
+};
+
+/**
+ * Parameter structure for running a camera node evaluator.
+ */
+struct FCameraNodeEvaluationParams
+{
+	/** The evaluator running this evaluation. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+	/** The time interval for the evaluation. */
+	float DeltaTime = 0.f;
+	/** The type of evaluation being run. */
+	ECameraNodeEvaluationType EvaluationType = ECameraNodeEvaluationType::Standard;
+	/** Whether this is the first evaluation of this camera node hierarchy. */
+	bool bIsFirstFrame = false;
+};
+
+/**
+ * Input/output result structure for running a camera node evaluator.
+ */
+struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
+{
+	/** The camera pose. */
+	FCameraPose CameraPose;
+
+	/** The variable table. */
+	FCameraVariableTable VariableTable;
+
+	/** The list of joints in the current camera rig. */
+	FCameraRigJoints CameraRigJoints;
+
+	/** Whether the current frame is a camera cut. */
+	bool bIsCameraCut = false;
+	/** Whether this result is valid. */
+	bool bIsValid = false;
+
+public:
+
+	/** Reset this result to its default (non-valid) state.  */
+	void Reset(bool bResetVariableTable);
+
+	/** Serializes this result to the given archive. */
+	void Serialize(FArchive& Ar);
+};
+
+/**
+ * Parameter structure for executing camera operations.
+ */
+struct FCameraOperationParams
+{
+	/** The evaluator running this operation. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+};
+
+/**
+ * Parameter structure for serializing the state of a camera node evaluator.
+ */
+struct GAMEPLAYCAMERAS_API FCameraNodeEvaluatorSerializeParams
+{
+};
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -187,8 +226,14 @@ public:
 	/** Run this evaluator. */
 	void Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
+	/** Execute an IK operation. */
+	void ExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation);
+
 	/** Collect referenced UObjects. */
 	void AddReferencedObjects(FReferenceCollector& Collector);
+
+	/** Serializes the state of this evaluator. */
+	void Serialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar);
 
 	/** Gets the flags for this evaluator. */
 	ECameraNodeEvaluatorFlags  GetNodeEvaluatorFlags() const { return PrivateFlags; }
@@ -235,8 +280,14 @@ protected:
 	/** Run this evaluator. */
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
 
+	/** Execute an IK operation. */
+	GAMEPLAYCAMERAS_API virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) {}
+
 	/** Collect referenced UObjects. */
 	GAMEPLAYCAMERAS_API virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+
+	/** Serializes the state of this evaluator. */
+	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) {}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Called to create debug blocks for this node evaluator. */

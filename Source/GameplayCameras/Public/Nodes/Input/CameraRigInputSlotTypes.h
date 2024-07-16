@@ -45,6 +45,13 @@ public:
 
 	/** Clamps the given value. */
 	double ClampValue(double Value) const;
+
+	/** 
+	 * Gets the effective min/max values for this struct.
+	 * If a bound is disabled, the effective value will be lowest or max
+	 * double precision values.
+	 */
+	void GetEffectiveClamping(double& OutMinValue, double& OutMaxValue) const;
 };
 
 /**

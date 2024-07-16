@@ -3,6 +3,7 @@
 #include "Nodes/Input/CameraRigInput1DSlot.h"
 
 #include "Core/CameraBuildLog.h"
+#include "Core/CameraOperation.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigBuildContext.h"
 #include "Core/CameraVariableAssets.h"
@@ -18,7 +19,10 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraRigInput1DSlotEvaluator)
 
 FCameraRigInput1DSlotEvaluator::FCameraRigInput1DSlotEvaluator()
 {
-	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate | ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate);
+	SetNodeEvaluatorFlags(
+			ECameraNodeEvaluatorFlags::NeedsParameterUpdate | 
+			ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate |
+			ECameraNodeEvaluatorFlags::SupportsOperations);
 }
 
 void FCameraRigInput1DSlotEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
@@ -33,9 +37,9 @@ void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 	InputValue = 0.f;
 
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
-	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRig.IsValid())
+	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRigInfo.LastResult)
 	{
-		const FCameraVariableTable& LastActiveRigVariableTable = Params.LastActiveCameraRig.LastResult->VariableTable;
+		const FCameraVariableTable& LastActiveRigVariableTable = Params.LastActiveCameraRigInfo.LastResult->VariableTable;
 		LastActiveRigVariableTable.TryGetValue<double>(SlotNode->GetVariableID(), InputValue);
 	}
 }
@@ -83,6 +87,25 @@ void FCameraRigInput1DSlotEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 	InputValue = SlotNode->Clamp.ClampValue(InputValue);
 
 	OutResult.VariableTable.SetValue<double>(SlotNode->GetVariableID(), InputValue);
+}
+
+void FCameraRigInput1DSlotEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
+{
+	if (FSingleValueCameraOperation* Op = Operation.CastOperation<FSingleValueCameraOperation>())
+	{
+		const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
+
+		double MinValue, MaxValue;
+		SlotNode->Clamp.GetEffectiveClamping(MinValue, MaxValue);
+
+		InputValue = Op->Value.Apply(InputValue, MinValue, MaxValue);
+	}
+}
+
+void FCameraRigInput1DSlotEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Ar << TransientInputValue;
+	Ar << InputValue;
 }
 
 }  // namespace UE::Cameras

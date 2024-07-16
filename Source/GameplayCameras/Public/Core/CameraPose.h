@@ -158,6 +158,9 @@ public:
 	/** Gets the aiming direction of the camera. */
 	FVector3d GetAimDir() const;
 
+	/** Gets the location of the camera's target. */
+	FVector3d GetTarget() const;
+
 public:
 
 	// Interpolation
@@ -198,7 +201,7 @@ private:
 
 	/** Distance to the target */
 	UPROPERTY()
-	double TargetDistance = 100.0;
+	double TargetDistance = 1000.0;
 
 	/**
 	 * The horizontal field of view of the camera, in degrees 

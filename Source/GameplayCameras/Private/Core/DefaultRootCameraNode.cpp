@@ -3,6 +3,7 @@
 #include "Core/DefaultRootCameraNode.h"
 
 #include "Core/BlendStackCameraNode.h"
+#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/RootCameraNodeObserver.h"
 #include "Debug/BlendStacksCameraDebugBlock.h"
@@ -80,23 +81,7 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 
 void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
 {
-	FBlendStackCameraNodeEvaluator* TargetStack = nullptr;
-	switch (Params.Layer)
-	{
-		case ECameraRigLayer::Base:
-			TargetStack = BaseLayer;
-			break;
-		case ECameraRigLayer::Main:
-			TargetStack = MainLayer;
-			break;
-		case ECameraRigLayer::Global:
-			TargetStack = GlobalLayer;
-			break;
-		case ECameraRigLayer::Visual:
-			TargetStack = VisualLayer;
-			break;
-	}
-
+	FBlendStackCameraNodeEvaluator* TargetStack = GetBlendStackEvaluator(Params.Layer);
 	if (ensure(TargetStack))
 	{
 		FBlendStackCameraPushParams PushParams;
@@ -104,6 +89,53 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
 		TargetStack->Push(PushParams);
+	}
+}
+
+void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	BaseLayer->Run(Params.EvaluationParams, OutResult);
+
+	FCameraNodeEvaluator* RootEvaluator = Params.CameraRigInfo.RootEvaluator;
+
+	{
+		const FCameraNodeEvaluationResult* CameraRigResult = Params.CameraRigInfo.LastResult;
+		FCameraBlendedParameterUpdateParams InputParams(Params.EvaluationParams, CameraRigResult->CameraPose);
+		FCameraBlendedParameterUpdateResult InputResult(OutResult.VariableTable);
+		RootEvaluator->UpdateParameters(InputParams, InputResult);
+	}
+
+	{
+		OutResult.CameraPose.ClearAllChangedFlags();
+		OutResult.VariableTable.ClearAllWrittenThisFrameFlags();
+
+		const FCameraNodeEvaluationResult& InitialResult = Params.CameraRigInfo.EvaluationContext->GetInitialResult();
+		OutResult.CameraPose.OverrideChanged(InitialResult.CameraPose);
+		OutResult.VariableTable.OverrideAll(InitialResult.VariableTable);
+
+		OutResult.bIsValid = true;
+
+		RootEvaluator->Run(Params.EvaluationParams, OutResult);
+	}
+
+	GlobalLayer->Run(Params.EvaluationParams, OutResult);
+	// Don't run the visual layer.
+}
+
+FBlendStackCameraNodeEvaluator* FDefaultRootCameraNodeEvaluator::GetBlendStackEvaluator(ECameraRigLayer Layer) const
+{
+	switch (Layer)
+	{
+		case ECameraRigLayer::Base:
+			return BaseLayer;
+		case ECameraRigLayer::Main:
+			return MainLayer;
+		case ECameraRigLayer::Global:
+			return GlobalLayer;
+		case ECameraRigLayer::Visual:
+			return VisualLayer;
+		default:
+			return nullptr;
 	}
 }
 

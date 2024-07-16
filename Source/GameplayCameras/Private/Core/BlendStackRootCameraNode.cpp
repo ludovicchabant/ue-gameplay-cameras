@@ -78,7 +78,14 @@ void FBlendStackRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Nothing to do, the blend stack node runs our blend and root nodes selectively.
+	if (BlendEvaluator)
+	{
+		BlendEvaluator->Run(Params, OutResult);
+	}
+	if (RootEvaluator)
+	{
+		RootEvaluator->Run(Params, OutResult);
+	}
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

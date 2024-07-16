@@ -96,7 +96,7 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 		PoseStatsCategory.Title = TEXT("Evaluated Camera");
 		PoseStatsCategory.Category = FCameraDebugCategories::PoseStats;
 
-		const FCameraSystemEvaluationUpdateResult& Result = CameraSystem.GetEvaluatedResult();
+		const FCameraSystemEvaluationResult& Result = CameraSystem.GetEvaluatedResult();
 		Builder.AttachDebugBlock<FCameraPoseDebugBlock>(Result.CameraPose)
 			.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
 	}

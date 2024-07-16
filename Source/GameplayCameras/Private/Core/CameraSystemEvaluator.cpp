@@ -3,21 +3,17 @@
 #include "Core/CameraSystemEvaluator.h"
 
 #include "Camera/CameraTypes.h"
-#include "Core/CameraAsset.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationService.h"
-#include "Core/CameraRigAsset.h"
 #include "Core/DefaultRootCameraNode.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraSystemTrace.h"
-#include "Debug/CategoryTitleDebugBlock.h"
 #include "Debug/RootCameraDebugBlock.h"
-#include "HAL/IConsoleManager.h"
-#include "IGameplayCamerasModule.h"
 #include "Services/AutoResetCameraVariableService.h"
+#include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -70,7 +66,9 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 		RootEvaluator->Initialize(InitParams);
 	}
 
-	RegisterEvaluationService(MakeShared<FAutoResetCameraVariableService>());
+	VariableAutoResetService = MakeShared<FAutoResetCameraVariableService>();
+	RegisterEvaluationService(VariableAutoResetService.ToSharedRef());
+	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
 }
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()
@@ -137,33 +135,19 @@ void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCame
 {
 	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
 	{
-		if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsRootCameraNodeEvents))
+		if (EvaluationService->HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsRootCameraNodeEvents))
 		{
 			EvaluationService->NotifyRootCameraNodeEvent(InEvent);
 		}
 	}
 }
 
-void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& Params)
+void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 {
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
 	// Pre-update all services.
-	{
-		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
-		ServiceUpdateParams.Evaluator = this;
-		ServiceUpdateParams.DeltaTime = Params.DeltaTime;
-
-		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
-
-		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
-		{
-			if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPreUpdate))
-			{
-				EvaluationService->PreUpdate(ServiceUpdateParams, ServiceUpdateResult);
-			}
-		}
-	}
+	PreUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
 
 	// Get the active evaluation context.
 	TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
@@ -198,35 +182,60 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationUpdateParams& P
 		// TODO: handle the case of composite camera rigs.
 	}
 
-	// Setup the params/result for running the root camera node.
-	FCameraNodeEvaluationParams NodeParams;
-	NodeParams.Evaluator = this;
-	NodeParams.DeltaTime = Params.DeltaTime;
+	{
+		// Setup the params/result for running the root camera node.
+		FCameraNodeEvaluationParams NodeParams;
+		NodeParams.Evaluator = this;
+		NodeParams.DeltaTime = Params.DeltaTime;
 
-	RootNodeResult.Reset();
+		RootNodeResult.Reset(false);
 
-	// Run the root camera node.
-	RootEvaluator->Run(NodeParams, RootNodeResult);
+		// Run the root camera node.
+		RootEvaluator->Run(NodeParams, RootNodeResult);
+
+		RootNodeResult.bIsValid = true;
+	}
 
 	// Harvest the result.
-	Result.CameraPose = RootNodeResult.CameraPose;
+	Result.CameraPose.OverrideAll(RootNodeResult.CameraPose);
+	Result.VariableTable.OverrideAll(RootNodeResult.VariableTable);
 	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
 	Result.bIsValid = true;
 
 	// Post-update all services.
+	PostUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
+}
+
+void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)
+{
+	FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
+	ServiceUpdateParams.Evaluator = this;
+	ServiceUpdateParams.DeltaTime = DeltaTime;
+
+	FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
+
+	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
 	{
-		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
-		ServiceUpdateParams.Evaluator = this;
-		ServiceUpdateParams.DeltaTime = Params.DeltaTime;
-
-		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
-
-		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+		if (EvaluationService->HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPreUpdate | ExtraFlags))
 		{
-			if (EvaluationService->HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPostUpdate))
-			{
-				EvaluationService->PostUpdate(ServiceUpdateParams, ServiceUpdateResult);
-			}
+			EvaluationService->PreUpdate(ServiceUpdateParams, ServiceUpdateResult);
+		}
+	}
+}
+
+void FCameraSystemEvaluator::PostUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)
+{
+	FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
+	ServiceUpdateParams.Evaluator = this;
+	ServiceUpdateParams.DeltaTime = DeltaTime;
+
+	FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
+
+	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+	{
+		if (EvaluationService->HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPostUpdate | ExtraFlags))
+		{
+			EvaluationService->PostUpdate(ServiceUpdateParams, ServiceUpdateResult);
 		}
 	}
 }

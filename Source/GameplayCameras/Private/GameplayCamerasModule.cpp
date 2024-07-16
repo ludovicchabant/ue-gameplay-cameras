@@ -8,8 +8,12 @@
 #include "Debug/CameraDebugColors.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
+#include "GameplayCamerasSettings.h"
+#include "ISettingsModule.h"
 #include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
+
+#define LOCTEXT_NAMESPACE "GameplayCamerasModule"
 
 DEFINE_LOG_CATEGORY(LogCameraSystem);
 
@@ -25,6 +29,8 @@ public:
 	// IModuleInterface interface
 	virtual void StartupModule() override
 	{
+		RegisterSettings();
+
 		CameraModularFeature = MakeShared<FCameraModularFeature>();
 		if (CameraModularFeature.IsValid())
 		{
@@ -38,12 +44,16 @@ public:
 
 	virtual void ShutdownModule() override
 	{
+		UnregisterSettings();
+
 		if (CameraModularFeature.IsValid())
 		{
 			IModularFeatures::Get().UnregisterModularFeature(ICameraModularFeature::GetModularFeatureName(), CameraModularFeature.Get());
 			CameraModularFeature = nullptr;
 		}
 	}
+
+public:
 
 	// IGameplayCamerasModule interface
 #if WITH_EDITOR
@@ -59,6 +69,33 @@ public:
 #endif
 
 private:
+
+	void RegisterSettings()
+	{
+		ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
+
+		if (SettingsModule != nullptr)
+		{
+			SettingsModule->RegisterSettings("Project", "Plugins", "Gameplay Cameras",
+				LOCTEXT("GameplayCamerasProjectSettingsName", "Gameplay Cameras"),
+				LOCTEXT("GameplayCamerasProjectSettingsDescription", "Configure gameplay cameras."),
+				GetMutableDefault<UGameplayCamerasSettings>()
+			);
+		}
+	}
+
+	void UnregisterSettings()
+	{
+		ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
+
+		if (SettingsModule != nullptr)
+		{
+			SettingsModule->UnregisterSettings("Project", "Plugins", "Gameplay Cameras");
+		}
+	}
+
+private:
+
 	class FCameraModularFeature : public ICameraModularFeature
 	{
 		// ICameraModularFeature interface
@@ -76,3 +113,6 @@ private:
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasModule, GameplayCameras);
+
+#undef LOCTEXT_NAMESPACE
+

@@ -167,6 +167,11 @@ FVector3d FCameraPose::GetAimDir() const
 	return Rotation.RotateVector(FVector3d{ 1, 0, 0 });
 }
 
+FVector3d FCameraPose::GetTarget() const
+{
+	return Location + TargetDistance * GetAimDir();
+}
+
 void FCameraPose::OverrideAll(const FCameraPose& OtherPose)
 {
 	InternalOverrideChanged(OtherPose, false);

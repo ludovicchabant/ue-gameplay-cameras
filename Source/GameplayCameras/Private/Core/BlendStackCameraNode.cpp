@@ -153,7 +153,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	FCameraNodeEvaluatorInitializeParams InitParams;
 	InitParams.Evaluator = Evaluator;
 	InitParams.EvaluationContext = EvaluationContext;
-	InitParams.LastActiveCameraRig = GetActiveCameraRigEvaluationInfo();
+	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
 	RootEvaluator->Initialize(InitParams);
 
 	// Gather blended parameter evaluators.
@@ -204,11 +204,10 @@ FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetActiveCameraRigEvalu
 	{
 		const FCameraRigEntry& ActiveEntry = Entries[0];
 		FCameraRigEvaluationInfo Info(
-				ActiveEntry.CameraRig, 
 				ActiveEntry.EvaluationContext.Pin(),
-				ActiveEntry.Result,
-				ActiveEntry.RootEvaluator);
-		Info.bIsFrozen = ActiveEntry.bIsFrozen;
+				ActiveEntry.CameraRig, 
+				&ActiveEntry.Result,
+				ActiveEntry.RootEvaluator->GetRootEvaluator());
 		return Info;
 	}
 	return FCameraRigEvaluationInfo();
@@ -304,7 +303,8 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 
-	// Gather parameters to pre-blend, and evaluate blend nodes.
+	// Setup the entries' variable tables for this frame, gather parameters to pre-blend,
+	// and evaluate blend nodes.
 	for (FValidEntry& ValidEntry : ValidEntries)
 	{
 		FCameraRigEntry& Entry(ValidEntry.Entry);
@@ -321,6 +321,14 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
+		// Setup the variable table: take everything from the previous evaluation layer,
+		// and override it with the context's initial result.
+		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
+		CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
+
+		const FCameraNodeEvaluationResult& ContextResult(CurContext->GetInitialResult());
+		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
+
 		// Gather input parameters.
 		if (!Entry.bInputRunThisFrame)
 		{
@@ -336,6 +344,8 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		}
 
 		// Run blends.
+		// Note that we pass last frame's camera pose to the Run() method. This may change.
+		// Blends aren't expected to use the camera pose to do any logic until BlendResults().
 		if (!Entry.bBlendRunThisFrame)
 		{
 			FBlendCameraNodeEvaluator* BlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
@@ -391,13 +401,10 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		// Start with the input given to us.
 		CurResult.CameraPose = OutResult.CameraPose;
 		CurResult.CameraPose.ClearAllChangedFlags();
-		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
-		CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
 
 		// Override it with whatever the evaluation context has set on its result.
 		const FCameraNodeEvaluationResult& ContextResult(CurContext->GetInitialResult());
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
 		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
 		CurResult.bIsValid = true;
 
@@ -410,7 +417,7 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 	}
 
 	// Now blend all the results, keeping track of blends that have reached 100% so
-	// that we can remove any camera rigs below (since the would have been completely
+	// that we can remove any camera rigs below (since they would have been completely
 	// blended out by that).
 	int32 PopEntriesBelow = INDEX_NONE;
 	for (FValidEntry& ValidEntry : ValidEntries)
@@ -633,11 +640,10 @@ void FBlendStackCameraNodeEvaluator::NotifyObservers(EBlendStackCameraRigEventTy
 	Event.EventType = EventType;
 	Event.BlendStackEvaluator = this;
 	Event.CameraRigInfo = FCameraRigEvaluationInfo(
-			Entry.CameraRig,
 			Entry.EvaluationContext.Pin(),
-			Entry.Result,
+			Entry.CameraRig,
+			&Entry.Result,
 			Entry.RootEvaluator);
-	Event.CameraRigInfo.bIsFrozen = Entry.bIsFrozen;
 	Event.Transition = Transition;
 
 	for (IBlendStackCameraNodeObserver* Observer : Observers)
@@ -652,6 +658,34 @@ void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector&
 	{
 		Collector.AddReferencedObject(Entry.CameraRig);
 		Collector.AddReferencedObject(Entry.RootNode);
+	}
+}
+
+void FBlendStackCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	if (Ar.IsSaving())
+	{
+		int32 NumEntries = Entries.Num();
+		Ar << NumEntries;
+	}
+	else if (Ar.IsLoading())
+	{
+		int32 LoadedNumEntries = 0;
+		Ar << LoadedNumEntries;
+
+		ensure(LoadedNumEntries == Entries.Num());
+	}
+
+	for (FCameraRigEntry& Entry : Entries)
+	{
+		Entry.Result.Serialize(Ar);
+		Ar << Entry.bIsFirstFrame;
+		Ar << Entry.bInputRunThisFrame;
+		Ar << Entry.bBlendRunThisFrame;
+		Ar << Entry.bIsFrozen;
+#if UE_GAMEPLAY_CAMERAS_TRACE
+		Ar << Entry.bLogWarnings;
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 }
 

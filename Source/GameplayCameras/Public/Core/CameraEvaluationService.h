@@ -86,7 +86,7 @@ public:
 	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
 
 	ECameraEvaluationServiceFlags GetEvaluationServiceFlags() const { return PrivateFlags; }
-	bool HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags) const;
+	bool HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags) const;
 
 protected:
 

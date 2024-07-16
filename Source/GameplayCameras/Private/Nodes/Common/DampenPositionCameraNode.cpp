@@ -24,6 +24,7 @@ protected:
 
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
@@ -135,6 +136,20 @@ void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	PreviousLocation = NextLocation;
 
 	OutResult.CameraPose.SetLocation(NextLocation);
+}
+
+void FDampenPositionCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Ar << ForwardDamper;
+	Ar << LateralDamper;
+	Ar << VerticalDamper;
+
+	Ar << PreviousLocation;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	Ar << LastUndampedPosition;
+	Ar << LastDampedPosition;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

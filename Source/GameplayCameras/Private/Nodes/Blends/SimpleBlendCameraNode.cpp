@@ -52,6 +52,12 @@ void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParam
 	OutResult.bIsBlendFinished = bIsBlendFinished;
 }
 
+void FSimpleBlendCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Ar << BlendFactor;
+	Ar << bIsBlendFinished;
+}
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 void FSimpleBlendCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)

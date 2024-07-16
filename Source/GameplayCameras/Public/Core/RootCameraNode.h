@@ -4,6 +4,7 @@
 
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraRigEvaluationInfo.h"
 
 #include "RootCameraNode.generated.h"
 
@@ -19,6 +20,7 @@ enum class ECameraRigLayer : uint8
 	Main UMETA(DisplayName="Main Layer"),
 	Global UMETA(DisplayName="Global Layer"),
 	Visual UMETA(DisplayName="Visual Layer"),
+	ScratchMain UMETA(DisplayName="Scratch Main Layer"),
 	User0,
 	User1,
 	User2
@@ -62,6 +64,18 @@ struct FActivateCameraRigParams
 };
 
 /**
+ * Parameter structure for evaluating a single camera rig.
+ */
+struct FSingleCameraRigEvaluationParams
+{
+	/** The evaluation parameters. */
+	FCameraNodeEvaluationParams EvaluationParams;
+
+	/** The camera rig to evaluate. */
+	FCameraRigEvaluationInfo CameraRigInfo;
+};
+
+/**
  * Base class for the evaluator of a root camera node.
  */
 class FRootCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -70,6 +84,13 @@ public:
 
 	/** Activates a camera rig. */
 	void ActivateCameraRig(const FActivateCameraRigParams& Params);
+
+	/**
+	 * Evaluates a single camera rig.
+	 * This is expected to run all layers as usual, except for the main layer which should
+	 * only run the given camera rig instead.
+	 */
+	void RunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	/** Registers an observer to this root node. */
 	void RegisterObserver(IRootCameraNodeObserver* Observer);
@@ -86,7 +107,15 @@ protected:
 	/** Activates a camera rig. */
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
 
+	/** Evaluates a single camera rig. See comments on RunSingleCameraRig. */
+	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+
+protected:
+
+	/** Returns whether this root camera node has any observers. */
 	bool HasObservers() const;
+	
+	/** Notifies observers of a root camera node event. */
 	void NotifyObservers(const FRootCameraNodeCameraRigEvent& InEvent) const;
 
 private:

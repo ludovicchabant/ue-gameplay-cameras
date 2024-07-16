@@ -3,9 +3,7 @@
 #include "Core/CameraNodeEvaluator.h"
 
 #include "Core/CameraNode.h"
-#include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
-#include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraNodeEvaluatorDebugBlock.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -14,11 +12,26 @@ namespace UE::Cameras
 
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraNodeEvaluator)
 
-void FCameraNodeEvaluationResult::Reset()
+void FCameraNodeEvaluationResult::Reset(bool bResetVariableTable)
 {
 	CameraPose.Reset();
+	CameraRigJoints.Reset();
+
+	if (bResetVariableTable)
+	{
+		VariableTable.UnsetAllValues();
+	}
+
 	bIsCameraCut = false;
 	bIsValid = false;
+}
+
+void FCameraNodeEvaluationResult::Serialize(FArchive& Ar)
+{
+	CameraPose.SerializeWithFlags(Ar);
+	VariableTable.Serialize(Ar);
+	Ar << bIsCameraCut;
+	Ar << bIsValid;
 }
 
 FCameraNodeEvaluator* FCameraNodeEvaluatorBuildParams::BuildEvaluator(const UCameraNode* InNode) const
@@ -51,6 +64,27 @@ FCameraNodeEvaluatorChildrenView FCameraNodeEvaluator::GetChildren()
 	return OnGetChildren();
 }
 
+void FCameraNodeEvaluator::ExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
+{
+	if (!PrivateCameraNode || PrivateCameraNode->bIsEnabled)
+	{
+		if (EnumHasAnyFlags(PrivateFlags, ECameraNodeEvaluatorFlags::SupportsOperations))
+		{
+			OnExecuteOperation(Params, Operation);
+		}
+		else
+		{
+			for (FCameraNodeEvaluator* Child : GetChildren())
+			{
+				if (Child)
+				{
+					Child->ExecuteOperation(Params, Operation);
+				}
+			}
+		}
+	}
+}
+
 void FCameraNodeEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	if (PrivateCameraNode)
@@ -65,6 +99,19 @@ void FCameraNodeEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
 		if (Child)
 		{
 			Child->AddReferencedObjects(Collector);
+		}
+	}
+}
+
+void FCameraNodeEvaluator::Serialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	OnSerialize(Params, Ar);
+
+	for (FCameraNodeEvaluator* Child : GetChildren())
+	{
+		if (Child)
+		{
+			Child->Serialize(Params, Ar);
 		}
 	}
 }

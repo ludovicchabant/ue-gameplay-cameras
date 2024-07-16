@@ -70,6 +70,12 @@ void FOcclusionMaterialCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 		return;
 	}
 
+	if (Params.EvaluationType != ECameraNodeEvaluationType::Standard)
+	{
+		// Don't run occlusion traces during IK/stateless updates.
+		return;
+	}
+
 	UWorld* World = Params.EvaluationContext->GetWorld();
 	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
 	if (!World || !PlayerController)

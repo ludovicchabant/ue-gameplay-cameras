@@ -16,7 +16,7 @@ namespace UE::Cameras
 
 class FCameraDebugBlock;
 class FCameraDebugBlockStorage;
-struct FCameraSystemEvaluationUpdateResult;
+struct FCameraSystemEvaluationResult;
 
 /**
  * Trace utility class for the camera system.
@@ -39,7 +39,7 @@ public:
 	/** Returns whether tracing of camera system evaluation is enabled. */
 	GAMEPLAYCAMERAS_API static bool IsTraceEnabled();
 	/** Records one frame of camera system evaluation. */
-	GAMEPLAYCAMERAS_API static void TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationUpdateResult& InResult, FCameraDebugBlock& InRootDebugBlock);
+	GAMEPLAYCAMERAS_API static void TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationResult& InResult, FCameraDebugBlock& InRootDebugBlock);
 	/** Reads back one frame of camera system evaluation. */
 	GAMEPLAYCAMERAS_API static FCameraDebugBlock* ReadEvaluationTrace(TArray<uint8> InSerializedBlocks, FCameraDebugBlockStorage& InStorage);
 

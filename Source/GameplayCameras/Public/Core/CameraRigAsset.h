@@ -167,6 +167,10 @@ public:
 	/** List of exist transitions for this camera rig. */
 	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Output))
 	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
+	
+	/** Default orientation initialization when this camera rig is activated. */
+	UPROPERTY(EditAnywhere, Category="Transition")
+	ECameraRigInitialOrientation InitialOrientation = ECameraRigInitialOrientation::None;
 
 	/** Allocation information for all the nodes and variables in this camera rig. */
 	UPROPERTY()

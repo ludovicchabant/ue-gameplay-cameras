@@ -56,15 +56,18 @@ class FDefaultRootCameraNodeEvaluator
 
 protected:
 
-	// FRootCameraNodeEvaluator interface.
+	// FCameraNodeEvaluator interface.
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+	// FRootCameraNodeEvaluator interface.
+	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
+	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 	// IBlendStackCameraNodeObserver interface.
 	virtual void OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent) override;
@@ -72,6 +75,8 @@ protected:
 private:
 
 	FBlendStackCameraNodeEvaluator* BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode);
+
+	FBlendStackCameraNodeEvaluator* GetBlendStackEvaluator(ECameraRigLayer Layer) const;
 
 private:
 

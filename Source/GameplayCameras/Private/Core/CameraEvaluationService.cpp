@@ -40,9 +40,9 @@ void FCameraEvaluationService::NotifyRootCameraNodeEvent(const FRootCameraNodeCa
 	OnRootCameraNodeEvent(InEvent);
 }
 
-bool FCameraEvaluationService::HasAnyEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags) const
+bool FCameraEvaluationService::HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags) const
 {
-	return EnumHasAnyFlags(PrivateFlags, InFlags);
+	return EnumHasAllFlags(PrivateFlags, InFlags);
 }
 
 void FCameraEvaluationService::SetEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags)

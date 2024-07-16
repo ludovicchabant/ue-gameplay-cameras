@@ -293,7 +293,7 @@ bool FCameraSystemTrace::IsTraceEnabled()
 	return GGameplayCamerasDebugTrace || UE_TRACE_CHANNELEXPR_IS_ENABLED(CameraSystemChannel);
 }
 
-void FCameraSystemTrace::TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationUpdateResult& InResult, FCameraDebugBlock& InRootDebugBlock)
+void FCameraSystemTrace::TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationResult& InResult, FCameraDebugBlock& InRootDebugBlock)
 {
 	if (!IsTraceEnabled())
 	{
