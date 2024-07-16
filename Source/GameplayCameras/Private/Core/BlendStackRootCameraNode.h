@@ -59,6 +59,7 @@ protected:
 	// FCameraNodeEvaluator interface.
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -69,6 +70,10 @@ private:
 
 	FBlendCameraNodeEvaluator* BlendEvaluator = nullptr;
 	FCameraNodeEvaluator* RootEvaluator = nullptr;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FString CameraRigAssetName;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 }  // namespace UE::Cameras
