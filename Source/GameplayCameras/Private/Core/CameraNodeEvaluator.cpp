@@ -158,7 +158,10 @@ void FCameraNodeEvaluator::BuildDebugBlocks(const FCameraDebugBlockBuildParams& 
 			FCameraNodeEvaluatorChildrenView ChildrenView(GetChildren());
 			for (FCameraNodeEvaluator* Child : ChildrenView)
 			{
-				Child->BuildDebugBlocks(Params, Builder);
+				if (Child)
+				{
+					Child->BuildDebugBlocks(Params, Builder);
+				}
 			}
 		}
 	}
