@@ -268,6 +268,14 @@ void FCameraDebugRenderer::DrawLine(const FVector3d& Start, const FVector3d& End
 	}
 }
 
+void FCameraDebugRenderer::DrawSphere(const FVector3d& Center, float Radius, int32 Segments, const FLinearColor& LineColor, float LineThickness)
+{
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		LineBatcher->DrawSphere(Center, Radius, Segments, LineColor, 0.f, SDPG_Foreground, LineThickness);
+	}
+}
+
 ULineBatchComponent* FCameraDebugRenderer::GetDebugLineBatcher() const
 {
 	return World ? World->ForegroundLineBatcher : nullptr;
