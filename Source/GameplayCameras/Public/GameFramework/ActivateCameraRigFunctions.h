@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Components/ActorComponent.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/RootCameraNode.h"
 #include "CoreTypes.h"
@@ -50,14 +51,47 @@ public:
 	/** Activates the given camera rig in the given layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
 	static void ActivateCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
+};
+
+/**
+ * A component, attached to a player controller, that can run camera rigs activated from
+ * a global place like the Blueprint functions inside UActivateCameraRigFunctions.
+ */
+UCLASS(Hidden, MinimalAPI)
+class UControllerGameplayCameraEvaluationComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:
+
+	UControllerGameplayCameraEvaluationComponent(const FObjectInitializer& ObjectInitializer);
+
+	/** Activates a new camera rig. */
+	void ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
+
+public:
+
+	// UActorComponent interface.
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+
+	void ActivateCameraRigs();
+	void EnsureEvaluationContext();
 
 	static UE::Cameras::FCameraSystemEvaluator* FindCameraSystemEvaluator(APlayerController* PlayerController);
-	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> EnsureGlobalContext(UObject* WorldContextObject, APlayerController* PlayerController);
 
 private:
 
-	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> GlobalContext;
+	struct FCameraRigInfo
+	{
+		TObjectPtr<UCameraRigAsset> CameraRig;
+		ECameraRigLayer EvaluationLayer;
+		bool bActivated = false;
+	};
+
+	TArray<FCameraRigInfo> CameraRigInfos;
+	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
 };
 

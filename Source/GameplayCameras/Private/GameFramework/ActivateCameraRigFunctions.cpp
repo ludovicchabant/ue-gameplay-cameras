@@ -16,8 +16,6 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ActivateCameraRigFunctions)
 
-TSharedPtr<UE::Cameras::FCameraEvaluationContext> UActivateCameraRigFunctions::GlobalContext;
-
 void UActivateCameraRigFunctions::ActivateBaseCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig)
 {
 	ActivateCameraRig(WorldContextObject, PlayerController, CameraRig, ECameraRigLayer::Base);
@@ -43,18 +41,106 @@ void UActivateCameraRigFunctions::ActivateCameraRig(UObject* WorldContextObject,
 		return;
 	}
 
-	if (FCameraSystemEvaluator* SystemEvaluator = FindCameraSystemEvaluator(PlayerController))
+	// Register our evaluation component on the given player controller, if it's not there already.
+	UControllerGameplayCameraEvaluationComponent* CameraEvaluationComponent = PlayerController->FindComponentByClass<UControllerGameplayCameraEvaluationComponent>();
+	if (!CameraEvaluationComponent)
 	{
-		FActivateCameraRigParams Params;
-		Params.CameraRig = CameraRig;
-		Params.EvaluationContext = EnsureGlobalContext(WorldContextObject, PlayerController);
-		Params.Evaluator = SystemEvaluator;
-		Params.Layer = EvaluationLayer;
-		SystemEvaluator->GetRootNodeEvaluator()->ActivateCameraRig(Params);
+		CameraEvaluationComponent = NewObject<UControllerGameplayCameraEvaluationComponent>(
+				PlayerController, TEXT("ControllerGameplayCameraEvaluationComponent"), RF_Transient);
+		CameraEvaluationComponent->RegisterComponent();
+	}
+
+	// Activate the camera rig.
+	CameraEvaluationComponent->ActivateCameraRig(CameraRig, EvaluationLayer);
+}
+
+UControllerGameplayCameraEvaluationComponent::UControllerGameplayCameraEvaluationComponent(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	bAutoActivate = true;
+}
+
+void UControllerGameplayCameraEvaluationComponent::ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
+{
+	FCameraRigInfo NewCameraRigInfo;
+	NewCameraRigInfo.CameraRig = CameraRig;
+	NewCameraRigInfo.EvaluationLayer = EvaluationLayer;
+	NewCameraRigInfo.bActivated = false;
+	CameraRigInfos.Add(NewCameraRigInfo);
+
+	if (IsActive())
+	{
+		ActivateCameraRigs();
 	}
 }
 
-UE::Cameras::FCameraSystemEvaluator* UActivateCameraRigFunctions::FindCameraSystemEvaluator(APlayerController* PlayerController)
+void UControllerGameplayCameraEvaluationComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ActivateCameraRigs();
+}
+
+void UControllerGameplayCameraEvaluationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	CameraRigInfos.Reset();
+	EvaluationContext.Reset();
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
+{
+	using namespace UE::Cameras;
+
+	APlayerController* PlayerController = GetOwner<APlayerController>();
+	FCameraSystemEvaluator* SystemEvaluator = FindCameraSystemEvaluator(PlayerController);
+	if (!SystemEvaluator)
+	{
+		return;
+	}
+	
+	EnsureEvaluationContext();
+	if (!EvaluationContext)
+	{
+		return;
+	}
+
+	FRootCameraNodeEvaluator* RootNodeEvaluator = SystemEvaluator->GetRootNodeEvaluator();
+
+	for (FCameraRigInfo& CameraRigInfo : CameraRigInfos)
+	{
+		if (!CameraRigInfo.bActivated)
+		{
+			FActivateCameraRigParams Params;
+			Params.CameraRig = CameraRigInfo.CameraRig;
+			Params.EvaluationContext = EvaluationContext;
+			Params.Evaluator = SystemEvaluator;
+			Params.Layer = CameraRigInfo.EvaluationLayer;
+			RootNodeEvaluator->ActivateCameraRig(Params);
+
+			CameraRigInfo.bActivated = true;
+		}
+	}
+}
+
+void UControllerGameplayCameraEvaluationComponent::EnsureEvaluationContext()
+{
+	using namespace UE::Cameras;
+
+	if (!EvaluationContext.IsValid())
+	{
+		APlayerController* PlayerController = GetOwner<APlayerController>();
+
+		FCameraEvaluationContextInitializeParams InitParams;
+		InitParams.Owner = this;
+		InitParams.PlayerController = PlayerController;
+		EvaluationContext = MakeShared<FCameraEvaluationContext>(InitParams);
+		EvaluationContext->GetInitialResult().bIsValid = true;	
+	}
+}
+
+UE::Cameras::FCameraSystemEvaluator* UControllerGameplayCameraEvaluationComponent::FindCameraSystemEvaluator(APlayerController* PlayerController)
 {
 	if (PlayerController && PlayerController->PlayerCameraManager)
 	{
@@ -65,20 +151,5 @@ UE::Cameras::FCameraSystemEvaluator* UActivateCameraRigFunctions::FindCameraSyst
 		}
 	}
 	return nullptr;
-}
-
-TSharedPtr<UE::Cameras::FCameraEvaluationContext> UActivateCameraRigFunctions::EnsureGlobalContext(UObject* WorldContextObject, APlayerController* PlayerController)
-{
-	using namespace UE::Cameras;
-
-	if (!GlobalContext.IsValid())
-	{
-		FCameraEvaluationContextInitializeParams InitParams;
-		InitParams.Owner = WorldContextObject;
-		InitParams.PlayerController = PlayerController;
-		GlobalContext = MakeShared<FCameraEvaluationContext>(InitParams);
-		GlobalContext->GetInitialResult().bIsValid = true;	
-	}
-	return GlobalContext;
 }
 
