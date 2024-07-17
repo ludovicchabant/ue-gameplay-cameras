@@ -158,6 +158,9 @@ public:
 	/** Gets the location of the camera's target. */
 	FVector3d GetTarget() const;
 
+	/** Gets the location of the camera's target given a specific distance. */
+	FVector3d GetTarget(double InTargetDistance) const;
+
 public:
 
 	// Interpolation

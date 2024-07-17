@@ -172,6 +172,11 @@ FVector3d FCameraPose::GetTarget() const
 	return Location + TargetDistance * GetAimDir();
 }
 
+FVector3d FCameraPose::GetTarget(double InTargetDistance) const
+{
+	return Location + InTargetDistance * GetAimDir();
+}
+
 void FCameraPose::OverrideAll(const FCameraPose& OtherPose)
 {
 	InternalOverrideChanged(OtherPose, false);
