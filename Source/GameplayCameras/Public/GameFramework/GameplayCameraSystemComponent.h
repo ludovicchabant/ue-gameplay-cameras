@@ -89,6 +89,13 @@ public:
 	UPROPERTY(EditAnywhere, Category=Camera)
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
+	/**
+	 * If enabled, sets the evaluated camera orientation as the player controller rotation every frame.
+	 * This is set on the player controller that this component was activated for.
+	 */
+	UPROPERTY(EditAnywhere, Category=Camera)
+	bool bSetPlayerControllerRotation = true;
+
 private:
 	
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
