@@ -44,6 +44,7 @@ private:
 	void OnCameraRigListSelectionChanged(UCameraRigAsset* Item, ESelectInfo::Type SelectInfo);
 	void UpdateCameraRigItemsSource();
 	void UpdateCameraRigFilteredItemsSource();
+	FText GetCameraRigCountText() const;
 
 	void GetEntryStrings(const UCameraRigAsset* InItem, TArray<FString>& OutStrings);
 	void OnSearchTextChanged(const FText& InFilterText);
