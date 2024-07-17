@@ -241,7 +241,7 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 
 		UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()
 		UE_CAMERA_POSE_FOR_INTERPOLABLE_PROPERTIES()
-		UE_CAMERA_POSE_FOR_BOOL_PROPERTIES()
+		UE_CAMERA_POSE_FOR_FLIPPING_PROPERTIES()
 
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 
@@ -324,7 +324,7 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 			}
 		}
 
-		// Last, do booleans, which just flip their value once we reach 50% interpolation.
+		// Last, do booleans and other properties that just flip their value once we reach 50% interpolation.
 
 #define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
 		if ((!bInvertMask && InMask.PropName) || (bInvertMask && !InMask.PropName))\
@@ -337,7 +337,7 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 			OutMask.PropName = true;\
 		}
 
-		UE_CAMERA_POSE_FOR_BOOL_PROPERTIES()
+		UE_CAMERA_POSE_FOR_FLIPPING_PROPERTIES()
 
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 
