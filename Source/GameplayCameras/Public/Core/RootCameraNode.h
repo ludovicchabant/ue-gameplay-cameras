@@ -42,7 +42,6 @@ namespace UE::Cameras
 
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
-class IRootCameraNodeObserver;
 struct FRootCameraNodeCameraRigEvent;
 
 /**
@@ -75,6 +74,8 @@ struct FSingleCameraRigEvaluationParams
 	FCameraRigEvaluationInfo CameraRigInfo;
 };
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRootCameraNodeCameraRigEvent, const FRootCameraNodeCameraRigEvent&);
+
 /**
  * Base class for the evaluator of a root camera node.
  */
@@ -92,10 +93,8 @@ public:
 	 */
 	void RunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
-	/** Registers an observer to this root node. */
-	void RegisterObserver(IRootCameraNodeObserver* Observer);
-	/** Unregisters an observer from this root node. */
-	void UnregisterObserver(IRootCameraNodeObserver* Observer);
+	/** Gets the delegate for camera rig events. */
+	FOnRootCameraNodeCameraRigEvent& OnCameraRigEvent() { return OnCameraRigEventDelegate; }
 
 protected:
 
@@ -112,19 +111,15 @@ protected:
 
 protected:
 
-	/** Returns whether this root camera node has any observers. */
-	bool HasObservers() const;
-	
-	/** Notifies observers of a root camera node event. */
-	void NotifyObservers(const FRootCameraNodeCameraRigEvent& InEvent) const;
+	void BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const;
 
 private:
 
 	/** The camera system that owns this root node. */
 	FCameraSystemEvaluator* OwningEvaluator = nullptr;
 
-	/** The list of observers. */
-	TArray<IRootCameraNodeObserver*> Observers;
+	/** The delegate to notify when an event happens. */
+	FOnRootCameraNodeCameraRigEvent OnCameraRigEventDelegate;
 };
 
 }  // namespace UE::Cameras

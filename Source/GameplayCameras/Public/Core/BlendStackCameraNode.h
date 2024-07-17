@@ -23,8 +23,8 @@ namespace UE::Cameras
 class FBlendStackRootCameraNodeEvaluator;
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
-class IBlendStackCameraNodeObserver;
 enum class EBlendStackCameraRigEventType;
+struct FBlendStackCameraRigEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 class FBlendStackCameraDebugBlock;
@@ -79,6 +79,8 @@ struct FBlendStackCameraPushParams
 	TObjectPtr<const UCameraRigAsset> CameraRig;
 };
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlendStackCameraRigEvent, const FBlendStackCameraRigEvent&);
+
 /**
  * Evaluator for a blend stack camera node.
  */
@@ -106,10 +108,8 @@ public:
 
 public:
 
-	/** Register a blend stack observer. */
-	void RegisterObserver(IBlendStackCameraNodeObserver* Observer);
-	/** Unregister a blend stack observer. */
-	void UnregisterObserver(IBlendStackCameraNodeObserver* Observer);
+	/** Gets the delegate for blend stack events. */
+	FOnBlendStackCameraRigEvent& OnCameraRigEvent() { return OnCameraRigEventDelegate; }
 
 protected:
 
@@ -151,7 +151,7 @@ protected:
 
 	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
 
-	void NotifyObservers(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
+	void BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
 
 protected:
 
@@ -195,8 +195,8 @@ protected:
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;
 
-	/** The list of observers for this blend stack. */
-	TArray<IBlendStackCameraNodeObserver*> Observers;
+	/** The delegate to invoke when an event occurs in this blend stack. */
+	FOnBlendStackCameraRigEvent OnCameraRigEventDelegate;
 
 #if WITH_EDITOR
 	TMap<const UPackage*, int32> AllListenedPackages;

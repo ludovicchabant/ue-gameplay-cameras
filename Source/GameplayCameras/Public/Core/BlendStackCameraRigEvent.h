@@ -38,18 +38,5 @@ struct FBlendStackCameraRigEvent
 	TObjectPtr<const UCameraRigTransition> Transition;
 };
 
-/**
- * An interface for observing blend stack events.
- */
-class IBlendStackCameraNodeObserver
-{
-public:
-
-	virtual ~IBlendStackCameraNodeObserver() {}
-
-	/** Called when a relevant event happens in the observed blend stack. */
-	virtual void OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent) {}
-};
-
 }  // namespace UE::Cameras
 

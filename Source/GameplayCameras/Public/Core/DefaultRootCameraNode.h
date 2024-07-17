@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Core/RootCameraNode.h"
-#include "Core/BlendStackCameraNodeObserver.h"
+#include "Core/BlendStackCameraRigEvent.h"
 
 #include "DefaultRootCameraNode.generated.h"
 
@@ -48,9 +48,7 @@ class FBlendStackCameraNodeEvaluator;
 /**
  * Evaluator for the default root camera node.
  */
-class FDefaultRootCameraNodeEvaluator 
-	: public FRootCameraNodeEvaluator
-	, public IBlendStackCameraNodeObserver
+class FDefaultRootCameraNodeEvaluator : public FRootCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FDefaultRootCameraNodeEvaluator)
 
@@ -69,14 +67,13 @@ protected:
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
 	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
-	// IBlendStackCameraNodeObserver interface.
-	virtual void OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent) override;
-
 private:
 
 	FBlendStackCameraNodeEvaluator* BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode);
 
 	FBlendStackCameraNodeEvaluator* GetBlendStackEvaluator(ECameraRigLayer Layer) const;
+
+	void OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent);
 
 private:
 

@@ -6,7 +6,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
-#include "Core/RootCameraNodeObserver.h"
+#include "Core/RootCameraNodeCameraRigEvent.h"
 
 namespace UE::Cameras
 {

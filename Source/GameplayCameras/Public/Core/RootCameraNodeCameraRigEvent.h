@@ -35,19 +35,6 @@ struct FRootCameraNodeCameraRigEvent
 	TObjectPtr<const UCameraRigTransition> Transition;
 };
 
-/**
- * An interface for observing events on a root camera node.
- */
-class IRootCameraNodeObserver
-{
-public:
-
-	virtual ~IRootCameraNodeObserver() {}
-
-	/** Called when an event happens in a root camera node. */
-	virtual void OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent) {}
-};
-
 }  // namespace UE::Cameras
 
 

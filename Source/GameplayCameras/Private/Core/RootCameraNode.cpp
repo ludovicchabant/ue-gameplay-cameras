@@ -4,7 +4,7 @@
 
 #include "Core/CameraEvaluationService.h"
 #include "Core/CameraSystemEvaluator.h"
-#include "Core/RootCameraNodeObserver.h"
+#include "Core/RootCameraNodeCameraRigEvent.h"
 #include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RootCameraNode)
@@ -41,32 +41,14 @@ void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluati
 	OnRunSingleCameraRig(Params, OutResult);
 }
 
-void FRootCameraNodeEvaluator::RegisterObserver(IRootCameraNodeObserver* Observer)
-{
-	Observers.Add(Observer);
-}
-
-void FRootCameraNodeEvaluator::UnregisterObserver(IRootCameraNodeObserver* Observer)
-{
-	Observers.Remove(Observer);
-}
-
-bool FRootCameraNodeEvaluator::HasObservers() const
-{
-	return !Observers.IsEmpty();
-}
-
-void FRootCameraNodeEvaluator::NotifyObservers(const FRootCameraNodeCameraRigEvent& InEvent) const
+void FRootCameraNodeEvaluator::BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const
 {
 	if (ensure(OwningEvaluator))
 	{
 		OwningEvaluator->NotifyRootCameraNodeEvent(InEvent);
 	}
 
-	for (IRootCameraNodeObserver* Observer : Observers)
-	{
-		Observer->OnRootCameraNodeEvent(InEvent);
-	}
+	OnCameraRigEventDelegate.Broadcast(InEvent);
 }
 
 }  // namespace UE::Cameras

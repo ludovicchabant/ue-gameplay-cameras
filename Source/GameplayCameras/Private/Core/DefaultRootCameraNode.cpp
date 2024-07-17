@@ -4,8 +4,7 @@
 
 #include "Core/BlendStackCameraNode.h"
 #include "Core/CameraEvaluationContext.h"
-#include "Core/CameraRigAsset.h"
-#include "Core/RootCameraNodeObserver.h"
+#include "Core/RootCameraNodeCameraRigEvent.h"
 #include "Debug/BlendStacksCameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/RootCameraDebugBlock.h"
@@ -62,7 +61,7 @@ void FDefaultRootCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildPar
 FBlendStackCameraNodeEvaluator* FDefaultRootCameraNodeEvaluator::BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode)
 {
 	FBlendStackCameraNodeEvaluator* BlendStackEvaluator = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(BlendStackNode);
-	BlendStackEvaluator->RegisterObserver(this);
+	BlendStackEvaluator->OnCameraRigEvent().AddRaw(this, &FDefaultRootCameraNodeEvaluator::OnBlendStackEvent);
 	return BlendStackEvaluator;
 }
 
@@ -175,7 +174,7 @@ void FDefaultRootCameraNodeEvaluator::OnBlendStackEvent(const FBlendStackCameraR
 			RootEvent.EventLayer = ECameraRigLayer::Visual;
 		}
 
-		NotifyObservers(RootEvent);
+		BroadcastCameraRigEvent(RootEvent);
 	}
 }
 

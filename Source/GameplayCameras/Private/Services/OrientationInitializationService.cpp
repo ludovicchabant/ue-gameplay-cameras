@@ -9,7 +9,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
-#include "Core/RootCameraNodeObserver.h"
+#include "Core/RootCameraNodeCameraRigEvent.h"
 
 namespace UE::Cameras
 {

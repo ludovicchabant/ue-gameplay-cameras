@@ -3,7 +3,7 @@
 #include "Core/BlendStackCameraNode.h"
 
 #include "Core/BlendCameraNode.h"
-#include "Core/BlendStackCameraNodeObserver.h"
+#include "Core/BlendStackCameraRigEvent.h"
 #include "Core/BlendStackRootCameraNode.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
@@ -125,10 +125,9 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	// is disabled.
 	Entries.Add(MoveTemp(NewEntry));
 
-	// Notify observers.
-	if (!Observers.IsEmpty())
+	if (OnCameraRigEventDelegate.IsBound())
 	{
-		NotifyObservers(EBlendStackCameraRigEventType::Pushed, Entries.Last(), UsedTransition);
+		BroadcastCameraRigEvent(EBlendStackCameraRigEventType::Pushed, Entries.Last(), UsedTransition);
 	}
 }
 
@@ -499,9 +498,9 @@ void FBlendStackCameraNodeEvaluator::PopEntries(int32 FirstIndexToKeep)
 		}
 #endif  // WITH_EDITOR
 
-		if (!Observers.IsEmpty())
+		if (OnCameraRigEventDelegate.IsBound())
 		{
-			NotifyObservers(EBlendStackCameraRigEventType::Popped, FirstEntry);
+			BroadcastCameraRigEvent(EBlendStackCameraRigEventType::Popped, FirstEntry);
 		}
 
 		Entries.RemoveAt(0);
@@ -624,17 +623,7 @@ const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 	return nullptr;
 }
 
-void FBlendStackCameraNodeEvaluator::RegisterObserver(IBlendStackCameraNodeObserver* Observer)
-{
-	Observers.Add(Observer);
-}
-
-void FBlendStackCameraNodeEvaluator::UnregisterObserver(IBlendStackCameraNodeObserver* Observer)
-{
-	Observers.Remove(Observer);
-}
-
-void FBlendStackCameraNodeEvaluator::NotifyObservers(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition) const
+void FBlendStackCameraNodeEvaluator::BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition) const
 {
 	FBlendStackCameraRigEvent Event;
 	Event.EventType = EventType;
@@ -646,10 +635,7 @@ void FBlendStackCameraNodeEvaluator::NotifyObservers(EBlendStackCameraRigEventTy
 			Entry.RootEvaluator);
 	Event.Transition = Transition;
 
-	for (IBlendStackCameraNodeObserver* Observer : Observers)
-	{
-		Observer->OnBlendStackEvent(Event);
-	}
+	OnCameraRigEventDelegate.Broadcast(Event);
 }
 
 void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
