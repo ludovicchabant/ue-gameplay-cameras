@@ -186,7 +186,8 @@ void FBlendStackCameraNodeEvaluator::GatherEntryParameterEvaluators(FCameraNodeE
 		}
 		else
 		{
-			for (FCameraNodeEvaluator* Child : ReverseIterate(CurEvaluator->GetChildren()))
+			FCameraNodeEvaluatorChildrenView CurChildren(CurEvaluator->GetChildren());
+			for (FCameraNodeEvaluator* Child : ReverseIterate(CurChildren))
 			{
 				if (Child)
 				{

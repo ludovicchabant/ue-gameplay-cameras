@@ -3,8 +3,8 @@
 #include "Nodes/Common/TargetRayCastCameraNode.h"
 
 #include "CollisionQueryParams.h"
-#include "Components/LineBatchComponent.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraNodeEvaluator.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
@@ -132,6 +132,8 @@ void FTargetRayCastCameraNodeEvaluator::RunLineTrace(UWorld* World, APlayerContr
 	}
 }
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
 void FTargetRayCastCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
 {
 	FTargetRayCastCameraDebugBlock& DebugBlock = Builder.AttachDebugBlock<FTargetRayCastCameraDebugBlock>();
@@ -154,6 +156,8 @@ void FTargetRayCastCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 
 	Renderer.DrawSphere(HitResultLocation, 1.f, 8, FLinearColor::Blue, 1.f);
 }
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

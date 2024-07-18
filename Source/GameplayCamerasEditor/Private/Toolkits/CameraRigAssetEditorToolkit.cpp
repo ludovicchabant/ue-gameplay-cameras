@@ -228,12 +228,12 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	Builder.BuildCameraRig(
 			CameraRigAsset,
 			FCameraRigAssetBuilder::FCustomBuildStep::CreateLambda(
-				[](UCameraRigAsset* CameraRigAsset, FCameraBuildLog& BuildLog)
+				[](UCameraRigAsset* InCameraRigAsset, FCameraBuildLog& BuildLog)
 				{
 					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
 					for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
 					{
-						Builder.ExecuteIfBound(CameraRigAsset, BuildLog);
+						Builder.ExecuteIfBound(InCameraRigAsset, BuildLog);
 					}
 				}));
 

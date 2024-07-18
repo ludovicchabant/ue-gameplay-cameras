@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Misc/AssertionMacros.h"
+
 namespace UE::Cameras
 {
 
