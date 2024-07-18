@@ -63,6 +63,9 @@ private:
 
 	void OnCreateVariable(TSubclassOf<UCameraVariableAsset> InVariableClass);
 
+	void OnRenameVariable();
+	bool CanRenameVariable();
+
 	void OnDeleteVariable();
 	bool CanDeleteVariable();
 

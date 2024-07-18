@@ -16,6 +16,7 @@
 #include "Modules/ModuleManager.h"
 #include "ObjectTools.h"
 #include "PropertyEditorModule.h"
+#include "PropertyPath.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -377,6 +378,9 @@ void FCameraVariableCollectionEditorToolkit::RegisterToolbar()
 				);
 		VariablesSection.AddEntry(CreateVariableEntry);
 
+		FToolMenuEntry RenameVariableEntry = FToolMenuEntry::InitToolBarButton(Commands.RenameVariable);
+		VariablesSection.AddEntry(RenameVariableEntry);
+
 		FToolMenuEntry DeleteVariableEntry = FToolMenuEntry::InitToolBarButton(Commands.DeleteVariable);
 		VariablesSection.AddEntry(DeleteVariableEntry);
 	}
@@ -434,6 +438,11 @@ void FCameraVariableCollectionEditorToolkit::PostInitAssetEditor()
 	const FCameraVariableCollectionEditorCommands& Commands = FCameraVariableCollectionEditorCommands::Get();
 
 	ToolkitCommands->MapAction(
+		Commands.RenameVariable,
+		FExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::OnRenameVariable),
+		FCanExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::CanRenameVariable));
+
+	ToolkitCommands->MapAction(
 		Commands.DeleteVariable,
 		FExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::OnDeleteVariable),
 		FCanExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::CanDeleteVariable));
@@ -471,6 +480,23 @@ void FCameraVariableCollectionEditorToolkit::OnCreateVariable(TSubclassOf<UCamer
 	VariableCollection->Variables.Add(NewVariable);
 
 	VariableCollectionEditorWidget->RequestListRefresh();
+}
+
+void FCameraVariableCollectionEditorToolkit::OnRenameVariable()
+{
+	UClass* VariableAssetClass = UCameraVariableAsset::StaticClass();
+	FProperty* DisplayNameProperty = VariableAssetClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UCameraVariableAsset, DisplayName));
+
+	FPropertyPath PropertyPath;
+	PropertyPath.AddProperty(FPropertyInfo(DisplayNameProperty));
+	DetailsView->HighlightProperty(PropertyPath);
+}
+
+bool FCameraVariableCollectionEditorToolkit::CanRenameVariable()
+{
+	TArray<UCameraVariableAsset*> Selection;
+	VariableCollectionEditorWidget->GetSelectedVariables(Selection);
+	return !Selection.IsEmpty();
 }
 
 void FCameraVariableCollectionEditorToolkit::OnDeleteVariable()

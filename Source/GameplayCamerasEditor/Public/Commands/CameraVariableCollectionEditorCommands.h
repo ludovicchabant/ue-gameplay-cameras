@@ -23,6 +23,7 @@ public:
 public:
 
 	TSharedPtr<FUICommandInfo> CreateVariable;
+	TSharedPtr<FUICommandInfo> RenameVariable;
 	TSharedPtr<FUICommandInfo> DeleteVariable;
 };
 
