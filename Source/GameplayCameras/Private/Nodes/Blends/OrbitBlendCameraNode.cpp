@@ -16,6 +16,7 @@ protected:
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult) override;
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) override;
 
 	static bool ClosestPoints(const FRay3d& A, const FRay3d& B, double& OutParameterA, double& OutParameterB);
@@ -39,6 +40,19 @@ void FOrbitBlendCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildPara
 FCameraNodeEvaluatorChildrenView FOrbitBlendCameraNodeEvaluator::OnGetChildren()
 {
 	return FCameraNodeEvaluatorChildrenView({ DrivingBlendEvaluator });
+}
+
+void FOrbitBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
+{
+	if (DrivingBlendEvaluator)
+	{
+		DrivingBlendEvaluator->BlendParameters(Params, OutResult);
+	}
+	else
+	{
+		const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
+		OutResult.VariableTable.Override(ChildVariableTable, ECameraVariableTableFilter::Input);
+	}
 }
 
 void FOrbitBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
