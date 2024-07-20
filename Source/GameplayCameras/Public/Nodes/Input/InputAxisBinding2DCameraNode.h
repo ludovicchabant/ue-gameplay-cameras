@@ -19,9 +19,9 @@ class UInputAxisBinding2DCameraNode : public UInput2DCameraNode
 
 public:
 
-	/** The axis input action to read from. */
+	/** The axis input action(s) to read from. */
 	UPROPERTY(EditAnywhere, Category="Input")
-	TObjectPtr<UInputAction> AxisAction;
+	TArray<TObjectPtr<UInputAction>> AxisActions;
 
 	/** Whether to revert the X axis. */
 	UPROPERTY(EditAnywhere, Category="Input Processing")

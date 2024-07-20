@@ -23,7 +23,7 @@ protected:
 private:
 
 	TObjectPtr<UEnhancedInputComponent> InputComponent;
-	FEnhancedInputActionValueBinding* AxisValueBinding = nullptr;
+	TArray<FEnhancedInputActionValueBinding*> AxisValueBindings;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FInputAxisBinding2DCameraNodeEvaluator)
@@ -39,31 +39,49 @@ void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 	}
 
 	const UInputAxisBinding2DCameraNode* AxisBindingNode = GetCameraNodeAs<UInputAxisBinding2DCameraNode>();
-	if (InputComponent && AxisBindingNode->AxisAction)
+	if (InputComponent)
 	{
-		AxisValueBinding = &InputComponent->BindActionValue(AxisBindingNode->AxisAction);
+		for (TObjectPtr<UInputAction> AxisAction : AxisBindingNode->AxisActions)
+		{
+			FEnhancedInputActionValueBinding* AxisValueBinding = &InputComponent->BindActionValue(AxisAction);
+			AxisValueBindings.Add(AxisValueBinding);
+		}
 	}
 }
 
 void FInputAxisBinding2DCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	const UInputAxisBinding2DCameraNode* AxisBindingNode = GetCameraNodeAs<UInputAxisBinding2DCameraNode>();
-	if (AxisValueBinding)
+
+	FVector2d HighestValue(FVector2d::ZeroVector);
+	double HighestSquaredLenth = 0.f;
+
+	for (FEnhancedInputActionValueBinding* AxisValueBinding : AxisValueBindings)
 	{
+		if (!AxisValueBinding)
+		{
+			continue;
+		}
+
 		const FVector2d Value = AxisValueBinding->GetValue().Get<FVector2D>();
-
-		InputValue = FVector2d(
-				Value.X * AxisBindingNode->Multiplier.X, 
-				Value.Y * AxisBindingNode->Multiplier.Y);
-
-		if (AxisBindingNode->RevertAxisX)
+		const double ValueSquaredLength = Value.SquaredLength();
+		if (ValueSquaredLength > HighestSquaredLenth)
 		{
-			InputValue.X = -InputValue.X;
+			HighestValue = Value;
 		}
-		if (AxisBindingNode->RevertAxisY)
-		{
-			InputValue.Y = -InputValue.Y;
-		}
+	}
+
+	InputValue = FVector2d(
+			HighestValue.X * AxisBindingNode->Multiplier.X, 
+			HighestValue.Y * AxisBindingNode->Multiplier.Y);
+
+	if (AxisBindingNode->RevertAxisX)
+	{
+		InputValue.X = -InputValue.X;
+	}
+	if (AxisBindingNode->RevertAxisY)
+	{
+		InputValue.Y = -InputValue.Y;
 	}
 }
 
