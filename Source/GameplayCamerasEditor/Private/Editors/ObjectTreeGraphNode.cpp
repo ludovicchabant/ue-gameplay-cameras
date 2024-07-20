@@ -77,7 +77,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 		FEdGraphPinType SelfPinType;
 		SelfPinType.PinCategory = UObjectTreeGraphSchema::PC_Self;
 		const FName& SelfPinName = ObjectClassConfig.SelfPinName();
-		UEdGraphPin* SelfPin = CreatePin(ObjectClassConfig.SelfPinDirection(), SelfPinType, SelfPinName);
+		UEdGraphPin* SelfPin = CreatePin(OuterGraphConfig.GetSelfPinDirection(NodeContext.ObjectClass), SelfPinType, SelfPinName);
 		SelfPin->PinFriendlyName = ObjectClassConfig.SelfPinFriendlyName();
 	}
 

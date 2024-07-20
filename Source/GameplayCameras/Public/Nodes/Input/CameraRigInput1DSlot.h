@@ -16,7 +16,10 @@ class UInput1DCameraNode;
 /**
  * A node that can handle and accumulate a chain of player input nodes.
  */
-UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
+UCLASS(MinimalAPI, meta=(
+			CameraNodeCategories="Input", 
+			ObjectTreeGraphSelfPinDirection="Output", 
+			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
 class UCameraRigInput1DSlot : public UCameraNode
 {
 	GENERATED_BODY()

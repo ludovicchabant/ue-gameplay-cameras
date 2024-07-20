@@ -10,7 +10,10 @@
 /**
  * A camera node that provides a floating-point value to an input slot.
  */
-UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
+UCLASS(MinimalAPI, meta=(
+			CameraNodeCategories="Input",
+			ObjectTreeGraphSelfPinDirection="Output",
+			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
 class UInput1DCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

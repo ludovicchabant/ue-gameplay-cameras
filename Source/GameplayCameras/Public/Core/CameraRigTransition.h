@@ -32,7 +32,10 @@ struct FCameraRigTransitionConditionMatchParams
 /**
  * Base class for a camera transition condition.
  */
-UCLASS(Abstract, DefaultToInstanced, MinimalAPI, meta=(ObjectTreeGraphCategory="Transition Conditions"))
+UCLASS(Abstract, DefaultToInstanced, MinimalAPI, meta=(
+			ObjectTreeGraphCategory="Transition Conditions",
+			ObjectTreeGraphSelfPinDirection="Output",
+			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
 class UCameraRigTransitionCondition 
 	: public UObject
 	, public IObjectTreeGraphObject

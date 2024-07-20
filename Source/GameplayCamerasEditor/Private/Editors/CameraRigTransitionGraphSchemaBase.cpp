@@ -26,8 +26,6 @@ FObjectTreeGraphConfig UCameraRigTransitionGraphSchemaBase::BuildGraphConfig() c
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransition::StaticClass())
 		.NodeTitleColor(Settings->CameraRigTransitionTitleColor);
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
-		.SelfPinDirection(EGPD_Output)
-		.DefaultPropertyPinDirection(EGPD_Input)
 		.StripDisplayNameSuffix(TEXT("Transition Condition"))
 		.NodeTitleColor(Settings->CameraRigTransitionConditionTitleColor);
 	GraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())

@@ -11,7 +11,10 @@
 /**
  * A camera node that provides a two-dimensional value to an input slot.
  */
-UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
+UCLASS(MinimalAPI, meta=(
+			CameraNodeCategories="Input",
+			ObjectTreeGraphSelfPinDirection="Output",
+			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
 class UInput2DCameraNode : public UCameraNode
 {
 	GENERATED_BODY()

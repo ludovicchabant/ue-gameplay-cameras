@@ -45,7 +45,8 @@ struct FCameraRigAllocationInfo
  * An exposed camera rig parameter that drives a specific parameter on one of
  * its camera nodes.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(
+			ObjectTreeGraphSelfPinDirection="Output"))
 class UCameraRigInterfaceParameter
 	: public UObject
 	, public IObjectTreeGraphObject

@@ -50,12 +50,12 @@ public:
 	/** The display name of the self pin. */
 	OTGCC_FIELD(FText, SelfPinFriendlyName)
 	/** The direction of the self pin. */
-	OTGCC_FIELD(EEdGraphPinDirection, SelfPinDirection)
+	OTGCC_FIELD(TOptional<EEdGraphPinDirection>, SelfPinDirectionOverride)
 	/** Whether graph nodes for this class have a self pin. */
 	OTGCC_FIELD(bool, HasSelfPin)
 
 	/** Default direction of property pins. */
-	OTGCC_FIELD(EEdGraphPinDirection, DefaultPropertyPinDirection)
+	OTGCC_FIELD(TOptional<EEdGraphPinDirection>, DefaultPropertyPinDirectionOverride)
 
 	/** Color of the graph node's title. */
 	OTGCC_FIELD(TOptional<FLinearColor>, NodeTitleColor)
@@ -230,6 +230,9 @@ public:
 	FText GetDisplayNameText(const UObject* InObject) const;
 	/** Computes the display name of the given object class. */
 	FText GetDisplayNameText(const UClass* InClass) const;
+
+	/** Gets the "self" pin direction for a given class. */
+	EEdGraphPinDirection GetSelfPinDirection(const UClass* InObjectClass) const;
 
 	/** Gets the custom property pin direction for a given named property. */
 	EEdGraphPinDirection GetPropertyPinDirection(const UClass* InObjectClass, const FName& InPropertyName) const;

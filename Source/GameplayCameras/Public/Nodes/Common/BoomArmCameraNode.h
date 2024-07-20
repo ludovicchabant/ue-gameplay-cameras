@@ -33,7 +33,7 @@ public:
 	 * The input slot for controlling the boom arm.
 	 * If no input slot is specified, the boom arm will use the player controller view rotation.
 	 */
-	UPROPERTY()
+	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Input))
 	TObjectPtr<UCameraRigInput2DSlot> InputSlot;
 };
 

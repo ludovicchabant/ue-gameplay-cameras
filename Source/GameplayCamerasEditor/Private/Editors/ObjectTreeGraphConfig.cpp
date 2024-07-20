@@ -13,9 +13,7 @@
 FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
 	: _SelfPinName(NAME_Self)
 	, _SelfPinFriendlyName(FText::GetEmpty())
-	, _SelfPinDirection(EGPD_Input)
 	, _HasSelfPin(true)
-	, _DefaultPropertyPinDirection(EGPD_Output)
 	, _NodeTitleUsesObjectName(false)
 	, _CanCreateNew(true)
 	, _CanDelete(true)
@@ -228,6 +226,33 @@ void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, cons
 	OnFormatObjectDisplayName.ExecuteIfBound(InObject, InOutDisplayNameText);
 }
 
+EEdGraphPinDirection FObjectTreeGraphConfig::GetSelfPinDirection(const UClass* InObjectClass) const
+{
+	const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObjectClass);
+	TOptional<EEdGraphPinDirection> PinDirectionOverride = ClassConfig.SelfPinDirectionOverride();
+	if (PinDirectionOverride.IsSet())
+	{
+		return PinDirectionOverride.GetValue();
+	}
+
+	while (InObjectClass)
+	{
+		const FString& CustomDefaultDirection = InObjectClass->GetMetaData(TEXT("ObjectTreeGraphSelfPinDirection"));
+		if (CustomDefaultDirection == TEXT("Input"))
+		{
+			return EGPD_Input;
+		}
+		else if (CustomDefaultDirection == TEXT("Output"))
+		{
+			return EGPD_Output;
+		}
+
+		InObjectClass = InObjectClass->GetSuperClass();
+	}
+
+	return EGPD_Input;
+}
+
 EEdGraphPinDirection FObjectTreeGraphConfig::GetPropertyPinDirection(const UClass* InObjectClass, const FName& InPropertyName) const
 {
 	const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObjectClass);
@@ -248,7 +273,28 @@ EEdGraphPinDirection FObjectTreeGraphConfig::GetPropertyPinDirection(const UClas
 		return EGPD_Output;
 	}
 
-	return ClassConfig.DefaultPropertyPinDirection();
+	TOptional<EEdGraphPinDirection> DefaultPinDirectionOverride = ClassConfig.DefaultPropertyPinDirectionOverride();
+	if (DefaultPinDirectionOverride.IsSet())
+	{
+		return DefaultPinDirectionOverride.GetValue();
+	}
+
+	while (InObjectClass)
+	{
+		const FString& CustomDefaultDirection = InObjectClass->GetMetaData(TEXT("ObjectTreeGraphDefaultPropertyPinDirection"));
+		if (CustomDefaultDirection == TEXT("Input"))
+		{
+			return EGPD_Input;
+		}
+		else if (CustomDefaultDirection == TEXT("Output"))
+		{
+			return EGPD_Output;
+		}
+
+		InObjectClass = InObjectClass->GetSuperClass();
+	}
+
+	return EGPD_Output;
 }
 
 #undef LOCTEXT_NAMESPACE
