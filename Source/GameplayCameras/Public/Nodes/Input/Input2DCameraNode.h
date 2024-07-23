@@ -11,7 +11,7 @@
 /**
  * A camera node that provides a two-dimensional value to an input slot.
  */
-UCLASS(MinimalAPI, meta=(
+UCLASS(Abstract, MinimalAPI, meta=(
 			CameraNodeCategories="Input",
 			ObjectTreeGraphSelfPinDirection="Output",
 			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
@@ -36,6 +36,11 @@ public:
 
 	/** Get the current input value. */
 	FVector2d GetInputValue() const { return InputValue; }
+
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 protected:
 

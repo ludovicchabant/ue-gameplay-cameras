@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Math/MathFwd.h"
-#include "Nodes/Input/Input2DCameraNode.h"
+#include "Nodes/Input/CameraRigInput2DSlot.h"
 
 #include "InputAxisBinding2DCameraNode.generated.h"
 
@@ -13,7 +13,7 @@ class UInputAction;
  * An input node that reads player input from an input action.
  */
 UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
-class UInputAxisBinding2DCameraNode : public UInput2DCameraNode
+class UInputAxisBinding2DCameraNode : public UCameraRigInput2DSlot
 {
 	GENERATED_BODY()
 

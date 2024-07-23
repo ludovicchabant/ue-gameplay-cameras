@@ -3,24 +3,20 @@
 #pragma once
 
 #include "Core/BuiltInCameraVariables.h"
-#include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Nodes/Input/CameraRigInputSlotTypes.h"
+#include "Nodes/Input/Input1DCameraNode.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraRigInput1DSlot.generated.h"
 
 class UDoubleCameraVariable;
-class UInput1DCameraNode;
 
 /**
- * A node that can handle and accumulate a chain of player input nodes.
+ * The base class for a node that can handle and accumulate raw player input values.
  */
-UCLASS(MinimalAPI, meta=(
-			CameraNodeCategories="Input", 
-			ObjectTreeGraphSelfPinDirection="Output", 
-			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
-class UCameraRigInput1DSlot : public UCameraNode
+UCLASS(Abstract)
+class UCameraRigInput1DSlot : public UInput1DCameraNode
 {
 	GENERATED_BODY()
 
@@ -46,10 +42,6 @@ public:
 	UPROPERTY(EditAnywhere, Category="Input", meta=(EditCondition="BuiltInVariable == EBuiltInDoubleCameraVariable::None"))
 	TObjectPtr<UDoubleCameraVariable> Variable;
 
-	/** A node providing an incremental value. */
-	UPROPERTY()
-	TObjectPtr<UInput1DCameraNode> Child;
-
 public:
 
 	FCameraVariableID GetVariableID() const { return VariableID; }
@@ -58,7 +50,6 @@ public:
 protected:
 
 	// UCameraNode interface.
-	virtual FCameraNodeChildrenView OnGetChildren() override;
 	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
@@ -75,22 +66,18 @@ namespace UE::Cameras
 
 class FInput1DCameraNodeEvaluator;
 
-class FCameraRigInput1DSlotEvaluator : public FCameraNodeEvaluator
+class FCameraRigInput1DSlotEvaluator : public FInput1DCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FCameraRigInput1DSlotEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FCameraRigInput1DSlotEvaluator, FInput1DCameraNodeEvaluator)
 
 public:
 
 	FCameraRigInput1DSlotEvaluator();
 
-	double GetInputValue() const { return InputValue; }
-
 protected:
 
 	// FCameraNodeEvaluator interface.
-	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
-	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
@@ -98,10 +85,7 @@ protected:
 
 protected:
 
-	FInput1DCameraNodeEvaluator* ChildEvaluator;
-
 	double TransientInputValue = 0.f;
-	double InputValue = 0.f;
 };
 
 }  // namespace UE::Cameras

@@ -7,7 +7,7 @@
 
 #include "BoomArmCameraNode.generated.h"
 
-class UCameraRigInput2DSlot;
+class UInput2DCameraNode;
 
 /**
  * A camera node that can rotate the camera in yaw and pitch based on player input.
@@ -34,6 +34,6 @@ public:
 	 * If no input slot is specified, the boom arm will use the player controller view rotation.
 	 */
 	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Input))
-	TObjectPtr<UCameraRigInput2DSlot> InputSlot;
+	TObjectPtr<UInput2DCameraNode> InputSlot;
 };
 

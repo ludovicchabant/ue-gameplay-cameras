@@ -10,7 +10,7 @@
 /**
  * A camera node that provides a floating-point value to an input slot.
  */
-UCLASS(MinimalAPI, meta=(
+UCLASS(Abstract, MinimalAPI, meta=(
 			CameraNodeCategories="Input",
 			ObjectTreeGraphSelfPinDirection="Output",
 			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
@@ -38,7 +38,12 @@ public:
 
 protected:
 
-	float InputValue;
+	// FCameraNodeEvaluator interface.
+	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
+
+protected:
+
+	double InputValue;
 };
 
 }  // namespace UE::Cameras

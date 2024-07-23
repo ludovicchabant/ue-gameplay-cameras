@@ -8,7 +8,7 @@
 #include "Core/CameraRigJoints.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
-#include "Nodes/Input/CameraRigInput2DSlot.h"
+#include "Nodes/Input/Input2DCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BoomArmCameraNode)
 
@@ -34,7 +34,7 @@ private:
 private:
 
 	TCameraParameterReader<FVector3d> BoomOffsetReader;
-	FCameraRigInput2DSlotEvaluator* InputSlotEvaluator = nullptr;
+	FInput2DCameraNodeEvaluator* InputSlotEvaluator = nullptr;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
@@ -42,7 +42,7 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
 void FBoomArmCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
-	InputSlotEvaluator = Params.BuildEvaluatorAs<FCameraRigInput2DSlotEvaluator>(BoomArmNode->InputSlot);
+	InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(BoomArmNode->InputSlot);
 }
 
 void FBoomArmCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)

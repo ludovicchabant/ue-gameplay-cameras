@@ -15,5 +15,10 @@ FInput1DCameraNodeEvaluator::FInput1DCameraNodeEvaluator()
 	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate);
 }
 
+void FInput1DCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Ar << InputValue;
+}
+
 }  // namespace UE::Cameras
 

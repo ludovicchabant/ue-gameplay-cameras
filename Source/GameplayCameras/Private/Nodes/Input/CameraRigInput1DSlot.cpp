@@ -25,12 +25,6 @@ FCameraRigInput1DSlotEvaluator::FCameraRigInput1DSlotEvaluator()
 			ECameraNodeEvaluatorFlags::SupportsOperations);
 }
 
-void FCameraRigInput1DSlotEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
-{
-	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
-	ChildEvaluator = Params.BuildEvaluatorAs<FInput1DCameraNodeEvaluator>(SlotNode->Child);
-}
-
 void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
 {
 	TransientInputValue = 0.f;
@@ -44,20 +38,8 @@ void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 	}
 }
 
-FCameraNodeEvaluatorChildrenView FCameraRigInput1DSlotEvaluator::OnGetChildren()
-{
-	return FCameraNodeEvaluatorChildrenView{ ChildEvaluator };
-}
-
 void FCameraRigInput1DSlotEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
-	if (ChildEvaluator)
-	{
-		ChildEvaluator->UpdateParameters(Params, OutResult);
-
-		TransientInputValue = ChildEvaluator->GetInputValue();
-	}
-
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
 	if (SlotNode->InputSlotParameters.bIsPreBlended)
 	{
@@ -104,16 +86,12 @@ void FCameraRigInput1DSlotEvaluator::OnExecuteOperation(const FCameraOperationPa
 
 void FCameraRigInput1DSlotEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
+	Super::OnSerialize(Params, Ar);
+
 	Ar << TransientInputValue;
-	Ar << InputValue;
 }
 
 }  // namespace UE::Cameras
-
-FCameraNodeChildrenView UCameraRigInput1DSlot::OnGetChildren()
-{
-	return FCameraNodeChildrenView{ Child };
-}
 
 void UCameraRigInput1DSlot::OnBuild(FCameraRigBuildContext& BuildContext) 
 {
