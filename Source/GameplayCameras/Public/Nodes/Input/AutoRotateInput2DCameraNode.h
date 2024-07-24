@@ -1,0 +1,62 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+#pragma once
+
+#include "Math/MathFwd.h"
+#include "Nodes/Input/Input2DCameraNode.h"
+
+#include "AutoRotateInput2DCameraNode.generated.h"
+
+class UCameraValueInterpolator;
+
+/** Describes the type of auto-rotate. */
+UENUM()
+enum class ECameraAutoRotateDirection
+{
+	/** Re-align towards the evaluation context's facing. */
+	Facing,
+	/** Re-align towards the evaluation context's movement direction. */
+	Movement
+};
+
+/**
+ * An input node that modifies a yaw/pitch input in order to re-align its
+ * values to a given default direction.
+ */
+UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
+class UAutoRotateInput2DCameraNode : public UInput2DCameraNode
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The direction to re-align towards. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	ECameraAutoRotateDirection Direction;
+
+	/** The time, in seconds, to wait before re-aligning. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	float WaitTime = 1.f;
+
+	/** The minimum manual rotation, in degrees, to deactivate auto-rtation. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	float DeactivationThreshold = 0.01f;
+
+	/** The interpolation for re-alignment. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	TObjectPtr<UCameraValueInterpolator> Interpolator;
+
+	UPROPERTY()
+	TObjectPtr<UInput2DCameraNode> InputNode;
+
+public:
+
+	UAutoRotateInput2DCameraNode(const FObjectInitializer& ObjInit);
+	
+protected:
+
+	// UCameraNode interface.
+	virtual FCameraNodeChildrenView OnGetChildren() override;
+	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
+};
+
