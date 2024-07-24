@@ -55,7 +55,7 @@ class TCameraValueInterpolator
 {
 public:
 
-	using ValueTypeParam = TCallTraits<ValueType>::ParamType;
+	using ValueTypeParam = typename TCallTraits<ValueType>::ParamType;
 
 	/** 
 	 * Creates a new value interpolator given a piece of data containing user-defined

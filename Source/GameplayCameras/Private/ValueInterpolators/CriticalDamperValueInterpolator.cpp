@@ -12,7 +12,7 @@ class TCriticalDamperValueInterpolator : public TCameraValueInterpolator<ValueTy
 {
 public:
 
-	using ValueTypeParam = TCameraValueInterpolator<ValueType>::ValueTypeParam;
+	using ValueTypeParam = typename TCameraValueInterpolator<ValueType>::ValueTypeParam;
 
 	TCriticalDamperValueInterpolator(const UCriticalDamperValueInterpolator* InInterpolator)
 		: TCameraValueInterpolator<ValueType>(InInterpolator)

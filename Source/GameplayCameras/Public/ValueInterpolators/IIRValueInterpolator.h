@@ -60,7 +60,7 @@ public:
 
 protected:
 
-	using ValueTypeParam = TCameraValueInterpolator<ValueType>::ValueTypeParam;
+	using ValueTypeParam = typename TCameraValueInterpolator<ValueType>::ValueTypeParam;
 
 	virtual void OnReset(ValueTypeParam OldCurrentValue, ValueTypeParam OldTargetValue) override
 	{
