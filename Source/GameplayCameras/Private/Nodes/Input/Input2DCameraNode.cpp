@@ -9,12 +9,6 @@ namespace UE::Cameras
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FInput2DCameraNodeEvaluator)
 
-FInput2DCameraNodeEvaluator::FInput2DCameraNodeEvaluator()
-{
-	// Only run during parameter update.
-	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate);
-}
-
 void FInput2DCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
 	Ar << InputValue;

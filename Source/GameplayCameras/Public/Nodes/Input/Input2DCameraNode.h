@@ -32,8 +32,6 @@ class FInput2DCameraNodeEvaluator : public FCameraNodeEvaluator
 
 public:
 
-	FInput2DCameraNodeEvaluator();
-
 	/** Get the current input value. */
 	FVector2d GetInputValue() const { return InputValue; }
 

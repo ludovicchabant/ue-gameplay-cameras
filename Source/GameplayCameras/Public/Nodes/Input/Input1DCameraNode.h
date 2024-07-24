@@ -31,8 +31,6 @@ class FInput1DCameraNodeEvaluator : public FCameraNodeEvaluator
 
 public:
 
-	FInput1DCameraNodeEvaluator();
-
 	/** Get the current input value. */
 	double GetInputValue() const { return InputValue; }
 
