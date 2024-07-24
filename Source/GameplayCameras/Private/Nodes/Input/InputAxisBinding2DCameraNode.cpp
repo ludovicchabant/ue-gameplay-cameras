@@ -6,7 +6,9 @@
 #include "Core/CameraEvaluationContext.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/Actor.h"
+#include "GameplayCameras.h"
 #include "InputAction.h"
+#include "UObject/Package.h"
 
 namespace UE::Cameras
 {
