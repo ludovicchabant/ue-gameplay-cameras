@@ -7,6 +7,7 @@
 
 #include "BoomArmCameraNode.generated.h"
 
+class UCameraValueInterpolator;
 class UInput2DCameraNode;
 
 /**
@@ -28,6 +29,24 @@ public:
 	/** The offset of the boom. Rotation occurs at the base (i.e. before the offset). */
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3dCameraParameter BoomOffset;
+
+	/** The interpolator to use for changing the boom length based on its pivot's movements. */
+	UPROPERTY(EditAnywhere, Category=Common)
+	TObjectPtr<UCameraValueInterpolator> BoomLengthInterpolator;
+
+	/** 
+	 * The maximum amount of forward movement the interpolator can introduce, expressed
+	 * as a factor of the default boom length.
+	 */
+	UPROPERTY(EditAnywhere, Category=Common)
+	FDoubleCameraParameter MaxForwardInterpolationFactor = -1.0;
+
+	/** 
+	 * The maximum amount of backward movement the interpolator can introduce, expressed
+	 * as a factor of the default boom length.
+	 */
+	UPROPERTY(EditAnywhere, Category=Common)
+	FDoubleCameraParameter MaxBackwardInterpolationFactor = -1.0;
 
 	/**
 	 * The input slot for controlling the boom arm.
