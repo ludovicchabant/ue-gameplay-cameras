@@ -38,11 +38,11 @@ struct FBlueprintCameraDirectorEvaluationResult
 
 	/** The list of camera rigs that should be active this frame. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<UCameraRigProxyAsset*> ActiveCameraRigProxies;
+	TArray<TObjectPtr<UCameraRigProxyAsset>> ActiveCameraRigProxies;
 
 	/** The list of camera rigs that should be active this frame. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<UCameraRigAsset*> ActiveCameraRigs;
+	TArray<TObjectPtr<UCameraRigAsset>> ActiveCameraRigs;
 };
 
 /**

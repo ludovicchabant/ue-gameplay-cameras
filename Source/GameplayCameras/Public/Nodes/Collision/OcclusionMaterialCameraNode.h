@@ -19,7 +19,7 @@ public:
 
 	/** Material to apply on objects causing occlusion. */
 	UPROPERTY(EditAnywhere, Category="Occlusion")
-	UMaterialInterface* OcclusionTransparencyMaterial = nullptr;
+	TObjectPtr<UMaterialInterface> OcclusionTransparencyMaterial = nullptr;
 
 	/** Radius of the sphere used for occlusion testing. */
 	UPROPERTY(EditAnywhere, Category="Occlusion")
