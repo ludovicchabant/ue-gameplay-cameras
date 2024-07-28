@@ -25,7 +25,7 @@ FCameraRigInput2DSlotEvaluator::FCameraRigInput2DSlotEvaluator()
 			ECameraNodeEvaluatorFlags::SupportsOperations);
 }
 
-void FCameraRigInput2DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FCameraRigInput2DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	TransientInputValue = FVector2d::ZeroVector;
 	InputValue = FVector2d::ZeroVector;

@@ -63,7 +63,7 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	{
 		FCameraNodeEvaluatorInitializeParams InitParams;
 		InitParams.Evaluator = this;
-		RootEvaluator->Initialize(InitParams);
+		RootEvaluator->Initialize(InitParams, RootNodeResult);
 	}
 
 	VariableAutoResetService = MakeShared<FAutoResetCameraVariableService>();

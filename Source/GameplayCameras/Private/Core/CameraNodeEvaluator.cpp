@@ -121,15 +121,15 @@ void FCameraNodeEvaluator::Build(const FCameraNodeEvaluatorBuildParams& Params)
 	OnBuild(Params);
 }
 
-void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	OnInitialize(Params);
+	OnInitialize(Params, OutResult);
 
 	for (FCameraNodeEvaluator* Child : GetChildren())
 	{
 		if (Child)
 		{
-			Child->Initialize(Params);
+			Child->Initialize(Params, OutResult);
 		}
 	}
 }

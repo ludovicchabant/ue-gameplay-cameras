@@ -19,7 +19,7 @@ class FInputAxisBinding2DCameraNodeEvaluator : public FCameraRigInput2DSlotEvalu
 
 protected:
 
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params) override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
 
 private:
@@ -30,7 +30,7 @@ private:
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FInputAxisBinding2DCameraNodeEvaluator)
 
-void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	UObject* ContextOwner = Params.EvaluationContext->GetOwner();
 	if (ContextOwner)
@@ -58,7 +58,7 @@ void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 				*GetNameSafe(AxisBindingNode ? AxisBindingNode->GetOutermost() : nullptr));
 	}
 
-	Super::OnInitialize(Params);
+	Super::OnInitialize(Params, OutResult);
 }
 
 void FInputAxisBinding2DCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)

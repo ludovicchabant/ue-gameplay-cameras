@@ -12,7 +12,7 @@
 namespace UE::Cameras
 {
 
-void FRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	OwningEvaluator = Params.Evaluator;
 }

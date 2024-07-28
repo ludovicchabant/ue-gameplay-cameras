@@ -153,7 +153,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	InitParams.Evaluator = Evaluator;
 	InitParams.EvaluationContext = EvaluationContext;
 	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
-	RootEvaluator->Initialize(InitParams);
+	RootEvaluator->Initialize(InitParams, NewEntry.Result);
 
 	// Gather blended parameter evaluators.
 	NewEntry.ParameterEvaluators.Reset();
@@ -226,7 +226,7 @@ FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 	return View;
 }
 
-void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params)
+void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	OwningEvaluator = Params.Evaluator;
 }
