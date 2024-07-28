@@ -30,6 +30,10 @@ struct FBlendStackCameraRigEvent;
 class FBlendStackCameraDebugBlock;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
+#if WITH_EDITOR
+class IGameplayCamerasLiveEditManager;
+#endif
+
 }  // namespace UE::Cameras
 
 /**
@@ -149,9 +153,16 @@ protected:
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
 		UBlendStackRootCameraNode* EntryRootNode);
 
+	void FreezeEntry(FCameraRigEntry& Entry);
+
 	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
 
 	void BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
+
+#if WITH_EDITOR
+	void RemoveListenedPackages(FCameraRigEntry& Entry);
+	void RemoveListenedPackages(TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager, FCameraRigEntry& Entry);
+#endif
 
 protected:
 
