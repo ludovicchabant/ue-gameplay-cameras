@@ -58,6 +58,7 @@ protected:
 	UCameraVariableAsset* CommonVariable = nullptr;
 	FText VariableInfoText;
 	FText VariableErrorText;
+	bool bIsExposedParameterVariable = false;
 
 	TSharedPtr<IPropertyUtilities> PropertyUtilities;
 
