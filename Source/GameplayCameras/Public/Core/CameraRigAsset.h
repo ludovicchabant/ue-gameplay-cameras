@@ -67,6 +67,9 @@ public:
 	UPROPERTY(EditAnywhere, Category=Camera)
 	FString InterfaceParameterName;
 
+	UPROPERTY()
+	FGuid Guid;
+
 	// Built on save/cook.
 
 	/**
@@ -84,6 +87,11 @@ protected:
 	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
 	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
 #endif
+
+	// UObject interface.
+	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
 private:
 

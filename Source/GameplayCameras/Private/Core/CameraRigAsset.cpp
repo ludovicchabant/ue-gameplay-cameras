@@ -29,6 +29,38 @@ void UCameraRigInterfaceParameter::OnGraphNodeMoved(FName InGraphName, int32 Nod
 
 #endif
 
+
+void UCameraRigInterfaceParameter::PostLoad()
+{
+	if (!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
+
+	Super::PostLoad();
+}
+
+void UCameraRigInterfaceParameter::PostInitProperties()
+{
+	Super::PostInitProperties();
+
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
+			!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
+}
+
+void UCameraRigInterfaceParameter::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+
+	if (DuplicateMode == EDuplicateMode::Normal)
+	{
+		Guid = FGuid::NewGuid();
+	}
+}
+
 UCameraRigInterfaceParameter* FCameraRigInterface::FindInterfaceParameterByName(const FString& ParameterName) const
 {
 	const TObjectPtr<UCameraRigInterfaceParameter>* FoundItem = InterfaceParameters.FindByPredicate([&ParameterName](UCameraRigInterfaceParameter* Item)
