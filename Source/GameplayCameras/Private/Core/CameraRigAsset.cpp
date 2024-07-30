@@ -13,6 +13,17 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAsset)
 
+void FCameraRigAllocationInfo::Append(const FCameraRigAllocationInfo& OtherAllocationInfo)
+{
+	const FCameraNodeEvaluatorAllocationInfo& OtherEvaluatorInfo(OtherAllocationInfo.EvaluatorInfo);
+	EvaluatorInfo.MaxAlignof = FMath::Max(EvaluatorInfo.MaxAlignof, OtherEvaluatorInfo.MaxAlignof);
+	EvaluatorInfo.TotalSizeof = Align(EvaluatorInfo.TotalSizeof, OtherEvaluatorInfo.MaxAlignof) + OtherEvaluatorInfo.TotalSizeof;
+
+	const FCameraVariableTableAllocationInfo& OtherVariableTableInfo(OtherAllocationInfo.VariableTableInfo);
+	VariableTableInfo.AutoResetVariables.Append(OtherVariableTableInfo.AutoResetVariables);
+	VariableTableInfo.VariableDefinitions.Append(OtherVariableTableInfo.VariableDefinitions);
+}
+
 #if WITH_EDITOR
 
 void UCameraRigInterfaceParameter::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const

@@ -25,12 +25,12 @@ public:
 
 	FCameraVariableDefinition GetVariableDefinition() const;
 
+	const FGuid& GetGuid() const { return Guid; }
+
 	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
 	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
 #if WITH_EDITOR
-	const FGuid& GetGuid() const { return Guid; }
-
 	FString GetDisplayName() const;
 	FText GetDisplayText() const;
 

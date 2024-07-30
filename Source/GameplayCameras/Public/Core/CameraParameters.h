@@ -308,6 +308,24 @@ struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 #undef UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS
 #undef UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS
 
+template<typename ValueType>
+bool CameraParameterValueEquals(typename TCallTraits<ValueType>::ParamType A, typename TCallTraits<ValueType>::ParamType B)
+{
+	return A == B;
+}
+
+template<>
+inline bool CameraParameterValueEquals<FTransform3f>(const FTransform3f& A, const FTransform3f& B)
+{
+	return A.Equals(B);
+}
+
+template<>
+inline bool CameraParameterValueEquals<FTransform3d>(const FTransform3d& A, const FTransform3d& B)
+{
+	return A.Equals(B);
+}
+
 // Any camera parameter might replace a previously non-parameterized property (i.e. a "fixed" property
 // of the underlying type, like bool, int32, float, etc.)
 // When someone upgrades the fixed property to a parameterized property, any previously saved data will

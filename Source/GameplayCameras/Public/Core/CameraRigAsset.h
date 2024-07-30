@@ -39,6 +39,10 @@ struct FCameraRigAllocationInfo
 	/** Allocation info for the camera variable. */
 	UPROPERTY()
 	FCameraVariableTableAllocationInfo VariableTableInfo;
+
+public:
+
+	void Append(const FCameraRigAllocationInfo& OtherAllocationInfo);
 };
 
 /**
