@@ -109,6 +109,7 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 	}
 
 	// Allocate the memory buffer.
+	MaxAlignOf = FMath::Max(32u, MaxAlignOf);
 	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, MaxAlignOf));
 	Capacity = TotalSizeOf;
 	Used = 0;
