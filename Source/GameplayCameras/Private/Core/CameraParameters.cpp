@@ -13,7 +13,7 @@ bool FBooleanCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag
 {
 	if (Tag.Type == NAME_BoolProperty)
 	{
-		Slot << Value;
+		Value = (Tag.BoolVal != 0);
 		return true;
 	}
 
