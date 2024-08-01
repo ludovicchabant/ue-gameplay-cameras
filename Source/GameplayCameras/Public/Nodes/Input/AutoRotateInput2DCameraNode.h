@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraParameters.h"
 #include "Math/MathFwd.h"
 #include "Nodes/Input/Input2DCameraNode.h"
 
@@ -36,16 +37,21 @@ public:
 
 	/** The time, in seconds, to wait before re-aligning. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
-	float WaitTime = 1.f;
+	FFloatCameraParameter WaitTime = 1.f;
 
 	/** The minimum manual rotation, in degrees, to deactivate auto-rtation. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
-	float DeactivationThreshold = 0.01f;
+	FFloatCameraParameter DeactivationThreshold = 0.01f;
 
 	/** The interpolation for re-alignment. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
 	TObjectPtr<UCameraValueInterpolator> Interpolator;
 
+	/** Whether to enable auto-rotation. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	FBooleanCameraParameter EnableAutoRotate = true;
+
+	/** The underlying input node. */
 	UPROPERTY()
 	TObjectPtr<UInput2DCameraNode> InputNode;
 
