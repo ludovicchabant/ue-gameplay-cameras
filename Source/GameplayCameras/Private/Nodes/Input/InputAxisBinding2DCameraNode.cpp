@@ -4,6 +4,7 @@
 
 #include "Components/InputComponent.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraParameterReader.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
@@ -25,6 +26,11 @@ protected:
 private:
 
 	TObjectPtr<UEnhancedInputComponent> InputComponent;
+
+	TCameraParameterReader<bool> RevertAxisXReader;
+	TCameraParameterReader<bool> RevertAxisYReader;
+	TCameraParameterReader<FVector2d> MultiplierReader;
+
 	TArray<FEnhancedInputActionValueBinding*> AxisValueBindings;
 };
 
@@ -46,6 +52,11 @@ void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 	}
 
 	const UInputAxisBinding2DCameraNode* AxisBindingNode = GetCameraNodeAs<UInputAxisBinding2DCameraNode>();
+
+	RevertAxisXReader.Initialize(AxisBindingNode->RevertAxisX);
+	RevertAxisYReader.Initialize(AxisBindingNode->RevertAxisY);
+	MultiplierReader.Initialize(AxisBindingNode->Multiplier);
+
 	if (InputComponent)
 	{
 		for (TObjectPtr<UInputAction> AxisAction : AxisBindingNode->AxisActions)
@@ -87,15 +98,14 @@ void FInputAxisBinding2DCameraNodeEvaluator::OnUpdateParameters(const FCameraBle
 		}
 	}
 
-	TransientInputValue = FVector2d(
-			HighestValue.X * AxisBindingNode->Multiplier.X, 
-			HighestValue.Y * AxisBindingNode->Multiplier.Y);
+	const FVector2d Multiplier = MultiplierReader.Get(OutResult.VariableTable);
+	TransientInputValue = FVector2d(HighestValue.X * Multiplier.X, HighestValue.Y * Multiplier.Y);
 
-	if (AxisBindingNode->RevertAxisX)
+	if (RevertAxisXReader.Get(OutResult.VariableTable))
 	{
 		TransientInputValue.X = -TransientInputValue.X;
 	}
-	if (AxisBindingNode->RevertAxisY)
+	if (RevertAxisYReader.Get(OutResult.VariableTable))
 	{
 		TransientInputValue.Y = -TransientInputValue.Y;
 	}

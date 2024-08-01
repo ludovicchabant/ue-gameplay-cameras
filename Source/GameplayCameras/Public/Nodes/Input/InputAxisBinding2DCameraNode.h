@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraParameters.h"
 #include "Math/MathFwd.h"
 #include "Nodes/Input/CameraRigInput2DSlot.h"
 
@@ -25,15 +26,15 @@ public:
 
 	/** Whether to revert the X axis. */
 	UPROPERTY(EditAnywhere, Category="Input Processing")
-	bool RevertAxisX = false;
+	FBooleanCameraParameter RevertAxisX = false;
 
 	/** Whether to revert the Y axis. */
 	UPROPERTY(EditAnywhere, Category="Input Processing")
-	bool RevertAxisY = false;
+	FBooleanCameraParameter RevertAxisY = false;
 
 	/** A multiplier to use on the input values. */
 	UPROPERTY(EditAnywhere, Category="Input Processing")
-	FVector2D Multiplier;
+	FVector2dCameraParameter Multiplier;
 
 public:
 
