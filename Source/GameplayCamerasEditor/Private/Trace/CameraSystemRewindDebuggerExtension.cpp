@@ -102,7 +102,7 @@ void FCameraSystemRewindDebuggerExtension::DebugDraw(UCanvas* Canvas, APlayerCon
 {
 	if (RootDebugBlock && VisualizedWorld)
 	{
-		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas->Canvas);
+		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas);
 		RootDebugBlock->RootDebugDraw(CameraDebugRenderer);
 	}
 }

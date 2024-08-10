@@ -14,9 +14,9 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
-class FCanvas;
 class UCameraDirector;
 class UCameraRigAsset;
+class UCanvas;
 class URootCameraNode;
 enum class ECameraRigLayer : uint8;
 struct FMinimalViewInfo;
@@ -78,7 +78,7 @@ struct FCameraSystemEvaluationResult
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 struct FCameraSystemDebugUpdateParams
 {
-	FCanvas* Canvas = nullptr;
+	UCanvas* CanvasObject = nullptr;
 };
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 

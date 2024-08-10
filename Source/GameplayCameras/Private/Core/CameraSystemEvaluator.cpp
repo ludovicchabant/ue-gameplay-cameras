@@ -289,7 +289,7 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	}
 #endif
 	
-	FCameraDebugRenderer Renderer(OwnerWorld, Params.Canvas);
+	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject);
 	RootDebugBlock->RootDebugDraw(Renderer);
 }
 

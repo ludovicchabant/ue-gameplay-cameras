@@ -10,6 +10,7 @@
 #include "Misc/StringBuilder.h"
 
 class FCanvas;
+class UCanvas;
 class UFont;
 class ULineBatchComponent;
 class UWorld;
@@ -37,7 +38,7 @@ class FCameraDebugRenderer
 public:
 
 	/** Creates a new debug renderer. */
-	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, FCanvas* InCanvas);
+	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject);
 	/** Destroys the debug renderer. */
 	GAMEPLAYCAMERAS_API ~FCameraDebugRenderer();
 
@@ -80,6 +81,12 @@ public:
 	GAMEPLAYCAMERAS_API void DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D sphere. */
 	GAMEPLAYCAMERAS_API void DrawSphere(const FVector3d& Center, float Radius, int32 Segments, const FLinearColor& LineColor, float LineThickness);
+	/** Draws a 3D arrow. */
+	GAMEPLAYCAMERAS_API void DrawDirectionalArrow(const FVector3d& Start, const FVector3d& End, float ArrowSize, const FLinearColor& LineColor, float LineThickness);
+	/** Draws text at a projected 3D position. */
+	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr);
+	/** Draws text at a projected 3D position, with an added screen-space offset. */
+	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr);
 
 public:
 
@@ -97,12 +104,12 @@ public:
 public:
 
 	/** Gets the drawing canvas. */
-	FCanvas* GetCanvas() const { return Canvas; }
+	FCanvas* GetCanvas() const;
 
 	/** Gets the size of the canvas. */
 	FVector2D GetCanvasSize() const;
 
-	bool HasCanvas() const { return Canvas != nullptr; }
+	bool HasCanvas() const { return CanvasObject != nullptr; }
 
 private:
 
@@ -119,7 +126,7 @@ private:
 	/** The world in which we might draw debug primitives. */
 	UWorld* World;
 	/** The canvas used to draw the text wall. */
-	FCanvas* Canvas;
+	UCanvas* CanvasObject;
 	/** The draw color of the canvas. */
 	FColor DrawColor;
 

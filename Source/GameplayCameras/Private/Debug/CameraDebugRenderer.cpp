@@ -8,6 +8,7 @@
 #include "Components/LineBatchComponent.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/DebugTextRenderer.h"
+#include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "Engine/World.h"
@@ -50,9 +51,9 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundDepthSortKey(
 	GGameplayCamerasDebugBackgroundDepthSortKey,
 	TEXT(""));
 
-FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, FCanvas* InCanvas)
+FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject)
 	: World(InWorld)
-	, Canvas(InCanvas)
+	, CanvasObject(InCanvasObject)
 	, DrawColor(FColor::White)
 {
 	RenderFont = GEngine->GetSmallFont();
@@ -66,10 +67,19 @@ FCameraDebugRenderer::~FCameraDebugRenderer()
 	FlushText();
 }
 
+FCanvas* FCameraDebugRenderer::GetCanvas() const
+{
+	return CanvasObject ? CanvasObject->Canvas : nullptr;
+}
+
 FVector2D FCameraDebugRenderer::GetCanvasSize() const
 {
-	FIntPoint ParentSize = Canvas->GetParentCanvasSize();
-	return FVector2D(ParentSize.X, ParentSize.Y);
+	if (CanvasObject)
+	{
+		FIntPoint ParentSize = CanvasObject->Canvas->GetParentCanvasSize();
+		return FVector2D(ParentSize.X, ParentSize.Y);
+	}
+	return FVector2D::ZeroVector;
 }
 
 void FCameraDebugRenderer::AddText(const FString& InString)
@@ -138,7 +148,7 @@ void FCameraDebugRenderer::FlushText()
 		int32 ViewHeight = GetCanvasSize().Y;
 		if (NextDrawPosition.Y < ViewHeight)
 		{
-			FDebugTextRenderer TextRenderer(Canvas, DrawColor, RenderFont);
+			FDebugTextRenderer TextRenderer(GetCanvas(), DrawColor, RenderFont);
 			TextRenderer.LeftMargin = GetIndentMargin();
 			TextRenderer.RenderText(NextDrawPosition, LineBuilder.ToView());
 
@@ -194,7 +204,7 @@ void FCameraDebugRenderer::DrawTextBackgroundTile(float Opacity)
 	const FColor BackgroundColor = FCameraDebugColors::Get().Background.WithAlpha((uint8)(Opacity * 255));
 
 	// Draw the background behind the text.
-	if (Canvas)
+	if (FCanvas* Canvas = GetCanvas())
 	{
 		Canvas->PushDepthSortKey(GGameplayCamerasDebugBackgroundDepthSortKey);
 		{
@@ -208,7 +218,7 @@ void FCameraDebugRenderer::DrawTextBackgroundTile(float Opacity)
 
 void FCameraDebugRenderer::Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness)
 {
-	if (Canvas)
+	if (FCanvas* Canvas = GetCanvas())
 	{
 		FCanvasLineItem LineItem(Start, End);
 		LineItem.SetColor(LineColor);
@@ -219,7 +229,7 @@ void FCameraDebugRenderer::Draw2DLine(const FVector2D& Start, const FVector2D& E
 
 void FCameraDebugRenderer::Draw2DBox(const FBox2D& Box, const FLinearColor& LineColor, float LineThickness)
 {
-	if (Canvas)
+	if (FCanvas* Canvas = GetCanvas())
 	{
 		FCanvasBoxItem BoxItem(Box.Min, Box.GetSize());
 		BoxItem.SetColor(LineColor);
@@ -230,7 +240,7 @@ void FCameraDebugRenderer::Draw2DBox(const FBox2D& Box, const FLinearColor& Line
 
 void FCameraDebugRenderer::Draw2DBox(const FVector2D& BoxPosition, const FVector2D& BoxSize, const FLinearColor& LineColor, float LineThickness)
 {
-	if (Canvas)
+	if (FCanvas* Canvas = GetCanvas())
 	{
 		FCanvasBoxItem BoxItem(BoxPosition, BoxSize);
 		BoxItem.SetColor(LineColor);
@@ -273,6 +283,34 @@ void FCameraDebugRenderer::DrawSphere(const FVector3d& Center, float Radius, int
 	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
 	{
 		LineBatcher->DrawSphere(Center, Radius, Segments, LineColor, 0.f, SDPG_Foreground, LineThickness);
+	}
+}
+
+void FCameraDebugRenderer::DrawDirectionalArrow(const FVector3d& Start, const FVector3d& End, float ArrowSize, const FLinearColor& LineColor, float LineThickness)
+{
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		LineBatcher->DrawDirectionalArrow(Start, End, ArrowSize, LineColor, 0.f, SDPG_Foreground, LineThickness);
+	}
+}
+
+void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont)
+{
+	DrawText(WorldPosition, FVector2d::ZeroVector, Text, TextColor, TextFont);
+}
+
+void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont)
+{
+	if (CanvasObject)
+	{
+		const FColor PreviousColor = CanvasObject->DrawColor;
+		const FVector3d ScreenPosition = CanvasObject->Project(WorldPosition);
+		UFont* ActualTextFont = TextFont ? TextFont : GEngine->GetSmallFont();
+		CanvasObject->DrawColor = TextColor.ToFColor(true);
+		CanvasObject->DrawText(
+				ActualTextFont, Text, 
+				ScreenPosition.X + ScreenOffset.X, ScreenPosition.Y + ScreenOffset.Y);
+		CanvasObject->DrawColor = PreviousColor;
 	}
 }
 
