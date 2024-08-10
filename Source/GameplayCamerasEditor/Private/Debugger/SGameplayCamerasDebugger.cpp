@@ -389,11 +389,11 @@ FSlateIcon SGameplayCamerasDebugger::GetToggleDebugDrawIcon() const
 {
 	if (GGameplayCamerasDebugEnable)
 	{
-		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.EnableDebugInfo.Icon");
+		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DebugInfoEnabled.Icon");
 	}
 	else
 	{
-		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DisableDebugInfo.Icon");
+		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DebugInfoDisabled.Icon");
 	}
 }
 
