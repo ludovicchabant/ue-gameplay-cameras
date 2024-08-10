@@ -145,11 +145,19 @@ struct FCameraVariableDefinition
 	FString VariableName;
 #endif
 
+	/** Returns whether this definition has a valid variable ID. */
 	bool IsValid() const
 	{
 		return VariableID.IsValid();
 	}
 
+	/** Implicit conversion to a camera variable ID. */
+	operator FCameraVariableID() const
+	{
+		return VariableID;
+	}
+
+	/** Creates a variant of this camera variable definition. */
 	FCameraVariableDefinition CreateVariant(const FString& VariantID) const
 	{
 		FCameraVariableDefinition VariantDefinition(*this);

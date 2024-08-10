@@ -116,6 +116,12 @@ public:
 	template<typename ValueType>
 	bool TrySetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType Value);
 
+	template<typename ValueType>
+	void SetValue(
+			const FCameraVariableDefinition& VariableDefinition, 
+			typename TCallTraits<ValueType>::ParamType Value,
+			bool bCreateIfMissing = false);
+
 	template<typename VariableAssetType>
 	void SetValue(
 			const VariableAssetType* VariableAsset, 
@@ -296,6 +302,36 @@ bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, typename TC
 	return false;
 }
 
+template<typename ValueType>
+void FCameraVariableTable::SetValue(
+		const FCameraVariableDefinition& VariableDefinition, 
+		typename TCallTraits<ValueType>::ParamType Value,
+		bool bCreateIfMissing)
+{
+	const bool bDidSet = TrySetValue<ValueType>(VariableDefinition.VariableID, Value);
+#if WITH_EDITORONLY_DATA
+	ensureMsgf(
+			bDidSet || bCreateIfMissing, 
+			TEXT("Can't set camera variable '%s' (ID '%d') because it doesn't exist in the table."),
+			*VariableDefinition.VariableName, VariableDefinition.VariableID.GetValue());
+#else
+	ensureMsgf(
+			bDidSet || bCreateIfMissing, 
+			TEXT("Can't set camera variable '%s' (ID '%d') because it doesn't exist in the table."),
+			*LexToString(VariableDefinition.VariableID.GetValue()), VariableDefinition.VariableID.GetValue());
+#endif
+	if (bDidSet)
+	{
+		return;
+	}
+
+	if (bCreateIfMissing)
+	{
+		AddVariable(VariableDefinition);
+		SetValue<ValueType>(VariableDefinition.VariableID, Value);
+	}
+}
+
 template<typename VariableAssetType>
 void FCameraVariableTable::SetValue(
 		const VariableAssetType* VariableAsset, 
@@ -304,7 +340,12 @@ void FCameraVariableTable::SetValue(
 {
 	if (ensure(VariableAsset))
 	{
-		if (TrySetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableID(), Value))
+		const bool bDidSet = TrySetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableID(), Value);
+		ensureMsgf(
+				bDidSet || bCreateIfMissing, 
+				TEXT("Can't set camera variable '%s' (ID '%d') because it doesn't exist in the table."),
+				*GetNameSafe(VariableAsset), VariableAsset->GetVariableID().GetValue());
+		if (bDidSet)
 		{
 			return;
 		}
