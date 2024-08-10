@@ -196,14 +196,14 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 		RootNodeResult.bIsValid = true;
 	}
 
+	// Post-update all services.
+	PostUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
+
 	// Harvest the result.
 	Result.CameraPose.OverrideAll(RootNodeResult.CameraPose);
 	Result.VariableTable.OverrideAll(RootNodeResult.VariableTable);
 	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
 	Result.bIsValid = true;
-
-	// Post-update all services.
-	PostUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
 }
 
 void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)
