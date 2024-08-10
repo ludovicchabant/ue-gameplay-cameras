@@ -13,6 +13,7 @@ class FCameraPoseDebugBlock;
 class FVariableTableDebugBlock;
 struct FCameraDebugBlockBuilder;
 struct FCameraNodeEvaluationResult;
+struct FCameraSystemEvaluationResult;
 
 /**
  * A debug block that prints an evaluation result.
@@ -29,12 +30,20 @@ public:
 	FCameraNodeEvaluationResultDebugBlock();
 
 	/**
-	 * Initializes this block with the given result.
+	 * Initializes this block with the given camera node result.
 	 *
 	 * @param InResult   The result to display
 	 * @param Builder    The builder to use to make the children debug blocks
 	 */
 	void Initialize(const FCameraNodeEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder);
+
+	/**
+	 * Initializes this block with the given camera system result.
+	 *
+	 * @param InResult   The result to display
+	 * @param Builder    The builder to use to make the children debug blocks
+	 */
+	void Initialize(const FCameraSystemEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder);
 
 	/** Gets the pose stats debug block. */
 	FCameraPoseDebugBlock* GetCameraPoseDebugBlock();

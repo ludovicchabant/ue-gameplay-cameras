@@ -3,6 +3,7 @@
 #include "Debug/RootCameraDebugBlock.h"
 
 #include "Core/CameraEvaluationContextStack.h"
+#include "Core/CameraEvaluationService.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Debug/CameraDebugBlockBuilder.h"
@@ -10,9 +11,12 @@
 #include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraDirectorTreeDebugBlock.h"
+#include "Debug/CameraEvaluationServiceDebugBlock.h"
+#include "Debug/CameraNodeEvaluationResultDebugBlock.h"
 #include "Debug/CameraNodeEvaluatorDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/CategoryTitleDebugBlock.h"
+#include "Debug/VariableTableDebugBlock.h"
 #include "Debug/ViewfinderDebugBlock.h"
 #include "HAL/IConsoleManager.h"
 #include "String/ParseTokens.h"
@@ -90,15 +94,38 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 	}
 	Builder.EndChildDebugBlock();
 
+	// Debug block for the evaluation services.
+	FCategoryTitleDebugBlock& ServicesCategory = Builder.StartChildDebugBlock<FCategoryTitleDebugBlock>();
+	{
+		ServicesCategory.Title = TEXT("Services");
+		ServicesCategory.Category = FCameraDebugCategories::Services;
+
+		TArray<TSharedPtr<FCameraEvaluationService>> EvaluationServices;
+		CameraSystem.GetEvaluationServices(EvaluationServices);
+		for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+		{
+			FCameraEvaluationServiceDebugBlock& ServiceDebugBlock = Builder.StartChildDebugBlock<FCameraEvaluationServiceDebugBlock>(EvaluationService);
+			{
+				EvaluationService->BuildDebugBlocks(Params, Builder);
+			}
+			Builder.EndChildDebugBlock();
+		}
+	}
+	Builder.EndChildDebugBlock();
+
 	// Debug block for showing the final evaluated camera.
 	FCategoryTitleDebugBlock& PoseStatsCategory = Builder.StartChildDebugBlock<FCategoryTitleDebugBlock>();
 	{
 		PoseStatsCategory.Title = TEXT("Evaluated Camera");
 		PoseStatsCategory.Category = FCameraDebugCategories::PoseStats;
 
-		const FCameraSystemEvaluationResult& Result = CameraSystem.GetEvaluatedResult();
-		Builder.AttachDebugBlock<FCameraPoseDebugBlock>(Result.CameraPose)
-			.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
+		FCameraNodeEvaluationResultDebugBlock& ResultDebugBlock = Builder.BuildDebugBlock<FCameraNodeEvaluationResultDebugBlock>();
+		PoseStatsCategory.AddChild(&ResultDebugBlock);
+		{
+			ResultDebugBlock.Initialize(CameraSystem.GetEvaluatedResult(), Builder);
+			ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
+			ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
+		}
 	}
 	Builder.EndChildDebugBlock();
 	

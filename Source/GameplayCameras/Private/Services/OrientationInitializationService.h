@@ -13,6 +13,8 @@ struct FCameraRigEvaluationInfo;
 
 class FOrientationInitializationService : public FCameraEvaluationService
 {
+	UE_DECLARE_CAMERA_EVALUATION_SERVICE(GAMEPLAYCAMERAS_API, FOrientationInitializationService)
+
 protected:
 
 	// FCameraEvaluationService interface.

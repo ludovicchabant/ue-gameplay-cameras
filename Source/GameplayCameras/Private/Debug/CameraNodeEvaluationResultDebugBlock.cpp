@@ -3,6 +3,7 @@
 #include "Debug/CameraNodeEvaluationResultDebugBlock.h"
 
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
@@ -23,6 +24,15 @@ FCameraNodeEvaluationResultDebugBlock::FCameraNodeEvaluationResultDebugBlock()
 }
 
 void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraNodeEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder)
+{
+	bIsCameraCut = InResult.bIsCameraCut;
+	bIsValid = InResult.bIsValid;
+
+	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
+	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
+}
+
+void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraSystemEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder)
 {
 	bIsCameraCut = InResult.bIsCameraCut;
 	bIsValid = InResult.bIsValid;

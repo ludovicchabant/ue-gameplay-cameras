@@ -11,6 +11,8 @@
 namespace UE::Cameras
 {
 
+UE_DEFINE_CAMERA_EVALUATION_SERVICE(FAutoResetCameraVariableService)
+
 void FAutoResetCameraVariableService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
 	SetEvaluationServiceFlags(

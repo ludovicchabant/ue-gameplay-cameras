@@ -12,6 +12,8 @@ namespace UE::Cameras
 
 class FAutoResetCameraVariableService : public FCameraEvaluationService
 {
+	UE_DECLARE_CAMERA_EVALUATION_SERVICE(GAMEPLAYCAMERAS_API, FAutoResetCameraVariableService)
+
 protected:
 
 	// FCameraEvaluationService interface.

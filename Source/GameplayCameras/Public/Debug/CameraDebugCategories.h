@@ -18,6 +18,7 @@ struct GAMEPLAYCAMERAS_API FCameraDebugCategories
 	static const FString NodeTree;
 	static const FString DirectorTree;
 	static const FString BlendStacks;
+	static const FString Services;
 	static const FString PoseStats;
 	static const FString Viewfinder;
 };

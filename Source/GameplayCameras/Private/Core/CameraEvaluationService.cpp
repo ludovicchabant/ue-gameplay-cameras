@@ -50,4 +50,13 @@ void FCameraEvaluationService::SetEvaluationServiceFlags(ECameraEvaluationServic
 	PrivateFlags = InFlags;
 }
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FCameraEvaluationService::BuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	OnBuildDebugBlocks(Params, Builder);
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 }  // namespace UE::Cameras

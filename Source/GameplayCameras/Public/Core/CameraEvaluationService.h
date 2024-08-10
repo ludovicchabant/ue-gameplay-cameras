@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraObjectRtti.h"
+#include "Debug/CameraDebugBlockFwd.h"
 #include "GameplayCameras.h"
 #include "Templates/SharedPointer.h"
 
@@ -79,6 +80,11 @@ public:
 	/** Tears down the evaluation service. */
 	void Teardown(const FCameraEvaluationServiceTeardownParams& Params);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Called to create debug blocks for this node evaluator. */
+	void BuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 public:
 
 	// Internal API.
@@ -102,6 +108,11 @@ protected:
 	/** Called when the root camera node experiences an event. */
 	virtual void OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent) {}
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Called to create debug blocks for this node evaluator. */
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) {}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 protected:
 
 	/** Sets the flags on this service. */
@@ -114,4 +125,15 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+// Utility macros for declaring and defining camera evaluation services.
+//
+#define UE_DECLARE_CAMERA_EVALUATION_SERVICE(ApiDeclSpec, ClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, FCameraEvaluationService)
+
+#define UE_DECLARE_CAMERA_EVALUATION_SERVICE_EX(ApiDeclSpec, ClassName, BaseClassName)\
+	UE_GAMEPLAY_CAMERAS_DECLARE_RTTI(ApiDeclSpec, ClassName, BaseClassName)
+
+#define UE_DEFINE_CAMERA_EVALUATION_SERVICE(ClassName)\
+	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
 

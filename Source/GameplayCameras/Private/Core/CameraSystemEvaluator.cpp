@@ -131,6 +131,11 @@ void FCameraSystemEvaluator::UnregisterEvaluationService(TSharedRef<FCameraEvalu
 	EvaluationServices.Remove(EvaluationService);
 }
 
+void FCameraSystemEvaluator::GetEvaluationServices(TArray<TSharedPtr<FCameraEvaluationService>>& OutEvaluationServices) const
+{
+	OutEvaluationServices = EvaluationServices;
+}
+
 void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
 {
 	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)

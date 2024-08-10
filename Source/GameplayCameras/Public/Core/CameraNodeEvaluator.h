@@ -9,6 +9,7 @@
 #include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
 #include "CoreTypes.h"
+#include "Debug/CameraDebugBlockFwd.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCameras.h"
 #include "UObject/ObjectPtr.h"
@@ -27,10 +28,6 @@ struct FCameraOperation;
 struct FCameraNodeEvaluationParams;
 struct FCameraNodeEvaluatorBuilder;
 struct FCameraRigEvaluationInfo;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-struct FCameraDebugBlockBuilder;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
  * Flags describing the needs of a camera node evaluator.
@@ -186,18 +183,6 @@ struct FCameraOperationParams
 struct GAMEPLAYCAMERAS_API FCameraNodeEvaluatorSerializeParams
 {
 };
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-
-/**
- * Structure for creating the node evaluator's debug blocks.
- */
-struct FCameraDebugBlockBuildParams
-{
-	// Empty for now, but defined for later API changes.
-};
-
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
  * Base class for objects responsible for running a camera node.

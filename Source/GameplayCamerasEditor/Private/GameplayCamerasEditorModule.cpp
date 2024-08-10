@@ -381,6 +381,12 @@ private:
 				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.BlendStacks.Icon")
 			});
 		RegisterDebugCategory(FCameraDebugCategoryInfo{
+				FCameraDebugCategories::Services,
+				LOCTEXT("ServicesDebugCategory", "Services"),
+				LOCTEXT("ServicesDebugCategoryToolTip", "Shows the debug information from evaluation services"),
+				FSlateIcon(GameplayCamerasEditorStyleName, "DebugCategory.Services.Icon")
+			});
+		RegisterDebugCategory(FCameraDebugCategoryInfo{
 				FCameraDebugCategories::PoseStats,
 				LOCTEXT("PoseStatsDebugCategory", "Pose Stats"),
 				LOCTEXT("PoseStatsDebugCategoryToolTip", "Shows the evaluated camera pose"),

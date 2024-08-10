@@ -12,6 +12,7 @@ namespace UE::Cameras
 const FString FCameraDebugCategories::NodeTree("nodetree");
 const FString FCameraDebugCategories::DirectorTree("directortree");
 const FString FCameraDebugCategories::BlendStacks("blendstacks");
+const FString FCameraDebugCategories::Services("services");
 const FString FCameraDebugCategories::PoseStats("posestats");
 const FString FCameraDebugCategories::Viewfinder("viewfinder");
 

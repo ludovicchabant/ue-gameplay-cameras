@@ -14,6 +14,8 @@
 namespace UE::Cameras
 {
 
+UE_DEFINE_CAMERA_EVALUATION_SERVICE(FOrientationInitializationService)
+
 void FOrientationInitializationService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
 	SetEvaluationServiceFlags(
