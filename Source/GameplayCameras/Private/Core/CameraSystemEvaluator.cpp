@@ -94,6 +94,10 @@ void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector
 	{
 		RootEvaluator->AddReferencedObjects(Collector);
 	}
+	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+	{
+		EvaluationService->AddReferencedObjects(Collector);
+	}
 }
 
 void FCameraSystemEvaluator::PushEvaluationContext(TSharedRef<FCameraEvaluationContext> EvaluationContext)

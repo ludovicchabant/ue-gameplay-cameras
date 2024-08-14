@@ -7,6 +7,8 @@
 #include "GameplayCameras.h"
 #include "Templates/SharedPointer.h"
 
+class FReferenceCollector;
+
 namespace UE::Cameras
 {
 
@@ -80,6 +82,9 @@ public:
 	/** Tears down the evaluation service. */
 	void Teardown(const FCameraEvaluationServiceTeardownParams& Params);
 
+	/** Collect referenced UObjects. */
+	void AddReferencedObjects(FReferenceCollector& Collector);
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Called to create debug blocks for this node evaluator. */
 	void BuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
@@ -104,6 +109,9 @@ protected:
 	virtual void OnPostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) {}
 	/** Tears down the evaluation service. */
 	virtual void OnTeardown(const FCameraEvaluationServiceTeardownParams& Params) {}
+
+	/** Collect referenced UObjects. */
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 	/** Called when the root camera node experiences an event. */
 	virtual void OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent) {}

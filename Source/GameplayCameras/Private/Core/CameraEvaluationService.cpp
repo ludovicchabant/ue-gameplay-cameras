@@ -35,6 +35,11 @@ void FCameraEvaluationService::Teardown(const FCameraEvaluationServiceTeardownPa
 	OnTeardown(Params);
 }
 
+void FCameraEvaluationService::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	OnAddReferencedObjects(Collector);
+}
+
 void FCameraEvaluationService::NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
 {
 	OnRootCameraNodeEvent(InEvent);
