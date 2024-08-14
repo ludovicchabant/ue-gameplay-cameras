@@ -3,6 +3,8 @@
 #include "GameFramework/GameplayCameraComponent.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Core/CameraAssetBuilder.h"
+#include "Core/CameraBuildLog.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -179,6 +181,16 @@ void UGameplayCameraComponent::Deactivate()
 void UGameplayCameraComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+#if WITH_EDITOR
+	if (Camera)
+	{
+		using namespace UE::Cameras;
+		FCameraBuildLog BuildLog;
+		FCameraAssetBuilder Builder(BuildLog);
+		Builder.BuildCamera(Camera);
+	}
+#endif
 
 	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
