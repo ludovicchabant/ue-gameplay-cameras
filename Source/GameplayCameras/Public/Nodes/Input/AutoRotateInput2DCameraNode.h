@@ -39,7 +39,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
 	FFloatCameraParameter WaitTime = 1.f;
 
-	/** The minimum manual rotation, in degrees, to deactivate auto-rtation. */
+	/** The minimum player-induced/manual rotation, in degrees, to deactivate auto-rotation. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
 	FFloatCameraParameter DeactivationThreshold = 0.01f;
 
@@ -47,9 +47,21 @@ public:
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
 	TObjectPtr<UCameraValueInterpolator> Interpolator;
 
-	/** Whether to enable auto-rotation. */
+	/** Whether to suggest freezing the input control rotation. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	FBooleanCameraParameter FreezeControlRotation = false;
+
+	/** Whether to enable auto-rotation. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate Toggle")
 	FBooleanCameraParameter EnableAutoRotate = true;
+
+	/** Whether to auto-rotate yaw. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate Toggle")
+	FBooleanCameraParameter AutoRotateYaw = true;
+
+	/** Whether to auto-rotate pitch. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate Toggle")
+	FBooleanCameraParameter AutoRotatePitch = true;
 
 	/** The underlying input node. */
 	UPROPERTY()
@@ -63,6 +75,7 @@ protected:
 
 	// UCameraNode interface.
 	virtual FCameraNodeChildrenView OnGetChildren() override;
+	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 };
 

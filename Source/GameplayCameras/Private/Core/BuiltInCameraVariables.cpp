@@ -17,6 +17,9 @@ struct FBuiltInCameraVariablesGuids
 
 	FGuid YawPitchGuid;  // {67B7828D-C645-4907-92BE-B40DEB8C838C}
 
+	FGuid FreezeControlRotationGuid; // {39EDC23E-70F2-4041-971B-7BD680F640D1}
+	FGuid ControlRotationGuid;  // {2AB5FCA4-D62C-494C-B700-C8F98CD2D8E8}
+
 	FBuiltInCameraVariablesGuids()
 	{
 		YawGuid = FGuid(0x6E23348F, 0x290E460F, 0x9432ED80, 0xE7CA03F2);
@@ -25,6 +28,9 @@ struct FBuiltInCameraVariablesGuids
 		ZoomGuid = FGuid(0x56BF6A94, 0x87B34648, 0x84A4391B, 0xDAD27061);
 
 		YawPitchGuid = FGuid(0x67B7828D, 0xC6454907, 0x92BEB40D, 0xEB8C838C);
+
+		FreezeControlRotationGuid = FGuid(0x39EDC23E, 0x70F24041, 0x971B7BD6, 0x80F640D1);
+		ControlRotationGuid = FGuid(0x2AB5FCA4, 0xD62C494C, 0xB700C8F9, 0x8CD2D8E8);
 	}
 };
 
@@ -61,6 +67,9 @@ FBuiltInCameraVariables::FBuiltInCameraVariables()
 	MakeCameraVariableDefinition(ZoomDefinition, KnownGuids.ZoomGuid, ECameraVariableType::Double, true, TEXT("Zoom"));
 
 	MakeCameraVariableDefinition(YawPitchDefinition, KnownGuids.YawPitchGuid, ECameraVariableType::Vector2d, true, TEXT("YawPitch"));
+
+	MakeCameraVariableDefinition(FreezeControlRotationDefinition, KnownGuids.FreezeControlRotationGuid, ECameraVariableType::Boolean, true, TEXT("FreezeControlRotation"));
+	MakeCameraVariableDefinition(ControlRotationDefinition, KnownGuids.ControlRotationGuid, ECameraVariableType::Rotator3d, true, TEXT("ControlRotation"));
 }
 
 const FCameraVariableDefinition& FBuiltInCameraVariables::GetDefinition(EBuiltInDoubleCameraVariable BuiltInVariable) const
@@ -88,6 +97,18 @@ const FCameraVariableDefinition& FBuiltInCameraVariables::GetDefinition(EBuiltIn
 	{
 		case EBuiltInVector2dCameraVariable::YawPitch:
 			return YawPitchDefinition;
+		default:
+			return Invalid;
+	}
+}
+
+const FCameraVariableDefinition& FBuiltInCameraVariables::GetDefinition(EBuiltInRotator3dCameraVariable BuiltInVariable) const
+{
+	static const FCameraVariableDefinition Invalid;
+	switch (BuiltInVariable)
+	{
+		case EBuiltInRotator3dCameraVariable::ControlRotation:
+			return ControlRotationDefinition;
 		default:
 			return Invalid;
 	}

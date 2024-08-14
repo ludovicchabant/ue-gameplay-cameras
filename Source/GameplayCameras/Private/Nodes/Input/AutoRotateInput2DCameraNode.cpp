@@ -2,18 +2,29 @@
 
 #include "Nodes/Input/AutoRotateInput2DCameraNode.h"
 
+#include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraParameterReader.h"
+#include "Core/CameraRigAsset.h"
+#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraValueInterpolator.h"
+#include "Core/CameraVariableTableFwd.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "HAL/IConsoleManager.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AutoRotateInput2DCameraNode)
 
 namespace UE::Cameras
 {
+
+float GGameplayCamerasAutoRotateSnapThreshold = 0.5f;
+static FAutoConsoleVariableRef CVarGameplayCamerasAutoRotateSnapThreshold(
+	TEXT("GameplayCameras.AutoRotate.SnapThreshold"),
+	GGameplayCamerasAutoRotateSnapThreshold,
+	TEXT(""));
 
 class FAutoRotateInput2DCameraNodeEvaluator : public FInput2DCameraNodeEvaluator
 {
@@ -36,16 +47,25 @@ protected:
 
 private:
 
+	void DeactivateAutoRotate(FCameraNodeEvaluationResult& OutResult);
+
+private:
+
 	TCameraParameterReader<float> WaitTimeReader;
 	TCameraParameterReader<float> DeactivationThresholdReader;
+	TCameraParameterReader<bool> FreezeControlRotationReader;
 	TCameraParameterReader<bool> EnableAutoRotateReader;
+	TCameraParameterReader<bool> AutoRotateYawReader;
+	TCameraParameterReader<bool> AutoRotatePitchReader;
 
 	TUniquePtr<FCameraDoubleValueInterpolator> Interpolator;
 
 	FInput2DCameraNodeEvaluator* InputNodeEvaluator = nullptr;
 
-	FVector3d LastContextLocation;
 	FVector2d LastInputValue;
+
+	FVector3d LastContextLocation;
+	FVector2d OriginalInputValue;
 	double RemainingWaitTime = 0.f;
 	bool bIsAutoRotating = false;
 };
@@ -94,7 +114,10 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalua
 
 	WaitTimeReader.Initialize(AutoRotateNode->WaitTime);
 	DeactivationThresholdReader.Initialize(AutoRotateNode->DeactivationThreshold);
+	FreezeControlRotationReader.Initialize(AutoRotateNode->FreezeControlRotation);
 	EnableAutoRotateReader.Initialize(AutoRotateNode->EnableAutoRotate);
+	AutoRotateYawReader.Initialize(AutoRotateNode->AutoRotateYaw);
+	AutoRotatePitchReader.Initialize(AutoRotateNode->AutoRotatePitch);
 
 	RemainingWaitTime = WaitTimeReader.Get(OutResult.VariableTable);
 	bIsAutoRotating = false;
@@ -114,15 +137,11 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 
 	// Bail out if auto-rotate is disabled.
 	const bool bAutoRotateEnabled = EnableAutoRotateReader.Get(OutResult.VariableTable);
-	if (!bAutoRotateEnabled)
+	const bool bAutoRotateYaw = AutoRotateYawReader.Get(OutResult.VariableTable);
+	const bool bAutoRotatePitch = AutoRotatePitchReader.Get(OutResult.VariableTable);
+	if (!bAutoRotateEnabled || (!bAutoRotateYaw && !bAutoRotatePitch))
 	{
-		// If we were disabled while auto-rotating, tear down everything we had.
-		if (bIsAutoRotating)
-		{
-			bIsAutoRotating = false;
-			Interpolator.Reset();
-			RemainingWaitTime = WaitTimeReader.Get(OutResult.VariableTable);
-		}
+		DeactivateAutoRotate(OutResult);
 		return;
 	}
 
@@ -142,22 +161,10 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 	const double PitchChange = FMath::Abs(InputValue.Y - LastInputValue.Y);
 	const float DeactivationThreshold = DeactivationThresholdReader.Get(OutResult.VariableTable);
 	LastInputValue = InputValue;
-	if (YawChange >= DeactivationThreshold || PitchChange >= DeactivationThreshold)
+	if ((bAutoRotateYaw && YawChange >= DeactivationThreshold) || (bAutoRotatePitch && PitchChange >= DeactivationThreshold))
 	{
-		bIsAutoRotating = false;
-		Interpolator.Reset();
-		RemainingWaitTime = WaitTimeReader.Get(OutResult.VariableTable);
+		DeactivateAutoRotate(OutResult);
 		return;
-	}
-
-	// We are almost good to auto-rotate... but maybe we need to wait a bit longer.
-	if (RemainingWaitTime > 0.f)
-	{
-		RemainingWaitTime -= Params.DeltaTime;
-		if (RemainingWaitTime > 0.f)
-		{
-			return;
-		}
 	}
 
 	// Figure out which direction we should auto-rotate towards.
@@ -169,11 +176,23 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 	const FRotator3d AutoRotateRot = AutoRotateDir.ToOrientationRotator();
 
 	// Figure out how much work we have to do.
-	const double DeltaYaw = AutoRotateRot.Yaw - InputValue.X;
-	const double DeltaPitch = AutoRotateRot.Pitch - InputValue.Y;
-	if (FMath::Abs(DeltaYaw) < UE_DOUBLE_SMALL_NUMBER && FMath::Abs(DeltaPitch) < UE_DOUBLE_SMALL_NUMBER)
+	const double DeltaYaw = FRotator::NormalizeAxis(bAutoRotateYaw ? (AutoRotateRot.Yaw - InputValue.X) : 0.0);
+	const double DeltaPitch = FRotator::NormalizeAxis(bAutoRotatePitch ? (AutoRotateRot.Pitch - InputValue.Y) : 0.0);
+	const double DeltaThreshold = GGameplayCamerasAutoRotateSnapThreshold;
+	if (FMath::Abs(DeltaYaw) < DeltaThreshold && FMath::Abs(DeltaPitch) < DeltaThreshold)
 	{
+		DeactivateAutoRotate(OutResult);
 		return;
+	}
+
+	// We are almost good to auto-rotate... but maybe we need to wait a bit longer.
+	if (RemainingWaitTime > 0.f)
+	{
+		RemainingWaitTime -= Params.DeltaTime;
+		if (RemainingWaitTime > 0.f)
+		{
+			return;
+		}
 	}
 
 	// We will interpolate the length of the vector that represents the delta yaw/pitch
@@ -192,6 +211,13 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 		{
 			Interpolator = MakeUnique<TPopValueInterpolator<double>>();
 		}
+
+		OriginalInputValue = FVector2d::ZeroVector;
+		if (InputNodeEvaluator)
+		{
+			OriginalInputValue = InputNodeEvaluator->GetInputValue();
+		}
+
 		bIsAutoRotating = true;
 	}
 	check(Interpolator);
@@ -229,9 +255,31 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 
 	if (Interpolator->IsFinished() || bDeactivateAutoRotate)
 	{
+		DeactivateAutoRotate(OutResult);
+	}
+	else if (FreezeControlRotationReader.Get(OutResult.VariableTable))
+	{
+		const FBuiltInCameraVariables& BuiltInVariables = FBuiltInCameraVariables::Get();
+		const FRotator3d OriginalControlRotation(OriginalInputValue.Y, OriginalInputValue.X, 0.0);
+		OutResult.VariableTable.SetValue<FRotator3d>(BuiltInVariables.ControlRotationDefinition, OriginalControlRotation);
+		OutResult.VariableTable.SetValue<bool>(BuiltInVariables.FreezeControlRotationDefinition, true);
+	}
+}
+
+void FAutoRotateInput2DCameraNodeEvaluator::DeactivateAutoRotate(FCameraNodeEvaluationResult& OutResult)
+{
+	if (bIsAutoRotating)
+	{
 		bIsAutoRotating = false;
 		Interpolator.Reset();
 		RemainingWaitTime = WaitTimeReader.Get(OutResult.VariableTable);
+
+		if (FreezeControlRotationReader.Get(OutResult.VariableTable))
+		{
+			// TODO: need Deinit callback to set this back to false also
+			const FBuiltInCameraVariables& BuiltInVariables = FBuiltInCameraVariables::Get();
+			OutResult.VariableTable.SetValue<bool>(BuiltInVariables.FreezeControlRotationDefinition, false);
+		}
 	}
 }
 
@@ -271,6 +319,14 @@ UAutoRotateInput2DCameraNode::UAutoRotateInput2DCameraNode(const FObjectInitiali
 FCameraNodeChildrenView UAutoRotateInput2DCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView({ InputNode });
+}
+
+void UAutoRotateInput2DCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
+{
+	using namespace UE::Cameras;
+	const FBuiltInCameraVariables& BuiltInVariables = FBuiltInCameraVariables::Get();
+	BuildContext.AllocationInfo.VariableTableInfo.VariableDefinitions.Add(BuiltInVariables.ControlRotationDefinition);
+	BuildContext.AllocationInfo.VariableTableInfo.VariableDefinitions.Add(BuiltInVariables.FreezeControlRotationDefinition);
 }
 
 FCameraNodeEvaluatorPtr UAutoRotateInput2DCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const

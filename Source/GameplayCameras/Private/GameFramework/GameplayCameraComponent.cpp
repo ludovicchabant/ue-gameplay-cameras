@@ -39,6 +39,11 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 #endif  // WITH_EDITORONLY_DATA
 }
 
+TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetEvaluationContext()
+{
+	return EvaluationContext;
+}
+
 void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
 {
 	if (ActivatedForPlayerIndex == PlayerIndex)

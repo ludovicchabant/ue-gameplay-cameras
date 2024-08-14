@@ -33,6 +33,13 @@ enum class EBuiltInVector2dCameraVariable
 	YawPitch
 };
 
+UENUM()
+enum class EBuiltInRotator3dCameraVariable
+{
+	None,
+	ControlRotation
+};
+
 namespace UE::Cameras
 {
 
@@ -50,6 +57,8 @@ public:
 	const FCameraVariableDefinition& GetDefinition(EBuiltInDoubleCameraVariable BuiltInVariable) const;
 	/** Get the definition of a built-in camera variable. */
 	const FCameraVariableDefinition& GetDefinition(EBuiltInVector2dCameraVariable BuiltInVariable) const;
+	/** Get the definition of a built-in camera variable. */
+	const FCameraVariableDefinition& GetDefinition(EBuiltInRotator3dCameraVariable BuiltInVariable) const;
 
 public:
 
@@ -59,6 +68,9 @@ public:
 	FCameraVariableDefinition ZoomDefinition;
 
 	FCameraVariableDefinition YawPitchDefinition;
+
+	FCameraVariableDefinition FreezeControlRotationDefinition;
+	FCameraVariableDefinition ControlRotationDefinition;
 
 protected:
 

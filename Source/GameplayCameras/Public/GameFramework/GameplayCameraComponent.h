@@ -30,7 +30,14 @@ class UGameplayCameraComponent : public USceneComponent
 
 public:
 
+	/** Create a new camera component. */
 	UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
+
+	/** Get the camera evaluation context used by this component. */
+	TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
+
+	/** Get the player controller index that this component has been activated for. */
+	int32 GetPlayerIndex() const { return ActivatedForPlayerIndex; }
 
 public:
 
