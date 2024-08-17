@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Debug/CameraDebugGraph.h"
 #include "GameplayCameras.h"
 #include "Math/Color.h"
 #include "Math/MathFwd.h"
@@ -21,6 +22,8 @@ namespace UE::Cameras
 {
 
 class FDebugTextRenderer;
+class FCameraDebugClock;
+template<uint8> class TCameraDebugGraph;
 
 enum class ECameraDebugDrawVisitFlags
 {
@@ -63,8 +66,20 @@ public:
 	/** Decreases the indent of the next text wall entry. This will make a new line. */
 	GAMEPLAYCAMERAS_API void RemoveIndent();
 
-	/** Draws a translucent background behind the text. */
-	GAMEPLAYCAMERAS_API void DrawTextBackgroundTile(float Opacity);
+public:
+
+	/**
+	 * Draw a debug clock showing an angle or 2D vector at the next position available
+	 * for a "card" debug item.
+	 */
+	GAMEPLAYCAMERAS_API void DrawClock(FCameraDebugClock& InClock, const FText& InClockName);
+
+	/**
+	 * Draw a debug graph showing one or more graph lines at the next position available
+	 * for a "card" debug item.
+	 */
+	template<uint8 NumValues>
+	void DrawGraph(TCameraDebugGraph<NumValues>& InGraph, const FText& InGraphName);
 
 public:
 
@@ -109,7 +124,13 @@ public:
 	/** Gets the size of the canvas. */
 	FVector2D GetCanvasSize() const;
 
+	/** Returns whether this renderer has a valid canvas to draw upon. */
 	bool HasCanvas() const { return CanvasObject != nullptr; }
+
+public:
+
+	// Internal API.
+	void DrawTextBackgroundTile(float Opacity);
 
 private:
 
@@ -118,6 +139,9 @@ private:
 
 	float GetIndentMargin() const;
 	void FlushText();
+
+	FVector2f GetNextCardPosition();
+	void GetNextDrawGraphParams(FCameraDebugGraphDrawParams& OutDrawParams, const FText& InGraphName);
 
 	ULineBatchComponent* GetDebugLineBatcher() const;
 
@@ -147,9 +171,23 @@ private:
 	/** The maximum horizontal extent of the text rendered so far. */
 	float RightMargin = 0;
 
+	/** The next available position for a card item. */
+	FVector2f NextCardPosition;
+	/** The index of the column for displaying the next card item. */
+	int8 NextCardColumn;
+
 	/** How to visit the next debug blocks. */
 	ECameraDebugDrawVisitFlags VisitFlags;
 };
+
+template<uint8 NumValues>
+inline void FCameraDebugRenderer::DrawGraph(TCameraDebugGraph<NumValues>& InGraph, const FText& InGraphName)
+{
+	FCameraDebugGraphDrawParams DrawParams;
+	GetNextDrawGraphParams(DrawParams, InGraphName);
+	DrawParams.SetupDefaultLineColors<NumValues>();
+	InGraph.Draw(GetCanvas(), DrawParams);
+}
 
 }  // namespace UE::Cameras
 

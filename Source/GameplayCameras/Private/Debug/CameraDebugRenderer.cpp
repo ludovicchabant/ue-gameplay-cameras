@@ -6,6 +6,7 @@
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
 #include "Components/LineBatchComponent.h"
+#include "Debug/CameraDebugClock.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/DebugTextRenderer.h"
 #include "Engine/Canvas.h"
@@ -33,6 +34,12 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugTopMargin(
 	GGameplayCamerasDebugTopMargin,
 	TEXT("(Default: 10px. The top margin for rendering Gameplay Cameras debug text."));
 
+int32 GGameplayCamerasDebugRightMargin = 10;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugRightMargin(
+	TEXT("GameplayCameras.Debug.RightMargin"),
+	GGameplayCamerasDebugRightMargin,
+	TEXT("(Default: 10px. The right margin for rendering Gameplay Cameras debug text."));
+
 int32 GGameplayCamerasDebugInnerMargin = 5;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugInnerMargin(
 	TEXT("GameplayCameras.Debug.InnerMargin"),
@@ -49,7 +56,31 @@ int32 GGameplayCamerasDebugBackgroundDepthSortKey = 1;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundDepthSortKey(
 	TEXT("GameplayCameras.Debug.BackgroundDepthSortKey"),
 	GGameplayCamerasDebugBackgroundDepthSortKey,
-	TEXT(""));
+	TEXT("Default: 1. The sort key for drawing the background behind debug text and debug cards."));
+
+int32 GGameplayCamerasDebugCardWidth = 200;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugCardWidth(
+	TEXT("GameplayCameras.Debug.CardWidth"),
+	GGameplayCamerasDebugCardWidth,
+	TEXT("Default: 200px. The width of the debug cards (e.g. graphs, clocks, etc.)"));
+
+int32 GGameplayCamerasDebugCardHeight = 250;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugCardHeight(
+	TEXT("GameplayCameras.Debug.CardHeight"),
+	GGameplayCamerasDebugCardHeight,
+	TEXT("Default: 250px. The height of the debug cards (e.g. graphs, clocks, etc.)"));
+
+int32 GGameplayCamerasDebugCardGap = 10;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugCardGap(
+	TEXT("GameplayCameras.Debug.CardGap"),
+	GGameplayCamerasDebugCardGap,
+	TEXT("Default: 10px. The gap between the debug cards (e.g. graphs, clocks, etc.)"));
+
+int32 GGameplayCamerasDebugMaxCardColumns = 2;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugMaxCardColumns(
+	TEXT("GameplayCameras.Debug.MaxCardColumns"),
+	GGameplayCamerasDebugMaxCardColumns,
+	TEXT("Default: 2. The number of columns to layout the debug cards (e.g. graphs, clocks, etc.)"));
 
 FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject)
 	: World(InWorld)
@@ -60,6 +91,15 @@ FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObj
 	MaxCharHeight = RenderFont->GetMaxCharHeight();
 
 	NextDrawPosition = FVector2f{ (float)GGameplayCamerasDebugLeftMargin, (float)GGameplayCamerasDebugTopMargin };
+
+	NextCardPosition = FVector2f::ZeroVector;
+	NextCardColumn = 0;
+	if (CanvasObject)
+	{
+		NextCardPosition = FVector2f{ 
+			CanvasObject->SizeX - (float)GGameplayCamerasDebugCardWidth - (float)GGameplayCamerasDebugRightMargin,
+			(float)GGameplayCamerasDebugTopMargin };
+	}
 }
 
 FCameraDebugRenderer::~FCameraDebugRenderer()
@@ -214,6 +254,44 @@ void FCameraDebugRenderer::DrawTextBackgroundTile(float Opacity)
 		}
 		Canvas->PopDepthSortKey();
 	}
+}
+
+void FCameraDebugRenderer::DrawClock(FCameraDebugClock& InClock, const FText& InClockName)
+{
+	FCameraDebugClockDrawParams DrawParams;
+	DrawParams.ClockName = InClockName;
+	DrawParams.ClockPosition = GetNextCardPosition();
+	DrawParams.ClockSize = FVector2f(GGameplayCamerasDebugCardWidth, GGameplayCamerasDebugCardHeight);
+	InClock.Draw(GetCanvas(), DrawParams);
+}
+
+FVector2f FCameraDebugRenderer::GetNextCardPosition()
+{
+	const FVector2f Result(NextCardPosition);
+
+	++NextCardColumn;
+	if (NextCardColumn >= GGameplayCamerasDebugMaxCardColumns)
+	{
+		// We went over the number of columns we're supposed to stick to.
+		// Place the next card below the previous cards, at the right-side edge of the canvas.
+		NextCardColumn = 0;
+		NextCardPosition.X = CanvasObject->SizeX - (float)GGameplayCamerasDebugCardWidth - (float)GGameplayCamerasDebugRightMargin;
+		NextCardPosition.Y += GGameplayCamerasDebugCardHeight + GGameplayCamerasDebugCardGap;
+	}
+	else
+	{
+		// We can go to the next column. Place the next card to the left of the previous card.
+		NextCardPosition.X -= (float)GGameplayCamerasDebugCardWidth + (float)GGameplayCamerasDebugCardGap;
+	}
+
+	return Result;
+}
+
+void FCameraDebugRenderer::GetNextDrawGraphParams(FCameraDebugGraphDrawParams& OutDrawParams, const FText& InGraphName)
+{
+	OutDrawParams.GraphName = InGraphName;
+	OutDrawParams.GraphPosition = GetNextCardPosition();
+	OutDrawParams.GraphSize = FVector2f(GGameplayCamerasDebugCardWidth, GGameplayCamerasDebugCardHeight);
 }
 
 void FCameraDebugRenderer::Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness)
