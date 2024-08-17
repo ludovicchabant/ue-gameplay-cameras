@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Core/CameraEvaluationService.h"
+#include "Debug/CameraDebugClock.h"
+#include "Debug/CameraDebugGraph.h"
 #include "Math/Rotator.h"
 #include "Math/Transform.h"
 #include "Math/Vector2D.h"
@@ -94,16 +96,11 @@ private:
 	bool bIsFrozen = false;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	struct FDebugAxisBindingAngleSpeedHistoryEntry
-	{
-		double Value;
-		float DeltaTime;
-	};
-	TArray<FDebugAxisBindingAngleSpeedHistoryEntry> DebugAxisBindingAngleSpeedHistory;
-
 	FTransform DebugPawnTransform;
 	FString DebugFreezeReason;
 	bool bDebugDidApplyControlRotation;
+	TCameraDebugGraph<1> AxisActionAngularSpeedGraph;
+	FCameraDebugClock AxisActionValueClock;
 #endif
 };
 
