@@ -5,7 +5,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraVariableTable.h"
-#include "GameFramework/CameraEvaluationResultInterop.h"
+#include "GameFramework/BlueprintCameraVariableTable.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigParameterInterop"
 
@@ -15,11 +15,11 @@ namespace UE::Cameras::Private
 {
 
 template<typename VariableAssetType>
-void SetCameraRigParameter(UCameraEvaluationResultInterop* ResultInterop, VariableAssetType* PrivateVariable, typename VariableAssetType::ValueType Value)
+void SetCameraRigParameter(FBlueprintCameraVariableTable& VariableTable, VariableAssetType* PrivateVariable, typename VariableAssetType::ValueType Value)
 {
-	if (ResultInterop == nullptr)
+	if (!VariableTable.IsValid())
 	{
-		FFrame::KismetExecutionMessage(TEXT("No camera evaluation result was passed."), ELogVerbosity::Error);
+		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
 		return;
 	}
 	if (PrivateVariable == nullptr)
@@ -28,14 +28,7 @@ void SetCameraRigParameter(UCameraEvaluationResultInterop* ResultInterop, Variab
 		return;
 	}
 
-	FCameraNodeEvaluationResult* Result = ResultInterop->GetEvaluationResult();
-	if (Result == nullptr)
-	{
-		FFrame::KismetExecutionMessage(TEXT("The given camera evaluation result is invalid."), ELogVerbosity::Error);
-		return;
-	}
-
-	Result->VariableTable.SetValue(PrivateVariable, Value, true);
+	VariableTable.GetVariableTable()->SetValue(PrivateVariable, Value, true);
 }
 
 }  // namespace UE::Cameras::Private
@@ -45,74 +38,74 @@ UCameraRigParameterInterop::UCameraRigParameterInterop(const FObjectInitializer&
 {
 }
 
-void UCameraRigParameterInterop::SetBooleanParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, bool bParameterValue)
+void UCameraRigParameterInterop::SetBooleanParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, bool bParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UBooleanCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)), 
 			bParameterValue);
 }
 
-void UCameraRigParameterInterop::SetIntegerParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, int32 ParameterValue)
+void UCameraRigParameterInterop::SetIntegerParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, int32 ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UInteger32CameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)), 
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetFloatParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
+void UCameraRigParameterInterop::SetFloatParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UFloatCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			(float)ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetDoubleParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
+void UCameraRigParameterInterop::SetDoubleParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UDoubleCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetVector2Parameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector2D ParameterValue)
+void UCameraRigParameterInterop::SetVector2Parameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector2D ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UVector2dCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetVector3Parameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector ParameterValue)
+void UCameraRigParameterInterop::SetVector3Parameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UVector3dCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetVector4Parameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector4 ParameterValue)
+void UCameraRigParameterInterop::SetVector4Parameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector4 ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UVector4dCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetRotatorParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, FRotator ParameterValue)
+void UCameraRigParameterInterop::SetRotatorParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, FRotator ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<URotator3dCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }
 
-void UCameraRigParameterInterop::SetTransformParameter(UCameraEvaluationResultInterop* ResultInterop, UCameraRigAsset* CameraRig, const FString& ParameterName, FTransform ParameterValue)
+void UCameraRigParameterInterop::SetTransformParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, FTransform ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
-			ResultInterop, 
+			VariableTable, 
 			Cast<UTransform3dCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)),
 			ParameterValue);
 }

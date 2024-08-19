@@ -8,7 +8,7 @@
 #include "Core/CameraVariableAssets.h"
 #include "EdGraphSchema_K2.h"
 #include "EditorCategoryUtils.h"
-#include "GameFramework/CameraEvaluationResultInterop.h"
+#include "GameFramework/BlueprintCameraVariableTable.h"
 #include "GameFramework/CameraRigParameterInterop.h"
 #include "K2Node_CallFunction.h"
 #include "KismetCompiler.h"
@@ -17,7 +17,7 @@
 #define LOCTEXT_NAMESPACE "K2Node_SetCameraRigParameters"
 
 const FName UK2Node_SetCameraRigParameters::CameraRigPinName(TEXT("CameraRig"));
-const FName UK2Node_SetCameraRigParameters::CameraEvaluationResultPinName(TEXT("CameraEvaluationResult"));
+const FName UK2Node_SetCameraRigParameters::CameraVariableTablePinName(TEXT("CameraVariableTable"));
 
 UK2Node_SetCameraRigParameters::UK2Node_SetCameraRigParameters(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
@@ -31,7 +31,7 @@ void UK2Node_SetCameraRigParameters::AllocateDefaultPins()
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
 
 	// Add evalation result pin.
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UCameraEvaluationResultInterop::StaticClass(), CameraEvaluationResultPinName);
+	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, FBlueprintCameraVariableTable::StaticStruct(), CameraVariableTablePinName);
 
 	// Add camera rig pin.
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UCameraRigAsset::StaticClass(), CameraRigPinName);
@@ -123,7 +123,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 	GetCameraRigParameterPins(RigParameterPins);
 
 	UEdGraphPin* const CameraRigPin = FindPinChecked(CameraRigPinName);
-	UEdGraphPin* const EvaluationResultPin = FindPinChecked(CameraEvaluationResultPinName);
+	UEdGraphPin* const CameraVariableTablePin = FindPinChecked(CameraVariableTablePinName);
 
 	UEdGraphPin* OriginalThenPin = GetThenPin();
 	UEdGraphPin* PreviousThenPin = nullptr;
@@ -186,9 +186,9 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 		CallSetParameter->FunctionReference.SetExternalMember(CallSetParameterFuncName, UCameraRigParameterInterop::StaticClass());
 		CallSetParameter->AllocateDefaultPins();
 
-		// Connect the evaluation result pin that specifies where the parameter should be overriden.
-		UEdGraphPin* CallSetParameterResultInteropPin = CallSetParameter->FindPinChecked(TEXT("ResultInterop"));
-		CompilerContext.CopyPinLinksToIntermediate(*EvaluationResultPin, *CallSetParameterResultInteropPin);
+		// Connect the variable table pin that specifies where the parameter should be overriden.
+		UEdGraphPin* CallSetParameterVariableTablePin = CallSetParameter->FindPinChecked(TEXT("VariableTable"));
+		CompilerContext.CopyPinLinksToIntermediate(*CameraVariableTablePin, *CallSetParameterVariableTablePin);
 
 		// Connect the camera rig argument.
 		UEdGraphPin* CallSetParameterCameraRigPin = CallSetParameter->FindPinChecked(TEXT("CameraRig"));
@@ -287,7 +287,7 @@ bool UK2Node_SetCameraRigParameters::IsCameraRigParameterPin(UEdGraphPin* Pin) c
 		Pin->PinName != UEdGraphSchema_K2::PN_Then &&
 		Pin->PinName != UEdGraphSchema_K2::PN_ReturnValue &&
 		Pin->PinName != CameraRigPinName &&
-		Pin->PinName != CameraEvaluationResultPinName;
+		Pin->PinName != CameraVariableTablePinName;
 }
 
 void UK2Node_SetCameraRigParameters::CreatePinsForCameraRig(UCameraRigAsset* CameraRig, TArray<UEdGraphPin*>* CreatedPins)
@@ -385,23 +385,6 @@ UCameraRigAsset* UK2Node_SetCameraRigParameters::GetCameraRig(TArrayView<UEdGrap
 		if (UEdGraphPin* CameraRigSource = CameraRigPin->LinkedTo[0])
 		{
 			return Cast<UCameraRigAsset>(CameraRigSource->PinType.PinSubCategoryObject.Get());
-		}
-	}
-	return nullptr;
-}
-
-UCameraEvaluationResultInterop* UK2Node_SetCameraRigParameters::GetCameraEvaluationResult() const
-{
-	UEdGraphPin* ResultPin = GetCameraEvaluationResultPin();
-	if (ResultPin && ResultPin->DefaultObject && ResultPin->LinkedTo.Num() == 0)
-	{
-		return CastChecked<UCameraEvaluationResultInterop>(ResultPin->DefaultObject);
-	}
-	else if (ResultPin && ResultPin->LinkedTo.Num() > 0)
-	{
-		if (UEdGraphPin* ResultSource = ResultPin->LinkedTo[0])
-		{
-			return Cast<UCameraEvaluationResultInterop>(ResultSource->PinType.PinSubCategoryObject.Get());
 		}
 	}
 	return nullptr;

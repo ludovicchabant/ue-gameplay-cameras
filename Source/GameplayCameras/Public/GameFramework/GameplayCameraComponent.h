@@ -5,13 +5,14 @@
 #include "Components/SceneComponent.h"
 #include "Core/CameraEvaluationContext.h"
 #include "CoreMinimal.h"
+#include "GameFramework/BlueprintCameraPose.h"
+#include "GameFramework/BlueprintCameraVariableTable.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/ScriptInterface.h"
 
 #include "GameplayCameraComponent.generated.h"
 
 class UCameraAsset;
-class UCameraEvaluationResultInterop;
 
 namespace UE::Cameras
 {
@@ -54,9 +55,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void DeactivateCamera();
 
-	/** Gets the initial evaluation result for this component's context. */
+	/** Gets the initial camera pose for this component's camera evaluation context. */
 	UFUNCTION(BlueprintPure, Category=Camera)
-	GAMEPLAYCAMERAS_API UCameraEvaluationResultInterop* GetInitialResult() const;
+	GAMEPLAYCAMERAS_API FBlueprintCameraPose GetInitialPose() const;
+
+	/** Sets the initial camera pose for this component's camera evaluation context. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API void SetInitialPose(const FBlueprintCameraPose& CameraPose);
+
+	/** Gets the initial camera variable table for this component's camera evaluation context. */
+	UFUNCTION(BlueprintPure, Category=Camera)
+	GAMEPLAYCAMERAS_API FBlueprintCameraVariableTable GetInitialVariableTable() const;
 
 public:
 
@@ -97,9 +106,6 @@ protected:
 
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UCameraEvaluationResultInterop> InitialResultInterop;
-	
 #if WITH_EDITORONLY_DATA
 
 	UPROPERTY(Transient)

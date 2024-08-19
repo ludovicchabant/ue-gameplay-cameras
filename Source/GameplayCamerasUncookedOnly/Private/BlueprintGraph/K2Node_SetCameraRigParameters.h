@@ -10,7 +10,6 @@
 
 #include "K2Node_SetCameraRigParameters.generated.h"
 
-class UCameraEvaluationResultInterop;
 class UCameraRigAsset;
 
 /**
@@ -47,7 +46,7 @@ public:
 protected:
 
 	static const FName CameraRigPinName;
-	static const FName CameraEvaluationResultPinName;
+	static const FName CameraVariableTablePinName;
 
 	UEdGraphPin* GetCameraRigPin(TArrayView<UEdGraphPin* const>* InPinsToSearch = nullptr) const;
 	UEdGraphPin* GetCameraEvaluationResultPin() const;
@@ -56,7 +55,6 @@ protected:
 	void CreatePinsForCameraRig(UCameraRigAsset* CameraRig, TArray<UEdGraphPin*>* CreatedPins = nullptr);
 
 	UCameraRigAsset* GetCameraRig(TArrayView<UEdGraphPin* const>* InPinsToSearch = nullptr) const;
-	UCameraEvaluationResultInterop* GetCameraEvaluationResult() const;
 	void OnCameraRigChanged();
 };
 

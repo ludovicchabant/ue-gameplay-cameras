@@ -9,7 +9,6 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
-#include "GameFramework/CameraEvaluationResultInterop.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameplayCameras.h"
@@ -26,8 +25,6 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 	: Super(ObjectInit)
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
-	InitialResultInterop = ObjectInit.CreateDefaultSubobject<UCameraEvaluationResultInterop>(this, "InitialResultInterop");
 
 #if WITH_EDITORONLY_DATA
 	if (GIsEditor && !IsRunningCommandlet())
@@ -115,8 +112,6 @@ void UGameplayCameraComponent::ActivateCamera(APlayerController* PlayerControlle
 		InitParams.CameraAsset = Camera;
 		InitParams.PlayerController = PlayerController;
 		EvaluationContext->Initialize(InitParams);
-
-		InitialResultInterop->Setup(&EvaluationContext->GetInitialResult());
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
@@ -145,13 +140,22 @@ void UGameplayCameraComponent::DeactivateCamera(APlayerController* PlayerControl
 		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
 		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 	}
-
-	Deactivate();
 }
 
-UCameraEvaluationResultInterop* UGameplayCameraComponent::GetInitialResult() const
+FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
 {
-	return InitialResultInterop;
+	return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
+}
+
+void UGameplayCameraComponent::SetInitialPose(const FBlueprintCameraPose& CameraPose)
+{
+	FCameraPose InitialPose = EvaluationContext->GetInitialResult().CameraPose;
+	CameraPose.ApplyTo(InitialPose);
+}
+
+FBlueprintCameraVariableTable UGameplayCameraComponent::GetInitialVariableTable() const
+{
+	return FBlueprintCameraVariableTable(&EvaluationContext->GetInitialResult().VariableTable);
 }
 
 void UGameplayCameraComponent::OnRegister()

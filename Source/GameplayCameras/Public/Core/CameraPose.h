@@ -79,7 +79,7 @@ public:
  * Fields are private and can only be accessed via the getters and setters.
  * The ChangedFlags structure keeps track of which fields were changed via the setters.
  */
-USTRUCT(BlueprintType)
+USTRUCT()
 struct GAMEPLAYCAMERAS_API FCameraPose
 {
 	GENERATED_BODY()
@@ -160,6 +160,14 @@ public:
 
 	/** Gets the location of the camera's target given a specific distance. */
 	FVector3d GetTarget(double InTargetDistance) const;
+
+public:
+
+	/** Computes the horizontal field of view of a camera. */
+	static double GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor);
+	
+	/** Computes the aspect ratio of a camera sensor. */
+	static double GetSensorAspectRatio(float SensorWidth, float SensorHeight);
 
 public:
 

@@ -11,6 +11,7 @@ public class GameplayCameras : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(
 			new string[] {
+				"CinematicCamera",
 				"Core",
 				"CoreUObject",
 				"Engine",
