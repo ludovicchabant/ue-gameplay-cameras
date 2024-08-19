@@ -20,6 +20,7 @@ public class GameplayCameras : ModuleRules
 				"HeadMountedDisplay",
 				"MovieScene",
 				"MovieSceneTracks",
+				"StateTreeModule",
 				"TemplateSequence",
 				"TraceLog"
 			}

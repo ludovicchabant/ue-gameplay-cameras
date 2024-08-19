@@ -21,6 +21,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "StateTree",
+			"Enabled": true
+		},
+		{
 			"Name": "TemplateSequence",
 			"Enabled": true
 		}
