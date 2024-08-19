@@ -90,13 +90,6 @@ void UGameplayCameraSystemComponent::OnRegister()
 #endif	// WITH_EDITORONLY_DATA
 }
 
-void UGameplayCameraSystemComponent::Deactivate()
-{
-	DeactivateCameraSystem();
-
-	Super::Deactivate();
-}
-
 void UGameplayCameraSystemComponent::ActivateCameraSystem(int32 PlayerIndex)
 {
 	if (ActivatedForPlayerIndex == PlayerIndex)
@@ -123,8 +116,6 @@ void UGameplayCameraSystemComponent::ActivateCameraSystem(int32 PlayerIndex)
 		return;
 	}
 
-	Activate();
-
 	PC->SetViewTarget(OwningActor);
 	ActivatedForPlayerIndex = PlayerIndex;
 }
@@ -143,8 +134,6 @@ void UGameplayCameraSystemComponent::DeactivateCameraSystem(AActor* NextViewTarg
 	}
 
 	ActivatedForPlayerIndex = INDEX_NONE;
-
-	Deactivate();
 }
 
 void UGameplayCameraSystemComponent::BeginPlay()
@@ -156,6 +145,13 @@ void UGameplayCameraSystemComponent::BeginPlay()
 		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
 		ActivateCameraSystem(PlayerIndex);
 	}
+}
+
+void UGameplayCameraSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	DeactivateCameraSystem();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UGameplayCameraSystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
