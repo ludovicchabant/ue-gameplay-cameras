@@ -18,10 +18,31 @@ class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
 class FCameraEvaluationContext;
 
+/**
+ * Parameter structure for initializing a newly created camera director evaluator.
+ */
 struct FCameraDirectorInitializeParams
 {
+	/** The evaluation context that owns the camera director. */
 	TSharedPtr<FCameraEvaluationContext> OwnerContext;
-	TObjectPtr<const UCameraDirector> CameraDirector;
+};
+
+/**
+ * Parameter structure for activating a camera director evaluator.
+ * A camera director evaluator can be activated and deactivated multiple times.
+ * This means that OnActivated/OnDeactivated can be called multiple times in pairs,
+ * unlike OnInitialize which is only called once.
+ */
+struct FCameraDirectorActivateParams
+{
+	/** The evaluation context that owns the camera director. */
+	TSharedPtr<FCameraEvaluationContext> OwnerContext;
+};
+
+struct FCameraDirectorDeactivateParams
+{
+	/** The evaluation context that owns the camera director. */
+	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
 /**
@@ -109,11 +130,19 @@ public:
 	GAMEPLAYCAMERAS_API FCameraDirectorEvaluator();
 	GAMEPLAYCAMERAS_API virtual ~FCameraDirectorEvaluator() {}
 
-	void Initialize(const FCameraDirectorInitializeParams& Params);
+	/** Initializes a camera director evalutor. */
+	GAMEPLAYCAMERAS_API void Initialize(const FCameraDirectorInitializeParams& Params);
+
+	/** Activates the camera director evaluator. */
+	GAMEPLAYCAMERAS_API void Activate(const FCameraDirectorActivateParams& Params);
+
+	/** Deactivates the camera director evaluator. */
+	GAMEPLAYCAMERAS_API void Deactivate(const FCameraDirectorDeactivateParams& Params);
 	
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
-	void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
+	GAMEPLAYCAMERAS_API void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
 
+	/** Gets the camera director. */
 	const UCameraDirector* GetCameraDirector() const { return PrivateCameraDirector; }
 
 	/** Gets the camera director. */
@@ -126,7 +155,7 @@ public:
 	GAMEPLAYCAMERAS_API bool AddChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
 	GAMEPLAYCAMERAS_API bool RemoveChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
 
-	void AddReferencedObjects(FReferenceCollector& Collector);
+	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
 public:
 
@@ -155,7 +184,14 @@ protected:
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	};
 
+	/** Initializes a camera director evalutor. Only called once after construction. */
 	virtual void OnInitialize(const FCameraDirectorInitializeParams& Params) {}
+
+	/** Activates the camera director evaluator. May be called multiple times, in pair with OnDeactivate. */
+	virtual void OnActivate(const FCameraDirectorActivateParams& Params) {}
+
+	/** Deactivates the camera director evaluator. May be called multiple times, in pair with OnActivate. */
+	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) {}
 
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) {}

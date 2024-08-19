@@ -85,7 +85,6 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 
 		FCameraDirectorInitializeParams InitParams;
 		InitParams.OwnerContext = SharedThis(this);
-		InitParams.CameraDirector = CameraDirector;
 		DirectorEvaluator->Initialize(InitParams);
 	}
 }
@@ -105,6 +104,13 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 
 	AutoCreateDirectorEvaluator();
 
+	if (ensure(DirectorEvaluator))
+	{
+		FCameraDirectorActivateParams DirectorParams;
+		DirectorParams.OwnerContext = SharedThis(this);
+		DirectorEvaluator->Activate(DirectorParams);
+	}
+
 	bActivated = true;
 }
 
@@ -113,6 +119,13 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	if (!ensureMsgf(bActivated, TEXT("This evaluation context has not been activated!")))
 	{
 		return;
+	}
+
+	if (ensure(DirectorEvaluator))
+	{
+		FCameraDirectorDeactivateParams DirectorParams;
+		DirectorParams.OwnerContext = SharedThis(this);
+		DirectorEvaluator->Deactivate(DirectorParams);
 	}
 
 	// Don't destroy the camera director evaluator, it could still be useful. We only destroy it

@@ -31,6 +31,20 @@ void FCameraDirectorEvaluator::Initialize(const FCameraDirectorInitializeParams&
 	OnInitialize(Params);
 }
 
+void FCameraDirectorEvaluator::Activate(const FCameraDirectorActivateParams& Params)
+{
+	WeakOwnerContext = Params.OwnerContext;
+
+	OnActivate(Params);
+}
+
+void FCameraDirectorEvaluator::Deactivate(const FCameraDirectorDeactivateParams& Params)
+{
+	OnDeactivate(Params);
+
+	WeakOwnerContext.Reset();
+}
+
 void FCameraDirectorEvaluator::Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	OnRun(Params, OutResult);
