@@ -15,3 +15,8 @@ UGameplayCamerasEditorSettings::UGameplayCamerasEditorSettings(const FObjectInit
 	CameraBlendNodeTitleColor = FLinearColor(0.6f, 0.0f, 1.0f, 1.0f);                // Purple
 }
 
+FName UGameplayCamerasEditorSettings::GetCategoryName() const
+{
+	return TEXT("Plugins");
+}
+

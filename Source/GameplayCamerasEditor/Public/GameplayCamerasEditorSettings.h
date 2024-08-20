@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Engine/DeveloperSettings.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
@@ -10,8 +11,8 @@
 
 #include "GameplayCamerasEditorSettings.generated.h"
 
-UCLASS(config=EditorPerProjectUserSettings)
-class GAMEPLAYCAMERASEDITOR_API UGameplayCamerasEditorSettings : public UObject
+UCLASS(Config=GameplayCameras, DefaultConfig, MinimalAPI, meta=(DisplayName="Gameplay Cameras Editor"))
+class UGameplayCamerasEditorSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -43,5 +44,10 @@ public:
 
 	UPROPERTY()
 	FName LastCameraAssetToolkitModeName;
+
+protected:
+
+	// UDeveloperSettings interface.
+	virtual FName GetCategoryName() const override;
 };
 

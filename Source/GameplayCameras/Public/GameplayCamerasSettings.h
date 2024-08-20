@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Engine/DeveloperSettings.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 
@@ -11,8 +12,8 @@
 /**
  * The settings for the Gameplay Cameras runtime.
  */
-UCLASS(config=Project, MinimalAPI)
-class UGameplayCamerasSettings : public UObject
+UCLASS(Config=GameplayCameras, DefaultConfig, MinimalAPI, meta=(DisplayName="Gameplay Cameras"))
+class UGameplayCamerasSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -33,5 +34,10 @@ public:
 	/** The distance below which any IK aiming operation is disabled. */
 	UPROPERTY(EditAnywhere, Config, Category="IK Aiming")
 	double DefaultIKAimingMinDistance = 100.0;  // 1m
+
+protected:
+
+	// UDeveloperSettings interface.
+	virtual FName GetCategoryName() const override;
 };
 

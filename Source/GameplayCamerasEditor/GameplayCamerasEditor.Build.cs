@@ -25,6 +25,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"BlueprintGraph",
 				"Core",
 				"CoreUObject",
+				"DeveloperSettings",
 				"EditorFramework",
 				"EditorSubsystem",
 				"Engine",

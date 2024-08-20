@@ -14,6 +14,7 @@ public class GameplayCameras : ModuleRules
 				"CinematicCamera",
 				"Core",
 				"CoreUObject",
+				"DeveloperSettings",
 				"Engine",
 				"EnhancedInput",
 				"GameplayTags",
