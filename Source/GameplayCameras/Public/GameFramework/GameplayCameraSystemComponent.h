@@ -45,7 +45,11 @@ public:
 
 	/** Sets this component's actor as the view target for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	void ActivateCameraSystem(int32 PlayerIndex = 0);
+	void ActivateCameraSystemForPlayerIndex(int32 PlayerIndex);
+
+	/** Sets this component's actor as the view target for the given player. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	void ActivateCameraSystemForPlayerController(APlayerController* PlayerController);
 
 	/** Removes this component's actor from being the view target. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
@@ -93,7 +97,7 @@ private:
 	
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
 
-	int32 ActivatedForPlayerIndex = INDEX_NONE;
+	TWeakObjectPtr<APlayerController> WeakPlayerController;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FDelegateHandle DebugDrawDelegateHandle;

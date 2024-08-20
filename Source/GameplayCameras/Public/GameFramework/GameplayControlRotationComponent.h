@@ -39,10 +39,6 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-private:
-
-	APlayerController* GetPlayerController();
-
 public:
 
 	/** The axis input action(s) to read from. */
@@ -64,8 +60,10 @@ public:
 
 private:
 
+	UPROPERTY()
+	TObjectPtr<APlayerController> PlayerController;
+
 	TSharedPtr<UE::Cameras::FPlayerControlRotationEvaluationService> ControlRotationService;
 	TWeakPtr<UE::Cameras::FCameraSystemEvaluator> WeakCameraSystem;
-	int32 PlayerIndex = INDEX_NONE;
 };
 

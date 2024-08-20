@@ -13,6 +13,7 @@
 
 #include "GameplayCameraComponent.generated.h"
 
+class APlayerController;
 class UCameraAsset;
 
 namespace UE::Cameras
@@ -39,19 +40,18 @@ public:
 	/** Get the camera evaluation context used by this component. */
 	TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
 
-	/** Get the player controller index that this component has been activated for. */
-	int32 GetPlayerIndex() const { return ActivatedForPlayerIndex; }
+	/** Get the player controller this component is currently activated for (if any). */
+	APlayerController* GetPlayerController() const { return WeakPlayerController.Get(); }
 
 public:
 
-	/** 
-	 * Activates the camera for the given player.
-	 * This looks up the given player's camera manager and/or view target in order to find
-	 * the active camera system. If found, this component adds its camera asset as the active one.
-	 * If this component was already active for another player, it will be first deactivated.
-	 */
+	/** Activates the camera for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	GAMEPLAYCAMERAS_API void ActivateCamera(int32 PlayerIndex = 0);
+	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerIndex(int32 PlayerIndex);
+
+	/** Activates the camera for the given player. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerController(APlayerController* PlayerController);
 
 	/** Deactivates the camera for the last player it was activated for. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
@@ -81,10 +81,8 @@ public:
 private:
 
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
-	void DeactivateCameraEvaluationContext();
-
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
-	void DeactivateCameraEvaluationContext(APlayerController* PlayerController);
+	void DeactivateCameraEvaluationContext();
 
 	void DelayedActivateCameraEvaluationContext(APlayerController* PlayerController, AActor* OldViewTarget, AActor* NewViewTarget);
 	void AbortDelayedActivateCameraEvaluationContext();
@@ -128,7 +126,7 @@ protected:
 	
 private:
 
-	int32 ActivatedForPlayerIndex = INDEX_NONE;
+	TWeakObjectPtr<APlayerController> WeakPlayerController;
 };
 
 namespace UE::Cameras

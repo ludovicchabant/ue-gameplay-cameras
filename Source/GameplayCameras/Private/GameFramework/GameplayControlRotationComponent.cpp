@@ -54,19 +54,12 @@ void UGameplayControlRotationComponent::BeginPlay()
 	}
 
 	// Find where the camera system is running from.
-	PlayerIndex = GameplayCameraComponent->GetPlayerIndex();
-	if (!ensure(PlayerIndex != INDEX_NONE))
+	PlayerController = GameplayCameraComponent->GetPlayerController();
+	if (!ensure(PlayerController))
 	{
 		UE_LOG(LogCameraSystem, Error,
 				TEXT("GameplayCameraComponent '%s' hasn't activated for any player yet"),
 				*GetNameSafe(GameplayCameraComponent));
-		return;
-	}
-
-	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	if (!PlayerController)
-	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't find player controller for player index %d"), PlayerIndex);
 		return;
 	}
 
@@ -117,7 +110,6 @@ void UGameplayControlRotationComponent::TickComponent(float DeltaTime, ELevelTic
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	APlayerController* PlayerController = GetPlayerController();
 	if (PlayerController)
 	{
 		// This may be technically one frame late (i.e. we set the control rotation computed 
@@ -125,15 +117,6 @@ void UGameplayControlRotationComponent::TickComponent(float DeltaTime, ELevelTic
 		// rotation early in the frame.
 		PlayerController->SetControlRotation(ControlRotationService->GetCurrentControlRotation());
 	}
-}
-
-APlayerController* UGameplayControlRotationComponent::GetPlayerController()
-{
-	if (PlayerIndex != INDEX_NONE)
-	{
-		return UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	}
-	return nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

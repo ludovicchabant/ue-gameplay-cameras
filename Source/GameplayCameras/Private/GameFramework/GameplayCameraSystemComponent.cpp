@@ -90,14 +90,21 @@ void UGameplayCameraSystemComponent::OnRegister()
 #endif	// WITH_EDITORONLY_DATA
 }
 
-void UGameplayCameraSystemComponent::ActivateCameraSystem(int32 PlayerIndex)
+void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 PlayerIndex)
 {
-	if (ActivatedForPlayerIndex == PlayerIndex)
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
+	if (!PlayerController)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no player controller found!"));
 		return;
 	}
 
-	if (ActivatedForPlayerIndex >= 0)
+	ActivateCameraSystemForPlayerController(PlayerController);
+}
+
+void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APlayerController* PlayerController)
+{
+	if (WeakPlayerController.IsValid())
 	{
 		DeactivateCameraSystem();
 	}
@@ -109,31 +116,20 @@ void UGameplayCameraSystemComponent::ActivateCameraSystem(int32 PlayerIndex)
 		return;
 	}
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	if (!PC)
-	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no player controller found!"));
-		return;
-	}
-
-	PC->SetViewTarget(OwningActor);
-	ActivatedForPlayerIndex = PlayerIndex;
+	PlayerController->SetViewTarget(OwningActor);
+	WeakPlayerController = PlayerController;
 }
 
 void UGameplayCameraSystemComponent::DeactivateCameraSystem(AActor* NextViewTarget)
 {
-	if (ActivatedForPlayerIndex < 0)
+	APlayerController* PlayerController = WeakPlayerController.Get();
+	if (!PlayerController)
 	{
 		return;
 	}
 
-	APlayerController* PC = UGameplayStatics::GetPlayerController(this, ActivatedForPlayerIndex);
-	if (PC)
-	{
-		PC->SetViewTarget(NextViewTarget);
-	}
-
-	ActivatedForPlayerIndex = INDEX_NONE;
+	PlayerController->SetViewTarget(NextViewTarget);
+	WeakPlayerController.Reset();
 }
 
 void UGameplayCameraSystemComponent::BeginPlay()
@@ -143,7 +139,7 @@ void UGameplayCameraSystemComponent::BeginPlay()
 	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
 		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
-		ActivateCameraSystem(PlayerIndex);
+		ActivateCameraSystemForPlayerIndex(PlayerIndex);
 	}
 }
 

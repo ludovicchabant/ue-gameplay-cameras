@@ -14,6 +14,7 @@
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameplayCameras.h"
+#include "GameplayCamerasSettings.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/MessageLog.h"
 #include "TimerManager.h"
@@ -44,9 +45,14 @@ TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetE
 	return EvaluationContext;
 }
 
-void UGameplayCameraComponent::ActivateCamera(int32 PlayerIndex)
+void UGameplayCameraComponent::ActivateCameraForPlayerIndex(int32 PlayerIndex)
 {
 	ActivateCameraEvaluationContext(PlayerIndex);
+}
+
+void UGameplayCameraComponent::ActivateCameraForPlayerController(APlayerController* PlayerController)
+{
+	ActivateCameraEvaluationContext(PlayerController);
 }
 
 void UGameplayCameraComponent::DeactivateCamera()
@@ -56,36 +62,49 @@ void UGameplayCameraComponent::DeactivateCamera()
 
 void UGameplayCameraComponent::ActivateCameraEvaluationContext(int32 PlayerIndex)
 {
-	if (ActivatedForPlayerIndex == PlayerIndex)
-	{
-		return;
-	}
-
-	if (ActivatedForPlayerIndex >= 0)
+	if (WeakPlayerController.IsValid())
 	{
 		DeactivateCameraEvaluationContext();
 	}
 
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, PlayerIndex))
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
+	if (!PlayerController)
 	{
-		ActivateCameraEvaluationContext(PC);
-		ActivatedForPlayerIndex = PlayerIndex;
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera: no player controller found!"));
+		return;
 	}
+
+	ActivateCameraEvaluationContext(PlayerController);
 }
 
 void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 {
-	if (ActivatedForPlayerIndex < 0)
+	using namespace UE::Cameras;
+
+	APlayerController* PlayerController = WeakPlayerController.Get();
+	if (!PlayerController)
 	{
 		return;
 	}
 
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, ActivatedForPlayerIndex))
+	if (!ensure(PlayerController->PlayerCameraManager))
 	{
-		DeactivateCameraEvaluationContext(PC);
+		return;
+	}
+	
+	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
+	if (!ensure(CameraSystem))
+	{
+		return;
 	}
 
-	ActivatedForPlayerIndex = INDEX_NONE;
+	if (EvaluationContext.IsValid())
+	{
+		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
+		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+	}
+
+	WeakPlayerController.Reset();
 }
 
 void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController* PlayerController)
@@ -108,6 +127,16 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
 	if (!CameraSystem)
 	{
+		const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+		if (Settings->bAutoSpawnCameraSystemActor)
+		{
+			FActorSpawnParameters SpawnParams;
+			CameraSystem = GetWorld()->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
+			CameraSystem->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
+		}
+	}
+	if (!CameraSystem)
+	{
 		FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(
 				this, &UGameplayCameraComponent::DelayedActivateCameraEvaluationContext);
 
@@ -121,6 +150,8 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 	}
 
 	DoActivateCameraEvaluationContext(PlayerController, CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator());
+
+	WeakPlayerController = PlayerController;
 }
 
 void UGameplayCameraComponent::DelayedActivateCameraEvaluationContext(APlayerController* PlayerController, AActor* OldViewTarget, AActor* NewViewTarget)
@@ -135,11 +166,13 @@ void UGameplayCameraComponent::DelayedActivateCameraEvaluationContext(APlayerCon
 	}
 
 	DoActivateCameraEvaluationContext(PlayerController, CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator());
+
+	WeakPlayerController = PlayerController;
 }
 
 void UGameplayCameraComponent::AbortDelayedActivateCameraEvaluationContext()
 {
-	if (ActivatedForPlayerIndex == INDEX_NONE)
+	if (!WeakPlayerController.IsValid())
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system found after a full tick!"));
 		FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
@@ -162,28 +195,6 @@ void UGameplayCameraComponent::DoActivateCameraEvaluationContext(APlayerControll
 	}
 
 	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
-}
-
-void UGameplayCameraComponent::DeactivateCameraEvaluationContext(APlayerController* PlayerController)
-{
-	using namespace UE::Cameras;
-
-	if (!ensure(PlayerController && PlayerController->PlayerCameraManager))
-	{
-		return;
-	}
-	
-	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
-	if (!ensure(CameraSystem))
-	{
-		return;
-	}
-
-	if (EvaluationContext.IsValid())
-	{
-		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
-		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
-	}
 }
 
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
@@ -241,7 +252,7 @@ void UGameplayCameraComponent::BeginPlay()
 	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
 		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
-		ActivateCamera(PlayerIndex);
+		ActivateCameraForPlayerIndex(PlayerIndex);
 	}
 }
 

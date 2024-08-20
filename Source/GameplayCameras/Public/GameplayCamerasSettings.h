@@ -19,6 +19,16 @@ class UGameplayCamerasSettings : public UDeveloperSettings
 
 public:
 
+	/**
+	 * Automatically spawn a camera system actor when any gameplay camera activates and no camera system
+	 * is found on the player controller's camera manager, or as a view target. This camera system actor
+	 * will be spawned and set as the view target automatically.
+	 */
+	UPROPERTY(EditAnywhere, Config, Category="General")
+	bool bAutoSpawnCameraSystemActor = true;
+
+public:
+
 	/** The default angle tolerance to accept an aiming operation. */
 	UPROPERTY(EditAnywhere, Config, Category="IK Aiming")
 	double DefaultIKAimingAngleTolerance = 0.1;  // 0.1 degrees
