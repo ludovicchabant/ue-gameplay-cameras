@@ -200,6 +200,8 @@ bool UGameplayCameraSystemComponent::GetEditorPreviewInfo(float DeltaTime, FMini
 
 void UGameplayCameraSystemComponent::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
 {
+	Super::AddReferencedObjects(InThis, Collector);
+
 	UGameplayCameraSystemComponent* TypedThis = CastChecked<UGameplayCameraSystemComponent>(InThis);
 	if (TypedThis->Evaluator.IsValid())
 	{
