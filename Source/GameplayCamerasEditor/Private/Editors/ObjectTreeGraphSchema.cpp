@@ -663,6 +663,9 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 		ObjectA->PostEditChangeProperty(PropertyChangedEvent);
 	}
 
+	UEdGraph* Graph = NodeA->GetGraph();
+	Graph->NotifyGraphChanged();
+
 	return true;
 }
 
@@ -737,6 +740,9 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 		PropertyOwningNode->RemoveItemPin(PropertyPin);
 		PropertyOwningNode->GetGraph()->NotifyNodeChanged(PropertyOwningNode);
 	}
+
+	UEdGraph* Graph = PropertyOwningNode->GetGraph();
+	Graph->NotifyGraphChanged();
 }
 
 bool UObjectTreeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
@@ -795,6 +801,9 @@ void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraph
 		PropertyOwningNode->RemoveItemPin(PropertyPin);
 		PropertyOwningNode->GetGraph()->NotifyNodeChanged(PropertyOwningNode);
 	}
+
+	UEdGraph* Graph = PropertyOwningNode->GetGraph();
+	Graph->NotifyGraphChanged();
 }
 
 bool UObjectTreeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
@@ -983,6 +992,8 @@ void UObjectTreeGraphSchema::ImportNodesFromText(UObjectTreeGraph* InGraph, cons
 	{
 		OutPastedNodes.Add(Pair.Value);
 	}
+
+	InGraph->NotifyGraphChanged();
 }
 
 bool UObjectTreeGraphSchema::CanImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport) const

@@ -224,6 +224,9 @@ bool UCameraNodeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) 
 		RigParameter->InterfaceParameterName = StructProperty->GetName();
 	}
 
+	UEdGraph* Graph = CameraNodeNode->GetGraph();
+	Graph->NotifyGraphChanged();
+
 	return true;
 }
 
@@ -251,6 +254,9 @@ bool UCameraNodeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSends
 			RigParameter->TargetPropertyName = NAME_None;
 			RigParameter->PrivateVariable = nullptr;
 
+			UEdGraph* Graph = RigParameterNode->GetGraph();
+			Graph->NotifyGraphChanged();
+
 			return true;
 		}
 	}
@@ -260,14 +266,14 @@ bool UCameraNodeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSends
 
 bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
-	UCameraRigInterfaceParameter* RigParameter = nullptr;
+	UObjectTreeGraphNode* RigParameterNode = nullptr;
 
 	if (SourcePin->PinType.PinCategory == PC_Self && TargetPin->PinType.PinCategory == PC_CameraParameter)
 	{
 		UObjectTreeGraphNode* SourceNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
 		if (SourceNode)
 		{
-			RigParameter = SourceNode->CastObject<UCameraRigInterfaceParameter>();
+			RigParameterNode = SourceNode;
 		}
 	}
 	else if (SourcePin->PinType.PinCategory == PC_CameraParameter && TargetPin->PinType.PinCategory == PC_Self)
@@ -275,8 +281,14 @@ bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGra
 		UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
 		if (TargetNode)
 		{ 
-			RigParameter = TargetNode->CastObject<UCameraRigInterfaceParameter>();
+			RigParameterNode = TargetNode;
 		}
+	}
+
+	UCameraRigInterfaceParameter* RigParameter = nullptr;
+	if (RigParameterNode)
+	{
+		RigParameter = RigParameterNode->CastObject<UCameraRigInterfaceParameter>();
 	}
 
 	if (RigParameter)
@@ -288,6 +300,9 @@ bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGra
 		RigParameter->Target = nullptr;
 		RigParameter->TargetPropertyName = NAME_None;
 		RigParameter->PrivateVariable = nullptr;
+
+		UEdGraph* Graph = RigParameterNode->GetGraph();
+		Graph->NotifyGraphChanged();
 
 		return true;
 	}
