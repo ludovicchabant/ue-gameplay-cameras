@@ -61,6 +61,15 @@ FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 	return NodeContext.ObjectClassConfig.NodeBodyTintColor().Get(NodeContext.GraphConfig.DefaultGraphNodeBodyTintColor);
 }
 
+FText UObjectTreeGraphNode::GetTooltipText() const
+{
+	if (Object)
+	{
+		return Object->GetClass()->GetToolTipText();
+	}
+	return FText::GetEmpty();
+}
+
 void UObjectTreeGraphNode::AllocateDefaultPins()
 {
 	if (!ensure(Object))
