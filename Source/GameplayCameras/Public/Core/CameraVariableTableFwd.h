@@ -171,6 +171,18 @@ struct FCameraVariableDefinition
 #endif
 		return VariantDefinition;
 	}
+
+	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraVariableDefinition& A, const FCameraVariableDefinition& B);
+};
+
+template<>
+struct TStructOpsTypeTraits<FCameraVariableDefinition> : public TStructOpsTypeTraitsBase2<FCameraVariableDefinition>
+{
+	enum
+	{
+		WithCopy = true,
+		WithIdenticalViaEquality = true
+	};
 };
 
 /**
@@ -188,5 +200,17 @@ struct FCameraVariableTableAllocationInfo
 	/** The list of variables that should be auto-reset to their default value every frame. */
 	UPROPERTY()
 	TArray<TObjectPtr<UCameraVariableAsset>> AutoResetVariables;
+
+	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B);
+};
+
+template<>
+struct TStructOpsTypeTraits<FCameraVariableTableAllocationInfo> : public TStructOpsTypeTraitsBase2<FCameraVariableTableAllocationInfo>
+{
+	enum
+	{
+		WithCopy = true,
+		WithIdenticalViaEquality = true
+	};
 };
 

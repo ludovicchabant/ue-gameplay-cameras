@@ -42,7 +42,19 @@ struct FCameraRigAllocationInfo
 
 public:
 
-	void Append(const FCameraRigAllocationInfo& OtherAllocationInfo);
+	GAMEPLAYCAMERAS_API void Append(const FCameraRigAllocationInfo& OtherAllocationInfo);
+
+	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraRigAllocationInfo& A, const FCameraRigAllocationInfo& B);
+};
+
+template<>
+struct TStructOpsTypeTraits<FCameraRigAllocationInfo> : public TStructOpsTypeTraitsBase2<FCameraRigAllocationInfo>
+{
+	enum
+	{
+		WithCopy = true,
+		WithIdenticalViaEquality = true
+	};
 };
 
 /**

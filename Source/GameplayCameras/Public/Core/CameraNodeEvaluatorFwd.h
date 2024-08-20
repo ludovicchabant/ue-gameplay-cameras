@@ -31,6 +31,24 @@ struct FCameraNodeEvaluatorAllocationInfo
 	/** Maximum required alignment for the node evaluators. */
 	UPROPERTY()
 	int16 MaxAlignof = 0;
+
+public:
+
+	friend bool operator==(const FCameraNodeEvaluatorAllocationInfo& A, const FCameraNodeEvaluatorAllocationInfo& B)
+	{
+		return A.TotalSizeof == B.TotalSizeof &&
+			A.MaxAlignof == B.MaxAlignof;
+	}
+};
+
+template<>
+struct TStructOpsTypeTraits<FCameraNodeEvaluatorAllocationInfo> : public TStructOpsTypeTraitsBase2<FCameraNodeEvaluatorAllocationInfo>
+{
+	enum
+	{
+		WithCopy = true,
+		WithIdenticalViaEquality = true
+	};
 };
 
 /** Allocation information for a node evaluator, auto-setup for a given type. */

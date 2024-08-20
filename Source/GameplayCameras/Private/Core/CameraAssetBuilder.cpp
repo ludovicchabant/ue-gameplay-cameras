@@ -77,11 +77,8 @@ void FCameraAssetBuilder::UpdateBuildStatus()
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}
 
-	if (CameraAsset->GetBuildStatus() != BuildStatus)
-	{
-		CameraAsset->Modify();
-		CameraAsset->SetBuildStatus(BuildStatus);
-	}
+	// Don't modify the camera rig: BuildStatus is transient.
+	CameraAsset->SetBuildStatus(BuildStatus);
 }
 
 }  // namespace UE::Cameras

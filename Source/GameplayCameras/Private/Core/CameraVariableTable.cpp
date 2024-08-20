@@ -532,3 +532,21 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 }  // namespace UE::Cameras
 
+bool operator==(const FCameraVariableDefinition& A, const FCameraVariableDefinition& B)
+{
+	return A.VariableID == B.VariableID
+		&& A.VariableType == B.VariableType
+		&& A.bIsPrivate == B.bIsPrivate
+		&& A.bIsInput == B.bIsInput
+#if WITH_EDITORONLY_DATA
+		&& A.VariableName == B.VariableName
+#endif
+		;
+}
+
+bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B)
+{
+	return A.VariableDefinitions == B.VariableDefinitions
+		&& A.AutoResetVariables == B.AutoResetVariables;
+}
+

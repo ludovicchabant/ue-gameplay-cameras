@@ -24,6 +24,12 @@ void FCameraRigAllocationInfo::Append(const FCameraRigAllocationInfo& OtherAlloc
 	VariableTableInfo.VariableDefinitions.Append(OtherVariableTableInfo.VariableDefinitions);
 }
 
+bool operator==(const FCameraRigAllocationInfo& A, const FCameraRigAllocationInfo& B)
+{
+	return A.EvaluatorInfo == B.EvaluatorInfo
+		&& A.VariableTableInfo == B.VariableTableInfo;
+}
+
 #if WITH_EDITOR
 
 void UCameraRigInterfaceParameter::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const

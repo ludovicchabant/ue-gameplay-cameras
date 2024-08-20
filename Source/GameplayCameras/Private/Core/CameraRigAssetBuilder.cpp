@@ -167,7 +167,9 @@ void SetupPrivateVariable(
 		{
 			PrivateVariable->Modify();
 		}
-		PrivateVariable->Rename(*VariableName);
+		// Rename non-transactionally because we might be simply setting the variable's name back to what it
+		// always was. We don't want to dirty the package for no-op builds.
+		PrivateVariable->Rename(*VariableName, nullptr, REN_NonTransactional);
 	}
 	else
 	{
@@ -325,7 +327,9 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 		TStringBuilder<256> StringBuilder;
 		StringBuilder.Append("REUSABLE_");
 		StringBuilder.Append(Pair.Value->GetName());
-		Pair.Value->Rename(StringBuilder.ToString());
+		// Rename non-transactionally because if nothing has change, we will rename it back
+		// later and we don't want to dirty the package for nothing.
+		Pair.Value->Rename(StringBuilder.ToString(), nullptr, REN_NonTransactional);
 	}
 }
 
@@ -491,7 +495,11 @@ void FCameraRigAssetBuilder::BuildAllocationInfo()
 	}
 
 	// Set it on the camera rig asset.
-	CameraRig->AllocationInfo = AllocationInfo;
+	if (CameraRig->AllocationInfo != AllocationInfo)
+	{
+		CameraRig->Modify();
+		CameraRig->AllocationInfo = AllocationInfo;
+	}
 }
 
 void FCameraRigAssetBuilder::BuildAllocationInfo(UCameraNode* CameraNode)
@@ -547,11 +555,8 @@ void FCameraRigAssetBuilder::UpdateBuildStatus()
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}
 
-	if (CameraRig->BuildStatus != BuildStatus)
-	{
-		CameraRig->Modify();
-		CameraRig->BuildStatus = BuildStatus;
-	}
+	// Don't modify the camera rig: BuildStatus is transient.
+	CameraRig->BuildStatus = BuildStatus;
 }
 
 }  // namespace UE::Cameras
