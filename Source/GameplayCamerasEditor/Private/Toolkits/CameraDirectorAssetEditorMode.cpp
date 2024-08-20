@@ -39,6 +39,7 @@ void FCameraDirectorAssetEditorMode::OnActivateMode(const FAssetEditorModeActiva
 		FDetailsViewArgs DetailsViewArgs;
 		DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
 		DetailsViewArgs.bHideSelectionTip = true;
+		DetailsViewArgs.NotifyHook = this;
 		DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 
 		bInitializedToolkit = true;
@@ -65,6 +66,14 @@ TSharedRef<SDockTab> FCameraDirectorAssetEditorMode::SpawnTab_DirectorEditor(con
 void FCameraDirectorAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeactivateParams& InParams)
 {
 	InParams.TabManager->UnregisterTabSpawner(DirectorEditorTabId);
+}
+
+void FCameraDirectorAssetEditorMode::NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged)
+{
+	if (CameraAsset)
+	{
+		CameraAsset->DirtyBuildStatus();
+	}
 }
 
 bool FCameraDirectorAssetEditorMode::JumpToObject(UObject* InObject, FName InPropertyName)

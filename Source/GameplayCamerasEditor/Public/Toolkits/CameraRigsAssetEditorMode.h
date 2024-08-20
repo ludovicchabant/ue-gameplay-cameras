@@ -44,6 +44,8 @@ private:
 	void OnCameraRigEditRequested(UCameraRigAsset* InCameraRig);
 	void OnCameraRigDeleted(const TArray<UCameraRigAsset*>& InCameraRigs);
 
+	void OnCameraRigBuildStatusDirtied();
+
 private:
 
 	static const FName CameraRigsTabId;

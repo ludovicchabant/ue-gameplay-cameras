@@ -203,6 +203,8 @@ void FCameraRigAssetEditorToolkitBase::OnAnyGraphChanged(const FEdGraphEditActio
 	if (CameraRigAsset)
 	{
 		CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
+
+		CameraRigBuildStatusDirtied.Broadcast();
 	}
 }
 

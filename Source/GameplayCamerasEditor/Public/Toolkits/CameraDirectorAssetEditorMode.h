@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Misc/NotifyHook.h"
 #include "Toolkits/AssetEditorMode.h"
 
 class IDetailsView;
@@ -16,6 +17,7 @@ class FStandardToolkitLayout;
 
 class FCameraDirectorAssetEditorMode
 	: public FAssetEditorMode
+	, public FNotifyHook
 {
 public:
 
@@ -27,8 +29,12 @@ public:
 
 protected:
 
+	// FAssetEditorMode interface.
 	virtual void OnActivateMode(const FAssetEditorModeActivateParams& InParams) override;
 	virtual void OnDeactivateMode(const FAssetEditorModeDeactivateParams& InParams) override;
+
+	// FNotifyHook interface.
+	virtual void NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged) override;
 
 private:
 

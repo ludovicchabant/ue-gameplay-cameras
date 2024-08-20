@@ -74,6 +74,8 @@ void FCameraRigsAssetEditorMode::OnActivateMode(const FAssetEditorModeActivatePa
 	Impl->BuildToolbarMenu(ToolbarMenu);
 
 	Impl->BindCommands(InParams.CommandList.ToSharedRef());
+
+	Impl->OnCameraRigBuildStatusDirtied().AddSP(this, &FCameraRigsAssetEditorMode::OnCameraRigBuildStatusDirtied);
 }
 
 TSharedRef<SDockTab> FCameraRigsAssetEditorMode::SpawnTab_CameraRigs(const FSpawnTabArgs& Args)
@@ -89,6 +91,8 @@ TSharedRef<SDockTab> FCameraRigsAssetEditorMode::SpawnTab_CameraRigs(const FSpaw
 
 void FCameraRigsAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeactivateParams& InParams)
 {
+	Impl->OnCameraRigBuildStatusDirtied().RemoveAll(this);
+
 	Impl->UnregisterTabSpawners(InParams.TabManager.ToSharedRef());
 
 	InParams.TabManager->UnregisterTabSpawner(CameraRigsTabId);
@@ -110,6 +114,14 @@ void FCameraRigsAssetEditorMode::OnCameraRigDeleted(const TArray<UCameraRigAsset
 	if (InCameraRigs.Contains(Impl->GetCameraRigAsset()))
 	{
 		Impl->SetCameraRigAsset(nullptr);
+	}
+}
+
+void FCameraRigsAssetEditorMode::OnCameraRigBuildStatusDirtied()
+{
+	if (CameraAsset)
+	{
+		CameraAsset->DirtyBuildStatus();
 	}
 }
 

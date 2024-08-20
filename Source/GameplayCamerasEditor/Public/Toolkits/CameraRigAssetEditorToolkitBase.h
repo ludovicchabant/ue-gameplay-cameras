@@ -50,6 +50,8 @@ public:
 	void BuildToolbarMenu(UToolMenu* ToolbarMenu);
 	void BindCommands(TSharedRef<FUICommandList> CommandList);
 
+	FSimpleMulticastDelegate& OnCameraRigBuildStatusDirtied() { return CameraRigBuildStatusDirtied; }
+
 protected:
 
 	// FGCObject interface
@@ -95,6 +97,9 @@ private:
 
 	/** Toolbox widget */
 	TSharedPtr<SObjectTreeGraphToolbox> ToolboxWidget;
+
+	/** A multicast delegate that is invoked when the camera rig asset is dirtied */
+	FSimpleMulticastDelegate CameraRigBuildStatusDirtied;
 };
 
 }  // namespace UE::Cameras
