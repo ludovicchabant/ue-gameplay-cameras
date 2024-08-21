@@ -7,7 +7,7 @@
 #include "Directors/BlueprintCameraDirector.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Blueprint.h"
-#include "Helpers/CameraDirectorHelper.h"
+#include "Helpers/CameraAssetReferenceGatherer.h"
 #include "K2Node_CallFunction.h"
 
 #define LOCTEXT_NAMESPACE "BlueprintCameraDirectorEditorBuilder"
@@ -35,7 +35,7 @@ void FBlueprintCameraDirectorEditorBuilder::OnBuildCameraAsset(UCameraAsset* Cam
 	// camera rig proxies for activation.
 	TArray<UCameraAsset*> ReferencingCameraAssets;
 	UBlueprint* Blueprint = CastChecked<UBlueprint>(CameraDirectorEvaluatorClass->ClassGeneratedBy);
-	FCameraDirectorHelper::GetReferencingCameraAssets(Blueprint, ReferencingCameraAssets);
+	FCameraAssetReferenceGatherer::GetReferencingCameraAssets(Blueprint, ReferencingCameraAssets);
 
 	UCameraAsset* ThisCameraAsset = BlueprintCameraDirector->GetTypedOuter<UCameraAsset>();
 	ensure(ThisCameraAsset);

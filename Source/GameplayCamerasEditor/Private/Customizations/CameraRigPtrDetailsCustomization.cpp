@@ -8,8 +8,8 @@
 #include "Core/CameraRigAsset.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailWidgetRow.h"
+#include "Helpers/CameraAssetReferenceGatherer.h"
 #include "Editors/CameraRigPickerConfig.h"
-#include "Helpers/CameraDirectorHelper.h"
 #include "IDetailChildrenBuilder.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "PropertyEditorModule.h"
@@ -115,7 +115,7 @@ TSharedRef<SWidget> FCameraRigPtrDetailsCustomization::OnBuildCameraRigNamePicke
 	TArray<UCameraAsset*> ReferencingCameraAssets;
 	for (UObject* CameraDirectorObject : CameraDirectorObjects)
 	{
-		FCameraDirectorHelper::GetReferencingCameraAssets(CameraDirectorObject, ReferencingCameraAssets);
+		FCameraAssetReferenceGatherer::GetReferencingCameraAssets(CameraDirectorObject, ReferencingCameraAssets);
 	}
 
 	if (ReferencingCameraAssets.Num() == 0)

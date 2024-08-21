@@ -2,27 +2,40 @@
 
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
 
+#include "Core/CameraRigAsset.h"
+#include "EdGraphSchema_K2.h"
+#include "Editors/SBlueprintCameraDirectorRigNameGraphPin.h"
 #include "Editors/SCameraRigNameGraphPin.h"
 #include "K2Node_CallFunction.h"
 
 namespace UE::Cameras
 {
 
-TSharedPtr<class SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdGraphPin* Pin) const
+TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdGraphPin* Pin) const
 {
 	if (!Pin)
 	{
 		return nullptr;
 	}
 
-	UK2Node_CallFunction* OwningNode = Cast<UK2Node_CallFunction>(Pin->GetOwningNode());
-	if (!OwningNode)
+	if (UK2Node_CallFunction* CallFunctionNode = Cast<UK2Node_CallFunction>(Pin->GetOwningNode()))
 	{
-		return nullptr;
+		return CreateFunctionParameterPin(Pin, CallFunctionNode);
 	}
 
-	UClass* BlueprintClass = OwningNode->GetBlueprintClassFromNode();
-	UFunction* ReferencedFunction = OwningNode->FunctionReference.ResolveMember<UFunction>(BlueprintClass);
+	if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object && 
+			Pin->PinType.PinSubCategoryObject == UCameraRigAsset::StaticClass())
+	{
+		return CreateCustomPin(Pin);
+	}
+
+	return nullptr;
+}
+
+TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateFunctionParameterPin(UEdGraphPin* Pin, UK2Node_CallFunction* CallFunctionNode) const
+{
+	UClass* BlueprintClass = CallFunctionNode->GetBlueprintClassFromNode();
+	UFunction* ReferencedFunction = CallFunctionNode->FunctionReference.ResolveMember<UFunction>(BlueprintClass);
 	if (!ReferencedFunction)
 	{
 		return nullptr;
@@ -34,19 +47,22 @@ TSharedPtr<class SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdG
 		return nullptr;
 	}
 
-	if (ParameterProperty->HasMetaData(TEXT("UseCameraRigNamePicker")))
+	if (ParameterProperty->HasMetaData(TEXT("UseBlueprintCameraDirectorRigPicker")))
 	{
-		return SNew(SCameraRigNameGraphPin, Pin)
-			.PinMode(ECameraRigNameGraphPinMode::NamePin);
+		return SNew(SBlueprintCameraDirectorRigNameGraphPin, Pin);
 	}
 
 	if (ParameterProperty->HasMetaData(TEXT("UseCameraRigPicker")))
 	{
-		return SNew(SCameraRigNameGraphPin, Pin)
-			.PinMode(ECameraRigNameGraphPinMode::ReferencePin);
+		return SNew(SCameraRigNameGraphPin, Pin);
 	}
 
 	return nullptr;
+}
+
+TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCustomPin(UEdGraphPin* Pin) const
+{
+	return SNew(SCameraRigNameGraphPin, Pin);
 }
 
 }  // namespace UE::Cameras

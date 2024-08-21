@@ -4,6 +4,9 @@
 
 #include "EdGraphUtilities.h"
 
+class SGraphPin;
+class UK2Node_CallFunction;
+
 namespace UE::Cameras
 {
 
@@ -15,7 +18,12 @@ struct FGameplayCamerasGraphPanelPinFactory : public FGraphPanelPinFactory
 public:
 
 	// FGraphPanelPinFactory interface.
-	virtual TSharedPtr<class SGraphPin> CreatePin(UEdGraphPin* Pin) const override;
+	virtual TSharedPtr<SGraphPin> CreatePin(UEdGraphPin* Pin) const override;
+
+private:
+
+	TSharedPtr<SGraphPin> CreateFunctionParameterPin(UEdGraphPin* Pin, UK2Node_CallFunction* CallFunctionNode) const;
+	TSharedPtr<SGraphPin> CreateCustomPin(UEdGraphPin* Pin) const;
 };
 
 }  // namespace UE::Cameras

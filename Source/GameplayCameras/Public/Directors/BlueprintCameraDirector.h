@@ -64,7 +64,9 @@ public:
 
 	/** Specifies a camera rig to be active this frame. */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(UPARAM(meta=(UseCameraRigPicker=true)) UCameraRigAsset* CameraRig);
+	void ActivateCameraRig(
+			UPARAM(meta=(UseBlueprintCameraDirectorRigPicker=true))
+			UCameraRigAsset* CameraRig);
 
 	/**
 	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved

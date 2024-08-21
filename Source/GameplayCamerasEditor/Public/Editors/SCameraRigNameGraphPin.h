@@ -2,21 +2,16 @@
 
 #pragma once
 
-#include "SGraphPin.h"
-
 #include "ContentBrowserModule.h"
-#include "Widgets/Input/SComboButton.h"
+#include "Editors/CameraRigPickerConfig.h"
+#include "SGraphPin.h"
 
 class UCameraRigAsset;
 
 namespace UE::Cameras
 {
 
-enum class ECameraRigNameGraphPinMode
-{
-	NamePin,
-	ReferencePin
-};
+class SCameraRigPickerButton;
 
 /**
  * A custom widget for a graph editor pin that shows a camera rig picker dialog.
@@ -26,9 +21,7 @@ class SCameraRigNameGraphPin : public SGraphPin
 public:
 
 	SLATE_BEGIN_ARGS(SCameraRigNameGraphPin)
-		: _PinMode(ECameraRigNameGraphPinMode::NamePin)
 	{}
-		SLATE_ARGUMENT(ECameraRigNameGraphPinMode, PinMode)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
@@ -38,6 +31,8 @@ protected:
 	// SGraphPin interface.
 	virtual TSharedRef<SWidget>	GetDefaultValueWidget() override;
 	virtual bool DoesWidgetHandleSettingEditingEnabled() const override;
+
+	virtual void OnCustomizeCameraRigPickerConfig(FCameraRigPickerConfig& CameraRigPickerConfig) const {}
 
 private:
 
@@ -52,21 +47,18 @@ private:
 	FSlateColor OnGetWidgetForeground() const;
 	FSlateColor OnGetWidgetBackground() const;
 
-	FText GetDefaultComboText() const;
-	FText OnGetComboText() const;
-	FText OnGetComboToolTipText() const;
-
-	TSharedRef<SWidget> OnBuildCameraRigNamePicker();
-	void OnPickerAssetSelected(UCameraRigAsset* SelectedItem);
+	FCameraRigPickerConfig OnCreateCameraRigPickerConfig() const;
+	FText OnGetSelectedCameraRigName() const;
+	FText OnGetCameraRigPickerToolTipText() const;
+	void OnPickerAssetSelected(UCameraRigAsset* SelectedItem) const;
 
 	FReply OnResetButtonClicked();
 
-	void SetCameraRig(UCameraRigAsset* SelectedCameraRig);
+	void SetCameraRig(UCameraRigAsset* SelectedCameraRig) const;
 
-private:
+protected:
 
-	TSharedPtr<SComboButton> CameraRigPickerButton;
-	ECameraRigNameGraphPinMode PinMode;
+	TSharedPtr<SCameraRigPickerButton> CameraRigPickerButton;
 };
 
 }  // namespace UE::Cameras

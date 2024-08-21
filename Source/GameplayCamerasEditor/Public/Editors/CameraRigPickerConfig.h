@@ -38,7 +38,7 @@ struct FCameraRigPickerConfig
 	 * determines the only asset to be used. If the latter (when the value is false),
 	 * then no camera asset picker is shown. Only the list of rigs is shown.
 	 */
-	bool bCanSelectCameraAsset = false;
+	bool bCanSelectCameraAsset = true;
 
 	/** Asset picker view type for the camera asset picker. */
 	EAssetViewType::Type CameraAssetViewType = EAssetViewType::List;

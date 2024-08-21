@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Helpers/CameraDirectorHelper.h"
+#include "Helpers/CameraAssetReferenceGatherer.h"
 
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/IAssetRegistry.h"
@@ -13,17 +13,17 @@
 namespace UE::Cameras
 {
 
-void FCameraDirectorHelper::GetReferencingCameraAssets(UObject* CameraDirectorObject, TArray<UCameraAsset*>& OutReferencers)
+void FCameraAssetReferenceGatherer::GetReferencingCameraAssets(UObject* ReferencedObject, TArray<UCameraAsset*>& OutReferencers)
 {
 	TSet<UCameraAsset*> UniqueReferencers;
-	UPackage* CameraDirectorObjectPackage = CameraDirectorObject->GetOutermost();
+	UPackage* ReferencedObjectPackage = ReferencedObject->GetOutermost();
 
 	// Assume the asset registry module is already loaded.
 	IAssetRegistry* AssetRegistry = IAssetRegistry::Get();
 
 	// Get on-disk referencers.
 	TArray<FAssetIdentifier> ReferencerIds;
-	FAssetIdentifier AssetIdentifier(CameraDirectorObjectPackage->GetFName());
+	FAssetIdentifier AssetIdentifier(ReferencedObjectPackage->GetFName());
 	AssetRegistry->GetReferencers(AssetIdentifier, ReferencerIds);
 
 	TArray<FAssetData> AllAssetData;
@@ -42,8 +42,8 @@ void FCameraDirectorHelper::GetReferencingCameraAssets(UObject* CameraDirectorOb
 
 	// Get in-memory referencers.
 	TArray<UObject*> ReferencedObjects;
-	GetObjectsWithPackage(CameraDirectorObjectPackage, ReferencedObjects);
-	ReferencedObjects.Add(CameraDirectorObjectPackage);
+	GetObjectsWithPackage(ReferencedObjectPackage, ReferencedObjects);
+	ReferencedObjects.Add(ReferencedObjectPackage);
 
 	TArray<UObject*> AllReferencers = FReferencerFinder::GetAllReferencers(
 			ReferencedObjects, nullptr, EReferencerFinderFlags::SkipWeakReferences);

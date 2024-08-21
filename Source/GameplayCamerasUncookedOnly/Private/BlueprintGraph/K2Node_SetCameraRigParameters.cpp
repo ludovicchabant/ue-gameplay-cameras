@@ -26,12 +26,14 @@ UK2Node_SetCameraRigParameters::UK2Node_SetCameraRigParameters(const FObjectInit
 
 void UK2Node_SetCameraRigParameters::AllocateDefaultPins()
 {
+	using namespace UE::Cameras;
+
 	// Add execution pins.
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
 
 	// Add evalation result pin.
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, FBlueprintCameraVariableTable::StaticStruct(), CameraVariableTablePinName);
+	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Struct, FBlueprintCameraVariableTable::StaticStruct(), CameraVariableTablePinName);
 
 	// Add camera rig pin.
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UCameraRigAsset::StaticClass(), CameraRigPinName);
