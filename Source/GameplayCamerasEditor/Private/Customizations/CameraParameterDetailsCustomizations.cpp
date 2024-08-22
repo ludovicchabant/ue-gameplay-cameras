@@ -8,190 +8,27 @@
 #include "Core/CameraVariableCollection.h"
 #include "Customizations/MathStructCustomizations.h"
 #include "DetailLayoutBuilder.h"
-#include "Framework/Application/SlateApplication.h"
+#include "Editors/CameraVariablePickerConfig.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
-#include "Framework/Views/ITypedTableView.h"
 #include "IContentBrowserSingleton.h"
 #include "IDetailChildrenBuilder.h"
 #include "IDetailPropertyRow.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "IPropertyUtilities.h"
-#include "Modules/ModuleManager.h"
 #include "PropertyCustomizationHelpers.h"
 #include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Styling/StyleColors.h"
 #include "Widgets/Images/SImage.h"
-#include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
-#include "Widgets/Views/SListView.h"
 
 #define LOCTEXT_NAMESPACE "CameraParameterDetailsCustomization"
 
 namespace UE::Cameras
 {
-
-DECLARE_DELEGATE_OneParam(FExecuteSetParameterVariable, UCameraVariableAsset*);
-
-class SCameraVariableBrowser : public SCompoundWidget
-{
-public:
-
-	SLATE_BEGIN_ARGS(SCameraVariableBrowser)
-	{}
-		SLATE_ARGUMENT(UClass*, VariableClass)
-		SLATE_ARGUMENT(UCameraVariableAsset*, InitialVariable)
-		SLATE_EVENT(FExecuteSetParameterVariable, RequestSetVariable)
-	SLATE_END_ARGS()
-	
-	void Construct(const FArguments& InArgs)
-	{
-		VariableClass = InArgs._VariableClass;
-		InitialVariable = InArgs._InitialVariable;
-
-		RequestSetVariable = InArgs._RequestSetVariable;
-
-		ChildSlot
-		[
-			SNew(SBorder)
-			.BorderImage(FAppStyle::GetBrush("ToolPanel.GroupBorder"))
-			[
-				SNew(SVerticalBox)
-				+SVerticalBox::Slot()
-				.FillHeight(0.5f)
-				[
-					BuildVariableCollectionAssetPicker()
-				]
-				+SVerticalBox::Slot()
-				.FillHeight(0.5f)
-				[
-					SAssignNew(CameraVariableListView, SListView<UCameraVariableAsset*>)
-					.ListItemsSource(&CameraVariableItemsSource)
-					.OnGenerateRow(this, &SCameraVariableBrowser::OnVariableListGenerateRow)
-					.OnSelectionChanged(this, &SCameraVariableBrowser::OnVariableListSelectionChanged)
-				]
-			]
-		];
-
-		if (InitialVariable)
-		{
-			bSuppressVariableListSelectionChanged = true;
-			CameraVariableListView->SetSelection(InitialVariable);
-			CameraVariableListView->RequestScrollIntoView(InitialVariable);
-			bSuppressVariableListSelectionChanged = false;
-		}
-	}
-
-private:
-
-	TSharedRef<SWidget> BuildVariableCollectionAssetPicker()
-	{
-		FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
-
-		FAssetPickerConfig AssetPickerConfig;
-
-		FARFilter ARFilter;
-		ARFilter.ClassPaths.Add(FTopLevelAssetPath(UCameraVariableCollection::StaticClass()->GetPathName()));
-
-		UCameraVariableCollection* InitialVariableCollection = nullptr;
-		if (InitialVariable)
-		{
-			InitialVariableCollection = InitialVariable->GetTypedOuter<UCameraVariableCollection>();
-		}
-
-		AssetPickerConfig.bAllowDragging = false;
-		AssetPickerConfig.bCanShowClasses = false;
-		AssetPickerConfig.bAllowNullSelection = false;
-		AssetPickerConfig.bShowBottomToolbar = true;
-		AssetPickerConfig.bFocusSearchBoxWhenOpened = true;
-		AssetPickerConfig.SelectionMode = ESelectionMode::Single;
-		AssetPickerConfig.Filter = ARFilter;
-		AssetPickerConfig.SaveSettingsName = TEXT("CameraParameterVariablePropertyPicker");
-		AssetPickerConfig.InitialAssetViewType = EAssetViewType::List;
-		AssetPickerConfig.InitialAssetSelection = FAssetData(InitialVariableCollection);
-		AssetPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(this, &SCameraVariableBrowser::OnAssetSelected);
-		AssetPickerConfig.GetCurrentSelectionDelegates.Add(&GetCurrentAssetPickerSelection);
-
-		return ContentBrowserModule.Get().CreateAssetPicker(AssetPickerConfig);
-	}
-
-	void OnAssetSelected(const FAssetData& SelectedAsset)
-	{
-		UpdateVariableListItemsSource();
-	}
-
-	void UpdateVariableListItemsSource()
-	{
-		TArray<FAssetData> SelectedAssets;
-		if (GetCurrentAssetPickerSelection.IsBound())
-		{
-			SelectedAssets = GetCurrentAssetPickerSelection.Execute();
-		}
-
-		CameraVariableItemsSource.Reset();
-		if (!SelectedAssets.IsEmpty())
-		{
-			if (UCameraVariableCollection* VariableCollection = Cast<UCameraVariableCollection>(SelectedAssets[0].GetAsset()))
-			{
-				CameraVariableItemsSource = VariableCollection->Variables.FilterByPredicate(
-						[this](UCameraVariableAsset* Item) { return Item->GetClass() == VariableClass; });
-			}
-		}
-
-		CameraVariableListView->RequestListRefresh();
-	}
-
-	TSharedRef<ITableRow> OnVariableListGenerateRow(UCameraVariableAsset* Item, const TSharedRef<STableViewBase>& OwnerTable)
-	{
-		TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasStyle = FGameplayCamerasEditorStyle::Get();
-
-		const FText DisplayName = Item->DisplayName.IsEmpty() ?
-			FText::FromName(Item->GetFName()) : FText::FromString(Item->DisplayName);
-
-		return SNew(STableRow<UCameraVariableAsset*>, OwnerTable)
-			[
-				SNew(SHorizontalBox)
-				+SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					SNew(SImage)
-					.ColorAndOpacity(FSlateColor::UseForeground())
-					.Image(GameplayCamerasStyle->GetBrush("CameraParameter.VariableBrowser"))
-				]
-				+SHorizontalBox::Slot()
-				.FillWidth(1.f)
-				.Padding(4.f, 2.f)
-				[
-					SNew(STextBlock)
-					.Text(DisplayName)
-				]
-			];
-	}
-
-	void OnVariableListSelectionChanged(UCameraVariableAsset* Item, ESelectInfo::Type SelectInfo) const
-	{
-		if (!bSuppressVariableListSelectionChanged && Item)
-		{
-			RequestSetVariable.ExecuteIfBound(Item);
-		}
-		// else, the user should click the "Clear" button to actually remove the variable.
-	}
-
-private:
-
-	TSharedPtr<SListView<UCameraVariableAsset*>> CameraVariableListView;
-	TArray<UCameraVariableAsset*> CameraVariableItemsSource;
-
-	UClass* VariableClass = nullptr;
-	UCameraVariableAsset* InitialVariable = nullptr;
-
-	FGetCurrentSelectionDelegate GetCurrentAssetPickerSelection;
-	bool bSuppressVariableListSelectionChanged = false;
-
-	FExecuteSetParameterVariable RequestSetVariable;
-};
 
 void FCameraParameterDetailsCustomization::Register(FPropertyEditorModule& PropertyEditorModule)
 {
@@ -360,17 +197,22 @@ TSharedRef<SWidget> FCameraParameterDetailsCustomization::BuildCameraVariableBro
 	}
 	MenuBuilder.EndSection();
 
+	FCameraVariablePickerConfig PickerConfig;
+	PickerConfig.CameraVariableClass = VariableClass;
+	PickerConfig.InitialCameraVariableSelection = CommonVariable;
+	PickerConfig.CameraVariableCollectionSaveSettingsName = TEXT("CameraParameterVariablePropertyPicker");
+	PickerConfig.OnCameraVariableSelected = FOnCameraVariableSelected::CreateSP(
+			this, &FCameraParameterDetailsCustomization::OnSetVariable);
+	IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
+	TSharedRef<SWidget> PickerWidget = GameplayCamerasEditorModule.CreateCameraVariablePicker(PickerConfig);
+
 	MenuBuilder.BeginSection(NAME_None, LOCTEXT("CameraVariableBrowser", "Browse"));
 	{
 		TSharedRef<SWidget> VariableBrowser = SNew(SBox)
 			.MinDesiredWidth(300.f)
 			.MinDesiredHeight(300.f)
 			[
-				SNew(SCameraVariableBrowser)
-				.VariableClass(VariableClass)
-				.InitialVariable(CommonVariable)
-				.RequestSetVariable(
-						FExecuteSetParameterVariable::CreateSP(this, &FCameraParameterDetailsCustomization::OnSetVariable))
+				PickerWidget
 			];
 		MenuBuilder.AddWidget(VariableBrowser, FText(), true, false);
 	}

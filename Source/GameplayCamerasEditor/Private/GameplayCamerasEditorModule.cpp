@@ -25,6 +25,7 @@
 #include "EdGraph/EdGraph.h"
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
 #include "Editors/SCameraRigPicker.h"
+#include "Editors/SCameraVariablePicker.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
 #include "GameplayCamerasEditorSettings.h"
@@ -161,6 +162,14 @@ public:
 
 		return SNew(SCameraRigPicker)
 			.CameraRigPickerConfig(InPickerConfig);
+	}
+
+	virtual TSharedRef<SWidget> CreateCameraVariablePicker(const FCameraVariablePickerConfig& InPickerConfig) override
+	{
+		using namespace UE::Cameras;
+
+		return SNew(SCameraVariablePicker)
+			.CameraVariablePickerConfig(InPickerConfig);
 	}
 
 	virtual FDelegateHandle RegisterCameraDirectorEditor(FOnCreateCameraDirectorAssetEditorMode InOnCreateEditor) override

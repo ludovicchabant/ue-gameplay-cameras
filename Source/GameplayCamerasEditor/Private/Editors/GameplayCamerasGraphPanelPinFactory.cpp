@@ -3,9 +3,11 @@
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
 
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraVariableAssets.h"
 #include "EdGraphSchema_K2.h"
 #include "Editors/SBlueprintCameraDirectorRigNameGraphPin.h"
 #include "Editors/SCameraRigNameGraphPin.h"
+#include "Editors/SCameraVariableNameGraphPin.h"
 #include "K2Node_CallFunction.h"
 
 namespace UE::Cameras
@@ -20,13 +22,33 @@ TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdGraphPi
 
 	if (UK2Node_CallFunction* CallFunctionNode = Cast<UK2Node_CallFunction>(Pin->GetOwningNode()))
 	{
-		return CreateFunctionParameterPin(Pin, CallFunctionNode);
+		if (TSharedPtr<SGraphPin> PinWidget = CreateFunctionParameterPin(Pin, CallFunctionNode))
+		{
+			return PinWidget;
+		}
 	}
 
 	if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object && 
 			Pin->PinType.PinSubCategoryObject == UCameraRigAsset::StaticClass())
 	{
-		return CreateCustomPin(Pin);
+		if (TSharedPtr<SGraphPin> PinWidget = CreateCameraRigPickerPin(Pin))
+		{
+			return PinWidget;
+		}
+	}
+
+	const FEdGraphPinType& PinType = Pin->PinType;
+	const UClass* PinPropertyClass = Cast<const UClass>(PinType.PinSubCategoryObject);
+	if (PinType.PinCategory == UEdGraphSchema_K2::PC_Object && PinPropertyClass)
+	{
+		if (PinPropertyClass == UCameraRigAsset::StaticClass())
+		{
+			return CreateCameraRigPickerPin(Pin);
+		}
+		if (PinPropertyClass->IsChildOf<UCameraVariableAsset>())
+		{
+			return CreateCameraVariablePickerPin(Pin);
+		}
 	}
 
 	return nullptr;
@@ -60,9 +82,14 @@ TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateFunctionParame
 	return nullptr;
 }
 
-TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCustomPin(UEdGraphPin* Pin) const
+TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCameraRigPickerPin(UEdGraphPin* Pin) const
 {
 	return SNew(SCameraRigNameGraphPin, Pin);
+}
+
+TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCameraVariablePickerPin(UEdGraphPin* Pin) const
+{
+	return SNew(SCameraVariableNameGraphPin, Pin);
 }
 
 }  // namespace UE::Cameras

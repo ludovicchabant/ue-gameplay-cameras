@@ -24,6 +24,7 @@ namespace UE::Cameras
 class FCameraBuildLog;
 class FCameraDirectorAssetEditorMode;
 struct FCameraRigPickerConfig;
+struct FCameraVariablePickerConfig;
 
 struct FCameraDebugCategoryInfo
 {
@@ -57,6 +58,7 @@ public:
 public:
 
 	using FCameraRigPickerConfig = UE::Cameras::FCameraRigPickerConfig;
+	using FCameraVariablePickerConfig = UE::Cameras::FCameraVariablePickerConfig;
 
 	/** Creates an editor for the given camera asset */
 	virtual UCameraAssetEditor* CreateCameraAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraAsset* CameraAsset) = 0;
@@ -72,6 +74,9 @@ public:
 
 	/** Creates a new camera rig asset picker widget */
 	virtual TSharedRef<SWidget> CreateCameraRigPicker(const FCameraRigPickerConfig& InPickerConfig) = 0;
+
+	/** Creates a new camera varable asset picker widget */
+	virtual TSharedRef<SWidget> CreateCameraVariablePicker(const FCameraVariablePickerConfig& InPickerConfig) = 0;
 
 public:
 

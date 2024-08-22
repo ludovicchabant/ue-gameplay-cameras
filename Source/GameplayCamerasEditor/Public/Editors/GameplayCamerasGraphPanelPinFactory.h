@@ -23,7 +23,9 @@ public:
 private:
 
 	TSharedPtr<SGraphPin> CreateFunctionParameterPin(UEdGraphPin* Pin, UK2Node_CallFunction* CallFunctionNode) const;
-	TSharedPtr<SGraphPin> CreateCustomPin(UEdGraphPin* Pin) const;
+
+	TSharedPtr<SGraphPin> CreateCameraRigPickerPin(UEdGraphPin* Pin) const;
+	TSharedPtr<SGraphPin> CreateCameraVariablePickerPin(UEdGraphPin* Pin) const;
 };
 
 }  // namespace UE::Cameras
