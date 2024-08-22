@@ -96,7 +96,6 @@ FSlateColor SCameraRigNameGraphPin::OnGetWidgetBackground() const
 FText SCameraRigNameGraphPin::OnGetSelectedCameraRigName() const
 {
 	FText Value;
-	
 	if (GraphPinObj != nullptr)
 	{
 		if (const UCameraRigAsset* CameraRig = Cast<const UCameraRigAsset>(GraphPinObj->DefaultObject))

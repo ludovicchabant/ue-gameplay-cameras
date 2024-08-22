@@ -32,6 +32,8 @@ protected:
 
 private:
 
+	void SetupInitialSelections(const FAssetData& InSelectedCameraAssetData, TVariant<UCameraRigAsset*, FGuid> InSelectedCameraRig);
+
 	EActiveTimerReturnType FocusCameraRigSearchBox(double InCurrentTime, float InDeltaTime);
 
 	UCameraAsset* GetSelectedCameraAsset() const;
@@ -42,7 +44,7 @@ private:
 
 	TSharedRef<ITableRow> OnCameraRigListGenerateRow(UCameraRigAsset* Item, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnCameraRigListSelectionChanged(UCameraRigAsset* Item, ESelectInfo::Type SelectInfo);
-	void UpdateCameraRigItemsSource();
+	void UpdateCameraRigItemsSource(UCameraAsset* InCameraAsset = nullptr);
 	void UpdateCameraRigFilteredItemsSource();
 	FText GetCameraRigCountText() const;
 
