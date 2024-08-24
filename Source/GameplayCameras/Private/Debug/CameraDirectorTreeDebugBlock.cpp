@@ -37,12 +37,29 @@ void FCameraDirectorTreeDebugBlock::Initialize(const FCameraEvaluationContextSta
 		TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin();
 
 		FDirectorDebugInfo EntryDebugInfo;
-		EntryDebugInfo.CameraAssetName = Context ? Context->GetCameraAsset()->GetName() : TEXT("<no camera asset>");
+		if (Context)
+		{
+			EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
+			EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
+			EntryDebugInfo.bIsValid = true;
+		}
+		else
+		{
+			EntryDebugInfo.bIsValid = false;
+		}
 		CameraDirectors.Add(EntryDebugInfo);
 
-		const FCameraNodeEvaluationResult& InitialResult = Context->GetInitialResult();
-		AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InitialResult.CameraPose)
-				.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.ContextInitialResult.ShowUnchanged")));
+		if (Context)
+		{
+			const FCameraNodeEvaluationResult& InitialResult = Context->GetInitialResult();
+			AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InitialResult.CameraPose)
+					.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.ContextInitialResult.ShowUnchanged")));
+		}
+		else
+		{
+			// Dummy debug block.
+			AddChild(&Builder.BuildDebugBlock<FCameraDebugBlock>());
+		}
 	}
 }
 
@@ -73,7 +90,15 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 		}
 
 		const FDirectorDebugInfo& EntryDebugInfo(CameraDirectors[Index]);
-		Renderer.AddText(TEXT("Camera asset: {cam_notice}%s{cam_default}\n"), *EntryDebugInfo.CameraAssetName);
+		if (EntryDebugInfo.bIsValid)
+		{
+			Renderer.AddText(TEXT("Camera asset: {cam_notice}%s{cam_default}\n"), *EntryDebugInfo.CameraAssetName);
+			Renderer.DrawCoordinateSystem(EntryDebugInfo.InitialContextTransform);
+		}
+		else
+		{
+			Renderer.AddText(TEXT("{cam_error}Invalid context!{cam_default}\n"));
+		}
 
 		Renderer.AddIndent();
 		ChildrenView[Index]->DebugDraw(Params, Renderer);

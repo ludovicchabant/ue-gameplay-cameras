@@ -82,6 +82,12 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugMaxCardColumns(
 	GGameplayCamerasDebugMaxCardColumns,
 	TEXT("Default: 2. The number of columns to layout the debug cards (e.g. graphs, clocks, etc.)"));
 
+float GGameplayCamerasDebugDefaultCoordinateSystemAxesLength = 100.f;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugDefaultCoordinateSystemAxesLength(
+	TEXT("GameplayCameras.Debug.DefaultCoordinateSystemAxesLength"),
+	GGameplayCamerasDebugDefaultCoordinateSystemAxesLength,
+	TEXT("Default: 100. The default length of coordinate system axes."));
+
 FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject)
 	: World(InWorld)
 	, CanvasObject(InCanvasObject)
@@ -370,6 +376,41 @@ void FCameraDebugRenderer::DrawDirectionalArrow(const FVector3d& Start, const FV
 	{
 		LineBatcher->DrawDirectionalArrow(Start, End, ArrowSize, LineColor, 0.f, SDPG_Foreground, LineThickness);
 	}
+}
+
+void FCameraDebugRenderer::DrawCoordinateSystem(const FVector3d& Location, const FRotator3d& Rotation, float AxesLength)
+{
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		if (AxesLength <= 0.f)
+		{
+			AxesLength = GGameplayCamerasDebugDefaultCoordinateSystemAxesLength;
+		}
+
+		LineBatcher->DrawLine(
+				Location, 
+				Location + Rotation.RotateVector(FVector3d::ForwardVector * AxesLength),
+				FLinearColor::Red,
+				SDPG_Foreground,
+				0.f);
+		LineBatcher->DrawLine(
+				Location, 
+				Location + Rotation.RotateVector(FVector3d::RightVector * AxesLength),
+				FLinearColor::Green,
+				SDPG_Foreground,
+				0.f);
+		LineBatcher->DrawLine(
+				Location, 
+				Location + Rotation.RotateVector(FVector3d::UpVector * AxesLength),
+				FLinearColor::Blue,
+				SDPG_Foreground,
+				0.f);
+	}
+}
+
+void FCameraDebugRenderer::DrawCoordinateSystem(const FTransform3d& Transform, float AxesLength)
+{
+	DrawCoordinateSystem(Transform.GetLocation(), Transform.GetRotation().Rotator(), AxesLength);
 }
 
 void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont)

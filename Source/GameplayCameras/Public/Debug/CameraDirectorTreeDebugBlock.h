@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Debug/CameraDebugBlock.h"
+#include "Math/Transform.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -35,6 +36,8 @@ private:
 	struct FDirectorDebugInfo
 	{
 		FString CameraAssetName;
+		FTransform3d InitialContextTransform = FTransform3d::Identity;
+		bool bIsValid = false;
 	};
 	TArray<FDirectorDebugInfo> CameraDirectors;
 
