@@ -4,11 +4,21 @@
 
 #include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
+#include "Nodes/CameraNodeTypes.h"
 #include "Engine/EngineTypes.h"
 
 #include "CollisionPushCameraNode.generated.h"
 
 class UCameraValueInterpolator;
+
+UENUM()
+enum class ECollisionSafePositionOffsetSpace
+{
+	ActiveContext,
+	OwningContext,
+	Pivot,
+	CameraPose
+};
 
 /**
  * A node that pushes the camera towards a "safe position" when it is colliding with 
@@ -33,6 +43,10 @@ public:
 	/** World-space offset from the target to the line trace's end. */
 	UPROPERTY(EditAnywhere, Category="Occlusion")
 	FVector3dCameraParameter SafePositionOffset;
+
+	/** What space the safe position offset should be in. */
+	UPROPERTY(EditAnywhere, Category=Damping)
+	ECollisionSafePositionOffsetSpace SafePositionOffsetSpace = ECollisionSafePositionOffsetSpace::Pivot;
 
 	/** The interpolation to use when pushing the camera towards the safe position. */
 	UPROPERTY(EditAnywhere, Category="Collision")
