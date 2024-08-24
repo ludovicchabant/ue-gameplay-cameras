@@ -65,6 +65,14 @@ public:
 		}
 	}
 
+	/**
+	 * Returns whether the parameter is driven by a variable.
+	 */
+	bool IsDriven() const
+	{
+		return VariableID.IsValid();
+	}
+
 private:
 
 	/** Pointer to the value in the parameter. */

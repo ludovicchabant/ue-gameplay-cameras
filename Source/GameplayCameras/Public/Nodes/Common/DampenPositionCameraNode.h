@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraNode.h"
+#include "Core/CameraParameters.h"
 #include "Nodes/CameraNodeTypes.h"
 
 #include "DampenPositionCameraNode.generated.h"
@@ -24,14 +25,18 @@ public:
 
 	/** Damping factor for forward/backward camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
-	float ForwardDampingFactor = 0.f;
+	FFloatCameraParameter ForwardDampingFactor = 0.f;
 
 	/** Damping factor for left/right camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
-	float LateralDampingFactor = 0.f;
+	FFloatCameraParameter LateralDampingFactor = 0.f;
 
 	/** Damping factor for up/down camera movement. */
 	UPROPERTY(EditAnywhere, Category=Damping)
-	float VerticalDampingFactor = 0.f;
+	FFloatCameraParameter VerticalDampingFactor = 0.f;
+
+	/** What space the damping should be in. */
+	UPROPERTY(EditAnywhere, Category=Damping)
+	ECameraNodeSpace DampenSpace = ECameraNodeSpace::CameraPose;
 };
 
