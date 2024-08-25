@@ -58,7 +58,7 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 				OutResult.CameraPose.SetTransform(Transform);
 			}
 			break;
-		case ECameraNodeSpace::Context:
+		case ECameraNodeSpace::OwningContext:
 			if (Params.EvaluationContext)
 			{ 
 				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();

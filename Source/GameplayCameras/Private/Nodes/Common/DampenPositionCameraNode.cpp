@@ -137,7 +137,7 @@ void FDampenPositionCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 					AxesRotation = CameraRotation;
 				}
 				break;
-			case ECameraNodeSpace::Context:
+			case ECameraNodeSpace::OwningContext:
 				if (Params.EvaluationContext)
 				{
 					const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();

@@ -15,7 +15,7 @@ enum class ECameraNodeSpace
 	/** Operates in the local camera pose space. */
 	CameraPose,
 	/** Operates in the space of the owning evaluation context's initial result. */
-	Context,
+	OwningContext,
 	/** Operates in world space. */
 	World
 };
