@@ -41,6 +41,14 @@ public:
 	/** Removes all previously added joints. */
 	void Reset();
 
+public:
+
+	/** Override the joints with another set of joints. */
+	void OverrideAll(const FCameraRigJoints& OtherJoints);
+
+	/** Interpolate the joints towards anoter set of joints. */
+	void LerpAll(const FCameraRigJoints& ToJoints, float BlendFactor);
+
 private:
 
 	using FJointArray = TArray<FCameraRigJoint, TInlineAllocator<2>>;
