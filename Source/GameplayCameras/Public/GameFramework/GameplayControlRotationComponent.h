@@ -3,11 +3,11 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
-#include "Core/CameraSystemEvaluator.h"
 
 #include "GameplayControlRotationComponent.generated.h"
 
 class APlayerController;
+class UGameplayCameraSystemHost;
 class UCanvas;
 class UInputAction;
 
@@ -63,7 +63,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<APlayerController> PlayerController;
 
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
+
 	TSharedPtr<UE::Cameras::FPlayerControlRotationEvaluationService> ControlRotationService;
-	TWeakPtr<UE::Cameras::FCameraSystemEvaluator> WeakCameraSystem;
 };
 

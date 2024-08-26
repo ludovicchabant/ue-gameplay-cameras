@@ -79,7 +79,6 @@ public:
 private:
 
 	void ActivateCameraRigs();
-	void ActivateCameraRig(int32 Index);
 	void EnsureEvaluationContext();
 	void EnsureCameraSystemHost();
 

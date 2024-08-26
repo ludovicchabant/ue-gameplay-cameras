@@ -3,13 +3,13 @@
 #include "GameFramework/GameplayControlRotationComponent.h"
 
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Debug/DebugDrawService.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-#include "EnhancedInputComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/GameplayCameraSystemComponent.h"
+#include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameFramework/Pawn.h"
 #include "GameplayCameras.h"
 #include "Kismet/GameplayStatics.h"
@@ -63,18 +63,10 @@ void UGameplayControlRotationComponent::BeginPlay()
 		return;
 	}
 
-	AActor* ViewTarget = PlayerController->PlayerCameraManager->GetViewTarget();
-	UGameplayCameraSystemComponent* CameraSystemComponent = ViewTarget->FindComponentByClass<UGameplayCameraSystemComponent>();
-	if (!CameraSystemComponent)
+	CameraSystemHost = UGameplayCameraSystemHost::FindHost(PlayerController);
+	if (!CameraSystemHost)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't find camera system on the player camera manager."));
-		return;
-	}
-
-	TSharedPtr<FCameraSystemEvaluator> CameraSystem = CameraSystemComponent->GetCameraSystemEvaluator();
-	if (!CameraSystem)
-	{
-		UE_LOG(LogCameraSystem, Error, TEXT("No camera system has been initialized"));
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't find camera system host on the player controller."));
 		return;
 	}
 
@@ -87,17 +79,18 @@ void UGameplayControlRotationComponent::BeginPlay()
 	ServiceParams.bApplyControlRotation = false;
 
 	ControlRotationService = MakeShared<FPlayerControlRotationEvaluationService>(ServiceParams);
-	CameraSystem->RegisterEvaluationService(ControlRotationService.ToSharedRef());
 
-	WeakCameraSystem = CameraSystem;
+	TSharedPtr<FCameraSystemEvaluator> CameraSystem = CameraSystemHost->GetCameraSystemEvaluator();
+	CameraSystem->RegisterEvaluationService(ControlRotationService.ToSharedRef());
 }
 
 void UGameplayControlRotationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	using namespace UE::Cameras;
 
-	if (TSharedPtr<FCameraSystemEvaluator> CameraSystem = WeakCameraSystem.Pin())
+	if (CameraSystemHost)
 	{
+		TSharedPtr<FCameraSystemEvaluator> CameraSystem = CameraSystemHost->GetCameraSystemEvaluator();
 		CameraSystem->UnregisterEvaluationService(ControlRotationService.ToSharedRef());
 	}
 

@@ -101,6 +101,11 @@ void UGameplayCameraSystemHost::AddReferencedObjects(UObject* Object, FReference
 	}
 }
 
+APlayerController* UGameplayCameraSystemHost::GetPlayerController()
+{
+	return GetTypedOuter<APlayerController>();
+}
+
 TSharedPtr<UE::Cameras::FCameraSystemEvaluator> UGameplayCameraSystemHost::GetCameraSystemEvaluator()
 {
 	return Evaluator;

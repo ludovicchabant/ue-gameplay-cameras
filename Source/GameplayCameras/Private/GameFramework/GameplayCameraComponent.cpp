@@ -38,6 +38,15 @@ TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetE
 	return EvaluationContext;
 }
 
+APlayerController* UGameplayCameraComponent::GetPlayerController() const
+{
+	if (CameraSystemHost)
+	{
+		return CameraSystemHost->GetPlayerController();
+	}
+	return nullptr;
+}
+
 void UGameplayCameraComponent::ActivateCameraForPlayerIndex(int32 PlayerIndex)
 {
 	ActivateCameraEvaluationContext(PlayerIndex);
@@ -55,10 +64,7 @@ void UGameplayCameraComponent::DeactivateCamera()
 
 void UGameplayCameraComponent::ActivateCameraEvaluationContext(int32 PlayerIndex)
 {
-	if (WeakPlayerController.IsValid())
-	{
-		DeactivateCameraEvaluationContext();
-	}
+	DeactivateCameraEvaluationContext();
 
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
 	if (!PlayerController)
@@ -74,12 +80,6 @@ void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 {
 	using namespace UE::Cameras;
 
-	APlayerController* PlayerController = WeakPlayerController.Get();
-	if (!PlayerController)
-	{
-		return;
-	}
-
 	if (!CameraSystemHost)
 	{
 		return;
@@ -90,8 +90,6 @@ void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
 		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 	}
-
-	WeakPlayerController.Reset();
 }
 
 void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController* PlayerController)
@@ -129,8 +127,6 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
-
-	WeakPlayerController = PlayerController;
 }
 
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const

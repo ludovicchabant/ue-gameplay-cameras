@@ -33,13 +33,13 @@ class UGameplayCameraComponent : public USceneComponent
 public:
 
 	/** Create a new camera component. */
-	UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
+	GAMEPLAYCAMERAS_API UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
 
 	/** Get the camera evaluation context used by this component. */
-	TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
+	GAMEPLAYCAMERAS_API TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
 
 	/** Get the player controller this component is currently activated for (if any). */
-	APlayerController* GetPlayerController() const { return WeakPlayerController.Get(); }
+	GAMEPLAYCAMERAS_API APlayerController* GetPlayerController() const;
 
 public:
 
@@ -119,10 +119,6 @@ protected:
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
 
 #endif	// WITH_EDITORONLY_DATA
-	
-private:
-
-	TWeakObjectPtr<APlayerController> WeakPlayerController;
 };
 
 namespace UE::Cameras

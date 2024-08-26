@@ -38,6 +38,9 @@ public:
 
 	using FCameraSystemEvaluator = UE::Cameras::FCameraSystemEvaluator;
 
+	/** Get the player controller that this host is hooked up to. */
+	GAMEPLAYCAMERAS_API APlayerController* GetPlayerController();
+
 	/** Gets the camera system evaluator. */
 	GAMEPLAYCAMERAS_API TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator();
 
