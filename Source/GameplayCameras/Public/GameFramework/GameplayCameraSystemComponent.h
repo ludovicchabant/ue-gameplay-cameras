@@ -2,11 +2,8 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Core/CameraSystemEvaluator.h"
 #include "GameplayCameras.h"
 #include "UObject/ObjectMacros.h"
-#include "UObject/ScriptInterface.h"
 #include "Components/SceneComponent.h"
 
 #include "GameplayCameraSystemComponent.generated.h"
@@ -14,14 +11,13 @@
 class APlayerController;
 class UCameraRigAsset;
 class UCanvas;
+class UGameplayCameraSystemHost;
 struct FMinimalViewInfo;
 
 namespace UE::Cameras
 {
-
-class FCameraSystemEvaluator;
-
-}  // namespace UE::Cameras
+	class FCameraSystemEvaluator;
+}
 
 /**
  * A component that hosts a camera system.
@@ -38,7 +34,7 @@ public:
 	UGameplayCameraSystemComponent(const FObjectInitializer& ObjectInit);
 
 	/** Gets the camera system evaluator. */
-	TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator() { return Evaluator; }
+	GAMEPLAYCAMERAS_API TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator(bool bEnsureIfNull = true);
 
 	/** Updates the camera system and returns the computed view. */
 	GAMEPLAYCAMERAS_API void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView);
@@ -68,9 +64,6 @@ public:
 #if WITH_EDITOR
 	virtual bool GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut) override;
 #endif  // WITH_EDITOR
-	
-	// UObject interface
-	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
 public:
 
@@ -95,7 +88,8 @@ public:
 
 private:
 	
-	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 
 	TWeakObjectPtr<APlayerController> WeakPlayerController;
 

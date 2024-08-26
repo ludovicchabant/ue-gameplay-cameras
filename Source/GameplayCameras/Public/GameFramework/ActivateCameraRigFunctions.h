@@ -15,6 +15,7 @@
 
 class APlayerController;
 class UCameraRigAsset;
+class UGameplayCameraSystemHost;
 
 namespace UE::Cameras
 {
@@ -78,9 +79,9 @@ public:
 private:
 
 	void ActivateCameraRigs();
+	void ActivateCameraRig(int32 Index);
 	void EnsureEvaluationContext();
-
-	static UE::Cameras::FCameraSystemEvaluator* FindCameraSystemEvaluator(APlayerController* PlayerController);
+	void EnsureCameraSystemHost();
 
 private:
 
@@ -92,6 +93,10 @@ private:
 	};
 
 	TArray<FCameraRigInfo> CameraRigInfos;
+
 	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
+
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 };
 

@@ -10,6 +10,7 @@
 #include "Core/CameraEvaluationContextStack.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
+#include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
 #include "Templates/SharedPointer.h"
@@ -93,9 +94,8 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 {
 	using namespace UE::Cameras;
 
-	APlayerController* PlayerController = GetOwner<APlayerController>();
-	FCameraSystemEvaluator* SystemEvaluator = FindCameraSystemEvaluator(PlayerController);
-	if (!SystemEvaluator)
+	EnsureCameraSystemHost();
+	if (!CameraSystemHost)
 	{
 		return;
 	}
@@ -106,6 +106,7 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 		return;
 	}
 
+	TSharedPtr<FCameraSystemEvaluator> SystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	FRootCameraNodeEvaluator* RootNodeEvaluator = SystemEvaluator->GetRootNodeEvaluator();
 
 	for (FCameraRigInfo& CameraRigInfo : CameraRigInfos)
@@ -115,7 +116,7 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 			FActivateCameraRigParams Params;
 			Params.CameraRig = CameraRigInfo.CameraRig;
 			Params.EvaluationContext = EvaluationContext;
-			Params.Evaluator = SystemEvaluator;
+			Params.Evaluator = SystemEvaluator.Get();
 			Params.Layer = CameraRigInfo.EvaluationLayer;
 			RootNodeEvaluator->ActivateCameraRig(Params);
 
@@ -140,16 +141,13 @@ void UControllerGameplayCameraEvaluationComponent::EnsureEvaluationContext()
 	}
 }
 
-UE::Cameras::FCameraSystemEvaluator* UControllerGameplayCameraEvaluationComponent::FindCameraSystemEvaluator(APlayerController* PlayerController)
+void UControllerGameplayCameraEvaluationComponent::EnsureCameraSystemHost()
 {
-	if (PlayerController && PlayerController->PlayerCameraManager)
+	if (!CameraSystemHost)
 	{
-		AActor* ViewTarget = PlayerController->PlayerCameraManager->GetViewTarget();
-		if (AGameplayCameraSystemActor* SystemActor = Cast<AGameplayCameraSystemActor>(ViewTarget))
-		{
-			return SystemActor->GetCameraSystemComponent()->GetCameraSystemEvaluator().Get();
-		}
+		APlayerController* PlayerController = GetOwner<APlayerController>();
+
+		CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
 	}
-	return nullptr;
 }
 

@@ -4,17 +4,15 @@
 
 #include "Components/SceneComponent.h"
 #include "Core/CameraEvaluationContext.h"
-#include "CoreMinimal.h"
-#include "Engine/TimerHandle.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
 #include "UObject/ObjectMacros.h"
-#include "UObject/ScriptInterface.h"
 
 #include "GameplayCameraComponent.generated.h"
 
 class APlayerController;
 class UCameraAsset;
+class UGameplayCameraSystemHost;
 
 namespace UE::Cameras
 {
@@ -84,11 +82,6 @@ private:
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
 	void DeactivateCameraEvaluationContext();
 
-	void DelayedActivateCameraEvaluationContext(APlayerController* PlayerController, AActor* OldViewTarget, AActor* NewViewTarget);
-	void AbortDelayedActivateCameraEvaluationContext();
-
-	void DoActivateCameraEvaluationContext(APlayerController* PlayerController, TSharedPtr<UE::Cameras::FCameraSystemEvaluator> CameraSystemEvaluator);
-
 #if WITH_EDITORONLY_DATA
 
 	void UpdatePreviewMeshTransform();
@@ -113,6 +106,9 @@ protected:
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
 
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
+
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 
 #if WITH_EDITORONLY_DATA
 

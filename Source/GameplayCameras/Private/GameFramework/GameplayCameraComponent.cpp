@@ -9,17 +9,10 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
-#include "GameDelegates.h"
-#include "GameFramework/Controller.h"
-#include "GameFramework/GameplayCameraSystemActor.h"
-#include "GameFramework/GameplayCameraSystemComponent.h"
+#include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameplayCameras.h"
-#include "GameplayCamerasSettings.h"
 #include "Kismet/GameplayStatics.h"
-#include "Logging/MessageLog.h"
-#include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UObject/UnrealType.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
 
@@ -87,20 +80,14 @@ void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 		return;
 	}
 
-	if (!ensure(PlayerController->PlayerCameraManager))
-	{
-		return;
-	}
-	
-	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
-	if (!ensure(CameraSystem))
+	if (!CameraSystemHost)
 	{
 		return;
 	}
 
 	if (EvaluationContext.IsValid())
 	{
-		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator();
+		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
 		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 	}
 
@@ -111,9 +98,7 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 {
 	using namespace UE::Cameras;
 
-	if (!ensureMsgf(
-				PlayerController && PlayerController->PlayerCameraManager,
-				TEXT("Can't activate gameplay camera component: invalid player controller!")))
+	if (!ensureMsgf(PlayerController, TEXT("Can't activate gameplay camera component: invalid player controller!")))
 	{
 		return;
 	}
@@ -124,64 +109,12 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 		return;
 	}
 	
-	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(PlayerController->PlayerCameraManager->GetViewTarget());
-	if (!CameraSystem)
+	CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
+	if (!CameraSystemHost)
 	{
-		const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-		if (Settings->bAutoSpawnCameraSystemActor)
-		{
-			FActorSpawnParameters SpawnParams;
-			CameraSystem = GetWorld()->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
-			CameraSystem->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
-		}
-	}
-	if (!CameraSystem)
-	{
-		FGameDelegates::Get().GetViewTargetChangedDelegate().AddUObject(
-				this, &UGameplayCameraComponent::DelayedActivateCameraEvaluationContext);
-
-		GetWorld()->GetTimerManager().SetTimerForNextTick(
-				this, &UGameplayCameraComponent::AbortDelayedActivateCameraEvaluationContext);
-
-		UE_LOG(LogCameraSystem, Verbose, 
-				TEXT("Can't activate gameplay camera component: no camera system found on the view target. "
-					"Waiting until next tick to see if it is added after us."));
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system host found!"));
 		return;
 	}
-
-	DoActivateCameraEvaluationContext(PlayerController, CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator());
-
-	WeakPlayerController = PlayerController;
-}
-
-void UGameplayCameraComponent::DelayedActivateCameraEvaluationContext(APlayerController* PlayerController, AActor* OldViewTarget, AActor* NewViewTarget)
-{
-	FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
-
-	AGameplayCameraSystemActor* CameraSystem = Cast<AGameplayCameraSystemActor>(NewViewTarget);
-	if (!CameraSystem)
-	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system found on the view target!"));
-		return;
-	}
-
-	DoActivateCameraEvaluationContext(PlayerController, CameraSystem->GetCameraSystemComponent()->GetCameraSystemEvaluator());
-
-	WeakPlayerController = PlayerController;
-}
-
-void UGameplayCameraComponent::AbortDelayedActivateCameraEvaluationContext()
-{
-	if (!WeakPlayerController.IsValid())
-	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system found after a full tick!"));
-		FGameDelegates::Get().GetViewTargetChangedDelegate().RemoveAll(this);
-	}
-}
-
-void UGameplayCameraComponent::DoActivateCameraEvaluationContext(APlayerController* PlayerController, TSharedPtr<UE::Cameras::FCameraSystemEvaluator> CameraSystemEvaluator)
-{
-	using namespace UE::Cameras;
 
 	if (!EvaluationContext.IsValid())
 	{
@@ -194,7 +127,10 @@ void UGameplayCameraComponent::DoActivateCameraEvaluationContext(APlayerControll
 		EvaluationContext->Initialize(InitParams);
 	}
 
+	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+
+	WeakPlayerController = PlayerController;
 }
 
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
@@ -242,6 +178,7 @@ void UGameplayCameraComponent::BeginPlay()
 #if WITH_EDITOR
 	if (Camera)
 	{
+		// Auto-build the camera asset on begin play to make sure we've got the latest user edits.
 		using namespace UE::Cameras;
 		FCameraBuildLog BuildLog;
 		FCameraAssetBuilder Builder(BuildLog);

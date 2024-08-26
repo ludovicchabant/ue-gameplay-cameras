@@ -3,15 +3,15 @@
 #include "GameFramework/GameplayCameraSystemComponent.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/GameplayCameraSystemHost.h"
 #include "Kismet/GameplayStatics.h"
-#include "Logging/MessageLog.h"
 #include "UObject/ConstructorHelpers.h"
-#include "UObject/UnrealType.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraSystemComponent)
 
@@ -33,10 +33,22 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 #endif  // WITH_EDITORONLY_DATA
 }
 
+TSharedPtr<UE::Cameras::FCameraSystemEvaluator> UGameplayCameraSystemComponent::GetCameraSystemEvaluator(bool bEnsureIfNull)
+{
+	UGameplayCameraSystemHost* HostPtr = CameraSystemHost.Get();
+	ensureMsgf(HostPtr || !bEnsureIfNull, TEXT("Accessing camera system evaluator when we haven't found or created a host for one."));
+	if (HostPtr)
+	{
+		return HostPtr->GetCameraSystemEvaluator();
+	}
+	return nullptr;
+}
+
 void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
 {
 	using namespace UE::Cameras;
 
+	TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator();
 	if (Evaluator.IsValid())
 	{
 		FCameraSystemEvaluationParams UpdateParams;
@@ -57,12 +69,6 @@ void UGameplayCameraSystemComponent::OnRegister()
 	if (!OwnerActor || OwnerActor->HasAnyFlags(RF_ClassDefaultObject))
 	{
 		return;
-	}
-
-	if (!Evaluator.IsValid())
-	{
-		Evaluator = MakeShared<FCameraSystemEvaluator>();
-		Evaluator->Initialize(this);
 	}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -113,6 +119,13 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 	if (!OwningActor)
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no owning actor found!"));
+		return;
+	}
+
+	CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
+	if (!CameraSystemHost)
+	{
+		UE_LOG(LogCameraSystem, Error, TEXT("can't create camera system host!"));
 		return;
 	}
 
@@ -173,11 +186,6 @@ void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierar
 		DebugDrawDelegateHandle.Reset();
 	}
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
-	if (Evaluator.IsValid())
-	{
-		Evaluator.Reset();
-	}
 }
 
 #if WITH_EDITOR
@@ -194,17 +202,6 @@ bool UGameplayCameraSystemComponent::GetEditorPreviewInfo(float DeltaTime, FMini
 
 #endif  // WITH_EDITOR
 
-void UGameplayCameraSystemComponent::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
-{
-	Super::AddReferencedObjects(InThis, Collector);
-
-	UGameplayCameraSystemComponent* TypedThis = CastChecked<UGameplayCameraSystemComponent>(InThis);
-	if (TypedThis->Evaluator.IsValid())
-	{
-		TypedThis->Evaluator->AddReferencedObjects(Collector);
-	}
-}
-
 void UGameplayCameraSystemComponent::OnBecomeViewTarget()
 {
 }
@@ -219,6 +216,7 @@ void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerControlle
 {
 	using namespace UE::Cameras;
 
+	TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator();
 	if (Evaluator.IsValid())
 	{
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
