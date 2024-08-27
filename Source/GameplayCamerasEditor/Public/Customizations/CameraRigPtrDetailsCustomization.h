@@ -15,6 +15,8 @@ struct FAssetData;
 namespace UE::Cameras
 {
 
+struct FCameraRigPickerConfig;
+
 class FCameraRigPtrDetailsCustomization : public IPropertyTypeCustomization
 {
 public:
@@ -32,6 +34,8 @@ private:
 	FText OnGetComboText() const;
 	FText OnGetComboToolTipText() const;
 	TSharedRef<SWidget> OnBuildCameraRigNamePicker();
+	TSharedRef<SWidget> OnBuildCameraDirectorRigNamePicker();
+	TSharedRef<SWidget> BuildCameraRigNamePickerImpl(FCameraRigPickerConfig& PickerConfig);
 	void OnPickerAssetSelected(UCameraRigAsset* SelectedItem);
 
 private:

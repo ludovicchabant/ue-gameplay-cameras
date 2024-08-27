@@ -14,7 +14,7 @@ struct FGameplayCamerasActivateCameraRigTaskInstanceData
 	GENERATED_BODY()
 
 	/** The camera rig to activate. */
-	UPROPERTY(EditAnywhere, Category="Cameras", meta=(UseCameraRigPicker=true))
+	UPROPERTY(EditAnywhere, Category="Cameras", meta=(UseCameraDirectorRigPicker=true))
 	TObjectPtr<UCameraRigAsset> CameraRig;
 };
 
