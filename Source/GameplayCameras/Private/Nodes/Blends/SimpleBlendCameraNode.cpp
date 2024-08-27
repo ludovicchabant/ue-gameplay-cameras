@@ -94,7 +94,11 @@ void FSimpleFixedTimeBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 float FSimpleFixedTimeBlendCameraNodeEvaluator::GetTimeFactor() const
 {
 	const USimpleFixedTimeBlendCameraNode* BlendNode = GetCameraNodeAs<USimpleFixedTimeBlendCameraNode>();
-	return CurrentTime / BlendNode->BlendTime;
+	if (BlendNode->BlendTime > 0.f)
+	{
+		return CurrentTime / BlendNode->BlendTime;
+	}
+	return 1.f;
 }
 
 }  // namespace UE::Cameras
