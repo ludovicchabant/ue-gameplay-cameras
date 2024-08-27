@@ -7,6 +7,9 @@
 
 #include "StateTreeCameraDirector.generated.h"
 
+class UCameraRigProxyAsset;
+class UCameraRigProxyTable;
+
 /**
  * A camera director that runs a StateTree to specify which camera rigs should be active
  * any given frame.
@@ -35,5 +38,12 @@ public:
 	UPROPERTY(EditAnywhere, Category="StateTree",
 			meta=(Schema="/Script/GameplayCameras.CameraDirectorStateTreeSchema"))
 	FStateTreeReference StateTreeReference;
+
+	/** 
+	 * The table that maps camera rig proxies (used in the evaluator State Tree's tasks)
+	 * to actual camera rigs.
+	 */
+	UPROPERTY(EditAnywhere, Instanced, Category="Evaluation")
+	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable;
 };
 

@@ -13,6 +13,7 @@
 #include "CameraDirectorStateTreeSchema.generated.h"
 
 class UCameraRigAsset;
+class UCameraRigProxyAsset;
 struct FStateTreeExternalDataDesc;
 
 namespace UE::Cameras
@@ -60,6 +61,15 @@ struct GAMEPLAYCAMERAS_API FCameraDirectorStateTreeEvaluationData
 	/** Camera rigs activated during a StateTree's execution frame. */
 	UPROPERTY()
 	TArray<TObjectPtr<UCameraRigAsset>> ActiveCameraRigs;
+
+	/** Camera rig proxies activated during a StateTree's execution frame. */
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigProxyAsset>> ActiveCameraRigProxies;
+
+public:
+
+	/** Reset this evaluation data for a new frame. */
+	void Reset();
 };
 
 /** Base classs for camera director StateTree tasks. */

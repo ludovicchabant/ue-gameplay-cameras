@@ -5,6 +5,8 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraRigProxyAsset.h"
+#include "Core/CameraRigProxyTable.h"
 #include "Directors/CameraDirectorStateTreeSchema.h"
 #include "GameplayCameras.h"
 #include "Logging/TokenizedMessage.h"
@@ -35,6 +37,7 @@ protected:
 private:
 
 	bool SetContextRequirements(TSharedPtr<const FCameraEvaluationContext> OwnerContext, FStateTreeExecutionContext& StateTreeContext);
+	const UCameraRigAsset* FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy);
 
 private:
 
@@ -143,12 +146,42 @@ void FStateTreeCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 	{
 		StateTreeContext.Tick(Params.DeltaTime);
 
-		for (TObjectPtr<const UCameraRigAsset> CameraRig : EvaluationData.ActiveCameraRigs)
+		TArray<const UCameraRigAsset*, TInlineAllocator<2>> CameraRigs;
+		const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
+
+		// Gather camera rigs.
+		for (const UCameraRigAsset* ActiveCameraRig : EvaluationData.ActiveCameraRigs)
 		{
-			FActiveCameraRigInfo CameraRigInfo;
-			CameraRigInfo.CameraRig = CameraRig;
-			CameraRigInfo.EvaluationContext = Params.OwnerContext;
-			OutResult.ActiveCameraRigs.Add(CameraRigInfo);
+			if (ActiveCameraRig)
+			{
+				CameraRigs.Add(ActiveCameraRig);
+			}
+			else
+			{
+				UE_LOG(LogCameraSystem, Error, TEXT("Null camera rig specified in camera director '%s'."), 
+						*StateTree->GetPathName());
+			}
+		}
+
+		// Resolve camera rig proxies.
+		for (const UCameraRigProxyAsset* ActiveCameraRigProxy : EvaluationData.ActiveCameraRigProxies)
+		{
+			const UCameraRigAsset* ActiveCameraRig = FindCameraRigByProxy(ActiveCameraRigProxy);
+			if (ActiveCameraRig)
+			{
+				CameraRigs.Add(ActiveCameraRig);
+			}
+			else
+			{
+				UE_LOG(LogCameraSystem, Error, TEXT("No camera rig found mapped to proxy '%s' in camera '%s'."),
+						*ActiveCameraRigProxy->GetPathName(), *CameraAsset->GetPathName());
+			}
+		}
+
+		// Set all collected camera rigs as our active rigs this frame.
+		for (const UCameraRigAsset* CameraRig : CameraRigs)
+		{
+			OutResult.Add(Params.OwnerContext, CameraRig);
 		}
 	}
 }
@@ -160,7 +193,7 @@ bool FStateTreeCameraDirectorEvaluator::SetContextRequirements(TSharedPtr<const 
 			FStateTreeContextDataNames::ContextOwner, 
 			FStateTreeDataView(ContextOwner));
 
-	EvaluationData.ActiveCameraRigs.Reset();
+	EvaluationData.Reset();
 
 	StateTreeContext.SetCollectExternalDataCallback(FOnCollectStateTreeExternalData::CreateLambda(
 		[this](const FStateTreeExecutionContext& Context, const UStateTree* StateTree, 
@@ -178,6 +211,25 @@ bool FStateTreeCameraDirectorEvaluator::SetContextRequirements(TSharedPtr<const 
 		}));
 
 	return true;
+}
+
+const UCameraRigAsset* FStateTreeCameraDirectorEvaluator::FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy)
+{
+	const UStateTreeCameraDirector* Director = GetCameraDirectorAs<UStateTreeCameraDirector>();
+	if (!ensure(Director))
+	{
+		return nullptr;
+	}
+
+	const UCameraRigProxyTable* ProxyTable = Director->CameraRigProxyTable;
+	if (!ensureMsgf(ProxyTable, TEXT("No proxy table set on StateTree director '%s'."), *Director->GetPathName()))
+	{
+		return nullptr;
+	}
+
+	FCameraRigProxyTableResolveParams ResolveParams;
+	ResolveParams.CameraRigProxy = InProxy;
+	return Director->CameraRigProxyTable->ResolveProxy(ResolveParams);
 }
 
 void FStateTreeCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
@@ -200,12 +252,24 @@ FCameraDirectorEvaluatorPtr UStateTreeCameraDirector::OnBuildEvaluator(FCameraDi
 
 void UStateTreeCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
 {
+	using namespace UE::Cameras;
+
+	// Check that a state tree was specified.
+	if (!StateTreeReference.IsValid())
+	{
+		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingStateTree", "No state tree reference is set."));
+		return;
+	}
 }
 
 #if WITH_EDITOR
 
 void UStateTreeCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
 {
+	if (!CameraRigProxyTable)
+	{
+		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
+	}
 }
 
 #endif

@@ -53,3 +53,9 @@ bool UCameraDirectorStateTreeSchema::IsExternalItemAllowed(const UStruct& InStru
 	return true;
 }
 
+void FCameraDirectorStateTreeEvaluationData::Reset()
+{
+	ActiveCameraRigs.Reset();
+	ActiveCameraRigProxies.Reset();
+}
+
