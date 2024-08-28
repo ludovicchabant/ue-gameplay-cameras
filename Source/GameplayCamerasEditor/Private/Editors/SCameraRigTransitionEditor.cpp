@@ -67,9 +67,8 @@ void SCameraRigTransitionEditor::CreateTransitionGraphEditor()
 	UCameraRigTransitionGraphSchemaBase* DefaultSchemaObject = Cast<UCameraRigTransitionGraphSchemaBase>(TransitionGraphSchemaClass->GetDefaultObject());
 	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
-	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional);
+	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional | RF_Standalone);
 	TransitionGraph->Schema = TransitionGraphSchemaClass;
-	TransitionGraph->AddToRoot();
 	TransitionGraph->Reset(TransitionOwner, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
 
 	TransitionGraphChangedHandle = TransitionGraph->AddOnGraphChangedHandler(
