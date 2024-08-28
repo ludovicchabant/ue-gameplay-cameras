@@ -389,6 +389,8 @@ void SObjectTreeGraphEditor::DeleteNodes(TArrayView<UObjectTreeGraphNode*> Nodes
 	UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
 	const UEdGraphSchema* Schema = CurrentGraph->GetSchema();
 
+	const FScopedTransaction Transaction(LOCTEXT("DeleteNode", "Delete Node(s)"));
+
 	for (UObjectTreeGraphNode* Node : NodesToDelete)
 	{
 		if (Node)

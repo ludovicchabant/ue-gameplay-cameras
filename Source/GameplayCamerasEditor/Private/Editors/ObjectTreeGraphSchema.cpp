@@ -823,13 +823,10 @@ bool UObjectTreeGraphSchema::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNo
 		return false;
 	}
 	
-	const FScopedTransaction Transaction(LOCTEXT("DeleteNode", "Delete Node"));
-
 	BreakNodeLinks(*Node);
 
 	UObjectTreeGraph* ObjectTreeGraph = CastChecked<UObjectTreeGraph>(Graph);
 	OnDeleteNodeFromGraph(ObjectTreeGraph, Node);
-	Node->DestroyNode();
 
 	return true;
 }
