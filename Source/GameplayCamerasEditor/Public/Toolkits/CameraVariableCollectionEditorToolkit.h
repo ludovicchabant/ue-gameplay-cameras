@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "EditorUndoClient.h"
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
 
@@ -22,6 +23,7 @@ class SCameraVariableCollectionEditor;
  */
 class FCameraVariableCollectionEditorToolkit
 	: public FBaseAssetToolkit
+	, public FEditorUndoClient
 	, public FGCObject
 {
 public:
@@ -45,15 +47,13 @@ protected:
 	virtual FString GetWorldCentricTabPrefix() const override;
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
 
+	// FEditorUndoClient interface
+	virtual void PostUndo(bool bSuccess) override;
+	virtual void PostRedo(bool bSuccess) override;
+
 	// FGCObject interface
-	virtual void AddReferencedObjects(FReferenceCollector& Collector) override
-	{
-		Collector.AddReferencedObject(VariableCollection);
-	}
-	virtual FString GetReferencerName() const override
-	{
-		return TEXT("FCameraVariableCollectionEditorToolkit");
-	}
+	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
+	virtual FString GetReferencerName() const override;
 
 private:
 
