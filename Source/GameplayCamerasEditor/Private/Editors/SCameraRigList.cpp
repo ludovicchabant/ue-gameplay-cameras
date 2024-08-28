@@ -4,6 +4,7 @@
 
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
+#include "Editor.h"
 #include "Framework/Commands/UICommandList.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -12,6 +13,8 @@
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SDeleteCameraObjectDialog.h"
+#include "Widgets/SWindow.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "Widgets/Views/SListView.h"
 
@@ -202,6 +205,11 @@ SCameraRigList::~SCameraRigList()
 {
 }
 
+void SCameraRigList::RequestListRefresh()
+{
+	bUpdateItemSource = true;
+}
+
 void SCameraRigList::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	if (bUpdateItemSource)
@@ -312,35 +320,61 @@ bool SCameraRigList::CanRenameCameraRig()
 
 void SCameraRigList::OnDeleteCameraRig()
 {
+	// Check if we have anything to delete.
 	TArray<TSharedPtr<FCameraRigListItem>> SelectedItems;
 	ListView->GetSelectedItems(SelectedItems);
-	if (SelectedItems.Num() > 0)
+	if (SelectedItems.IsEmpty())
 	{
-		FScopedTransaction Transaction(LOCTEXT("DeleteCameraRigs", "Delete Camera Rigs"));
+		return;
+	}
+
+	// Display a dialog showing any referencing assets that would need to be modified.
+	TSharedRef<SWindow> DeleteCameraRigWindow = SNew(SWindow)
+		.Title(LOCTEXT("DeleteCameraRigWindowTitle", "Delete Camera Rig(s)"))
+		.ClientSize(FVector2D(600, 700));
+
+	TArray<UObject*> ObjectsToDelete;
+	for (TSharedPtr<FCameraRigListItem> SelectedItem : SelectedItems)
+	{
+		ObjectsToDelete.Add(SelectedItem->CameraRigAsset);
+	}
+
+	TSharedRef<SDeleteCameraObjectDialog> DeleteCameraRigDialog = SNew(SDeleteCameraObjectDialog)
+		.ParentWindow(DeleteCameraRigWindow)
+		.ObjectsToDelete(ObjectsToDelete)
+		.OnDeletedObject_Lambda([](UObject* Obj)
+					{
+						if (UCameraRigAsset* TrashCameraRig = Cast<UCameraRigAsset>(Obj))
+						{
+							SDeleteCameraObjectDialog::RenameObjectAsTrash(TrashCameraRig->Interface.DisplayName);
+						}
+					});
+	DeleteCameraRigWindow->SetContent(DeleteCameraRigDialog);
+
+	GEditor->EditorAddModalWindow(DeleteCameraRigWindow);
+
+	// Remove the camera rigs from the camera asset and perform the reference replacement.
+	const bool bPerformDelete = DeleteCameraRigDialog->ShouldPerformDelete();
+	if (bPerformDelete)
+	{
+		FScopedTransaction Transaction(LOCTEXT("DeleteCameraRigs", "Delete Camera Rig(s)"));
 
 		CameraAsset->Modify();
 
-		TStringBuilder<256> StringBuilder;
 		TArray<UCameraRigAsset*> DeletedCameraRigs;
-
 		for (TSharedPtr<FCameraRigListItem> Item : SelectedItems)
 		{
 			UCameraRigAsset* CameraRigAsset = Item->CameraRigAsset;
 			if (CameraRigAsset)
 			{
-				CameraRigAsset->Modify();
-				
-				StringBuilder.Reset();
-				StringBuilder.Append(TEXT("DELETED_"));
-				StringBuilder.Append(CameraRigAsset->GetName());
-				CameraRigAsset->Rename(StringBuilder.ToString());
-
 				const int32 NumRemoved = CameraAsset->RemoveCameraRig(CameraRigAsset);
 				ensure(NumRemoved == 1);
 
 				DeletedCameraRigs.Add(CameraRigAsset);
 			}
 		}
+
+		DeleteCameraRigDialog->PerformReferenceReplacement();
 
 		bUpdateItemSource = true;
 

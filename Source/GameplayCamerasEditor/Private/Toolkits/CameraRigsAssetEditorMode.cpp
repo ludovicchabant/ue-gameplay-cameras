@@ -4,6 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
+#include "Editor.h"
 #include "Editors/CameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/SCameraRigAssetEditor.h"
@@ -76,6 +77,11 @@ void FCameraRigsAssetEditorMode::OnActivateMode(const FAssetEditorModeActivatePa
 	Impl->BindCommands(InParams.CommandList.ToSharedRef());
 
 	Impl->OnCameraRigBuildStatusDirtied().AddSP(this, &FCameraRigsAssetEditorMode::OnCameraRigBuildStatusDirtied);
+
+	if (GEditor)
+	{
+		GEditor->RegisterForUndo(this);
+	}
 }
 
 TSharedRef<SDockTab> FCameraRigsAssetEditorMode::SpawnTab_CameraRigs(const FSpawnTabArgs& Args)
@@ -91,6 +97,11 @@ TSharedRef<SDockTab> FCameraRigsAssetEditorMode::SpawnTab_CameraRigs(const FSpaw
 
 void FCameraRigsAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeactivateParams& InParams)
 {
+	if (GEditor)
+	{
+		GEditor->UnregisterForUndo(this);
+	}
+
 	Impl->OnCameraRigBuildStatusDirtied().RemoveAll(this);
 
 	Impl->UnregisterTabSpawners(InParams.TabManager.ToSharedRef());
@@ -98,6 +109,22 @@ void FCameraRigsAssetEditorMode::OnDeactivateMode(const FAssetEditorModeDeactiva
 	InParams.TabManager->UnregisterTabSpawner(CameraRigsTabId);
 
 	UToolMenus::UnregisterOwner(this);
+}
+
+void FCameraRigsAssetEditorMode::PostUndo(bool bSuccess)
+{
+	if (CameraRigsListWidget)
+	{
+		CameraRigsListWidget->RequestListRefresh();
+	}
+}
+
+void FCameraRigsAssetEditorMode::PostRedo(bool bSuccess)
+{
+	if (CameraRigsListWidget)
+	{
+		CameraRigsListWidget->RequestListRefresh();
+	}
 }
 
 void FCameraRigsAssetEditorMode::OnCameraRigListChanged(TArrayView<UCameraRigAsset* const> InCameraRigs)

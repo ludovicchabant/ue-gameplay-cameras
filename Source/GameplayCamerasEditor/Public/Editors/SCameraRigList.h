@@ -83,6 +83,8 @@ public:
 	void Construct(const FArguments& InArgs);
 	~SCameraRigList();
 
+	void RequestListRefresh();
+
 protected:
 
 	// SWidget interface

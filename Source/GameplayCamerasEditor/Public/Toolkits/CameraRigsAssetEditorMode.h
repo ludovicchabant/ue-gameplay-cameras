@@ -5,6 +5,7 @@
 #include "CoreTypes.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SCameraRigList.h"
+#include "EditorUndoClient.h"
 #include "Toolkits/AssetEditorMode.h"
 
 class FDocumentTabFactory;
@@ -21,6 +22,7 @@ class FCameraRigAssetEditorToolkitBase;
 
 class FCameraRigsAssetEditorMode
 	: public FAssetEditorMode
+	, public FEditorUndoClient
 {
 public:
 
@@ -33,8 +35,13 @@ public:
 
 protected:
 
+	// FAssetEditorMode interface.
 	virtual void OnActivateMode(const FAssetEditorModeActivateParams& InParams) override;
 	virtual void OnDeactivateMode(const FAssetEditorModeDeactivateParams& InParams) override;
+
+	// FEditorUndoClient interface.
+	virtual void PostUndo(bool bSuccess) override;
+	virtual void PostRedo(bool bSuccess) override;
 
 private:
 
