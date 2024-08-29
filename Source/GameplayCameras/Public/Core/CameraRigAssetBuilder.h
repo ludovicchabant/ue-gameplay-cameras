@@ -71,6 +71,9 @@ private:
 	using FDrivenParameterKey = TTuple<FStructProperty*, UCameraNode*>;
 	TMap<FDrivenParameterKey, UCameraVariableAsset*> OldDrivenParameters;
 
+	using FReusableInterfaceParameterInfo = TTuple<UCameraVariableAsset*, bool>;
+	TMap<UCameraRigInterfaceParameter*, FReusableInterfaceParameterInfo> OldInterfaceParameters;
+
 	FCameraRigAllocationInfo AllocationInfo;
 
 	friend struct Internal::FPrivateVariableBuilder;
