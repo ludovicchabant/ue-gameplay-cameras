@@ -65,7 +65,7 @@ UObject* UCameraAssetFactory::FactoryCreateNew(UClass* Class, UObject* Parent, F
 
 	if (CameraDirectorClass)
 	{
-		UCameraDirector* NewCameraDirector = NewObject<UCameraDirector>(NewCameraAsset, CameraDirectorClass, NAME_None, Flags | RF_Transactional);
+		UCameraDirector* NewCameraDirector = NewObject<UCameraDirector>(NewCameraAsset, CameraDirectorClass, NAME_None, RF_Transactional);
 		NewCameraAsset->SetCameraDirector(NewCameraDirector);
 
 		// Let the camera director do some scaffolding.

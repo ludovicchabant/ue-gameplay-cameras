@@ -4,6 +4,7 @@
 
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
+#include "Core/CameraDirector.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
 
@@ -102,6 +103,24 @@ int32 UCameraAsset::RemoveExitTransition(UCameraRigTransition* InTransition)
 		EventHandlers.Notify(&ICameraAssetEventHandler::OnExitTransitionsChanged, this, ChangedEvent);
 	}
 	return NumRemoved;
+}
+
+void UCameraAsset::PostLoad()
+{
+	Super::PostLoad();
+
+	if (CameraDirector)
+	{
+		EObjectFlags Flags = CameraDirector->GetFlags();
+		if (EnumHasAnyFlags(Flags, (RF_Public | RF_Standalone)))
+		{
+			UE_LOG(LogCameraSystem, Warning, 
+					TEXT("Removing incorrect object flags from camera director inside '%s', please re-save the asset."),
+					*GetPathNameSafe(this));
+			CameraDirector->Modify();
+			CameraDirector->ClearFlags(RF_Public | RF_Standalone);
+		}
+	}
 }
 
 #if WITH_EDITOR
