@@ -24,10 +24,10 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 {
 	ensure(InObject);
 
-	Object = InObject;
+	WeakObject = InObject;
 
 	const FNodeContext NodeContext = GetNodeContext();
-	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
+	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
 	if (GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText))
 	{
 		NodeComment = GraphObject->GetGraphNodeCommentText(NodeContext.GraphConfig.GraphName);
@@ -36,6 +36,7 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 
 FText UObjectTreeGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
+	UObject* Object = WeakObject.Get();
 	if (Object)
 	{
 		const FNodeContext NodeContext = GetNodeContext();
@@ -63,6 +64,7 @@ FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 
 FText UObjectTreeGraphNode::GetTooltipText() const
 {
+	UObject* Object = WeakObject.Get();
 	if (Object)
 	{
 		return Object->GetClass()->GetToolTipText();
@@ -72,6 +74,7 @@ FText UObjectTreeGraphNode::GetTooltipText() const
 
 void UObjectTreeGraphNode::AllocateDefaultPins()
 {
+	UObject* Object = WeakObject.Get();
 	if (!ensure(Object))
 	{
 		return;
@@ -244,6 +247,7 @@ void UObjectTreeGraphNode::RefreshArrayPropertyPinNames()
 
 void UObjectTreeGraphNode::GetAllConnectableProperties(TArray<FProperty*>& OutProperties) const
 {
+	UObject* Object = WeakObject.Get();
 	if (!ensure(Object))
 	{
 		return;
@@ -343,6 +347,7 @@ UEdGraphPin* UObjectTreeGraphNode::GetPinForPropertyNewItem(FArrayProperty* InPr
 
 FProperty* UObjectTreeGraphNode::GetPropertyForPin(const UEdGraphPin* InPin) const
 {
+	UObject* Object = WeakObject.Get();
 	if (!ensure(Object))
 	{
 		return nullptr;
@@ -374,6 +379,7 @@ FProperty* UObjectTreeGraphNode::GetPropertyForPin(const UEdGraphPin* InPin) con
 
 UClass* UObjectTreeGraphNode::GetConnectedObjectClassForPin(const UEdGraphPin* InPin) const
 {
+	UObject* Object = WeakObject.Get();
 	if (!ensure(Object))
 	{
 		return nullptr;
@@ -498,6 +504,7 @@ void UObjectTreeGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, clas
 
 bool UObjectTreeGraphNode::GetCanRenameNode() const
 {
+	UObject* Object = WeakObject.Get();
 	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename);
@@ -507,6 +514,7 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 {
 	Super::OnRenameNode(NewName);
 
+	UObject* Object = WeakObject.Get();
 	if (IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object))
 	{
 		const FScopedTransaction Transaction(LOCTEXT("RenameNode", "Rename Node"));
@@ -531,6 +539,7 @@ bool UObjectTreeGraphNode::CanUserDeleteNode() const
 
 bool UObjectTreeGraphNode::SupportsCommentBubble() const
 {
+	UObject* Object = WeakObject.Get();
 	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText);
@@ -540,6 +549,7 @@ void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
 {
 	Super::OnUpdateCommentText(NewComment);
 
+	UObject* Object = WeakObject.Get();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	if (GraphObject)
 	{
@@ -554,6 +564,7 @@ void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
 
 void UObjectTreeGraphNode::OnGraphNodeMoved(bool bMarkDirty)
 {
+	UObject* Object = WeakObject.Get();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	if (GraphObject)
 	{
@@ -569,6 +580,7 @@ UObjectTreeGraphNode::FNodeContext UObjectTreeGraphNode::GetNodeContext() const
 	UObjectTreeGraph* OuterGraph = CastChecked<UObjectTreeGraph>(GetGraph());
 	const FObjectTreeGraphConfig& OuterGraphConfig = OuterGraph->GetConfig();
 
+	UObject* Object = WeakObject.Get();
 	UClass* ObjectClass = Object->GetClass();
 	const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(ObjectClass);
 
