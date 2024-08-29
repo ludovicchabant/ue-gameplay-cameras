@@ -161,7 +161,7 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 	return Super::CanCreateConnection(A, B);
 }
 
-bool UCameraNodeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
+bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
 {
 	// Try to make a connection between a camera node's parameter pin and a camera rig interface parameter.
 	// First, figure out which is which.
@@ -213,8 +213,6 @@ bool UCameraNodeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) 
 	}
 
 	// Make the connection.
-	const FScopedTransaction Transaction(LOCTEXT("ExposeCameraRigParameter", "Expose Camera Rig Parameter"));
-
 	RigParameter->Modify();
 
 	RigParameter->Target = CameraNode;
@@ -224,38 +222,34 @@ bool UCameraNodeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) 
 		RigParameter->InterfaceParameterName = StructProperty->GetName();
 	}
 
-	UEdGraph* Graph = CameraNodeNode->GetGraph();
-	Graph->NotifyGraphChanged();
-
 	return true;
 }
 
-bool UCameraNodeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
+bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
 {
 	// See if we have a rig parameter connection to break.
-	if (TargetPin.PinType.PinCategory == PC_Self || TargetPin.PinType.PinCategory == PC_CameraParameter)
+	if (TargetPin->PinType.PinCategory == PC_Self || TargetPin->PinType.PinCategory == PC_CameraParameter)
 	{
-		UEdGraphPin* RigParameterSelfPin = &TargetPin;
-		if (TargetPin.PinType.PinCategory == PC_CameraParameter)
+		UEdGraphPin* RigParameterSelfPin = TargetPin;
+		if (TargetPin->PinType.PinCategory == PC_CameraParameter)
 		{
-			RigParameterSelfPin = TargetPin.LinkedTo[0];
+			RigParameterSelfPin = TargetPin->LinkedTo[0];
 		}
 
 		UObjectTreeGraphNode* RigParameterNode = Cast<UObjectTreeGraphNode>(RigParameterSelfPin->GetOwningNode());
-		if (RigParameterNode && RigParameterNode->IsObjectA<UCameraRigInterfaceParameter>())
+		if (!RigParameterNode)
 		{
-			const FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
+			return false;
+		}
 
-			UCameraRigInterfaceParameter* RigParameter = RigParameterNode->CastObject<UCameraRigInterfaceParameter>();
-
+		UCameraRigInterfaceParameter* RigParameter = RigParameterNode->CastObject<UCameraRigInterfaceParameter>();
+		if (RigParameter)
+		{
 			RigParameter->Modify();
 
 			RigParameter->Target = nullptr;
 			RigParameter->TargetPropertyName = NAME_None;
 			RigParameter->PrivateVariable = nullptr;
-
-			UEdGraph* Graph = RigParameterNode->GetGraph();
-			Graph->NotifyGraphChanged();
 
 			return true;
 		}
@@ -264,49 +258,19 @@ bool UCameraNodeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSends
 	return false;
 }
 
-bool UCameraNodeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
 {
 	UObjectTreeGraphNode* RigParameterNode = nullptr;
 
 	if (SourcePin->PinType.PinCategory == PC_Self && TargetPin->PinType.PinCategory == PC_CameraParameter)
 	{
-		UObjectTreeGraphNode* SourceNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
-		if (SourceNode)
-		{
-			RigParameterNode = SourceNode;
-		}
+		return OnApplyDisconnection(SourcePin, Actions, false);
 	}
 	else if (SourcePin->PinType.PinCategory == PC_CameraParameter && TargetPin->PinType.PinCategory == PC_Self)
 	{
-		UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
-		if (TargetNode)
-		{ 
-			RigParameterNode = TargetNode;
-		}
+		return OnApplyDisconnection(TargetPin, Actions, false);
 	}
 
-	UCameraRigInterfaceParameter* RigParameter = nullptr;
-	if (RigParameterNode)
-	{
-		RigParameter = RigParameterNode->CastObject<UCameraRigInterfaceParameter>();
-	}
-
-	if (RigParameter)
-	{
-		const FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
-
-		RigParameter->Modify();
-
-		RigParameter->Target = nullptr;
-		RigParameter->TargetPropertyName = NAME_None;
-		RigParameter->PrivateVariable = nullptr;
-
-		UEdGraph* Graph = RigParameterNode->GetGraph();
-		Graph->NotifyGraphChanged();
-
-		return true;
-	}
-	
 	return false;
 }
 
@@ -339,9 +303,8 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
 
 	UCameraRigInterfaceParameter* NewInterfaceParameter = NewObject<UCameraRigInterfaceParameter>(CameraRig, NAME_None, RF_Transactional);
-	NewInterfaceParameter->Target = Target;
-	NewInterfaceParameter->TargetPropertyName = TargetPropertyName;
-	NewInterfaceParameter->InterfaceParameterName = TargetPropertyName.ToString();
+	// The interface parameter's properties will be set correctly inside AutowireNewNode by virtue
+	// of getting connected to the dragged camera node pin.
 
 	UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewInterfaceParameter);
 

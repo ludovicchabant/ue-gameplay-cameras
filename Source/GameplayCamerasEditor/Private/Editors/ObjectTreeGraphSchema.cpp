@@ -8,11 +8,9 @@
 #include "Editors/ObjectTreeGraphNode.h"
 #include "Exporters/Exporter.h"
 #include "Factories.h"
-#include "GameplayCameras.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Serialization/ArchiveUObject.h"
-#include "UObject/FastReferenceCollector.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 #include "UnrealExporter.h"
@@ -593,85 +591,92 @@ const FPinConnectionResponse UObjectTreeGraphSchema::CanCreateConnection(const U
 
 bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
-	const bool bModified = UEdGraphSchema::TryCreateConnection(A, B);
+	const FPinConnectionResponse Response = CanCreateConnection(A, B);
+
+	FScopedTransaction Transaction(LOCTEXT("CreateConnection", "Create Connection"));
+
+	bool bModified = true;
+	FDelayedPinActions Actions;
+
+	// We need to reimplement this completely and skip the up-call to the base class.
+	// Yes, it makes me sad too. But this is because we need to interleave graph manipulation (like
+	// making and breaking pin links) with underlying model manipulation (setting and unsetting
+	// references between objects).
+	//
+	// Note that we do a few delicate things here:
+	//
+	// 1. We pass `true` to ApplyDisconnection` to indicate that disconnected pins should not be
+	//    removed (which happens when disconnecting an array property pin). We want those pins kept
+	//    around because they're only disconnected to be immediately reconnected.
+	//
+	// 2. However, in at least one situation we want the pin removed immediately. It's when there's
+	//    an object currently at index X in an array, and the user reconnects it to index Y. In that
+	//    case, we want to get rid of pin X, removing that item in the array, so that pin Y is at
+	//    the correct index. This is why we apply delayed pin actions as usual after graph 
+	//    manipulation is done.
+	//
+	switch (Response.Response)
+	{
+	case CONNECT_RESPONSE_MAKE:
+		A->MakeLinkTo(B);
+		ApplyConnection(A, B, Actions);
+		break;
+
+	case CONNECT_RESPONSE_BREAK_OTHERS_A:
+		ApplyDisconnection(A, Actions, true);
+		A->BreakAllPinLinks(true);
+		A->MakeLinkTo(B);
+		Actions.Apply();
+		ApplyConnection(A, B, Actions);
+		break;
+
+	case CONNECT_RESPONSE_BREAK_OTHERS_B:
+		ApplyDisconnection(B, Actions, true);
+		B->BreakAllPinLinks(true);
+		A->MakeLinkTo(B);
+		Actions.Apply();
+		ApplyConnection(A, B, Actions);
+		break;
+
+	case CONNECT_RESPONSE_BREAK_OTHERS_AB:
+		ApplyDisconnection(A, Actions, true);
+		ApplyDisconnection(B, Actions, true);
+		A->BreakAllPinLinks(true);
+		B->BreakAllPinLinks(true);
+		A->MakeLinkTo(B);
+		Actions.Apply();
+		ApplyConnection(A, B, Actions);
+		break;
+
+	case CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE:
+		bModified = CreateAutomaticConversionNodeAndConnections(A, B);
+		break;
+
+	case CONNECT_RESPONSE_MAKE_WITH_PROMOTION:
+		bModified = CreatePromotedConnection(A, B);
+		break;
+
+	case CONNECT_RESPONSE_DISALLOW:
+	default:
+		bModified = false;
+		break;
+	}
+
 	if (!bModified)
 	{
+		ensure(Actions.IsEmpty());
+		Transaction.Cancel();
 		return false;
 	}
 
-	const bool bHandled = OnCreateConnection(A, B);
-	if (bHandled)
-	{
-		return true;
-	}
+#if WITH_EDITOR
+	A->GetOwningNode()->PinConnectionListChanged(A);
+	B->GetOwningNode()->PinConnectionListChanged(B);
+#endif
 
-	const FScopedTransaction Transaction(LOCTEXT("CreateConnection", "Create Connection"));
-
-	UObjectTreeGraphNode* NodeA = Cast<UObjectTreeGraphNode>(A->GetOwningNode());
-	UObjectTreeGraphNode* NodeB = Cast<UObjectTreeGraphNode>(B->GetOwningNode());
-
-	// Try to always reason back to A being the property pin, and B being the self pin of the
-	// object we want to set on the property.
-	if (A->PinType.PinCategory == PC_Self)
-	{
-		Swap(A, B);
-		Swap(NodeA, NodeB);
-	}
-	// We know we are in the right configuration now because UEdGraphSchema::TryCreateConnection
-	// already called CanCreateConnection, which we implemented above as checking that A and B
-	// are a property/self pin pair, one way or the other.
-
-	UObject* ObjectA = NodeA->GetObject();
-	UObject* ObjectB = NodeB->GetObject();
-
-	FProperty* PropertyA = NodeA->GetPropertyForPin(A);
-
-	if (FObjectProperty* ObjectPropertyA = CastField<FObjectProperty>(PropertyA))
-	{
-		ObjectA->PreEditChange(PropertyA);
-
-		ObjectA->Modify();
-
-		ObjectPropertyA->SetValue_InContainer(ObjectA, TObjectPtr<UObject>(ObjectB));
-
-		FPropertyChangedEvent PropertyChangedEvent(PropertyA, EPropertyChangeType::ValueSet);
-		ObjectA->PostEditChangeProperty(PropertyChangedEvent);
-	}
-	else if (FArrayProperty* ArrayPropertyA = CastField<FArrayProperty>(PropertyA))
-	{
-		ObjectA->PreEditChange(PropertyA);
-
-		ObjectA->Modify();
-
-		const int32 Index = NodeA->GetIndexOfArrayPin(A);
-		ensure(Index != INDEX_NONE);
-
-		FScriptArrayHelper ArrayHelper(ArrayPropertyA, ArrayPropertyA->ContainerPtrToValuePtr<void>(ObjectA));
-		const bool bAddNewItemPin = ArrayHelper.ExpandForIndex(Index);
-
-		FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayPropertyA->Inner);
-		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), ObjectB);
-
-		if (bAddNewItemPin)
-		{
-			NodeA->CreateNewItemPin(*ArrayPropertyA);
-			NodeA->GetGraph()->NotifyNodeChanged(NodeA);
-		}
-
-		FPropertyChangedEvent PropertyChangedEvent(PropertyA);
-		PropertyChangedEvent.ChangeType = bAddNewItemPin ? EPropertyChangeType::ArrayAdd : EPropertyChangeType::ValueSet;
-		ObjectA->PostEditChangeProperty(PropertyChangedEvent);
-	}
-
-	UEdGraph* Graph = NodeA->GetGraph();
-	Graph->NotifyGraphChanged();
+	Actions.Apply();
 
 	return true;
-}
-
-bool UObjectTreeGraphSchema::OnCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
-{
-	return false;
 }
 
 void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
@@ -682,131 +687,293 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 		return;
 	}
 
-	const bool bHandled = OnBreakPinLinks(TargetPin, bSendsNodeNotification);
-	if (bHandled)
-	{
-		Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
-		return;
-	}
-
 	const FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
 
-	// TargetPin could be a self pin or a property pin, we need to handle both cases and directions.
-	UEdGraphPin* PropertyPin = &TargetPin;
-	UObjectTreeGraphNode* PropertyOwningNode = Cast<UObjectTreeGraphNode>(PropertyPin->GetOwningNode());
-	if (PropertyPin->PinType.PinCategory == PC_Self)
-	{
-		PropertyPin = TargetPin.LinkedTo[0];
-		PropertyOwningNode = Cast<UObjectTreeGraphNode>(PropertyPin->GetOwningNode());
-	}
-
-	bool bRemovePropertyPin = false;
-	UObject* OwningObject = PropertyOwningNode->GetObject();
-	FProperty* Property = PropertyOwningNode->GetPropertyForPin(PropertyPin);
-
-	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-	{
-		OwningObject->PreEditChange(Property);
-
-		OwningObject->Modify();
-
-		ObjectProperty->ClearValue_InContainer(OwningObject);
-
-		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ValueSet);
-		OwningObject->PostEditChangeProperty(PropertyChangedEvent);
-	}
-	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
-	{
-		OwningObject->PreEditChange(Property);
-
-		OwningObject->Modify();
-
-		int32 Index = PropertyOwningNode->GetIndexOfArrayPin(PropertyPin);
-		ensure(Index != INDEX_NONE);
-
-		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(OwningObject));
-		ArrayHelper.RemoveValues(Index);
-
-		bRemovePropertyPin = true;
-
-		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ArrayRemove);
-		OwningObject->PostEditChangeProperty(PropertyChangedEvent);
-	}
+	FDelayedPinActions Actions;
+	ApplyDisconnection(&TargetPin, Actions, false);
 
 	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
 
-	if (bRemovePropertyPin)
-	{
-		PropertyOwningNode->RemoveItemPin(PropertyPin);
-		PropertyOwningNode->GetGraph()->NotifyNodeChanged(PropertyOwningNode);
-	}
-
-	UEdGraph* Graph = PropertyOwningNode->GetGraph();
-	Graph->NotifyGraphChanged();
-}
-
-bool UObjectTreeGraphSchema::OnBreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
-{
-	return false;
+	Actions.Apply();
 }
 
 void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
-	const bool bHandled = OnBreakSinglePinLink(SourcePin, TargetPin);
-	if (bHandled)
-	{
-		Super::BreakSinglePinLink(SourcePin, TargetPin);
-		return;
-	}
-
 	const FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
 
-	// SourcePin could be the self-pin, and TargetPin the property pin, if the directions
-	// are reversed for that type of object/graph.
-	UEdGraphPin* PropertyPin = SourcePin;
-	UObjectTreeGraphNode* PropertyOwningNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
-	if (SourcePin->PinType.PinCategory == PC_Self)
-	{
-		PropertyPin = SourcePin->LinkedTo[0];
-		PropertyOwningNode = Cast<UObjectTreeGraphNode>(PropertyPin->GetOwningNode());
-	}
-
-	bool bRemovePropertyPin = false;
-	UObject* OwningObject = PropertyOwningNode->GetObject();
-	FProperty* Property = PropertyOwningNode->GetPropertyForPin(PropertyPin);
-
-	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-	{
-		OwningObject->Modify();
-
-		ObjectProperty->ClearValue_InContainer(OwningObject);
-	}
-	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
-	{
-		OwningObject->Modify();
-
-		int32 Index = PropertyOwningNode->GetIndexOfArrayPin(PropertyPin);
-		ensure(Index != INDEX_NONE);
-
-		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(OwningObject));
-		ArrayHelper.RemoveValues(Index);
-
-		bRemovePropertyPin = true;
-	}
+	FDelayedPinActions Actions;
+	ApplyDisconnection(SourcePin, TargetPin, Actions);
 
 	Super::BreakSinglePinLink(SourcePin, TargetPin);
 
-	if (bRemovePropertyPin)
-	{
-		PropertyOwningNode->RemoveItemPin(PropertyPin);
-		PropertyOwningNode->GetGraph()->NotifyNodeChanged(PropertyOwningNode);
-	}
-
-	UEdGraph* Graph = PropertyOwningNode->GetGraph();
-	Graph->NotifyGraphChanged();
+	Actions.Apply();
 }
 
-bool UObjectTreeGraphSchema::OnBreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+void UObjectTreeGraphSchema::FDelayedPinActions::CreateNewItemPin(UObjectTreeGraphNode* Node, FArrayProperty* ArrayProperty)
+{
+	if (ensure(Node && ArrayProperty))
+	{
+		ItemPinsToCreate.Add({ Node, ArrayProperty });
+	}
+}
+
+void UObjectTreeGraphSchema::FDelayedPinActions::RemoveItemPin(UEdGraphPin* Pin)
+{
+	if (ensure(Pin))
+	{
+		ItemPinsToRemove.Add(Pin);
+	}
+}
+
+bool UObjectTreeGraphSchema::FDelayedPinActions::IsEmpty() const
+{
+	return ItemPinsToCreate.IsEmpty() && ItemPinsToRemove.IsEmpty();
+}
+
+void UObjectTreeGraphSchema::FDelayedPinActions::Apply()
+{
+	TSet<UEdGraphNode*> NodesToNotify;
+	for (UEdGraphPin* Pin : ItemPinsToRemove)
+	{
+		UObjectTreeGraphNode* OwningNode = Cast<UObjectTreeGraphNode>(Pin->GetOwningNode());
+		check(OwningNode);
+		OwningNode->RemoveItemPin(Pin);
+
+		NodesToNotify.Add(OwningNode);
+	}
+	for (TTuple<UObjectTreeGraphNode*, FArrayProperty*>& Pair : ItemPinsToCreate)
+	{
+		Pair.Key->CreateNewItemPin(*Pair.Value);
+
+		NodesToNotify.Add(Pair.Key);
+	}
+	for (UEdGraphNode* Node : NodesToNotify)
+	{
+		Node->GetGraph()->NotifyNodeChanged(Node);
+	}
+	ItemPinsToRemove.Reset();
+}
+
+void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
+{
+	// Input must have been validated prior to calling this method:
+	//
+	// - no null objects
+	// - pins belong to ObjectTreeGraph nodes
+	// - these nodes have valid objects
+	// - we should have a transaction active
+	//
+#if WITH_EDITOR
+	ensureMsgf(GUndo || !GEditor, TEXT("Setting property values on objects should be called inside a transaction"));
+#endif
+	
+	check(A && B);
+
+	// See if a sub-class is handling this situation.
+	if (OnApplyConnection(A, B, Actions))
+	{
+		return;
+	}
+
+	// We handle situations where a property pin or array property pin is connected to the "self" pin
+	// of an object node. Lets see which pin is which.
+	UEdGraphPin* PropertyPin = nullptr;
+	UEdGraphPin* ValuePin = nullptr;
+
+	if (A->PinType.PinCategory == PC_Self && B->PinType.PinCategory == PC_Property)
+	{
+		PropertyPin = B;
+		ValuePin = A;
+	}
+	else if (A->PinType.PinCategory == PC_Property && B->PinType.PinCategory == PC_Self)
+	{
+		PropertyPin = A;
+		ValuePin = B;
+	}
+
+	checkf(PropertyPin && ValuePin, TEXT("Invalid pins passed for setting property values."));
+
+	UObjectTreeGraphNode* PropertyNode = CastChecked<UObjectTreeGraphNode>(PropertyPin->GetOwningNode());
+	UObjectTreeGraphNode* ValueNode = CastChecked<UObjectTreeGraphNode>(ValuePin->GetOwningNode());
+
+	UObject* PropertyObject = PropertyNode->GetObject();
+	UObject* ValueObject = ValueNode->GetObject();
+	check(PropertyObject && ValueObject);
+
+	// If it is a property pin, set the value of the underlying property.
+	// If it is an array property pin, add a new item at the pin's index, and optionally add a new pin.
+	FProperty* Property = PropertyNode->GetPropertyForPin(PropertyPin);
+
+	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+	{
+		PropertyObject->PreEditChange(Property);
+
+		PropertyObject->Modify();
+
+		ObjectProperty->SetValue_InContainer(PropertyObject, TObjectPtr<UObject>(ValueObject));
+
+		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ValueSet);
+		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
+	}
+	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+	{
+		PropertyObject->PreEditChange(Property);
+
+		PropertyObject->Modify();
+
+		const int32 Index = PropertyNode->GetIndexOfArrayPin(PropertyPin);
+		ensure(Index != INDEX_NONE);
+
+		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(PropertyObject));
+		const int32 PreviousNum = ArrayHelper.Num();
+		const bool bExpandedArray = ArrayHelper.ExpandForIndex(Index);
+
+		FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
+		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), ValueObject);
+
+		if (bExpandedArray)
+		{
+			ensure(Index == PreviousNum);  // We only support adding a single new element at the end, not "inserting"
+										   // into arbitrary indices requiring expanding the array by more than one
+										   // element.
+			Actions.CreateNewItemPin(PropertyNode, ArrayProperty);
+		}
+
+		FPropertyChangedEvent PropertyChangedEvent(Property);
+		PropertyChangedEvent.ChangeType = bExpandedArray ? EPropertyChangeType::ArrayAdd : EPropertyChangeType::ValueSet;
+		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
+	}
+}
+
+bool UObjectTreeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
+{
+	return false;
+}
+
+void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
+{
+	// Input must have been validated prior to calling this method:
+	//
+	// - no null objects
+	// - the pin is the property pin to reset, or the self pin connected to a propert pin
+	// - the pin belongs to a ObjectTreeGraph node
+	// - this node has a valid object
+	// - we should have a transaction active
+	//
+#if WITH_EDITOR
+	ensureMsgf(GUndo || !GEditor, TEXT("Resetting property values on objects should be called inside a transaction"));
+#endif
+
+	check(TargetPin);
+
+	// See if we actually have anything to disconnect.
+	if (TargetPin->LinkedTo.IsEmpty())
+	{
+		return;
+	}
+
+	// See if a sub-class is handling this situation.
+	if (OnApplyDisconnection(TargetPin, Actions, bIsReconnecting))
+	{
+		return;
+	}
+
+	// We may either disconnect a self pin, or a property or array property pin. Let's see
+	// what sort of pin we were given: we want the property side of things.
+	bool bRemoveArrayItem = !bIsReconnecting;
+	if (TargetPin->PinType.PinCategory == PC_Self)
+	{
+		TargetPin = TargetPin->LinkedTo[0];
+		// If `bIsReconnecting` is true, it means we need to leave `TargetPin` alone because
+		// we want to reconnect it right away. However, if the property pin is on the other
+		// side the of the link, we are free to remove it if it's an array property pin.
+		bRemoveArrayItem = true;
+	}
+	check(TargetPin->PinType.PinCategory == PC_Property);
+
+	UObjectTreeGraphNode* PropertyNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
+	check(PropertyNode);
+
+	UObject* PropertyObject = PropertyNode->GetObject();
+	check(PropertyObject);
+
+	// If it is a property pin, clear the value of the underlying property.
+	// If it is an array property pin, remove the value at the given index in the underlying array,
+	// or just clear it if we want to reconnect that pin immediately.
+	FProperty* Property = PropertyNode->GetPropertyForPin(TargetPin);
+
+	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+	{
+		PropertyObject->PreEditChange(Property);
+
+		PropertyObject->Modify();
+
+		ObjectProperty->ClearValue_InContainer(PropertyObject);
+
+		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ValueSet);
+		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
+	}
+	else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+	{
+		PropertyObject->PreEditChange(Property);
+
+		PropertyObject->Modify();
+
+		int32 Index = PropertyNode->GetIndexOfArrayPin(TargetPin);
+		ensure(Index != INDEX_NONE);
+
+		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(PropertyObject));
+		if (bRemoveArrayItem)
+		{
+			ArrayHelper.RemoveValues(Index);
+			Actions.RemoveItemPin(TargetPin);
+		}
+		else
+		{
+			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
+			InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), nullptr);
+		}
+
+		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ArrayRemove);
+		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
+	}
+}
+
+bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
+{
+	return false;
+}
+
+void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
+{
+	// Input must have been validated prior to calling this method:
+	//
+	// - no null objects
+	// - the pins are the property and self pin of a specific link
+	//
+	check(SourcePin && TargetPin);
+
+	// See if a sub-class is handling this situation.
+	if (OnApplyDisconnection(SourcePin, TargetPin, Actions))
+	{
+		return;
+	}
+
+	if (SourcePin->PinType.PinCategory == PC_Self && TargetPin->PinType.PinCategory == PC_Property)
+	{
+		return ApplyDisconnection(TargetPin, Actions, false);
+	}
+	else if (SourcePin->PinType.PinCategory == PC_Property && TargetPin->PinType.PinCategory == PC_Self)
+	{
+		return ApplyDisconnection(SourcePin, Actions, false);
+	}
+	else
+	{
+		checkf(false, TEXT("Invalid pins passed for setting property values."));
+	}
+}
+
+bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
 {
 	return false;
 }

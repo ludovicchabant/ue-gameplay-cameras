@@ -212,7 +212,7 @@ void UObjectTreeGraphNode::RemoveItemPin(UEdGraphPin* InItemPin)
 				InItemPin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayPropertyItem))
 	{
 		// Don't call RemovePin() because that also removes the parent pin.
-		// We just want to tremove the child pin.
+		// We just want to remove the child pin.
 		const int32 NumPinRemoved = Pins.Remove(InItemPin);
 		ensure(NumPinRemoved == 1);
 		const int32 NumSubPinRemoved = InItemPin->ParentPin->SubPins.Remove(InItemPin);
