@@ -51,6 +51,8 @@ void UCameraNode::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32
 
 void UCameraNode::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
+	Modify(bMarkDirty);
+
 	GraphNodePos.X = NodePosX;
 	GraphNodePos.Y = NodePosY;
 }
@@ -62,6 +64,8 @@ const FString& UCameraNode::GetGraphNodeCommentText(FName InGraphName) const
 
 void UCameraNode::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
+	Modify();
+
 	GraphNodeComment = NewComment;
 }
 

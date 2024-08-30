@@ -49,6 +49,8 @@ const FString& UCameraRigTransitionCondition::GetGraphNodeCommentText(FName InGr
 
 void UCameraRigTransitionCondition::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
+	Modify();
+
 	GraphNodeComment = NewComment;
 }
 
@@ -94,6 +96,8 @@ const FString& UCameraRigTransition::GetGraphNodeCommentText(FName InGraphName) 
 
 void UCameraRigTransition::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
+	Modify();
+
 	GraphNodeComment = NewComment;
 }
 

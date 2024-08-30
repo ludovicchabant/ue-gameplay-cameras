@@ -299,12 +299,13 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	const FScopedTransaction Transaction(LOCTEXT("CreateNewNodeAction", "Create New Node"));
 
-	const FName GraphName = ObjectTreeGraph->GetConfig().GraphName;
 	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
 
 	UCameraRigInterfaceParameter* NewInterfaceParameter = NewObject<UCameraRigInterfaceParameter>(CameraRig, NAME_None, RF_Transactional);
 	// The interface parameter's properties will be set correctly inside AutowireNewNode by virtue
 	// of getting connected to the dragged camera node pin.
+
+	ObjectTreeGraph->Modify();
 
 	UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewInterfaceParameter);
 
@@ -313,6 +314,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
 	NewGraphNode->OnGraphNodeMoved(false);
+
 	NewGraphNode->AutowireNewNode(FromPin);
 
 	return NewGraphNode;

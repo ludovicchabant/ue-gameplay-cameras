@@ -190,6 +190,8 @@ void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
 
 	const EEdGraphPinDirection PinDirection = NodeContext.GraphConfig.GetPropertyPinDirection(NodeContext.ObjectClass, PropertyName);
 
+	InParentArrayPin->Modify();
+
 	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, PropertyName);
 	ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
 
@@ -214,6 +216,8 @@ void UObjectTreeGraphNode::RemoveItemPin(UEdGraphPin* InItemPin)
 				InItemPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
 				InItemPin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayPropertyItem))
 	{
+		InItemPin->ParentPin->Modify();
+
 		// Don't call RemovePin() because that also removes the parent pin.
 		// We just want to remove the child pin.
 		const int32 NumPinRemoved = Pins.Remove(InItemPin);
@@ -282,8 +286,11 @@ UEdGraphPin* UObjectTreeGraphNode::GetSelfPin() const
 
 void UObjectTreeGraphNode::OverrideSelfPinDirection(EEdGraphPinDirection Direction)
 {
+	Modify();
+
 	bOverrideSelfPinDirection = true;
 	SelfPinDirectionOverride = Direction;
+
 	if (UEdGraphPin* SelfPin = GetSelfPin())
 	{
 		SelfPin->Direction = Direction;
@@ -519,8 +526,6 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 	{
 		const FScopedTransaction Transaction(LOCTEXT("RenameNode", "Rename Node"));
 
-		Object->Modify();
-
 		const FNodeContext NodeContext = GetNodeContext();
 		GraphObject->OnRenameGraphNode(NodeContext.GraphConfig.GraphName, NewName);
 	}
@@ -555,8 +560,6 @@ void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
 	{
 		const FScopedTransaction Transaction(LOCTEXT("UpdateNodeComment", "Update Node Comment"));
 
-		Object->Modify();
-
 		const FNodeContext NodeContext = GetNodeContext();
 		GraphObject->OnUpdateGraphNodeCommentText(NodeContext.GraphConfig.GraphName, NewComment);
 	}
@@ -568,8 +571,6 @@ void UObjectTreeGraphNode::OnGraphNodeMoved(bool bMarkDirty)
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
 	if (GraphObject)
 	{
-		Object->Modify(bMarkDirty);
-
 		const FNodeContext NodeContext = GetNodeContext();
 		GraphObject->OnGraphNodeMoved(NodeContext.GraphConfig.GraphName, NodePosX, NodePosY, bMarkDirty);
 	}
@@ -580,11 +581,18 @@ UObjectTreeGraphNode::FNodeContext UObjectTreeGraphNode::GetNodeContext() const
 	UObjectTreeGraph* OuterGraph = CastChecked<UObjectTreeGraph>(GetGraph());
 	const FObjectTreeGraphConfig& OuterGraphConfig = OuterGraph->GetConfig();
 
-	UObject* Object = WeakObject.Get();
-	UClass* ObjectClass = Object->GetClass();
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(ObjectClass);
+	if (UObject* Object = WeakObject.Get())
+	{
+		UClass* ObjectClass = Object->GetClass();
+		const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(ObjectClass);
 
-	return FNodeContext{ ObjectClass, OuterGraph, OuterGraphConfig, ObjectClassConfig };
+		return FNodeContext{ ObjectClass, OuterGraph, OuterGraphConfig, ObjectClassConfig };
+	}
+	else
+	{
+		const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(nullptr);
+		return FNodeContext{ nullptr, OuterGraph, OuterGraphConfig, ObjectClassConfig };
+	}
 }
 
 const FObjectTreeGraphClassConfig& UObjectTreeGraphNode::GetObjectClassConfig() const

@@ -314,6 +314,8 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGrap
 		GraphNodeClass = Config.DefaultGraphNodeClass;
 	}
 
+	InGraph->Modify();
+
 	FGraphNodeCreator<UObjectTreeGraphNode> GraphNodeCreator(*InGraph);
 	UObjectTreeGraphNode* NewNode = GraphNodeCreator.CreateNode(false, GraphNodeClass);
 	NewNode->Initialize(InObject);
@@ -1110,6 +1112,8 @@ void UObjectTreeGraphSchema::ImportNodesFromText(UObjectTreeGraph* InGraph, cons
 
 	TArray<UObject*> ImportedObjects;
 
+	InGraph->Modify();
+
 	// Import the given text as new objects.
 	UPackage* TempPackage = NewObject<UPackage>(nullptr, TEXT("/Engine/GameplayCamerasEditor/Transient"), RF_Transient);
 	TempPackage->AddToRoot();
@@ -1222,6 +1226,8 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 	if (NewObject)
 	{
+		ObjectTreeGraph->Modify();
+
 		UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
 
 		Schema->AddConnectableObject(ObjectTreeGraph, NewGraphNode);

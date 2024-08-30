@@ -40,6 +40,8 @@ void UCameraRigInterfaceParameter::GetGraphNodePosition(FName InGraphName, int32
 
 void UCameraRigInterfaceParameter::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
 {
+	Modify(bMarkDirty);
+
 	GraphNodePos.X = NodePosX;
 	GraphNodePos.Y = NodePosY;
 }
@@ -274,6 +276,8 @@ const FString& UCameraRigAsset::GetGraphNodeCommentText(FName InGraphName) const
 
 void UCameraRigAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
+	Modify();
+
 	if (InGraphName == NodeTreeGraphName)
 	{
 		NodeGraphNodeComment = NewComment;

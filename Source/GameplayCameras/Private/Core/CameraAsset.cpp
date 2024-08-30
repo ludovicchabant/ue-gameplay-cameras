@@ -202,6 +202,8 @@ const FString& UCameraAsset::GetGraphNodeCommentText(FName InGraphName) const
 
 void UCameraAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment)
 {
+	Modify();
+
 	TransitionGraphNodeComment = NewComment;
 }
 
