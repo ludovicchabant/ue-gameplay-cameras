@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include "CoreTypes.h"
 #include "Misc/TextFilter.h"
 #include "Templates/SharedPointerFwd.h"
-#include "Templates/SubclassOf.h"
 #include "UObject/ObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
 
 class FAssetEditorToolkit;
+class FUICommandList;
 class IDetailsView;
 class ITableRow;
 class SSearchBox;
@@ -37,6 +36,8 @@ public:
 		SLATE_ARGUMENT(TWeakPtr<IDetailsView>, DetailsView)
 		/** The toolkit inside which this editor lives, if any. */
 		SLATE_ARGUMENT(TWeakPtr<FAssetEditorToolkit>, AssetEditorToolkit)
+		/** Command bindings for manipulating camera variables. */
+		SLATE_ARGUMENT(TSharedPtr<FUICommandList>, AdditionalCommands)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -46,6 +47,9 @@ public:
 
 	/** Gets the selected variables in the list view. */
 	void GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const;
+
+	/** Enter editing mode for the first currently selected variable's name. */
+	void RequestRenameSelectedVariable();
 
 	/** Requests that the list view be refreshed by the next tick. */
 	void RequestListRefresh();
@@ -62,6 +66,8 @@ private:
 
 	TSharedRef<ITableRow> OnListGenerateRow(UCameraVariableAsset* Item, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnListSectionChanged(UCameraVariableAsset* Item, ESelectInfo::Type SelectInfo) const;
+	void OnListItemScrolledIntoView(UCameraVariableAsset* Item, const TSharedPtr<ITableRow>& ItemWidget);
+	TSharedPtr<SWidget> OnListContextMenuOpening();
 
 	void GetEntryStrings(const UCameraVariableAsset* InItem, TArray<FString>& OutStrings);
 	void OnSearchTextChanged(const FText& InFilterText);
@@ -74,6 +80,8 @@ private:
 
 	TWeakPtr<IDetailsView> WeakDetailsView;
 
+	TSharedPtr<FUICommandList> CommandList;
+
 	TSharedPtr<SListView<UCameraVariableAsset*>> ListView;
 
 	TArray<UCameraVariableAsset*> FilteredItemSource;
@@ -83,6 +91,7 @@ private:
 	TSharedPtr<SSearchBox> SearchBox;
 
 	bool bUpdateFilteredItemSource = false;
+	bool bDeferredRequestRenameItem = false;
 };
 
 }  // namespace UE::Cameras

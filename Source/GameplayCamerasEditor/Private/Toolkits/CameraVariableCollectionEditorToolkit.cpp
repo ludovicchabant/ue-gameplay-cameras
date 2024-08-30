@@ -36,7 +36,6 @@ const FName FCameraVariableCollectionEditorToolkit::DetailsViewTabId(TEXT("Camer
 FCameraVariableCollectionEditorToolkit::FCameraVariableCollectionEditorToolkit(UCameraVariableCollectionEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
 	, VariableCollection(InOwningAssetEditor->GetVariableCollection())
-	, CommandBindings(new FUICommandList())
 {
 	// Override base class default layout.
 	StandaloneDefaultLayout = FTabManager::NewLayout("CameraVariableCollectionEditor_Layout_v1")
@@ -129,7 +128,8 @@ void FCameraVariableCollectionEditorToolkit::CreateWidgets()
 	// Create the variable collection editor.
 	VariableCollectionEditorWidget = SNew(SCameraVariableCollectionEditor)
 		.DetailsView(DetailsView)
-		.VariableCollection(VariableCollection);
+		.VariableCollection(VariableCollection)
+		.AdditionalCommands(ToolkitCommands);
 }
 
 void FCameraVariableCollectionEditorToolkit::RegisterToolbar()
@@ -268,12 +268,7 @@ void FCameraVariableCollectionEditorToolkit::OnCreateVariable(TSubclassOf<UCamer
 
 void FCameraVariableCollectionEditorToolkit::OnRenameVariable()
 {
-	UClass* VariableAssetClass = UCameraVariableAsset::StaticClass();
-	FProperty* DisplayNameProperty = VariableAssetClass->FindPropertyByName(GET_MEMBER_NAME_CHECKED(UCameraVariableAsset, DisplayName));
-
-	FPropertyPath PropertyPath;
-	PropertyPath.AddProperty(FPropertyInfo(DisplayNameProperty));
-	DetailsView->HighlightProperty(PropertyPath);
+	VariableCollectionEditorWidget->RequestRenameSelectedVariable();
 }
 
 bool FCameraVariableCollectionEditorToolkit::CanRenameVariable()

@@ -5,15 +5,14 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableCollection.h"
-#include "Framework/Views/TableViewMetadata.h"
 #include "IDetailsView.h"
+#include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
-#include "UObject/UObjectIterator.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "Widgets/Views/SListView.h"
 
 #define LOCTEXT_NAMESPACE "SCameraVariableCollectionEditor"
@@ -24,6 +23,8 @@ namespace UE::Cameras
 class SCameraVariableCollectionListRow : public SMultiColumnTableRow<UCameraVariableAsset*>
 {
 public:
+
+	using FSuperRowType = SMultiColumnTableRow<UCameraVariableAsset*>;
 
 	SLATE_BEGIN_ARGS(SCameraVariableCollectionListRow)
 		: _CameraVariable(nullptr)
@@ -36,6 +37,8 @@ public:
 
 	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTableView);
 
+	void EnterNameEditingMode();
+
 protected:
 
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& ColumnName) override;
@@ -46,9 +49,14 @@ private:
 	FText GetVariableType() const;
 	FText GetDefaultValue() const;
 
+	bool OnVerifyVariableNameChanged(const FText& Text, FText& OutErrorMessage);
+	void OnVariableNameCommitted(const FText& Text, ETextCommit::Type CommitType);
+
 private:
 
 	UCameraVariableAsset* CameraVariable = nullptr;
+
+	TSharedPtr<SInlineEditableTextBlock> EditableTextBlock;
 
 	TAttribute<FText> HighlightText;
 };
@@ -63,6 +71,11 @@ void SCameraVariableCollectionListRow::Construct(const FArguments& InArgs, const
 		OwnerTableView);
 }
 
+void SCameraVariableCollectionListRow::EnterNameEditingMode()
+{
+	EditableTextBlock->EnterEditingMode();
+}
+
 TSharedRef<SWidget> SCameraVariableCollectionListRow::GenerateWidgetForColumn(const FName& ColumnName)
 {
 	TSharedRef<FGameplayCamerasEditorStyle> CamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
@@ -75,10 +88,13 @@ TSharedRef<SWidget> SCameraVariableCollectionListRow::GenerateWidgetForColumn(co
 			.Padding(8.f)
 			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.TextStyle(CamerasEditorStyle, "CameraVariableCollectionEditor.Entry.Name")
+				SAssignNew(EditableTextBlock, SInlineEditableTextBlock)
+				.Style(CamerasEditorStyle, "CameraVariableCollectionEditor.Entry.Name")
 				.Text(this, &SCameraVariableCollectionListRow::GetVariableName)
+				.OnTextCommitted(this, &SCameraVariableCollectionListRow::OnVariableNameCommitted)
+				.OnVerifyTextChanged(this, &SCameraVariableCollectionListRow::OnVerifyVariableNameChanged)
 				.HighlightText(HighlightText)
+				.IsSelected(this, &FSuperRowType::IsSelectedExclusively)
 			];
 	}
 	else if (ColumnName == TEXT("VariableType"))
@@ -130,11 +146,39 @@ FText SCameraVariableCollectionListRow::GetDefaultValue() const
 	return FText::FromString(CameraVariable->FormatDefaultValue());
 }
 
+bool SCameraVariableCollectionListRow::OnVerifyVariableNameChanged(const FText& Text, FText& OutErrorMessage)
+{
+	return true;
+}
+
+void SCameraVariableCollectionListRow::OnVariableNameCommitted(const FText& Text, ETextCommit::Type CommitType)
+{
+	if (CameraVariable)
+	{
+		FScopedTransaction Transaction(LOCTEXT("RenameCameraVariable", "Rename camera variable"));
+
+		const FString NewDisplayName = Text.ToString();
+		CameraVariable->Modify();
+		CameraVariable->DisplayName = NewDisplayName;
+
+		// We just set the display name, but also rename the object itself, which helps for debugging.
+		FName NewObjectName = MakeObjectNameFromDisplayLabel(NewDisplayName, CameraVariable->GetFName());
+		NewObjectName = MakeUniqueObjectName(CameraVariable->GetOuter(), CameraVariable->GetClass(), NewObjectName);
+		CameraVariable->Rename(*NewObjectName.ToString());
+	}
+}
+
 void SCameraVariableCollectionEditor::Construct(const FArguments& InArgs)
 {
 	VariableCollection = InArgs._VariableCollection;
 
 	WeakDetailsView = InArgs._DetailsView;
+
+	CommandList = MakeShared<FUICommandList>();
+	if (InArgs._AdditionalCommands)
+	{
+		CommandList->Append(InArgs._AdditionalCommands.ToSharedRef());
+	}
 
 	SearchTextFilter = MakeShareable(new FEntryTextFilter(
 				FEntryTextFilter::FItemToStringArray::CreateSP(this, &SCameraVariableCollectionEditor::GetEntryStrings)));
@@ -164,6 +208,8 @@ void SCameraVariableCollectionEditor::Construct(const FArguments& InArgs)
 			.ListItemsSource(&FilteredItemSource)
 			.OnGenerateRow(this, &SCameraVariableCollectionEditor::OnListGenerateRow)
 			.OnSelectionChanged(this, &SCameraVariableCollectionEditor::OnListSectionChanged)
+			.OnItemScrolledIntoView(this, &SCameraVariableCollectionEditor::OnListItemScrolledIntoView)
+			.OnContextMenuOpening(this, &SCameraVariableCollectionEditor::OnListContextMenuOpening)
 			.HeaderRow
 			(
 				SNew(SHeaderRow)
@@ -195,6 +241,18 @@ SCameraVariableCollectionEditor::~SCameraVariableCollectionEditor()
 void SCameraVariableCollectionEditor::GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const
 {
 	ListView->GetSelectedItems(OutSelection);
+}
+
+void SCameraVariableCollectionEditor::RequestRenameSelectedVariable()
+{
+	TArray<UCameraVariableAsset*> SelectedVariables = ListView->GetSelectedItems();
+	if (SelectedVariables.IsEmpty())
+	{
+		return;
+	}
+
+	bDeferredRequestRenameItem = true;
+	ListView->RequestScrollIntoView(SelectedVariables[0]);
 }
 
 void SCameraVariableCollectionEditor::RequestListRefresh()
@@ -252,6 +310,50 @@ TSharedRef<ITableRow> SCameraVariableCollectionEditor::OnListGenerateRow(UCamera
 void SCameraVariableCollectionEditor::OnListSectionChanged(UCameraVariableAsset* Item, ESelectInfo::Type SelectInfo) const
 {
 	SetDetailsViewObject(Item);
+}
+
+void SCameraVariableCollectionEditor::OnListItemScrolledIntoView(UCameraVariableAsset* Item, const TSharedPtr<ITableRow>& ItemWidget)
+{
+	if (bDeferredRequestRenameItem)
+	{
+		bDeferredRequestRenameItem = false;
+
+		TSharedPtr<ITableRow> RowWidget = ListView->WidgetFromItem(Item);
+		if (!ensure(RowWidget))
+		{
+			return;
+		}
+
+		TSharedPtr<SCameraVariableCollectionListRow> TypedRowWidget = StaticCastSharedPtr<SCameraVariableCollectionListRow>(RowWidget);
+		if (!ensure(TypedRowWidget))
+		{
+			return;
+		}
+
+		TypedRowWidget->EnterNameEditingMode();
+	}
+}
+
+TSharedPtr<SWidget> SCameraVariableCollectionEditor::OnListContextMenuOpening()
+{
+	static const FName ContextMenuName("CameraVariableList.ContextMenu");
+
+	UToolMenus* ToolMenus = UToolMenus::Get();
+
+	if (!ToolMenus->IsMenuRegistered(ContextMenuName))
+	{
+		const FCameraVariableCollectionEditorCommands& Commands = FCameraVariableCollectionEditorCommands::Get();
+
+		UToolMenu* ContextMenu = ToolMenus->RegisterMenu(ContextMenuName, NAME_None, EMultiBoxType::Menu);
+
+		FToolMenuSection& Section = ContextMenu->AddSection("Actions");
+		Section.AddEntry(FToolMenuEntry::InitMenuEntry(Commands.RenameVariable));
+		Section.AddEntry(FToolMenuEntry::InitMenuEntry(Commands.DeleteVariable));
+	}
+
+	FToolMenuContext MenuContext;
+	MenuContext.AppendCommandList(CommandList);
+	return ToolMenus->GenerateWidget(ContextMenuName, MenuContext);
 }
 
 void SCameraVariableCollectionEditor::GetEntryStrings(const UCameraVariableAsset* InItem, TArray<FString>& OutStrings)

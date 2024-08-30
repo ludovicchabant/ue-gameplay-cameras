@@ -77,9 +77,6 @@ private:
 	/** The asset being edited */
 	TObjectPtr<UCameraVariableCollection> VariableCollection;
 
-	/** Command bindings */
-	TSharedRef<FUICommandList> CommandBindings;
-
 	/** Camera variable collection editor widget */
 	TSharedPtr<SCameraVariableCollectionEditor> VariableCollectionEditorWidget;
 };

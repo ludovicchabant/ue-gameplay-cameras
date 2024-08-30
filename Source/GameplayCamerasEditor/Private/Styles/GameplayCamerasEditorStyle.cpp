@@ -33,6 +33,7 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 
 	const ISlateStyle& CoreStyle = FAppStyle::Get();
 	const FTextBlockStyle& NormalText = CoreStyle.GetWidgetStyle<FTextBlockStyle>("NormalText");
+	const FInlineEditableTextBlockStyle& NormalInlineEditableText = CoreStyle.GetWidgetStyle<FInlineEditableTextBlockStyle>("InlineEditableTextBlockStyle");
 	const FTableRowStyle AlternatingTableRowStyle = CoreStyle.GetWidgetStyle<FTableRowStyle>("TableView.AlternatingRow");
 
 	// Camera assets.
@@ -92,9 +93,11 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("CameraVariableCollectionEditor.RenameVariable", new CORE_IMAGE_BRUSH_SVG("Starship/Common/Rename", Icon16x16));
 	Set("CameraVariableCollectionEditor.DeleteVariable", new CORE_IMAGE_BRUSH_SVG("Starship/Common/minus", Icon16x16));
 
-	Set("CameraVariableCollectionEditor.Entry.Name", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Bold", 12)));
-	Set("CameraVariableCollectionEditor.Entry.Type", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Italic", 10)));
-	Set("CameraVariableCollectionEditor.Entry.Value", FTextBlockStyle(NormalText) .SetFont(DEFAULT_FONT("Regular", 10)));
+	FInlineEditableTextBlockStyle CameraVariableCollectionEntryNameStyle(NormalInlineEditableText);
+	CameraVariableCollectionEntryNameStyle.TextStyle.SetFont(DEFAULT_FONT("Bold", 12));
+	Set("CameraVariableCollectionEditor.Entry.Name", CameraVariableCollectionEntryNameStyle);
+	Set("CameraVariableCollectionEditor.Entry.Type", FTextBlockStyle(NormalText).SetFont(DEFAULT_FONT("Italic", 10)));
+	Set("CameraVariableCollectionEditor.Entry.Value", FTextBlockStyle(NormalText).SetFont(DEFAULT_FONT("Regular", 10)));
 
 	// Debugger tool icons.
 	Set("Debugger.DebugInfoEnabled.Icon", new IMAGE_BRUSH_SVG("Icons/DebugInfo-ToggleCheck", Icon16x16, FStyleColors::AccentGreen));

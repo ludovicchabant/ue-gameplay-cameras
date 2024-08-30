@@ -48,7 +48,7 @@ public:
 
 #if WITH_EDITORONLY_DATA
 	/** The name of the variable. */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY()
 	FString DisplayName;
 #endif  // WITH_EDITORONLY_DATA
 
