@@ -11,11 +11,9 @@
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "IContentBrowserSingleton.h"
-#include "Misc/FeedbackContext.h"
 #include "Modules/ModuleManager.h"
 #include "ObjectTools.h"
 #include "PropertyEditorModule.h"
-#include "PropertyPath.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -253,7 +251,9 @@ FLinearColor FCameraVariableCollectionEditorToolkit::GetWorldCentricTabColorScal
 
 void FCameraVariableCollectionEditorToolkit::OnCreateVariable(TSubclassOf<UCameraVariableAsset> InVariableClass)
 {
-	FScopedTransaction CreateTransaction(LOCTEXT("CreateVariable", "Create camera variable"));
+	GEditor->BeginTransaction(LOCTEXT("CreateVariable", "Create camera variable"));
+	
+	VariableCollection->Modify();
 
 	UCameraVariableAsset* NewVariable = NewObject<UCameraVariableAsset>(
 			VariableCollection, 
@@ -264,6 +264,12 @@ void FCameraVariableCollectionEditorToolkit::OnCreateVariable(TSubclassOf<UCamer
 	VariableCollection->Variables.Add(NewVariable);
 
 	VariableCollectionEditorWidget->RequestListRefresh();
+	VariableCollectionEditorWidget->RequestRenameVariable(NewVariable, FSimpleDelegate::CreateLambda([]()
+				{
+					// End the transaction when the user exits the editing mode on the
+					// editable text block for the new variable's name.
+					GEditor->EndTransaction();
+				}));
 }
 
 void FCameraVariableCollectionEditorToolkit::OnRenameVariable()
@@ -311,6 +317,7 @@ void FCameraVariableCollectionEditorToolkit::OnDeleteVariable()
 		FScopedTransaction DeleteTransaction(LOCTEXT("DeleteVariable", "Delete camera variable"));
 
 		VariableCollection->Modify();
+
 		for (UCameraVariableAsset* VariableToDelete : Selection)
 		{
 			VariableToDelete->Modify();

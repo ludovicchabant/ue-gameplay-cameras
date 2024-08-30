@@ -48,6 +48,9 @@ public:
 	/** Gets the selected variables in the list view. */
 	void GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const;
 
+	/** Enter editing mode for the given variable's name. */
+	void RequestRenameVariable(UCameraVariableAsset* InItem, FSimpleDelegate InOnRenamedItem);
+
 	/** Enter editing mode for the first currently selected variable's name. */
 	void RequestRenameSelectedVariable();
 
@@ -92,6 +95,7 @@ private:
 
 	bool bUpdateFilteredItemSource = false;
 	bool bDeferredRequestRenameItem = false;
+	FSimpleDelegate OnDeferredRenamedItem;
 };
 
 }  // namespace UE::Cameras

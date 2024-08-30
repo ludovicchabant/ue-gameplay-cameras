@@ -37,7 +37,7 @@ public:
 
 	void Construct(const FArguments& InArgs, const TSharedRef<STableViewBase>& OwnerTableView);
 
-	void EnterNameEditingMode();
+	void EnterNameEditingMode(FSimpleDelegate InOnTextCommitted);
 
 protected:
 
@@ -57,6 +57,7 @@ private:
 	UCameraVariableAsset* CameraVariable = nullptr;
 
 	TSharedPtr<SInlineEditableTextBlock> EditableTextBlock;
+	FSimpleDelegate OnTextComitted;
 
 	TAttribute<FText> HighlightText;
 };
@@ -71,8 +72,9 @@ void SCameraVariableCollectionListRow::Construct(const FArguments& InArgs, const
 		OwnerTableView);
 }
 
-void SCameraVariableCollectionListRow::EnterNameEditingMode()
+void SCameraVariableCollectionListRow::EnterNameEditingMode(FSimpleDelegate InOnTextCommitted)
 {
+	OnTextComitted = InOnTextCommitted;
 	EditableTextBlock->EnterEditingMode();
 }
 
@@ -166,6 +168,12 @@ void SCameraVariableCollectionListRow::OnVariableNameCommitted(const FText& Text
 		NewObjectName = MakeUniqueObjectName(CameraVariable->GetOuter(), CameraVariable->GetClass(), NewObjectName);
 		CameraVariable->Rename(*NewObjectName.ToString());
 	}
+
+	if (OnTextComitted.IsBound())
+	{
+		OnTextComitted.Execute();
+		OnTextComitted.Unbind();
+	}
 }
 
 void SCameraVariableCollectionEditor::Construct(const FArguments& InArgs)
@@ -241,6 +249,13 @@ SCameraVariableCollectionEditor::~SCameraVariableCollectionEditor()
 void SCameraVariableCollectionEditor::GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const
 {
 	ListView->GetSelectedItems(OutSelection);
+}
+
+void SCameraVariableCollectionEditor::RequestRenameVariable(UCameraVariableAsset* InItem, FSimpleDelegate InOnRenamedItem)
+{
+	bDeferredRequestRenameItem = true;
+	OnDeferredRenamedItem = InOnRenamedItem;
+	ListView->RequestScrollIntoView(InItem);
 }
 
 void SCameraVariableCollectionEditor::RequestRenameSelectedVariable()
@@ -330,7 +345,10 @@ void SCameraVariableCollectionEditor::OnListItemScrolledIntoView(UCameraVariable
 			return;
 		}
 
-		TypedRowWidget->EnterNameEditingMode();
+		TypedRowWidget->EnterNameEditingMode(OnDeferredRenamedItem);
+
+		// The delegate was copied into the row widget so we can unbind it here.
+		OnDeferredRenamedItem.Unbind();
 	}
 }
 
