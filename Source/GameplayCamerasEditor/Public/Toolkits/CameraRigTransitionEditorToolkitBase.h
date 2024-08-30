@@ -2,15 +2,12 @@
 
 #pragma once
 
-#include "CoreTypes.h"
-#include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Misc/NotifyHook.h"
+#include "Templates/SubclassOf.h"
 #include "UObject/GCObject.h"
-#include "UObject/ScriptInterface.h"
 
 class FSpawnTabArgs;
 class FTabManager;
-class FUICommandList;
 class FWorkspaceItem;
 class IDetailsView;
 class SDockTab;
@@ -18,6 +15,7 @@ class SObjectTreeGraphToolbox;
 class UCameraRigTransitionGraphSchemaBase;
 class UToolMenu;
 struct FEdGraphEditAction;
+struct FGraphAppearanceInfo;
 
 namespace UE::Cameras
 {
@@ -79,9 +77,7 @@ private:
 	/** The layout for this editor */
 	TSharedPtr<FStandardToolkitLayout> StandardLayout;
 
-	/** Command bindings */
-	TSharedPtr<FUICommandList> CommandBindings;
-
+	/** The details view for this editor */
 	TSharedPtr<IDetailsView> DetailsView;
 
 	/** Camera transition editor widget */

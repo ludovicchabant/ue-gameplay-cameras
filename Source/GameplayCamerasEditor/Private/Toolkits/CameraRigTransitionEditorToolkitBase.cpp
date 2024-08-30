@@ -28,7 +28,6 @@ const FName FCameraRigTransitionEditorToolkitBase::DetailsViewTabId(TEXT("Camera
 
 FCameraRigTransitionEditorToolkitBase::FCameraRigTransitionEditorToolkitBase(FName InLayoutName)
 	: StandardLayout(new FStandardToolkitLayout(InLayoutName))
-	, CommandBindings(new FUICommandList())
 {
 	StandardLayout->AddLeftTab(ToolboxTabId);
 	StandardLayout->AddCenterTab(TransitionEditorTabId);

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreTypes.h"
 #include "Misc/NotifyHook.h"
 #include "UObject/GCObject.h"
 
@@ -85,9 +84,6 @@ private:
 
 	/** The layout for this editor toolkit */
 	TSharedPtr<FStandardToolkitLayout> StandardLayout;
-
-	/** Command bindings */
-	TSharedPtr<FUICommandList> CommandBindings;
 
 	/** The details view */
 	TSharedPtr<IDetailsView> DetailsView;

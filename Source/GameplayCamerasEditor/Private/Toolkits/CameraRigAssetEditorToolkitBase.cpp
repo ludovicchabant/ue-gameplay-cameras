@@ -26,7 +26,6 @@ const FName FCameraRigAssetEditorToolkitBase::DetailsViewTabId(TEXT("CameraRigAs
 
 FCameraRigAssetEditorToolkitBase::FCameraRigAssetEditorToolkitBase(FName InLayoutName)
 	: StandardLayout(new FStandardToolkitLayout(InLayoutName))
-	, CommandBindings(new FUICommandList())
 {
 	StandardLayout->AddLeftTab(ToolboxTabId);
 	StandardLayout->AddCenterTab(CameraRigEditorTabId);
