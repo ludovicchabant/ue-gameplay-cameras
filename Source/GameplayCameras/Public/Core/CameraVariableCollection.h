@@ -23,7 +23,7 @@ public:
 public:
 
 	/** The variables in this collection. */
-	UPROPERTY(EditAnywhere, Category="Camera")
+	UPROPERTY()
 	TArray<TObjectPtr<UCameraVariableAsset>> Variables;
 };
 
