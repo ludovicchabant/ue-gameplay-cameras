@@ -531,6 +531,17 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 	}
 }
 
+bool UObjectTreeGraphNode::CanDuplicateNode() const
+{
+	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
+	if (!ObjectClassConfig.CanCreateNew())  // If it can't be created, it shouldn't be worked around by copy/pasting
+	{
+		return false;
+	}
+
+	return Super::CanUserDeleteNode();
+}
+
 bool UObjectTreeGraphNode::CanUserDeleteNode() const
 {
 	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
