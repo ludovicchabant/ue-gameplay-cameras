@@ -20,6 +20,11 @@ public:
 
 	UCameraVariableCollection(const FObjectInitializer& ObjectInit);
 
+protected:
+
+	// UObject interface
+	virtual void PostLoad() override;
+
 public:
 
 	/** The variables in this collection. */
