@@ -26,5 +26,10 @@ public:
 	/** The camera nodes to run. */
 	UPROPERTY()
 	TArray<TObjectPtr<UCameraNode>> Children;
+
+public:
+
+	// For unit tests.
+	static GAMEPLAYCAMERAS_API TTuple<int32, int32> GetEvaluatorAllocationInfo();
 };
 

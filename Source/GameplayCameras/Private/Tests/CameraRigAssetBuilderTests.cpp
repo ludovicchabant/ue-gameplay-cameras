@@ -31,14 +31,6 @@ bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-namespace UE::Cameras
-{
-	//extern int32 GArrayCameraNodeEvaluatorSizeof;
-	//extern int32 GArrayCameraNodeEvaluatorAlignof;
-	//extern int32 GOffsetCameraNodeEvaluatorSizeof;
-	//extern int32 GOffsetCameraNodeEvaluatorAlignof;
-}
-
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderSimpleAllocationTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.SimpleAllocation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraRigAssetBuilderSimpleAllocationTest::RunTest(const FString& Parameters)
 {
@@ -54,9 +46,10 @@ bool FCameraRigAssetBuilderSimpleAllocationTest::RunTest(const FString& Paramete
 	UTEST_EQUAL("No evaluator allocation info", CameraRig->AllocationInfo.EvaluatorInfo.TotalSizeof, 0);
 	CameraRig->BuildCameraRig();
 
-	//int32 TotalSizeof = GArrayCameraNodeEvaluatorSizeof;
-	//TotalSizeof = Align(TotalSizeof, GOffsetCameraNodeEvaluatorAlignof) + GOffsetCameraNodeEvaluatorSizeof;
-	//UTEST_EQUAL("Evaluator allocation info", CameraRig->AllocationInfo.EvaluatorInfo.TotalSizeof, TotalSizeof);
+	int32 TotalSizeof = UArrayCameraNode::GetEvaluatorAllocationInfo().Key;
+	const TTuple<int32, int32> OffsetEvaluatorInfo = UOffsetCameraNode::GetEvaluatorAllocationInfo();
+	TotalSizeof = Align(TotalSizeof, OffsetEvaluatorInfo.Value) + OffsetEvaluatorInfo.Key;
+	UTEST_EQUAL("Evaluator allocation info", CameraRig->AllocationInfo.EvaluatorInfo.TotalSizeof, TotalSizeof);
 
 	return true;
 }

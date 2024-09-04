@@ -34,5 +34,10 @@ public:
 	/** The space in which to apply the offset. */
 	UPROPERTY(EditAnywhere, Category=Common)
 	ECameraNodeSpace OffsetSpace = ECameraNodeSpace::CameraPose;
+
+public:
+
+	// For unit tests.
+	static GAMEPLAYCAMERAS_API TTuple<int32, int32> GetEvaluatorAllocationInfo();
 };
 
