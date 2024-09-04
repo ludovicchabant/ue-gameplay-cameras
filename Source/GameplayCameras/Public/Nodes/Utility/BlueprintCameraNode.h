@@ -11,10 +11,11 @@
 
 #include "BlueprintCameraNode.generated.h"
 
+struct FBlueprintCameraPose;
+
 namespace UE::Cameras
 {
 	class FCameraVariableTable;
-	struct FBlueprintCameraPose;
 	struct FCameraNodeEvaluationParams;
 	struct FCameraNodeEvaluationResult;
 };
@@ -41,6 +42,16 @@ public:
 	/** Runs this camera node. */
 	void NativeRunCameraNode(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
+public:
+
+	/**
+	 * A utility function that tries to find if an actor owns the evaluation context.
+	 * Handles the situation where the evaluation context is an actor component (like a
+	 * UGameplayCameraComponent) or an actor itself.
+	 */
+	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
+	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+
 protected:
 
 	/** Whether this is the first frame of this camera node's lifetime. */
@@ -60,6 +71,8 @@ protected:
 	FBlueprintCameraVariableTable VariableTable;
 
 private:
+
+	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> CurrentContext;
 
 	FCameraNodeEvaluationResult* CurrentResult = nullptr;
 };

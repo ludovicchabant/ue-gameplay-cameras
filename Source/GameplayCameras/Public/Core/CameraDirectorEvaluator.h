@@ -54,7 +54,7 @@ struct FCameraDirectorEvaluationParams
 	float DeltaTime = 0.f;
 
 	/** The context in which this director runs. */
-	TSharedPtr<const FCameraEvaluationContext> OwnerContext;
+	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
 struct FActiveCameraRigInfo

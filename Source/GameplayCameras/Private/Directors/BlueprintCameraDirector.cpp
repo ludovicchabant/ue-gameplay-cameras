@@ -2,12 +2,14 @@
 
 #include "Directors/BlueprintCameraDirector.h"
 
+#include "Components/ActorComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
+#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
 #include "Core/CameraRigProxyTable.h"
-#include "Core/CameraEvaluationContext.h"
+#include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraDirector)
@@ -69,6 +71,7 @@ void FBlueprintCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 	{
 		FBlueprintCameraDirectorEvaluationParams BlueprintParams;
 		BlueprintParams.DeltaTime = Params.DeltaTime;
+		BlueprintParams.EvaluationContext = Params.OwnerContext;
 		if (Params.OwnerContext)
 		{
 			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
@@ -165,14 +168,86 @@ void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProx
 	CurrentResult.ActiveCameraRigProxies.Add(CameraRigProxy);
 }
 
+AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
+{
+	if (CurrentContext)
+	{
+		if (UActorComponent* ContextOwnerAsComponent = Cast<UActorComponent>(CurrentContext->GetOwner()))
+		{
+			return ContextOwnerAsComponent->GetOwner();
+		}
+		else if (AActor* ContextOwnerAsActor = Cast<AActor>(CurrentContext->GetOwner()))
+		{
+			return ContextOwnerAsActor;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+		return nullptr;
+	}
+}
+
+FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraPose() const
+{
+	if (CurrentContext)
+	{
+		return FBlueprintCameraPose::FromCameraPose(CurrentContext->GetInitialResult().CameraPose);
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+		return FBlueprintCameraPose();
+	}
+}
+
+FBlueprintCameraVariableTable UBlueprintCameraDirectorEvaluator::GetInitialContextVariableTable() const
+{
+	if (CurrentContext)
+	{
+		return FBlueprintCameraVariableTable(&CurrentContext->GetInitialResult().VariableTable);
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+		return FBlueprintCameraVariableTable();
+	}
+}
+
+void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose)
+{
+	if (CurrentContext)
+	{
+		InCameraPose.ApplyTo(CurrentContext->GetInitialResult().CameraPose);
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+	}
+}
+
 void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params, FBlueprintCameraDirectorEvaluationResult& OutResult)
 {
+	CurrentContext = Params.EvaluationContext;
 	CurrentResult = OutResult;
 	{
 		// Run the Blueprint logic.
 		RunCameraDirector(Params);
 	}
 	OutResult = CurrentResult;
+	CurrentContext.Reset();
 }
 
 FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const

@@ -2,11 +2,13 @@
 
 #include "Nodes/Utility/BlueprintCameraNode.h"
 
+#include "Components/ActorComponent.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigBuildContext.h"
 #include "Core/CameraVariableTable.h"
+#include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
 #include "Templates/UnrealTemplate.h"
 
@@ -71,9 +73,14 @@ void FBlueprintCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector& 
 
 void UBlueprintCameraNodeEvaluator::NativeRunCameraNode(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	using namespace UE::Cameras;
+
 	bIsFirstFrame = Params.bIsFirstFrame;
 	EvaluationContextOwner = Params.EvaluationContext->GetOwner();
 	CameraPose = FBlueprintCameraPose::FromCameraPose(OutResult.CameraPose);
+
+	ensure(!CurrentContext.IsValid());
+	TGuardValue<TSharedPtr<const FCameraEvaluationContext>> CurrentContextGuard(CurrentContext, Params.EvaluationContext);
 
 	ensure(CurrentResult == nullptr);
 	TGuardValue<FCameraNodeEvaluationResult*> CurrentResultGuard(CurrentResult, &OutResult);
@@ -81,6 +88,32 @@ void UBlueprintCameraNodeEvaluator::NativeRunCameraNode(const FCameraNodeEvaluat
 	TickCameraNode(Params.DeltaTime);
 
 	CameraPose.ApplyTo(OutResult.CameraPose);
+}
+
+AActor* UBlueprintCameraNodeEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
+{
+	if (CurrentContext)
+	{
+		if (UActorComponent* ContextOwnerAsComponent = Cast<UActorComponent>(CurrentContext->GetOwner()))
+		{
+			return ContextOwnerAsComponent->GetOwner();
+		}
+		else if (AActor* ContextOwnerAsActor = Cast<AActor>(CurrentContext->GetOwner()))
+		{
+			return ContextOwnerAsActor;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+		return nullptr;
+	}
 }
 
 void UBlueprintCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)

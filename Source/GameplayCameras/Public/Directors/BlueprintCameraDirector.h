@@ -4,6 +4,8 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
+#include "GameFramework/BlueprintCameraPose.h"
+#include "GameFramework/BlueprintCameraVariableTable.h"
 #include "Templates/SubclassOf.h"
 
 #include "BlueprintCameraDirector.generated.h"
@@ -26,6 +28,9 @@ struct FBlueprintCameraDirectorEvaluationParams
 	/** The owner (if any) of the evaluation context we are running inside of. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
 	TObjectPtr<UObject> EvaluationContextOwner;
+
+	/** The evaluation context we are running inside of. */
+	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
 };
 
 /**
@@ -75,6 +80,38 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
 
+public:
+
+	/**
+	 * A utility function that tries to find if an actor owns the evaluation context.
+	 * Handles the situation where the evaluation context is an actor component (like a
+	 * UGameplayCameraComponent) or an actor itself.
+	 */
+	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
+	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+
+	/**
+	 * Gets the initial evaluation context camera pose.
+	 */
+	UFUNCTION(BlueprintPure, Category="Evaluation")
+	FBlueprintCameraPose GetInitialContextCameraPose() const;
+
+	/**
+	 * Sets the initial evaluation context camera pose.
+	 * WARNING: this will change the initial pose of ALL running camera rigs!
+	 */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose);
+
+	/**
+	 * Gets the initial evaluation context camera variable table.
+	 * WARNING: setting variables here will affect ALL running camera rigs!
+	 */
+	UFUNCTION(BlueprintPure, Category="Evaluation")
+	FBlueprintCameraVariableTable GetInitialContextVariableTable() const;
+
+public:
+
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(
 			const FBlueprintCameraDirectorEvaluationParams& Params,
@@ -85,6 +122,10 @@ protected:
 	/** The current camera director evaluation result. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
 	FBlueprintCameraDirectorEvaluationResult CurrentResult;
+
+private:
+
+	TSharedPtr<UE::Cameras::FCameraEvaluationContext> CurrentContext;
 };
 
 /**
