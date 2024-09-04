@@ -13,6 +13,7 @@
 class FStructProperty;
 class UCameraNode;
 class UCameraRigAsset;
+class UCameraRigCameraNode;
 class UCameraVariableAsset;
 struct FCameraVariableTableAllocationInfo;
 
@@ -51,6 +52,8 @@ private:
 
 	void FlattenCameraNodeHierarchy();
 
+	void CallPreBuild();
+
 	void GatherOldDrivenParameters();
 	void BuildNewDrivenParameters();
 	void DiscardUnusedPrivateVariables();
@@ -62,6 +65,11 @@ private:
 
 private:
 
+	bool SetupCameraParameterOverride(UCameraRigInterfaceParameter* InterfaceParameter);
+	bool SetupInnerCameraRigParameterOverride(UCameraRigInterfaceParameter* InterfaceParameter);
+
+private:
+
 	FCameraBuildLog& BuildLog;
 
 	UCameraRigAsset* CameraRig = nullptr;
@@ -70,6 +78,8 @@ private:
 
 	using FDrivenParameterKey = TTuple<FStructProperty*, UCameraNode*>;
 	TMap<FDrivenParameterKey, UCameraVariableAsset*> OldDrivenParameters;
+	using FDrivenOverrideKey = TTuple<FGuid, UCameraRigCameraNode*>;
+	TMap<FDrivenOverrideKey, UCameraVariableAsset*> OldDrivenOverrides;
 
 	using FReusableInterfaceParameterInfo = TTuple<UCameraVariableAsset*, bool>;
 	TMap<UCameraRigInterfaceParameter*, FReusableInterfaceParameterInfo> OldInterfaceParameters;

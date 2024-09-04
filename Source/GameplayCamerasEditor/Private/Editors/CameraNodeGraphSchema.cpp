@@ -8,10 +8,12 @@
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphNode.h"
 #include "Editors/CameraRigInterfaceParameterGraphNode.h"
+#include "Editors/CameraRigNodeGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
 #include "GameplayCamerasEditorSettings.h"
+#include "Nodes/Common/CameraRigCameraNode.h"
 
 #include "ScopedTransaction.h"
 
@@ -42,6 +44,8 @@ FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
 		.StripDisplayNameSuffix(TEXT("Camera Node"))
 		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
 		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigCameraNode::StaticClass())
+		.GraphNodeClass(UCameraRigNodeGraphNode::StaticClass());
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigInterfaceParameter::StaticClass())
 		.SelfPinName(NAME_None)  // No self pin name, we just want the title
 		.CanCreateNew(false)
@@ -121,7 +125,8 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 		if (DraggedPin->PinType.PinCategory == PC_CameraParameter)
 		{
 			UCameraNodeGraphNode* CameraNodeNode = Cast<UCameraNodeGraphNode>(DraggedPin->GetOwningNode());
-			FStructProperty* StructProperty = CameraNodeNode->GetCameraParameterPropertyForPin(DraggedPin);
+			const FName PropertyName = CameraNodeNode->GetCameraParameterPropertyForPin(DraggedPin);
+			ensure(PropertyName != NAME_None);
 
 			TSharedRef<FCameraNodeGraphSchemaAction_NewInterfaceParameterNode> Action = 
 				MakeShared<FCameraNodeGraphSchemaAction_NewInterfaceParameterNode>(
@@ -129,7 +134,7 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 						LOCTEXT("NewInterfaceParameterAction", "Camera Rig Parameter"),
 						LOCTEXT("NewInterfaceParameterActionToolTip", "Exposes this parameter on the camera rig"));
 			Action->Target = Cast<UCameraNode>(CameraNodeNode->GetObject());
-			Action->TargetPropertyName = StructProperty->GetFName();
+			Action->TargetPropertyName = PropertyName;
 			ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(Action.ToSharedPtr()));
 
 			return;
@@ -206,8 +211,8 @@ bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, F
 	{
 		return false;
 	}
-	FStructProperty* StructProperty = CameraNodeNode->GetCameraParameterPropertyForPin(CameraParameterPin);
-	if (!StructProperty)
+	const FName PropertyName = CameraNodeNode->GetCameraParameterPropertyForPin(CameraParameterPin);
+	if (PropertyName.IsNone())
 	{
 		return false;
 	}
@@ -216,10 +221,10 @@ bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, F
 	RigParameter->Modify();
 
 	RigParameter->Target = CameraNode;
-	RigParameter->TargetPropertyName = StructProperty->GetFName();
+	RigParameter->TargetPropertyName = PropertyName;
 	if (RigParameter->InterfaceParameterName.IsEmpty())
 	{
-		RigParameter->InterfaceParameterName = StructProperty->GetName();
+		RigParameter->InterfaceParameterName = PropertyName.ToString();
 	}
 
 	return true;

@@ -28,6 +28,11 @@ FCameraNodeChildrenView UCameraNode::GetChildren()
 	return OnGetChildren();
 }
 
+void UCameraNode::PreBuild(FCameraBuildLog& BuildLog)
+{
+	OnPreBuild(BuildLog);
+}
+
 void UCameraNode::Build(FCameraRigBuildContext& BuildContext)
 {
 	OnBuild(BuildContext);

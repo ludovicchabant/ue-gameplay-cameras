@@ -5,10 +5,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraParameters.h"
 #include "Core/CameraRigAssetBuilder.h"
-#include "Core/CameraVariableAssets.h"
-#include "Templates/UnrealTypeTraits.h"
 #include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAsset)
@@ -48,7 +45,6 @@ void UCameraRigInterfaceParameter::OnGraphNodeMoved(FName InGraphName, int32 Nod
 
 #endif
 
-
 void UCameraRigInterfaceParameter::PostLoad()
 {
 	if (!Guid.IsValid())
@@ -82,9 +78,20 @@ void UCameraRigInterfaceParameter::PostDuplicate(EDuplicateMode::Type DuplicateM
 
 UCameraRigInterfaceParameter* FCameraRigInterface::FindInterfaceParameterByName(const FString& ParameterName) const
 {
-	const TObjectPtr<UCameraRigInterfaceParameter>* FoundItem = InterfaceParameters.FindByPredicate([&ParameterName](UCameraRigInterfaceParameter* Item)
+	const TObjectPtr<UCameraRigInterfaceParameter>* FoundItem = InterfaceParameters.FindByPredicate(
+			[&ParameterName](UCameraRigInterfaceParameter* Item)
 			{
 				return Item->InterfaceParameterName == ParameterName;
+			});
+	return FoundItem ? *FoundItem : nullptr;
+}
+
+UCameraRigInterfaceParameter* FCameraRigInterface::FindInterfaceParameterByGuid(const FGuid& ParameterGuid) const
+{
+	const TObjectPtr<UCameraRigInterfaceParameter>* FoundItem = InterfaceParameters.FindByPredicate(
+			[&ParameterGuid](UCameraRigInterfaceParameter* Item)
+			{
+				return Item->Guid == ParameterGuid;
 			});
 	return FoundItem ? *FoundItem : nullptr;
 }

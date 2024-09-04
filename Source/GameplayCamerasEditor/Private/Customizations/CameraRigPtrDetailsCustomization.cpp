@@ -6,6 +6,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetReference.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailWidgetRow.h"
 #include "Helpers/CameraAssetReferenceGatherer.h"
@@ -29,19 +30,17 @@ void FCameraRigPtrDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyHand
 {
 	CameraRigPropertyHandle = StructPropertyHandle;
 
-	FProperty* StructProperty = StructPropertyHandle->GetProperty();
-	const bool bUseCameraRigPicker = StructProperty->GetBoolMetaData("UseCameraRigPicker");
-	const bool bUseCameraDirectorRigPicker = StructProperty->GetBoolMetaData("UseCameraDirectorRigPicker");
+	EPickerMode PickerMode = DeterminePickerMode();
 
 	TSharedPtr<SWidget> ValueContentWidget;
-	if (bUseCameraRigPicker || bUseCameraDirectorRigPicker)
+	if (PickerMode == EPickerMode::CameraRigPicker || PickerMode == EPickerMode::CameraDirectorRigPicker)
 	{
 		FOnGetContent OnGetComboMenuContent;
-		if (bUseCameraRigPicker)
+		if (PickerMode == EPickerMode::CameraRigPicker)
 		{
 			OnGetComboMenuContent = FOnGetContent::CreateSP(this, &FCameraRigPtrDetailsCustomization::OnBuildCameraRigNamePicker);
 		}
-		else if (bUseCameraDirectorRigPicker)
+		else if (PickerMode == EPickerMode::CameraDirectorRigPicker)
 		{
 			OnGetComboMenuContent = FOnGetContent::CreateSP(this, &FCameraRigPtrDetailsCustomization::OnBuildCameraDirectorRigNamePicker);
 		}
@@ -79,6 +78,28 @@ void FCameraRigPtrDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyHand
 
 void FCameraRigPtrDetailsCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> StructPropertyHandle, IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils)
 {
+}
+
+FCameraRigPtrDetailsCustomization::EPickerMode FCameraRigPtrDetailsCustomization::DeterminePickerMode()
+{
+	FProperty* CameraRigProperty = CameraRigPropertyHandle->GetProperty();
+	FField* MetaDataField = CameraRigProperty;
+	if (CameraRigProperty->GetOwnerStruct() == FCameraRigAssetReference::StaticStruct())
+	{
+		TSharedPtr<IPropertyHandle> CameraRigReferencePropertyHandle = CameraRigPropertyHandle->GetParentHandle();
+		ensure(CameraRigReferencePropertyHandle);
+		MetaDataField = CameraRigReferencePropertyHandle->GetProperty();
+	}
+
+	if (MetaDataField->GetBoolMetaData("UseCameraDirectorRigPicker"))
+	{
+		return EPickerMode::CameraDirectorRigPicker;
+	}
+	if (MetaDataField->GetBoolMetaData("UseCameraRigPicker"))
+	{
+		return EPickerMode::CameraRigPicker;
+	}
+	return EPickerMode::StandardPicker;
 }
 
 FText FCameraRigPtrDetailsCustomization::OnGetComboText() const

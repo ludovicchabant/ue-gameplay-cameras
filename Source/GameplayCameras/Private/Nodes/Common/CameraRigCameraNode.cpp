@@ -28,6 +28,21 @@ void ApplyParameterOverrides(
 		using ParameterType = decltype(ParameterOverrideType::Value);
 		using ValueType = typename ParameterType::ValueType;
 
+		if (!ParameterOverride.PrivateVariableGuid.IsValid())
+		{
+#if WITH_EDITOR
+			// Ignore un-built parameter overrides in the editor since the user could have just added
+			// an override while PIE is running. They need to hit the Build button for the override
+			// to apply.
+			continue;
+#else
+			UE_LOG(LogCameraSystem, Error, 
+					TEXT("Invalid parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
+					*ParameterOverride.InterfaceParameterName,
+					*GetPathNameSafe(CameraRig));
+#endif
+		}
+
 		FCameraVariableID InterfaceParameterID(FCameraVariableID::FromHashValue(GetTypeHash(ParameterOverride.PrivateVariableGuid)));
 
 		if (ParameterOverride.Value.Variable != nullptr)
@@ -36,9 +51,23 @@ void ApplyParameterOverrides(
 			// prefab's variable. Basically, we forward the value from one variable to the next.
 			FCameraVariableDefinition OverrideDefinition(ParameterOverride.Value.Variable->GetVariableDefinition());
 
-			OutVariableTable.SetValue<ValueType>(
-					InterfaceParameterID,
-					OutVariableTable.GetValue<typename ParameterType::ValueType>(OverrideDefinition.VariableID));
+			const ValueType* OverrideValuePtr = OutVariableTable.FindValue<ValueType>(OverrideDefinition.VariableID);
+			if (OverrideValuePtr)
+			{
+				OutVariableTable.SetValue<ValueType>(InterfaceParameterID, *OverrideValuePtr);
+			}
+			else
+			{
+				// Once again, ignore un-built data. Only emit errors when running outside of the editor.
+#if !WITH_EDITOR
+				UE_LOG(LogCameraSystem, Error, 
+						TEXT("Camera variable '%s' for parameter override '%s' in camera rig '%s' isn't in the variable "
+							"table. Was it built/cooked?"),
+						*GetNameSafe(ParameterOverride.Value.Variable),
+						*ParameterOverride.InterfaceParameterName,
+						*GetPathNameSafe(CameraRig));
+#endif
+			}
 		}
 		else
 		{
@@ -82,11 +111,11 @@ FCameraNodeEvaluatorChildrenView FCameraRigCameraNodeEvaluator::OnGetChildren()
 void FCameraRigCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UCameraRigCameraNode* CameraRigNode = GetCameraNodeAs<UCameraRigCameraNode>();
-	if (CameraRigNode->CameraRig)
+	if (const UCameraRigAsset* CameraRig = CameraRigNode->CameraRigReference.GetCameraRig())
 	{
-		if (CameraRigNode->CameraRig->RootNode)
+		if (CameraRig->RootNode)
 		{
-			CameraRigRootEvaluator = Params.BuildEvaluator(CameraRigNode->CameraRig->RootNode);
+			CameraRigRootEvaluator = Params.BuildEvaluator(CameraRig->RootNode);
 		}
 	}
 }
@@ -113,10 +142,13 @@ void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable
 {
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
 
+	const UCameraRigAsset* CameraRig = PrefabNode->CameraRigReference.GetCameraRig();
+	const FCameraRigParameterOverrides& ParameterOverrides = PrefabNode->CameraRigReference.GetParameterOverrides();
+
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 	Internal::ApplyParameterOverrides(\
-			PrefabNode->CameraRig,\
-			TArrayView<const F##ValueName##CameraRigParameterOverride>(PrefabNode->ValueName##Overrides),\
+			CameraRig,\
+			ParameterOverrides.Get##ValueName##Overrides(),\
 			OutVariableTable);
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
@@ -135,14 +167,21 @@ struct FCameraRigCameraNodeBuilder
 		, BuildContext(InBuildContext)
 	{}
 
-	void Setup(const UCameraRigAsset* InCameraRig)
+	void Setup()
 	{
+		// Build a map matching each of our inner camera rig's interface parameter to its Guid.
 		ParametersByGuid.Reset();
-		for (TObjectPtr<UCameraRigInterfaceParameter> InterfaceParameter : InCameraRig->Interface.InterfaceParameters)
+		const UCameraRigAsset* CameraRig = CameraNode->CameraRigReference.GetCameraRig();
+		for (TObjectPtr<UCameraRigInterfaceParameter> InterfaceParameter : CameraRig->Interface.InterfaceParameters)
 		{
 			ParametersByGuid.Add(InterfaceParameter->Guid, InterfaceParameter);
 		}
 	}
+
+	template<typename ParameterOverrideType>
+	void BuildCameraRigParameterOverride(ParameterOverrideType& ParameterOverride);
+
+private:
 
 	const UCameraRigInterfaceParameter* FindInterfaceParameter(const FGuid& InterfaceParameterGuid)
 	{
@@ -153,9 +192,6 @@ struct FCameraRigCameraNodeBuilder
 		return nullptr;
 	}
 
-	template<typename ParameterOverrideType>
-	void BuildCameraRigParameterOverride(ParameterOverrideType& ParameterOverride);
-
 private:
 
 	TMap<FGuid, UCameraRigInterfaceParameter*> ParametersByGuid;
@@ -164,6 +200,9 @@ private:
 template<typename ParameterOverrideType>
 void FCameraRigCameraNodeBuilder::BuildCameraRigParameterOverride(ParameterOverrideType& ParameterOverride)
 {
+	const UCameraRigAsset* CameraRig = CameraNode->CameraRigReference.GetCameraRig();
+
+	// Each parameter override should point to a valid interface parameter on the inner rig, via its Guid.
 	const UCameraRigInterfaceParameter* InterfaceParameter = FindInterfaceParameter(ParameterOverride.InterfaceParameterGuid);
 	if (!InterfaceParameter)
 	{
@@ -171,64 +210,111 @@ void FCameraRigCameraNodeBuilder::BuildCameraRigParameterOverride(ParameterOverr
 				FText::Format(
 					LOCTEXT("MissingInterfaceParameter", "No camera rig interface parameter named '{0}' exists on '{1}'."),
 					FText::FromString(ParameterOverride.InterfaceParameterName),
-					FText::FromString(GetNameSafe(CameraNode->CameraRig))));
+					FText::FromString(GetNameSafe(CameraRig))));
 		return;
 	}
 
+	// The inner rig's interface parameter should have been built, i.e. it should have a private camera variable
+	// assigned for driving its value.
 	if (!InterfaceParameter->PrivateVariable)
 	{
 		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, CameraNode,
 				FText::Format(
 					LOCTEXT("UnbuiltInterfaceParameter", "Camera rig interface parameter '{0}' was not built correctly on '{1}'."),
 					FText::FromString(ParameterOverride.InterfaceParameterName),
-					FText::FromString(GetNameSafe(CameraNode->CameraRig))));
+					FText::FromString(GetNameSafe(CameraRig))));
 		return;
 	}
 
+	// The inner rig's interface parameter is driven by this private variable. Let's remember its Guid so we
+	// can override its value in the variable table at runtime.
 	ParameterOverride.PrivateVariableGuid = InterfaceParameter->PrivateVariable->GetGuid();
+	// Update the last known name for this interface parameter.
+	ParameterOverride.InterfaceParameterName = InterfaceParameter->InterfaceParameterName;
+
+	// The build process automatically gathers variables that drive amera parameters on a camera node, but
+	// nothing else for now. We therefore need to help it out by manually reporting the variables that
+	// drive our parameter overrides.
+	FCameraVariableTableAllocationInfo& VariableTableAllocationInfo = BuildContext.AllocationInfo.VariableTableInfo;
+	if (ParameterOverride.Value.Variable)
+	{
+		VariableTableAllocationInfo.VariableDefinitions.Add(ParameterOverride.Value.Variable->GetVariableDefinition());
+	}
 }
 
 }  // namespace Internal
 
 }  // namespace UE::Cameras
 
+void UCameraRigCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
+{
+	// Build the inner camera rig. Silently skip it if it's not set... but we will
+	// report an error in OnBuild about it.
+	if (UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig())
+	{
+		CameraRig->BuildCameraRig(BuildLog);
+	}
+}
+
 void UCameraRigCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 	using namespace UE::Cameras::Internal;
 
+	UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig();
 	if (!CameraRig)
 	{
-		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, this, LOCTEXT("MissingCameraRig", "No camera rig specified on camera rig node."));
+		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, this, 
+				LOCTEXT("MissingCameraRig", "No camera rig specified on camera rig node."));
 		return;
 	}
 
-	// Build the inner camera rig. Whatever allocations it needs for its evaluators and
+	// Whatever allocations our inner camera rig needs for its evaluators and
 	// their camera variables, we add that to our camera rig's allocation info.
-	CameraRig->BuildCameraRig(BuildContext.BuildLog);
 	BuildContext.AllocationInfo.Append(CameraRig->AllocationInfo);
 
 	// Next, we set things up for the runtime. Mostly, we want to get the camera variable 
 	// Guids that we need to write the override values to.
 	FCameraRigCameraNodeBuilder InternalBuilder(this, BuildContext);
-	InternalBuilder.Setup(CameraRig);
+	InternalBuilder.Setup();
 
+	FCameraRigParameterOverrides& ParameterOverrides = CameraRigReference.GetParameterOverrides();
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 	{\
-		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ValueName##Overrides)\
+		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides.Get##ValueName##Overrides())\
 		{\
 			InternalBuilder.BuildCameraRigParameterOverride(ParameterOverride);\
 		}\
 	}
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
-
 }
 
 FCameraNodeEvaluatorPtr UCameraRigCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
 	using namespace UE::Cameras;
 	return Builder.BuildEvaluator<FCameraRigCameraNodeEvaluator>();
+}
+
+void UCameraRigCameraNode::PostLoad()
+{
+	Super::PostLoad();
+
+	if (CameraRig_DEPRECATED)
+	{
+		CameraRigReference.SetCameraRig(CameraRig_DEPRECATED);
+		CameraRig_DEPRECATED = nullptr;
+	}
+
+	FCameraRigParameterOverrides& ParameterOverrides = CameraRigReference.GetParameterOverrides();
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+	if (ValueName##Overrides_DEPRECATED.Num() > 0)\
+	{\
+		ParameterOverrides.AppendParameterOverrides<F##ValueName##CameraRigParameterOverride>(ValueName##Overrides_DEPRECATED);\
+		ValueName##Overrides_DEPRECATED.Reset();\
+	}
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -13,7 +13,7 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
-#include "Customizations/CameraRigCameraNodeDetailsCustomization.h"
+#include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraRigPtrDetailsCustomization.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/SingleCameraDirectorDetailsCustomization.h"
@@ -472,15 +472,12 @@ private:
 
 		FCameraParameterDetailsCustomization::Register(PropertyEditorModule);
 
-		PropertyEditorModule.RegisterCustomClassLayout("CameraRigCameraNode", FOnGetDetailCustomizationInstance::CreateStatic(
-					&FCameraRigCameraNodeDetailsCustomization::MakeInstance));
-		PropertyEditorModule.RegisterCustomClassLayout("SingleCameraDirector", FOnGetDetailCustomizationInstance::CreateStatic(
-					&FSingleCameraDirectorDetailsCustomization::MakeInstance));
-
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigProxyTableEntry", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraProxyTableEntryDetailsCustomization::MakeInstance));
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAsset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigPtrDetailsCustomization::MakeInstance));
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAssetReference", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
 	}
 
 	void UnregisterDetailsCustomizations()
@@ -492,8 +489,10 @@ private:
 		if (PropertyEditorModule)
 		{
 			FCameraParameterDetailsCustomization::Unregister(*PropertyEditorModule);
+
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigProxyTableEntry");
-			PropertyEditorModule->UnregisterCustomClassLayout("SingleCameraDirector");
+			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
+			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAssetReference");
 		}
 	}
 

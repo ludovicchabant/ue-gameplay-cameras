@@ -31,6 +31,10 @@ public:
 
 private:
 
+	enum class EPickerMode { StandardPicker, CameraRigPicker, CameraDirectorRigPicker };
+
+	EPickerMode DeterminePickerMode();
+
 	FText OnGetComboText() const;
 	FText OnGetComboToolTipText() const;
 	TSharedRef<SWidget> OnBuildCameraRigNamePicker();

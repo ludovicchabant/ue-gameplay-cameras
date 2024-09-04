@@ -96,6 +96,7 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 		StructProperty->CreatePropertyNameWidget()
 	]
 	.ValueContent()
+	.MinDesiredWidth(100.f)
 	.MaxDesiredWidth(MaxValueWidgetDesiredWidth)
 	.HAlign(HAlign_Fill)
 	[
@@ -127,7 +128,6 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 			.ContentPadding(1.f)
 			.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 			.ToolTipText(LOCTEXT("SetVariable_ToolTip", "Selects a camera variable to drive this parameter"))
-			.IsEnabled(VariableClass != nullptr && !bIsExposedParameterVariable)
 			.ButtonContent()
 			[
 				SNew(SHorizontalBox)
@@ -151,6 +151,8 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 					[
 						SNew(STextBlock)
 						.Text(VariableInfoText)
+						.MinDesiredWidth(20.f)
+						.OverflowPolicy(ETextOverflowPolicy::Clip)
 					]
 				]
 				+SHorizontalBox::Slot()

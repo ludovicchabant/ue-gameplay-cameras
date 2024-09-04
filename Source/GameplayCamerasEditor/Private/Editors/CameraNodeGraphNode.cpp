@@ -5,7 +5,6 @@
 #include "Core/CameraParameters.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphSchema.h"
-#include "ScopedTransaction.h"
 #include "ToolMenus.h"
 
 UCameraNodeGraphNode::UCameraNodeGraphNode(const FObjectInitializer& ObjInit)
@@ -15,7 +14,7 @@ UCameraNodeGraphNode::UCameraNodeGraphNode(const FObjectInitializer& ObjInit)
 
 void UCameraNodeGraphNode::AllocateDefaultPins()
 {
-	UObjectTreeGraphNode::AllocateDefaultPins();
+	Super::AllocateDefaultPins();
 
 	// Add extra input pins for any camera parameter.
 	UClass* CameraNodeClass = GetObject()->GetClass();
@@ -59,19 +58,12 @@ UEdGraphPin* UCameraNodeGraphNode::GetPinForCameraParameterProperty(const FName&
 	return nullptr;
 }
 
-FStructProperty* UCameraNodeGraphNode::GetCameraParameterPropertyForPin(const UEdGraphPin* InPin) const
+FName UCameraNodeGraphNode::GetCameraParameterPropertyForPin(const UEdGraphPin* InPin) const
 {
-	UObject* CameraNode = GetObject();
-	if (!ensure(CameraNode))
+	if (InPin->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraParameter)
 	{
-		return nullptr;
+		return InPin->GetFName();
 	}
-	if (InPin->PinType.PinCategory != UCameraNodeGraphSchema::PC_CameraParameter)
-	{
-		return nullptr;
-	}
-
-	UClass* CameraNodeClass = CameraNode->GetClass();
-	return CastField<FStructProperty>(CameraNodeClass->FindPropertyByName(InPin->GetFName()));
+	return NAME_None;
 }
 

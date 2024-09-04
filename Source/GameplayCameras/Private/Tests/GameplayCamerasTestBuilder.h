@@ -74,6 +74,52 @@ private:
 };
 
 /**
+ * A simple repository matching UObject instances to names.
+ */
+class FNamedObjectRegistry
+{
+public:
+
+	/** Adds an object to the repository. */
+	void Register(UObject* InObject, const FString& InName)
+	{
+		ensure(InObject && !InName.IsEmpty());
+		NamedObjects.Add(InName, InObject);
+	}
+
+	/** Gets an object from the repository. */
+	UObject* Get(const FString& InName) const
+	{
+		if (UObject* const* Found = NamedObjects.Find(InName))
+		{
+			return *Found;
+		}
+		return nullptr;
+	}
+
+	/** Gets an object from the repository with a call to CastChecked. */
+	template<typename ObjectClass>
+	ObjectClass* Get(const FString& InName) const
+	{
+		return CastChecked<ObjectClass>(Get(InName));
+	}
+
+private:
+
+	TMap<FString, UObject*> NamedObjects;
+};
+
+/**
+ * Interface for something that has access to a named object repository.
+ */
+struct IHasNamedObjectRegistry
+{
+	virtual ~IHasNamedObjectRegistry() {}
+
+	virtual FNamedObjectRegistry* GetNamedObjectRegistry() = 0;
+};
+
+/**
  * A builder class for camera nodes.
  */
 template<
@@ -84,6 +130,7 @@ template<
 class TCameraNodeTestBuilder 
 	: public TScopedConstruction<ParentType>
 	, public TCameraObjectInitializer<NodeType>
+	, public IHasNamedObjectRegistry
 {
 public:
 
@@ -107,6 +154,18 @@ public:
 	/** Pins the built camera node to a given pointer, for being able to later refer to it. */
 	ThisType& Pin(NodeType*& OutPtr) { OutPtr = CameraNode; return *this; }
 
+	/** Give a name to the built camera node, to be recalled later. */
+	template<typename VV = std::enable_if_t<TPointerIsConvertibleFromTo<ParentType, IHasNamedObjectRegistry>::Value>>
+	ThisType& Named(const TCHAR* InName)
+	{
+		FNamedObjectRegistry* NamedObjectRegistry = GetNamedObjectRegistry();
+		if (ensure(NamedObjectRegistry))
+		{
+			NamedObjectRegistry->Register(CameraNode, InName);
+		}
+		return *this;
+	}
+
 	/** Sets the value of a camera parameter field on the camera node. */
 	template<typename ParameterType>
 	ThisType& SetParameter(
@@ -115,6 +174,25 @@ public:
 	{
 		ParameterType& ParameterRef = (CameraNode->*ParameterField);
 		ParameterRef.Value = Value;
+		return *this;
+	}
+
+	/**
+	 * Runs a custom setup callback on the camera node.
+	 */
+	ThisType& Setup(TFunction<void(NodeType*)> SetupCallback)
+	{
+		SetupCallback(CameraNode);
+		return *this;
+	}
+
+	/**
+	 * Runs a custom setup callback on the camera node with the named object registry provided.
+	 */
+	ThisType& Setup(TFunction<void(NodeType*, FNamedObjectRegistry*)> SetupCallback)
+	{
+		FNamedObjectRegistry* NamedObjectRegistry = GetNamedObjectRegistry();
+		SetupCallback(CameraNode, NamedObjectRegistry);
 		return *this;
 	}
 
@@ -137,6 +215,23 @@ public:
 		return ChildBuilder;
 	}
 
+	/**
+	 * Convenience implementation of AddChild specifically for array nodes.
+	 */
+	template<
+		typename ChildNodeType,
+		typename = std::enable_if_t<
+			TPointerIsConvertibleFromTo<NodeType, UArrayCameraNode>::Value &&
+			TPointerIsConvertibleFromTo<ChildNodeType, UCameraNode>::Value>
+		>
+	TCameraNodeTestBuilder<ThisType, ChildNodeType>
+	AddArrayChild()
+	{
+		TCameraNodeTestBuilder<ThisType, ChildNodeType> ChildBuilder(*this, CameraNode->GetOuter());
+		CastChecked<UArrayCameraNode>(CameraNode)->Children.Add(ChildBuilder.Get());
+		return ChildBuilder;
+	}
+
 	/** 
 	 * Casting operator that returns a builder for the same camera node, but typed
 	 * around a parent class of the camera node's class. Mostly useful for implicit casting
@@ -152,6 +247,19 @@ public:
 				EForceReuseCameraNode::Yes, 
 				TScopedConstruction<ParentType>::Parent, 
 				CameraNode);
+	}
+
+	/** Gets the named object registry from the parent. */
+	virtual FNamedObjectRegistry* GetNamedObjectRegistry() override
+	{
+		if constexpr (TPointerIsConvertibleFromTo<ParentType, IHasNamedObjectRegistry>::Value)
+		{
+			return TScopedConstruction<ParentType>::Parent.GetNamedObjectRegistry();
+		}
+		else
+		{
+			return nullptr;
+		}
 	}
 
 private:
@@ -177,6 +285,7 @@ template<typename ParentType>
 class TCameraRigTransitionTestBuilder 
 	: public TScopedConstruction<ParentType>
 	, public TCameraObjectInitializer<UCameraRigTransition>
+	, public IHasNamedObjectRegistry
 {
 public:
 
@@ -197,6 +306,21 @@ public:
 
 	/** Gets the built transition object. */
 	UCameraRigTransition* Get() const { return Transition; }
+
+	/** Pins the built transition to a given pointer, for being able to later refer to it. */
+	ThisType& Pin(UCameraRigTransition*& OutPtr) { OutPtr = Transition; return *this; }
+
+	/** Give a name to the built transition, to be recalled later. */
+	template<typename VV = std::enable_if_t<TPointerIsConvertibleFromTo<ParentType, IHasNamedObjectRegistry>::Value>>
+	ThisType& Named(const TCHAR* InName)
+	{
+		FNamedObjectRegistry* NamedObjectRegistry = GetNamedObjectRegistry();
+		if (ensure(NamedObjectRegistry))
+		{
+			NamedObjectRegistry->Register(Transition, InName);
+		}
+		return *this;
+	}
 
 	/** 
 	 * Creates a blend node of the given type, and returns a builder for it.
@@ -238,6 +362,19 @@ public:
 		return *this;
 	}
 
+	/** Gets the named object registry from the parent. */
+	virtual FNamedObjectRegistry* GetNamedObjectRegistry() override
+	{
+		if constexpr (TPointerIsConvertibleFromTo<ParentType, IHasNamedObjectRegistry>::Value)
+		{
+			return TScopedConstruction<ParentType>::Parent.GetNamedObjectRegistry();
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
 private:
 
 	UCameraRigTransition* Transition;
@@ -263,13 +400,16 @@ private:
  *				.Done()
  *			.Get();
  */
-class FCameraRigAssetTestBuilder : public TCameraObjectInitializer<UCameraRigAsset>
+class FCameraRigAssetTestBuilder 
+	: public TCameraObjectInitializer<UCameraRigAsset>
+	, public IHasNamedObjectRegistry
 {
 public:
 
 	using ThisType = FCameraRigAssetTestBuilder;
 
 	FCameraRigAssetTestBuilder(FName Name = NAME_None, UObject* Outer = nullptr);
+	FCameraRigAssetTestBuilder(TSharedRef<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr);
 
 	/** Gets the built camera rig. */
 	UCameraRigAsset* Get() { return CameraRig; }
@@ -288,6 +428,14 @@ public:
 	}
 
 	/**
+	 * A convenience method that calls MakeRootNode with a UArrayCameraNode.
+	 */
+	TCameraNodeTestBuilder<ThisType, UArrayCameraNode> MakeArrayRootNode()
+	{
+		return MakeRootNode<UArrayCameraNode>();
+	}
+
+	/**
 	 * Adds a new enter transition and returns a builder for it. You can come back to the
 	 * rig builder by calling Done() on the transition builder.
 	 */
@@ -302,12 +450,33 @@ public:
 	 * Creates a new exposed rig parameter and hooks it up to the given camera node's property.
 	 * When building the node hierarchy, you can use the Pin() method on the node builders to
 	 * save a pointer to nodes you need for ExposeParameter().
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
 	 */
 	FCameraRigAssetTestBuilder& ExposeParameter(const FString& ParameterName, UCameraNode* Target, FName TargetPropertyName);
+
+	/**
+	 * A variant of ExposeParameter that retrieves the target node from the named registry.
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
+	 */
+	FCameraRigAssetTestBuilder& ExposeParameter(const FString& ParameterName, const FString& TargetName, FName TargetPropertyName);
+
+	/** Gets the named object registry. */
+	virtual FNamedObjectRegistry* GetNamedObjectRegistry() override
+	{
+		return NamedObjectRegistry.Get();
+	}
+
+private:
+
+	void Initialize(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer);
 
 private:
 
 	UCameraRigAsset* CameraRig;
+
+	TSharedPtr<FNamedObjectRegistry> NamedObjectRegistry;
 };
 
 }  // namespace UE::Cameras::Test

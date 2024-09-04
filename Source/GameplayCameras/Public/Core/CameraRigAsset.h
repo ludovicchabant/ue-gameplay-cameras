@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
+#include "Core/CameraEventHandler.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraVariableTableFwd.h"
@@ -16,12 +17,25 @@
 #include "CameraRigAsset.generated.h"
 
 class UCameraNode;
+class UCameraRigAsset;
 class UCameraVariableAsset;
 
 namespace UE::Cameras
 {
 	class FCameraBuildLog;
 	class FCameraRigAssetBuilder;
+
+	/**
+	 * Interface for listening to changes on a camera rig asset.
+	 */
+	class ICameraRigAssetEventHandler
+	{
+	public:
+		virtual ~ICameraRigAssetEventHandler() {}
+
+		/** Called when the camera rig asset has been built. */
+		virtual void OnCameraRigBuilt(const UCameraRigAsset* CameraRigAsset) {}
+	};
 }
 
 /**
@@ -141,6 +155,9 @@ public:
 	/** Finds an exposed parameter by name. */
 	GAMEPLAYCAMERAS_API UCameraRigInterfaceParameter* FindInterfaceParameterByName(const FString& ParameterName) const;
 
+	/** Finds an exposed parameter by Guid. */
+	GAMEPLAYCAMERAS_API UCameraRigInterfaceParameter* FindInterfaceParameterByGuid(const FGuid& ParameterGuid) const;
+
 	/** Returns whether an exposed parameter with the given name exists. */
 	GAMEPLAYCAMERAS_API bool HasInterfaceParameter(const FString& ParameterName) const;
 };
@@ -243,6 +260,9 @@ public:
 	GAMEPLAYCAMERAS_API static const FName NodeTreeGraphName;
 	GAMEPLAYCAMERAS_API static const FName TransitionsGraphName;
 
+	/** Event handlers to be notified of data changes. */
+	UE::Cameras::TCameraEventHandlerContainer<UE::Cameras::ICameraRigAssetEventHandler> EventHandlers;
+
 protected:
 
 	// IObjectTreeGraphObject interface.
@@ -302,7 +322,6 @@ private:
 	 */
 	UPROPERTY(Instanced, meta=(ObjectTreeGraphHidden=true))
 	TArray<TObjectPtr<UObject>> AllTransitionsObjects;
-
 
 	// Deprecated properties.
 

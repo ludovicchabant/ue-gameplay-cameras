@@ -22,8 +22,8 @@ public:
 
 	/** Gets input pin for given camera parameter property on the underlying camera node. */
 	UEdGraphPin* GetPinForCameraParameterProperty(const FName& InPropertyName) const;
-	/** Gets camera parameter property on the underlying camera node for the given input pin. */
-	FStructProperty* GetCameraParameterPropertyForPin(const UEdGraphPin* InPin) const;
+	/** Gets camera parameter property name on the underlying camera node for the given input pin. */
+	FName GetCameraParameterPropertyForPin(const UEdGraphPin* InPin) const;
 
 public:
 

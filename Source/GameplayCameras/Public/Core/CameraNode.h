@@ -12,6 +12,7 @@
 
 namespace UE::Cameras
 {
+	class FCameraBuildLog;
 	struct FCameraRigBuildContext;
 }
 
@@ -30,11 +31,15 @@ class GAMEPLAYCAMERAS_API UCameraNode
 
 public:
 	
+	using FCameraBuildLog = UE::Cameras::FCameraBuildLog;
 	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
 	using FCameraNodeEvaluatorBuilder = UE::Cameras::FCameraNodeEvaluatorBuilder;
 
 	/** Get the list of children under this node. */
 	FCameraNodeChildrenView GetChildren();
+
+	/** Optional build step executed at the beginning of the build process. */
+	void PreBuild(FCameraBuildLog& BuildLog);
 
 	/** Gets optional info about this node's required allocations at runtime. */
 	void Build(FCameraRigBuildContext& BuildContext);
@@ -46,6 +51,9 @@ protected:
 
 	/** Get the list of children under this node. */
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
+
+	/** Optional build step executed at the beginning of the build process. */
+	virtual void OnPreBuild(FCameraBuildLog& BuildLog) {}
 
 	/** Gets optional info about this node's required allocations at runtime. */
 	virtual void OnBuild(FCameraRigBuildContext& BuildContext) {}
