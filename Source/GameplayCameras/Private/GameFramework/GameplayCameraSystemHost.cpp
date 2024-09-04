@@ -7,7 +7,6 @@
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "GameplayCamerasSettings.h"
 #include "Templates/UnrealTemplate.h"
 
 const TCHAR* UGameplayCameraSystemHost::DefaultHostName = TEXT("GameplayCameraSystemHost");
@@ -39,16 +38,6 @@ UGameplayCameraSystemHost* UGameplayCameraSystemHost::FindOrCreateHost(APlayerCo
 	}
 
 	UGameplayCameraSystemHost* NewHost = NewObject<UGameplayCameraSystemHost>(PlayerController, HostName);
-
-	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-	if (Settings->bAutoSpawnCameraSystemActor)
-	{
-		UWorld* World = PlayerController->GetWorld();
-
-		FActorSpawnParameters SpawnParams;
-		AGameplayCameraSystemActor* CameraSystemActor = World->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
-		CameraSystemActor->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
-	}
 
 	return NewHost;
 }

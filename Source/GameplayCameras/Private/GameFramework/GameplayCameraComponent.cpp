@@ -9,6 +9,7 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameplayCameras.h"
 #include "Kismet/GameplayStatics.h"
@@ -113,6 +114,8 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system host found!"));
 		return;
 	}
+
+	AGameplayCameraSystemActor::AutoManageActiveViewTarget(PlayerController);
 
 	if (!EvaluationContext.IsValid())
 	{

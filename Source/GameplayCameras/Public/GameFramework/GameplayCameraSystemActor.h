@@ -34,6 +34,16 @@ public:
 
 public:
 
+	/**
+	 * Automatically sets a camera system actor as the view-target, spawning a unique
+	 * instance if needed. Doesn't do anything if bAutoSpawnCameraSystemActor is disabled
+	 * in the GameplayCameras settings.
+	 */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	static void AutoManageActiveViewTarget(APlayerController* PlayerController);
+
+public:
+
 	// AActor interface.
 	virtual void BecomeViewTarget(APlayerController* PC) override;
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;

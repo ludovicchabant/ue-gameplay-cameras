@@ -47,6 +47,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	void ActivateCameraSystemForPlayerController(APlayerController* PlayerController);
 
+	/** Returns whether this component's actor is set as the view target for the given player. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	bool IsCameraSystemActiveForPlayController(APlayerController* PlayerController) const;
+
 	/** Removes this component's actor from being the view target. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	void DeactivateCameraSystem(AActor* NextViewTarget = nullptr);
@@ -91,6 +95,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 
+	UPROPERTY()
 	TWeakObjectPtr<APlayerController> WeakPlayerController;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

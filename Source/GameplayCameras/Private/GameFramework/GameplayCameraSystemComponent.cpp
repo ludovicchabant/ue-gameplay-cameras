@@ -110,9 +110,12 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 Pl
 
 void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APlayerController* PlayerController)
 {
-	if (WeakPlayerController.IsValid())
+	if (APlayerController* ActivePlayerController = WeakPlayerController.Get())
 	{
-		DeactivateCameraSystem();
+		if (ActivePlayerController != PlayerController)
+		{
+			DeactivateCameraSystem();
+		}
 	}
 
 	AActor* OwningActor = GetOwner();
@@ -122,15 +125,45 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 		return;
 	}
 
-	CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
 	if (!CameraSystemHost)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("can't create camera system host!"));
-		return;
+		CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
+		if (!CameraSystemHost)
+		{
+			UE_LOG(LogCameraSystem, Error, TEXT("can't create camera system host!"));
+			return;
+		}
 	}
 
 	PlayerController->SetViewTarget(OwningActor);
 	WeakPlayerController = PlayerController;
+}
+
+bool UGameplayCameraSystemComponent::IsCameraSystemActiveForPlayController(APlayerController* PlayerController) const
+{
+	APlayerController* ActivatedPlayerController = WeakPlayerController.Get();
+	if (!ActivatedPlayerController || ActivatedPlayerController  != PlayerController)
+	{
+		return false;
+	}
+
+	AActor* OwningActor = GetOwner();
+	if (!OwningActor)
+	{
+		return false;
+	}
+	
+	if (!CameraSystemHost)
+	{
+		return false;
+	}
+
+	if (!ActivatedPlayerController->PlayerCameraManager)
+	{
+		return false;
+	}
+
+	return ActivatedPlayerController->PlayerCameraManager->GetViewTarget() == OwningActor;
 }
 
 void UGameplayCameraSystemComponent::DeactivateCameraSystem(AActor* NextViewTarget)

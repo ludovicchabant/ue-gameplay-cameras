@@ -15,7 +15,7 @@ namespace UE::Cameras
 }
 
 /**
- * A class that host a camera system evaluator so that it can be accessed in a game world.
+ * A class that hosts a camera system evaluator so that it can be accessed in a game world.
  *
  * The host doesn't stay alive very long if nothing references it. Gameplay camera components and actors
  * are meant to hold a reference to it while they use it. When nobody uses it, the host is meant to be
