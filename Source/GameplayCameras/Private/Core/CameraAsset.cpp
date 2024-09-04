@@ -5,6 +5,7 @@
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
+#include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
 
@@ -177,6 +178,21 @@ void UCameraAsset::BuildCamera(UE::Cameras::FCameraBuildLog& InBuildLog)
 void UCameraAsset::DirtyBuildStatus()
 {
 	BuildStatus = ECameraBuildStatus::Dirty;
+}
+
+void UCameraAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
+{
+#if WITH_EDITOR
+
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		// Build on save.
+		BuildCamera();
+	}
+
+#endif
+
+	Super::PreSave(ObjectSaveContext);
 }
 
 #if WITH_EDITOR
