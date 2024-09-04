@@ -432,7 +432,7 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 		// Run the camera rig's root node.
 		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
-		if (ensure(RootEvaluator))
+		if (RootEvaluator)
 		{
 			RootEvaluator->Run(CurParams, CurResult);
 		}
