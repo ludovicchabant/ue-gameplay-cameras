@@ -16,6 +16,7 @@
 #include "Debug/CameraNodeEvaluatorDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/CategoryTitleDebugBlock.h"
+#include "Debug/PlayerControllersDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "Debug/ViewfinderDebugBlock.h"
 #include "HAL/IConsoleManager.h"
@@ -125,6 +126,12 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 			ResultDebugBlock.Initialize(CameraSystem.GetEvaluatedResult(), Builder);
 			ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
 			ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
+		}
+		FPlayerControllersDebugBlock& PlayerControllersDebugBlock = Builder.BuildDebugBlock<FPlayerControllersDebugBlock>();
+		PoseStatsCategory.AddChild(&PlayerControllersDebugBlock);
+		{
+			UObject* CameraSystemOwner = CameraSystem.GetOwner();
+			PlayerControllersDebugBlock.Initialize(CameraSystemOwner ? CameraSystemOwner->GetWorld() : nullptr);
 		}
 	}
 	Builder.EndChildDebugBlock();
