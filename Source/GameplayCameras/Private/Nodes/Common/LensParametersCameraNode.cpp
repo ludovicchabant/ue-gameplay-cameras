@@ -22,8 +22,6 @@ protected:
 
 private:
 
-	TCameraParameterReader<float> SensorWidthReader;
-	TCameraParameterReader<float> SensorHeightReader;
 	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<float> FocalLengthReader;
 	TCameraParameterReader<float> ApertureReader;
@@ -34,8 +32,6 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FLensParametersCameraNodeEvaluator)
 void FLensParametersCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	const ULensParametersCameraNode* LensParametersNode = GetCameraNodeAs<ULensParametersCameraNode>();
-	SensorWidthReader.Initialize(LensParametersNode->SensorWidth);
-	SensorHeightReader.Initialize(LensParametersNode->SensorHeight);
 	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	FocalLengthReader.Initialize(LensParametersNode->FocalLength);
 	ApertureReader.Initialize(LensParametersNode->Aperture);
@@ -45,16 +41,6 @@ void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 {
 	FCameraPose& OutPose = OutResult.CameraPose;
 
-	float SensorWidth = SensorWidthReader.Get(OutResult.VariableTable);
-	if (SensorWidth > 0)
-	{
-		OutPose.SetSensorWidth(SensorWidth);
-	}
-	float SensorHeight = SensorHeightReader.Get(OutResult.VariableTable);
-	if (SensorHeight > 0)
-	{
-		OutPose.SetSensorHeight(SensorHeight);
-	}
 	float FocusDistance = FocusDistanceReader.Get(OutResult.VariableTable);
 	if (FocusDistance > 0)
 	{

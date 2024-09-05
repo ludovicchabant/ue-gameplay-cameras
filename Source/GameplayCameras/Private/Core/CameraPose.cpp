@@ -165,6 +165,12 @@ double FCameraPose::GetSensorAspectRatio(float SensorWidth, float SensorHeight)
 	return (SensorHeight > 0.f) ? (SensorWidth / SensorHeight) : 0.0;
 }
 
+void FCameraPose::GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight)
+{
+	OutSensorWidth = 24.89f;
+	OutSensorHeight = 18.67f;
+}
+
 FRay3d FCameraPose::GetAimRay() const
 {
 	const bool bDirectionIsNormalized = false;

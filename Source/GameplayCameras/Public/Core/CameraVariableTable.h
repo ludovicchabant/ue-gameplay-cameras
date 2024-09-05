@@ -66,14 +66,14 @@ struct FCameraVariableTableFlags
  * a map of metadata keyed by variable ID. A variable ID can be anything, but will
  * generally be the hash of the variable name.
  */
-class FCameraVariableTable
+class GAMEPLAYCAMERAS_API FCameraVariableTable
 {
 public:
 
 	FCameraVariableTable();
 	FCameraVariableTable(FCameraVariableTable&& Other);
 	FCameraVariableTable& operator=(FCameraVariableTable&& Other);
-	GAMEPLAYCAMERAS_API ~FCameraVariableTable();
+	~FCameraVariableTable();
 
 	FCameraVariableTable(const FCameraVariableTable&) = delete;
 	FCameraVariableTable& operator=(const FCameraVariableTable&) = delete;
@@ -86,7 +86,7 @@ public:
 	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
 	 * the allocation information needed for a table, and initialize it once.
 	 */
-	GAMEPLAYCAMERAS_API void AddVariable(const FCameraVariableDefinition& VariableDefinition);
+	void AddVariable(const FCameraVariableDefinition& VariableDefinition);
 
 public:
 
@@ -169,8 +169,8 @@ private:
 
 	void ReallocateBuffer(uint32 MinRequired = 0);
 
-	GAMEPLAYCAMERAS_API FEntry* FindEntry(FCameraVariableID VariableID);
-	GAMEPLAYCAMERAS_API const FEntry* FindEntry(FCameraVariableID VariableID) const;
+	FEntry* FindEntry(FCameraVariableID VariableID);
+	const FEntry* FindEntry(FCameraVariableID VariableID) const;
 
 	void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 	void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);

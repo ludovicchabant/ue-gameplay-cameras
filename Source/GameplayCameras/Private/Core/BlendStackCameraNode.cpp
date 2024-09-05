@@ -421,6 +421,7 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		// Start with the input given to us.
 		CurResult.CameraPose = OutResult.CameraPose;
 		CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
+		CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
 
 		// Override it with whatever the evaluation context has set on its result.
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());

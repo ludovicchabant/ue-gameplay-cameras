@@ -23,14 +23,6 @@ protected:
 
 public:
 
-	/** Horizontal size of filmback or digital sensor, in mm. */
-	UPROPERTY(EditAnywhere, Category="Filmback", meta=(ClampMin="0.001", ForceUnits=mm))
-	FFloatCameraParameter SensorWidth;
-
-	/** Vertical size of filmback or digital sensor, in mm. */
-	UPROPERTY(EditAnywhere, Category="Filmback", meta=(ClampMin="0.001", ForceUnits=mm))
-	FFloatCameraParameter SensorHeight;
-
 	/** Manually-controlled focus distance (manual focus mode only) */
 	UPROPERTY(EditAnywhere, Category="Lens Parameters", meta=(Units=cm))
 	FFloatCameraParameter FocusDistance;
@@ -43,5 +35,4 @@ public:
 	UPROPERTY(EditAnywhere, Category="Lens Parameters")
 	FFloatCameraParameter Aperture;
 };
-
 

@@ -110,8 +110,8 @@ void FOrbitBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams
 	// If we don't have a driving blend, just cut to the new camera rig.
 	if (!DrivingBlendEvaluator)
 	{
-		BlendedResult.CameraPose.OverrideAll(ChildResult.CameraPose);
-		BlendedResult.VariableTable.OverrideAll(ChildResult.VariableTable);
+		BlendedResult.OverrideAll(ChildResult);
+
 		BlendedResult.bIsCameraCut = true;
 
 		OutResult.bIsBlendFinished = true;

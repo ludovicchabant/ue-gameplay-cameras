@@ -2,13 +2,13 @@
 
 #pragma once
 
-#include "Core/CameraRigEvaluationInfo.h"
 #include "Core/CameraObjectRtti.h"
 #include "Core/CameraPose.h"
+#include "Core/CameraRigEvaluationInfo.h"
 #include "Core/CameraRigJoints.h"
 #include "Core/CameraVariableTable.h"
 #include "Core/ObjectChildrenView.h"
-#include "CoreTypes.h"
+#include "Core/PostProcessSettingsCollection.h"
 #include "Debug/CameraDebugBlockFwd.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCameras.h"
@@ -152,8 +152,12 @@ struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
 	/** The list of joints in the current camera rig. */
 	FCameraRigJoints CameraRigJoints;
 
+	/** Post-process settings for the camera. */
+	FPostProcessSettingsCollection PostProcessSettings;
+
 	/** Whether the current frame is a camera cut. */
 	bool bIsCameraCut = false;
+
 	/** Whether this result is valid. */
 	bool bIsValid = false;
 
@@ -161,6 +165,12 @@ public:
 
 	/** Reset this result to its default (non-valid) state.  */
 	void Reset(bool bResetVariableTable);
+
+	/** Override this result with the given other result. */
+	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult);
+
+	/** Interpolate this result towards the other given result. */
+	void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor);
 
 	/** Serializes this result to the given archive. */
 	void Serialize(FArchive& Ar);

@@ -32,6 +32,7 @@ enum EAspectRatioAxisConstraint : int;
 
 #define UE_CAMERA_POSE_FOR_FLIPPING_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, ConstrainAspectRatio)\
+	UE_CAMERA_POSE_FOR_PROPERTY(bool, OverrideAspectRatioAxisConstraint)\
 	UE_CAMERA_POSE_FOR_PROPERTY(EAspectRatioAxisConstraint, AspectRatioAxisConstraint)
 
 #define UE_CAMERA_POSE_FOR_ALL_PROPERTIES()\
@@ -169,6 +170,9 @@ public:
 	/** Computes the aspect ratio of a camera sensor. */
 	static double GetSensorAspectRatio(float SensorWidth, float SensorHeight);
 
+	/** Gets the default sensor size. */
+	static void GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight);
+
 public:
 
 	// Interpolation
@@ -257,7 +261,11 @@ private:
 	UPROPERTY()
 	bool ConstrainAspectRatio = false;
 
-	/** If ConstrainAspectRatio is false, how we should compute FieldOfView */
+	/** Whether to override the default aspect ratio axis constraint defined on the player controller */
+	UPROPERTY()
+	bool OverrideAspectRatioAxisConstraint = false;
+
+	/** If ConstrainAspectRatio is false and OverrideAspectRatioAxisConstraint is true, how we should compute FieldOfView */
 	UPROPERTY()
 	TEnumAsByte<EAspectRatioAxisConstraint> AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;
 

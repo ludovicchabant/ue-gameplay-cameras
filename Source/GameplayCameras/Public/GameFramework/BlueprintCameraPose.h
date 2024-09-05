@@ -80,6 +80,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	bool ConstrainAspectRatio = false;
 
+	/** Whether to override the default aspect ratio axis constraint defined on the player controller */
+	UPROPERTY()
+	bool OverrideAspectRatioAxisConstraint = false;
+
 	/** The aspect ratio axis constraint to use if aspect ratio is constrained. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	TEnumAsByte<EAspectRatioAxisConstraint> AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;

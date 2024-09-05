@@ -7,6 +7,13 @@
 namespace UE::Cameras
 {
 
+FArchive& operator<< (FArchive& Ar, FCameraRigJoint& RigJoint)
+{
+	Ar << RigJoint.VariableID;
+	Ar << RigJoint.Transform;
+	return Ar;
+}
+
 void FCameraRigJoints::AddJoint(const FCameraRigJoint& InJoint)
 {
 	Joints.Add(InJoint);
@@ -25,6 +32,11 @@ void FCameraRigJoints::AddYawPitchJoint(const FTransform3d& InTransform)
 void FCameraRigJoints::Reset()
 {
 	Joints.Reset();
+}
+
+void FCameraRigJoints::Serialize(FArchive& Ar)
+{
+	Ar << Joints;
 }
 
 void FCameraRigJoints::OverrideAll(const FCameraRigJoints& OtherJoints)

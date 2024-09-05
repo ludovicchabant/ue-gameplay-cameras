@@ -251,10 +251,26 @@ void FCameraSystemEvaluator::PostUpdateServices(float DeltaTime, ECameraEvaluati
 
 void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)
 {
-	const FCameraPose& CameraPose = Result.CameraPose;
+	const FCameraPose& CameraPose = RootNodeResult.CameraPose;
 	DesiredView.Location = CameraPose.GetLocation();
 	DesiredView.Rotation = CameraPose.GetRotation();
 	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
+
+	DesiredView.AspectRatio = CameraPose.GetSensorAspectRatio();
+	DesiredView.bConstrainAspectRatio = CameraPose.GetConstrainAspectRatio();
+	DesiredView.AspectRatioAxisConstraint = CameraPose.GetOverrideAspectRatioAxisConstraint() ?
+		CameraPose.GetAspectRatioAxisConstraint() : TOptional<EAspectRatioAxisConstraint>();
+
+	// TODO: add support for ortho cameras.
+	DesiredView.PerspectiveNearClipPlane = CameraPose.GetNearClippingPlane();
+
+	for (const FPostProcessSettingsCollectionEntry& PostProcessEntry : RootNodeResult.PostProcessSettings.GetEntries())
+	{
+		DesiredView.PostProcessSettings = PostProcessEntry.PostProcessSettings;
+		DesiredView.PostProcessBlendWeight = PostProcessEntry.PostProcessBlendWeight;
+		// TODO: support multiple post-process settings by getting the PlayerCameraManager
+		break;
+	}
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

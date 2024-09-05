@@ -11,7 +11,7 @@ namespace UE::Cameras
 /**
  * A structure describing a joint in a camera rig.
  */
-struct FCameraRigJoint
+struct GAMEPLAYCAMERAS_API FCameraRigJoint
 {
 	/** The variable driving the rotation of this joint. */
 	FCameraVariableID VariableID;
@@ -19,12 +19,14 @@ struct FCameraRigJoint
 	FTransform3d Transform;
 };
 
+FArchive& operator<< (FArchive& Ar, FCameraRigJoint& RigJoint);
+
 /**
  * A structure describing the joints of a camera rig.
  * These joints allow for "manipulating" the rig, e.g. to make it point
  * towards a desired target or direction.
  */
-class FCameraRigJoints
+class GAMEPLAYCAMERAS_API FCameraRigJoints
 {
 public:
 
@@ -40,6 +42,8 @@ public:
 
 	/** Removes all previously added joints. */
 	void Reset();
+
+	void Serialize(FArchive& Ar);
 
 public:
 

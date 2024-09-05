@@ -96,6 +96,12 @@ public:
 		return In.Value;
 	}
 
+	friend FArchive& operator<< (FArchive& Ar, FCameraVariableID& In)
+	{
+		Ar << In.Value;
+		return Ar;
+	}
+
 private:
 
 	FCameraVariableID(uint32 InValue) : Value(InValue) {}

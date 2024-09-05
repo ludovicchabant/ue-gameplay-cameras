@@ -33,11 +33,9 @@ void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& 
 {
 	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
 	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);
-	
-	BlendedResult.CameraPose.OverrideAll(ChildResult.CameraPose);
-	BlendedResult.VariableTable.OverrideAll(ChildResult.VariableTable);
-	BlendedResult.CameraRigJoints.OverrideAll(ChildResult.CameraRigJoints);
 
+	BlendedResult.OverrideAll(ChildResult);
+	
 	if (ChildResult.bIsCameraCut || Params.ChildParams.bIsFirstFrame)
 	{
 		BlendedResult.bIsCameraCut = true;

@@ -130,6 +130,7 @@ FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::MakeCameraPoseFromCame
 		Result.Rotation = (AdditiveTransform.GetRotation() * CameraComponentTransform.GetRotation()).Rotator();
 		Result.FieldOfView = CameraComponent->FieldOfView + AdditiveFOV;
 		Result.ConstrainAspectRatio = CameraComponent->bConstrainAspectRatio;
+		Result.OverrideAspectRatioAxisConstraint = CameraComponent->bOverrideAspectRatioAxisConstraint;
 		Result.AspectRatioAxisConstraint = CameraComponent->AspectRatioAxisConstraint;
 		Result.SensorWidth = CameraComponent->AspectRatio * Result.SensorHeight;
 	}
