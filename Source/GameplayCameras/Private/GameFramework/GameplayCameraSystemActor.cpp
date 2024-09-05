@@ -39,36 +39,59 @@ void AGameplayCameraSystemActor::EndViewTarget(APlayerController* PC)
 	Super::EndViewTarget(PC);
 }
 
-void AGameplayCameraSystemActor::AutoManageActiveViewTarget(APlayerController* PlayerController)
+AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bForceSpawn)
 {
 	static const TCHAR* AutoSpawnedActorName = TEXT("AutoSpawnedGameplayCameraSystemActor");
 
 	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
 	if (!Settings->bAutoSpawnCameraSystemActor)
 	{
-		return;
+		return nullptr;
 	}
 
 	UGameplayCameraSystemHost* Host = UGameplayCameraSystemHost::FindHost(PlayerController);
 	if (!Host)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't auto-manage active view target: no camera system host found!"));
-		return;
+		if (bForceSpawn)
+		{
+			Host = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
+		}
+		else
+		{
+			UE_LOG(LogCameraSystem, Error, TEXT("Can't auto-manage active view target: no camera system host found!"));
+			return nullptr;
+		}
 	}
-	
+
 	AGameplayCameraSystemActor* SpawnedActor = FindObject<AGameplayCameraSystemActor>(PlayerController, AutoSpawnedActorName);
 	if (!SpawnedActor)
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Name = AutoSpawnedActorName;
+		if (bForceSpawn)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = AutoSpawnedActorName;
 
-		UWorld* World = PlayerController->GetWorld();
-		SpawnedActor = World->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
+			UWorld* World = PlayerController->GetWorld();
+			SpawnedActor = World->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
 
-		SpawnedActor->Rename(nullptr, PlayerController);
+			SpawnedActor->Rename(nullptr, PlayerController);
+		}
+		else
+		{
+			return nullptr;
+		}
 	}
-	check(SpawnedActor);
-	SpawnedActor->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
+
+	return SpawnedActor;
+}
+
+void AGameplayCameraSystemActor::AutoManageActiveViewTarget(APlayerController* PlayerController)
+{
+	AGameplayCameraSystemActor* SpawnedActor = GetAutoSpawnedCameraSystemActor(PlayerController, true);
+	if (SpawnedActor)
+	{
+		SpawnedActor->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
