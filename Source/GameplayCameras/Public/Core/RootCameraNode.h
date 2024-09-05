@@ -20,10 +20,7 @@ enum class ECameraRigLayer : uint8
 	Main UMETA(DisplayName="Main Layer"),
 	Global UMETA(DisplayName="Global Layer"),
 	Visual UMETA(DisplayName="Visual Layer"),
-	ScratchMain UMETA(DisplayName="Scratch Main Layer"),
-	User0,
-	User1,
-	User2
+	ScratchMain UMETA(Hidden)
 };
 ENUM_CLASS_FLAGS(ECameraRigLayer)
 
