@@ -10,6 +10,7 @@
 namespace UE::Cameras
 {
 
+class FCameraEvaluationContext;
 struct FCameraDebugBlockBuilder;
 struct FCameraEvaluationContextStack;
 
@@ -25,6 +26,7 @@ public:
 	FCameraDirectorTreeDebugBlock();
 
 	void Initialize(const FCameraEvaluationContextStack& ContextStack, FCameraDebugBlockBuilder& Builder);
+	void Initialize(TArrayView<const TSharedPtr<FCameraEvaluationContext>> Contexts, FCameraDebugBlockBuilder& Builder);
 
 protected:
 
@@ -33,9 +35,17 @@ protected:
 
 private:
 
+	struct FDirectorDebugInfo;
+
+	void InitializeEntry(TSharedPtr<FCameraEvaluationContext> Context, FDirectorDebugInfo& EntryDebugInfo, FCameraDebugBlockBuilder& Builder);
+
+private:
+
 	struct FDirectorDebugInfo
 	{
 		FString CameraAssetName;
+		FString OwnerClassName;
+		FString OwnerName;
 		FTransform3d InitialContextTransform = FTransform3d::Identity;
 		bool bIsValid = false;
 	};

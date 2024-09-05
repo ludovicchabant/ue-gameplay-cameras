@@ -37,29 +37,53 @@ void FCameraDirectorTreeDebugBlock::Initialize(const FCameraEvaluationContextSta
 		TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin();
 
 		FDirectorDebugInfo EntryDebugInfo;
-		if (Context)
-		{
-			EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
-			EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
-			EntryDebugInfo.bIsValid = true;
-		}
-		else
-		{
-			EntryDebugInfo.bIsValid = false;
-		}
+		InitializeEntry(Context, EntryDebugInfo, Builder);
 		CameraDirectors.Add(EntryDebugInfo);
+	}
+}
 
-		if (Context)
+void FCameraDirectorTreeDebugBlock::Initialize(TArrayView<const TSharedPtr<FCameraEvaluationContext>> Contexts, FCameraDebugBlockBuilder& Builder)
+{
+	for (TSharedPtr<FCameraEvaluationContext> Context : Contexts)
+	{
+		FDirectorDebugInfo EntryDebugInfo;
+		InitializeEntry(Context, EntryDebugInfo, Builder);
+		CameraDirectors.Add(EntryDebugInfo);
+	}
+}
+
+void FCameraDirectorTreeDebugBlock::InitializeEntry(TSharedPtr<FCameraEvaluationContext> Context, FDirectorDebugInfo& EntryDebugInfo, FCameraDebugBlockBuilder& Builder)
+{
+	if (Context)
+	{
+		const UObject* ContextOwner = Context->GetOwner();
+
+		EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
+		EntryDebugInfo.OwnerName = *GetNameSafe(ContextOwner);
+		EntryDebugInfo.OwnerClassName = *GetNameSafe(ContextOwner ? ContextOwner->GetClass() : nullptr);
+		EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
+		EntryDebugInfo.bIsValid = true;
+
+		const FCameraNodeEvaluationResult& InitialResult = Context->GetInitialResult();
+		AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InitialResult.CameraPose)
+				.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.ContextInitialResult.ShowUnchanged")));
+
+		TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts = Context->GetChildrenContexts();
+		if (ChildrenContexts.Num() > 0)
 		{
-			const FCameraNodeEvaluationResult& InitialResult = Context->GetInitialResult();
-			AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InitialResult.CameraPose)
-					.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.ContextInitialResult.ShowUnchanged")));
+			FCameraDirectorTreeDebugBlock& ChildBlock = Builder.StartChildDebugBlock<FCameraDirectorTreeDebugBlock>();
+			{
+				ChildBlock.Initialize(ChildrenContexts, Builder);
+			}
+			Builder.EndChildDebugBlock();
 		}
-		else
-		{
-			// Dummy debug block.
-			AddChild(&Builder.BuildDebugBlock<FCameraDebugBlock>());
-		}
+	}
+	else
+	{
+		EntryDebugInfo.bIsValid = false;
+
+		// Dummy debug block.
+		AddChild(&Builder.BuildDebugBlock<FCameraDebugBlock>());
 	}
 }
 
@@ -121,6 +145,10 @@ void FCameraDirectorTreeDebugBlock::OnSerialize(FArchive& Ar)
 FArchive& operator<< (FArchive& Ar, FCameraDirectorTreeDebugBlock::FDirectorDebugInfo& DirectorDebugInfo)
 {
 	Ar << DirectorDebugInfo.CameraAssetName;
+	Ar << DirectorDebugInfo.OwnerClassName;
+	Ar << DirectorDebugInfo.OwnerName;
+	Ar << DirectorDebugInfo.InitialContextTransform;
+	Ar << DirectorDebugInfo.bIsValid;
 	return Ar;
 }
 
