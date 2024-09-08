@@ -8,11 +8,11 @@
 #include "GameplayTagTransitionConditions.generated.h"
 
 /**
- * A transition condition that matches the gameplay tags on the previous
- * camera rig and asset.
+ * A transition condition that matches the gameplay tags on the previous and next
+ * camera rigs and assets. Both queries need to pass. Empty queries pass by default.
  */
 UCLASS(MinimalAPI)
-class UPreviousGameplayTagTransitionCondition 
+class UGameplayTagTransitionCondition
 	: public UCameraRigTransitionCondition
 {
 	GENERATED_BODY()
@@ -21,29 +21,11 @@ public:
 
 	/** The gameplay tags to look for on the previous camera rig/asset. */
 	UPROPERTY(EditAnywhere, Category=Transition)
-	FGameplayTagQuery GameplayTagQuery;
-
-protected:
-
-	// UCameraRigTransitionCondition interface.
-	virtual bool OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const override;
-};
-
-/**
- * A transition condition that matches the gameplay tags on the next
- * camera rig and asset.
- */
-UCLASS(MinimalAPI)
-class UNextGameplayTagTransitionCondition 
-	: public UCameraRigTransitionCondition
-{
-	GENERATED_BODY()
-
-public:
+	FGameplayTagQuery PreviousGameplayTagQuery;
 
 	/** The gameplay tags to look for on the next camera rig/asset. */
 	UPROPERTY(EditAnywhere, Category=Transition)
-	FGameplayTagQuery GameplayTagQuery;
+	FGameplayTagQuery NextGameplayTagQuery;
 
 protected:
 

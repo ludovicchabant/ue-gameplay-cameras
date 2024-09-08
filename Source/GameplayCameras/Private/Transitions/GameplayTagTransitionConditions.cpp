@@ -6,31 +6,46 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayTagTransitionConditions)
 
-bool UPreviousGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const
+bool UGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const
 {
-	if (Params.FromCameraRig)
-	{
-		FGameplayTagContainer TagContainer;
-		Params.FromCameraRig->GetOwnedGameplayTags(TagContainer);
-		if (TagContainer.MatchesQuery(GameplayTagQuery))
-		{
-			return true;
-		}
-	}
-	return false;
-}
+	bool bPreviousMatches = true;
 
-bool UNextGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const
-{
-	if (Params.ToCameraRig)
+	if (!PreviousGameplayTagQuery.IsEmpty())
 	{
-		FGameplayTagContainer TagContainer;
-		Params.ToCameraRig->GetOwnedGameplayTags(TagContainer);
-		if (TagContainer.MatchesQuery(GameplayTagQuery))
+		if (Params.FromCameraRig)
 		{
-			return true;
+			FGameplayTagContainer TagContainer;
+			Params.FromCameraRig->GetOwnedGameplayTags(TagContainer);
+			if (TagContainer.MatchesQuery(PreviousGameplayTagQuery))
+			{
+				bPreviousMatches = true;
+			}
+		}
+		else
+		{
+			bPreviousMatches = false;
 		}
 	}
-	return false;
+
+	bool bNextMatches = true;
+
+	if (!NextGameplayTagQuery.IsEmpty())
+	{
+		if (Params.ToCameraRig)
+		{
+			FGameplayTagContainer TagContainer;
+			Params.ToCameraRig->GetOwnedGameplayTags(TagContainer);
+			if (TagContainer.MatchesQuery(NextGameplayTagQuery))
+			{
+				bNextMatches = true;
+			}
+		}
+		else
+		{
+			bNextMatches = false;
+		}
+	}
+
+	return bPreviousMatches && bNextMatches;
 }
 
