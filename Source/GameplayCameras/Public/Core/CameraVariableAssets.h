@@ -60,6 +60,10 @@ public:
 	UPROPERTY()
 	bool bIsPrivate = false;
 
+	/** Whether this variable is an input variable that gets blended before node evaluators are run. */
+	UPROPERTY()
+	bool bIsInput = false;
+
 private:
 
 	UPROPERTY()

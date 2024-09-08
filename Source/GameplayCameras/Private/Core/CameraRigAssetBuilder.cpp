@@ -205,7 +205,8 @@ VariableAssetType* MakeOrRenamePrivateVariable(
 		PrivateVariable = NewObject<VariableAssetType>(Builder.CameraRig, FName(*VariableName), RF_Transactional);
 	}
 
-	// Make sure it's a private variable.
+	// Make sure it's a private input variable.
+	PrivateVariable->bIsInput = true;
 	PrivateVariable->bIsPrivate = true;
 	PrivateVariable->bAutoReset = false;
 
