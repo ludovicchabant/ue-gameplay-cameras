@@ -2,7 +2,15 @@
 
 #include "Core/CameraRigTransition.h"
 
+#include "Core/BlendCameraNode.h"
+#include "Core/CameraBuildLog.h"
+#include "Core/CameraRigBuildContext.h"
+#include "Logging/TokenizedMessage.h"
+#include "Nodes/Blends/SimpleBlendCameraNode.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigTransition)
+
+#define LOCTEXT_NAMESPACE "CameraRigTransition"
 
 void UCameraRigTransitionCondition::PostLoad()
 {
@@ -24,6 +32,11 @@ void UCameraRigTransitionCondition::PostLoad()
 bool UCameraRigTransitionCondition::TransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const
 {
 	return OnTransitionMatches(Params);
+}
+
+void UCameraRigTransitionCondition::Build(FCameraRigBuildContext& BuildContext)
+{
+	OnBuild(BuildContext);
 }
 
 #if WITH_EDITOR
@@ -73,6 +86,47 @@ void UCameraRigTransition::PostLoad()
 	Super::PostLoad();
 }
 
+bool UCameraRigTransition::AllConditionsMatch(const FCameraRigTransitionConditionMatchParams& Params) const
+{
+	for (const UCameraRigTransitionCondition* Condition : Conditions)
+	{
+		if (Condition && !Condition->TransitionMatches(Params))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void UCameraRigTransition::Build(FCameraRigBuildContext& BuildContext)
+{
+	if (Blend)
+	{
+		Blend->Build(BuildContext);
+	}
+	else
+	{
+		BuildContext.BuildLog.AddMessage(
+				EMessageSeverity::Error, this,
+				LOCTEXT("NullBlendError", "No blend defined on transition. To make a straight-cut transition, use the Pop blend."));
+	}
+
+	for (UCameraRigTransitionCondition* Condition : Conditions)
+	{
+		if (Condition)
+		{
+			Condition->Build(BuildContext);
+		}
+		else
+		{
+			BuildContext.BuildLog.AddMessage(
+					EMessageSeverity::Error, this,
+					LOCTEXT("NullConditionError", "Found an invalid transition condition."));
+		}
+	}
+}
+
 #if WITH_EDITOR
 
 void UCameraRigTransition::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
@@ -102,4 +156,6 @@ void UCameraRigTransition::OnUpdateGraphNodeCommentText(FName InGraphName, const
 }
 
 #endif  // WITH_EDITOR
+
+#undef LOCTEXT_NAMESPACE
 

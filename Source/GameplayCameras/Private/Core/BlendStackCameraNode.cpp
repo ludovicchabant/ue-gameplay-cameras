@@ -652,16 +652,7 @@ const UCameraRigTransition* FBlendStackCameraNodeEvaluator::FindTransition(
 	// The transition should be used if all its conditions pass.
 	for (TObjectPtr<const UCameraRigTransition> Transition : Transitions)
 	{
-		bool bConditionsPass = true;
-		for (const UCameraRigTransitionCondition* Condition : Transition->Conditions)
-		{
-			if (!Condition->TransitionMatches(MatchParams))
-			{
-				bConditionsPass = false;
-				break;
-			}
-		}
-
+		const bool bConditionsPass = Transition->AllConditionsMatch(MatchParams);
 		if (bConditionsPass)
 		{
 			return Transition;

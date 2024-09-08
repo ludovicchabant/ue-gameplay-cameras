@@ -13,6 +13,11 @@ class UBlendCameraNode;
 class UCameraAsset;
 class UCameraRigAsset;
 
+namespace UE::Cameras
+{
+	struct FCameraRigBuildContext;
+}
+
 /**
  * Parameter structure for camera transitions.
  */
@@ -44,13 +49,21 @@ class UCameraRigTransitionCondition
 
 public:
 
+	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
+
 	/** Evaluates whether this transition should be used. */
 	bool TransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const;
+
+	/** Build process callback for this transition. */
+	void Build(FCameraRigBuildContext& BuildContext);
 
 protected:
 
 	/** Evaluates whether this transition should be used. */
 	virtual bool OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const { return false; }
+
+	/** Build process callback for this transition. */
+	virtual void OnBuild(FCameraRigBuildContext& BuildContext) {}
 
 protected:
 
@@ -141,6 +154,16 @@ public:
 	/** Whether to override the default orientation to set on the camera rig. */
 	UPROPERTY(EditAnywhere, Category="Transition")
 	bool bOverrideInitialOrientation = false;
+
+public:
+
+	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
+
+	/** Returns whether all transition condition matches the given parameters. */
+	bool AllConditionsMatch(const FCameraRigTransitionConditionMatchParams& Params) const;
+
+	/** Build process callback for this transition. */
+	void Build(FCameraRigBuildContext& BuildContext);
 
 protected:
 
