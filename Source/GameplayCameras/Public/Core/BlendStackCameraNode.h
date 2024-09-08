@@ -4,6 +4,7 @@
 
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraNodeEvaluatorHierarchy.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigEvaluationInfo.h"
@@ -178,8 +179,8 @@ protected:
 		FCameraNodeEvaluatorStorage EvaluatorStorage;
 		/** Root evaluator. */
 		FBlendStackRootCameraNodeEvaluator* RootEvaluator = nullptr;
-		/** Evaluators needing parameter update. */
-		TArray<FCameraNodeEvaluator*> ParameterEvaluators;
+		/** The evaluator tree. */
+		FCameraNodeEvaluatorHierarchy EvaluatorHierarchy;
 		/** Result for this node tree. */
 		FCameraNodeEvaluationResult Result;
 		/** Whether this is the first frame this entry runs. */

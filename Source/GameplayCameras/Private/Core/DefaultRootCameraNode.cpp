@@ -4,6 +4,7 @@
 
 #include "Core/BlendStackCameraNode.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraNodeEvaluatorHierarchy.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
 #include "Debug/BlendStacksCameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
@@ -91,6 +92,15 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 	}
 }
 
+void FDefaultRootCameraNodeEvaluator::OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
+{
+	OutHierarchy.Build(BaseLayer);
+	{
+		OutHierarchy.AppendTagged(Params.CameraRigRangeName, Params.CameraRigInfo.RootEvaluator);
+	}
+	OutHierarchy.Append(GlobalLayer);
+}
+
 void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	BaseLayer->Run(Params.EvaluationParams, OutResult);
@@ -101,7 +111,9 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 		const FCameraNodeEvaluationResult* CameraRigResult = Params.CameraRigInfo.LastResult;
 		FCameraBlendedParameterUpdateParams InputParams(Params.EvaluationParams, CameraRigResult->CameraPose);
 		FCameraBlendedParameterUpdateResult InputResult(OutResult.VariableTable);
-		RootEvaluator->UpdateParameters(InputParams, InputResult);
+
+		FCameraNodeEvaluatorHierarchy Hierarchy(RootEvaluator);
+		Hierarchy.CallUpdateParameters(InputParams, InputResult);
 	}
 
 	{

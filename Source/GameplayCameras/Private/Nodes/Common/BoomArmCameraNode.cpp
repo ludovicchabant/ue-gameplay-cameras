@@ -79,9 +79,7 @@ void FBoomArmCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams&
 
 void FBoomArmCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	SetNodeEvaluatorFlags(
-			ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate |
-			ECameraNodeEvaluatorFlags::SupportsOperations);
+	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
 
 	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
 	BoomOffsetReader.Initialize(BoomArmNode->BoomOffset);

@@ -19,10 +19,7 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraRigInput2DSlotEvaluator)
 
 FCameraRigInput2DSlotEvaluator::FCameraRigInput2DSlotEvaluator()
 {
-	SetNodeEvaluatorFlags(
-			ECameraNodeEvaluatorFlags::NeedsParameterUpdate | 
-			ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate |
-			ECameraNodeEvaluatorFlags::SupportsOperations);
+	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate | ECameraNodeEvaluatorFlags::SupportsOperations);
 }
 
 void FCameraRigInput2DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)

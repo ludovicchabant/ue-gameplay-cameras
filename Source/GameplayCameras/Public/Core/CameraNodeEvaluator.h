@@ -23,6 +23,7 @@ namespace UE::Cameras
 
 class FCameraEvaluationContext;
 class FCameraNodeEvaluator;
+class FCameraNodeEvaluatorHierarchy;
 class FCameraSystemEvaluator;
 struct FCameraOperation;
 struct FCameraNodeEvaluationParams;
@@ -36,8 +37,10 @@ enum class ECameraNodeEvaluatorFlags
 {
 	None = 0,
 	NeedsParameterUpdate = 1 << 0,
-	NeedsEvaluationUpdate = 1 << 1,
-	SupportsOperations = 1 << 2
+	NeedsSerialize = 1 << 1,
+	SupportsOperations = 1 << 2,
+
+	Default = NeedsSerialize
 };
 ENUM_CLASS_FLAGS(ECameraNodeEvaluatorFlags)
 
@@ -81,6 +84,18 @@ struct FCameraNodeEvaluatorInitializeParams
 	 * is being pushed on top of a non-empty blend stack.
 	 */
 	FCameraRigEvaluationInfo LastActiveCameraRigInfo;
+
+public:
+
+	FCameraNodeEvaluatorInitializeParams() = default;
+	FCameraNodeEvaluatorInitializeParams(FCameraNodeEvaluatorHierarchy* InHierarchy);
+
+private:
+
+	/** An optional hierarchy to populate while initialize the evaluator tree. */
+	FCameraNodeEvaluatorHierarchy* Hierarchy = nullptr;
+
+	friend class FCameraNodeEvaluator;
 };
 
 /**
@@ -203,14 +218,17 @@ class FCameraNodeEvaluator
 
 public:
 
-	GAMEPLAYCAMERAS_API FCameraNodeEvaluator();
-	GAMEPLAYCAMERAS_API virtual ~FCameraNodeEvaluator() {}
+	GAMEPLAYCAMERAS_API FCameraNodeEvaluator() = default;
+	GAMEPLAYCAMERAS_API virtual ~FCameraNodeEvaluator() = default;
 
 	/** Called to build any children evaluators. */
 	void Build(const FCameraNodeEvaluatorBuildParams& Params);
 
-	/** Initialize this evaluator. */
+	/** Initialize this evaluator and all its descendants. */
 	void Initialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult);
+
+	/** Collect referenced UObjects for this node and all its descendants. */
+	void AddReferencedObjects(FReferenceCollector& Collector);
 
 	/** Get the list of children under this evaluator. */
 	FCameraNodeEvaluatorChildrenView GetChildren();
@@ -223,9 +241,6 @@ public:
 
 	/** Execute an IK operation. */
 	void ExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation);
-
-	/** Collect referenced UObjects. */
-	void AddReferencedObjects(FReferenceCollector& Collector);
 
 	/** Serializes the state of this evaluator. */
 	void Serialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar);
@@ -255,6 +270,9 @@ public:
 
 protected:
 
+	/** Adds flags for this evaluator. */
+	void AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
+
 	/** Sets the flags for this evaluator. */
 	void SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
 
@@ -263,25 +281,36 @@ protected:
 	/** Called to build any children evaluators. */
 	GAMEPLAYCAMERAS_API virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
 
-	/** Initialize this evaluator. */
+	/** Initialize this evaluator. Children and descendants will be automatically initialized too. */
 	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+
+	/** Collect referenced UObjects for this node. */
+	GAMEPLAYCAMERAS_API virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 	/** Get the list of children under this evaluator. */
 	GAMEPLAYCAMERAS_API virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
 
-	/** Called to update and store the blended parameters for this node. */
+	/**
+	 * Called to update and store the blended parameters for this node.
+	 * Requires setting the ECameraNodeEvaluatorFlags::NeedsParameterUpdate flag.
+	 */
 	GAMEPLAYCAMERAS_API virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) {}
 
-	/** Run this evaluator. */
+	/**
+	 * Run this evaluator. This node evaluator is responsible for calling Run() on its children as appropriate.
+	 */
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
 
-	/** Execute an IK operation. */
+	/** 
+	 * Execute an IK operation.
+	 * Requires setting the ECameraNodeEvaluatorFlags::SupportsOperations flag.
+	 */
 	GAMEPLAYCAMERAS_API virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) {}
 
-	/** Collect referenced UObjects. */
-	GAMEPLAYCAMERAS_API virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
-
-	/** Serializes the state of this evaluator. */
+	/**
+	 * Serializes the state of this evaluator.
+	 * Requires setting the ECameraNodeEvaluatorFlags::NeedsSerialize flag, which is set by default.
+	 */
 	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) {}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -295,7 +324,7 @@ private:
 	TObjectPtr<const UCameraNode> PrivateCameraNode;
 
 	/** The flags for this evaluator. */
-	ECameraNodeEvaluatorFlags PrivateFlags = ECameraNodeEvaluatorFlags::NeedsEvaluationUpdate;
+	ECameraNodeEvaluatorFlags PrivateFlags = ECameraNodeEvaluatorFlags::Default;
 };
 
 /** Utility base class for camera node evaluators of a specific camera node type. */

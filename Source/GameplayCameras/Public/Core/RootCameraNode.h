@@ -60,6 +60,18 @@ struct FActivateCameraRigParams
 };
 
 /**
+ * Parameter structure for building a single camera rig hierarchy.
+ */
+struct FSingleCameraRigHierarchyBuildParams
+{
+	/** The camera rig to build the hierachy for. */
+	FCameraRigEvaluationInfo CameraRigInfo;
+
+	/** The name of the range to tag for the camera rig's nodes. */
+	FName CameraRigRangeName = TEXT("ActiveCameraRig");
+};
+
+/**
  * Parameter structure for evaluating a single camera rig.
  */
 struct FSingleCameraRigEvaluationParams
@@ -84,6 +96,14 @@ public:
 	void ActivateCameraRig(const FActivateCameraRigParams& Params);
 
 	/**
+	 * Builds the hierarchy of the system for a given single camera rig.
+	 * This is expected to return the nodes of all the layers, except for the main layer which
+	 * should only have the nodes of the given camera rig (i.e. it shouldn't have nodes of
+	 * other currently active camera rigs).
+	 */
+	void BuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy);
+
+	/**
 	 * Evaluates a single camera rig.
 	 * This is expected to run all layers as usual, except for the main layer which should
 	 * only run the given camera rig instead.
@@ -102,6 +122,9 @@ protected:
 
 	/** Activates a camera rig. */
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
+
+	/* Builds the hierarchy of the system for a given single camera rig. */
+	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) {}
 
 	/** Evaluates a single camera rig. See comments on RunSingleCameraRig. */
 	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}

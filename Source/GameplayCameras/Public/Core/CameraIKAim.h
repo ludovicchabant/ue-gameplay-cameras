@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraNodeEvaluatorHierarchy.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Math/MathFwd.h"
 
@@ -82,6 +83,7 @@ private:
 
 	FCameraNodeEvaluationResult ScratchResult;
 	
+	FCameraNodeEvaluatorHierarchy CameraSystemHierarchy;
 	TArray<uint8> EvaluatorSnapshot;
 };
 

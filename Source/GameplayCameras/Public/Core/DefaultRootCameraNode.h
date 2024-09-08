@@ -65,6 +65,7 @@ protected:
 
 	// FRootCameraNodeEvaluator interface.
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
+	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) override;
 	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 private:

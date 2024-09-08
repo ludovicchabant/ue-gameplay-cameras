@@ -152,15 +152,11 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
 
 	// Initialize the node evaluators.
-	FCameraNodeEvaluatorInitializeParams InitParams;
+	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
 	InitParams.Evaluator = Evaluator;
 	InitParams.EvaluationContext = EvaluationContext;
 	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
 	RootEvaluator->Initialize(InitParams, NewEntry.Result);
-
-	// Gather blended parameter evaluators.
-	NewEntry.ParameterEvaluators.Reset();
-	GatherEntryParameterEvaluators(RootEvaluator, NewEntry.ParameterEvaluators);
 
 	// Wrap up!
 	NewEntry.EvaluationContext = EvaluationContext;
@@ -177,7 +173,7 @@ void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
 	// Deallocate our node evaluators and clear any pointers we kept to them.
 	Entry.EvaluatorStorage.DestroyEvaluatorTree(true);
 	Entry.RootEvaluator = nullptr;
-	Entry.ParameterEvaluators.Reset();
+	Entry.EvaluatorHierarchy.Reset();
 
 	Entry.EvaluationContext.Reset();
 	
@@ -350,10 +346,11 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 			FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
 			FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
 
-			for (FCameraNodeEvaluator* ParameterEvaluator : Entry.ParameterEvaluators)
-			{
-				ParameterEvaluator->UpdateParameters(InputParams, InputResult);
-			}
+			Entry.EvaluatorHierarchy.ForEachEvaluator(ECameraNodeEvaluatorFlags::NeedsParameterUpdate,
+					[&InputParams, &InputResult](FCameraNodeEvaluator* ParameterEvaluator)
+					{
+						ParameterEvaluator->UpdateParameters(InputParams, InputResult);
+					});
 
 			Entry.bInputRunThisFrame = true;
 		}
