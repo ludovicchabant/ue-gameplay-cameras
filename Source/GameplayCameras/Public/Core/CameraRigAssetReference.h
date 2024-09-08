@@ -398,6 +398,11 @@ struct GAMEPLAYCAMERAS_API FCameraRigAssetReference
 {
 	GENERATED_BODY()
 
+public:
+
+	FCameraRigAssetReference();
+	FCameraRigAssetReference(UCameraRigAsset* InCameraRig);
+
 	/** Returns whether this reference points to a valid camera rig. */
 	bool IsValid() const
 	{

@@ -27,6 +27,12 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category="General")
 	bool bAutoSpawnCameraSystemActor = true;
 
+	/**
+	 * The number of camera rigs combined in one frame past which the camera system emits a warning.
+	 */
+	UPROPERTY(EditAnywhere, Config, Category="General")
+	int32 CombinedCameraRigNumThreshold = 10;
+
 public:
 
 	/** The default angle tolerance to accept an aiming operation. */

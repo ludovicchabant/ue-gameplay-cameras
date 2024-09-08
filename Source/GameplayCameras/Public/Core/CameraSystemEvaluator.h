@@ -27,6 +27,7 @@ namespace UE::Cameras
 class FAutoResetCameraVariableService;
 class FCameraEvaluationContext;
 class FCameraEvaluationService;
+class FCameraRigCombinationRegistry;
 class FRootCameraNodeEvaluator;
 enum class ECameraEvaluationServiceFlags;
 struct FRootCameraNodeCameraRigEvent;
@@ -171,6 +172,9 @@ private:
 
 	/** Quick access to the variable auto-reset service. */
 	TSharedPtr<FAutoResetCameraVariableService> VariableAutoResetService;
+
+	/** Registry for programmatically building combinations of camera rigs. */
+	TSharedPtr<FCameraRigCombinationRegistry> CameraRigCombinationRegistry;
 
 	/** Storage buffer for the root evaluator. */
 	FCameraNodeEvaluatorStorage RootEvaluatorStorage;

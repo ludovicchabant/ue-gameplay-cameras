@@ -2,16 +2,19 @@
 
 #include "Core/CameraSystemEvaluator.h"
 
+#include "Algo/Transform.h"
 #include "Camera/CameraTypes.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationService.h"
+#include "Core/CameraRigCombinationRegistry.h"
 #include "Core/DefaultRootCameraNode.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraSystemTrace.h"
 #include "Debug/RootCameraDebugBlock.h"
+#include "GameplayCamerasSettings.h"
 #include "Services/AutoResetCameraVariableService.h"
 #include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
@@ -69,6 +72,8 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	VariableAutoResetService = MakeShared<FAutoResetCameraVariableService>();
 	RegisterEvaluationService(VariableAutoResetService.ToSharedRef());
 	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
+
+	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
 }
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()
@@ -97,6 +102,10 @@ void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector
 	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
 	{
 		EvaluationService->AddReferencedObjects(Collector);
+	}
+	if (CameraRigCombinationRegistry)
+	{
+		CameraRigCombinationRegistry->AddReferencedObjects(Collector);
 	}
 }
 
@@ -180,6 +189,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 
 		if (DirectorResult.ActiveCameraRigs.Num() == 1)
 		{
+			// Only one camera rig to activate... let's do that.
 			const FActiveCameraRigInfo& ActiveCameraRig = DirectorResult.ActiveCameraRigs[0];
 
 			FActivateCameraRigParams CameraRigParams;
@@ -188,7 +198,38 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
-		// TODO: handle the case of composite camera rigs.
+		else if (DirectorResult.ActiveCameraRigs.Num() > 1)
+		{
+			// We have a combination of camera rigs to activate. Let's dynamically generate a new camera rig
+			// asset that combines them.
+#if WITH_EDITOR
+			const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+			if (DirectorResult.ActiveCameraRigs.Num() > Settings->CombinedCameraRigNumThreshold)
+			{
+				UE_LOG(LogCameraSystem, Warning, 
+						TEXT("Activating %d camera rigs combined! Is the camera director doing this on purpose? "
+							"If so, raise the CombinedCameraRigNumThreshold setting to remove this warning."),
+						DirectorResult.ActiveCameraRigs.Num());
+			}
+#endif
+
+			// All combined camera rigs must belong to the same evaluation context.
+			TArray<const UCameraRigAsset*> Combination;
+			TSharedPtr<const FCameraEvaluationContext> CommonContext = DirectorResult.ActiveCameraRigs[0].EvaluationContext;
+			for (const FActiveCameraRigInfo& ActiveCameraRig : DirectorResult.ActiveCameraRigs)
+			{
+				Combination.Add(ActiveCameraRig.CameraRig);
+				ensureMsgf(ActiveCameraRig.EvaluationContext == CommonContext,
+						TEXT("All combined camera rigs must be activated from the same evaluation context."));
+			}
+			const UCameraRigAsset* CombinedCameraRig = CameraRigCombinationRegistry->FindOrCreateCombination(Combination);
+
+			FActivateCameraRigParams CameraRigParams;
+			CameraRigParams.Evaluator = this;
+			CameraRigParams.EvaluationContext = CommonContext;
+			CameraRigParams.CameraRig = CombinedCameraRig;
+			RootEvaluator->ActivateCameraRig(CameraRigParams);
+		}
 	}
 
 	{

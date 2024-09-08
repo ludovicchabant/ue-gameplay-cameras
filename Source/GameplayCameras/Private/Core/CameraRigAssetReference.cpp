@@ -12,6 +12,15 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 }
 
+FCameraRigAssetReference::FCameraRigAssetReference()
+{
+}
+
+FCameraRigAssetReference::FCameraRigAssetReference(UCameraRigAsset* InCameraRig)
+	: CameraRig(InCameraRig)
+{
+}
+
 bool FCameraRigAssetReference::UpdateParameterOverrides()
 {
 	if (!CameraRig)
