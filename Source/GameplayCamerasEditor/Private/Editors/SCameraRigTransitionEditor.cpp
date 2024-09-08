@@ -69,7 +69,7 @@ void SCameraRigTransitionEditor::CreateTransitionGraphEditor()
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional | RF_Standalone);
 	TransitionGraph->Schema = TransitionGraphSchemaClass;
-	TransitionGraph->Reset(TransitionOwner, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
+	TransitionGraph->Reset(TransitionOwner, GraphConfig);
 
 	TransitionGraphChangedHandle = TransitionGraph->AddOnGraphChangedHandler(
 			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigTransitionEditor::OnGraphChanged));

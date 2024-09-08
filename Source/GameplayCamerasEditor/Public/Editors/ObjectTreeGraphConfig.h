@@ -178,15 +178,6 @@ public:
 	/** Advanced, optional bits of configuration for specific classes and sub-classes of objects. */
 	TMap<UClass*, FObjectTreeGraphClassConfig> ObjectClassConfigs;
 
-	/** Stop auto-collection of initial objects at any object that is of the given types. */
-	TArray<UClass*> StopAutoCollectAtObjectClasses;
-
-	/** 
-	 * Whether to collect all objets in the graph automatically from the network of referenced
-	 * objects from the root.
-	 */
-	bool bAutoCollectInitialObjects = true;
-
 public:
 
 	/** Creates a new graph config. */

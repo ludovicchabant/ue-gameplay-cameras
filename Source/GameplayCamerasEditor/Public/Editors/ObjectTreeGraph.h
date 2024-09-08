@@ -15,8 +15,6 @@
 class UObjectTreeGraphNode;
 class UObjectTreeGraphSchema;
 
-enum class EObjectTreeGraphBuildSource : uint8;
-
 /**
  * A node graph that represents a hierarchy of objects and their relationships.
  */
@@ -31,10 +29,7 @@ public:
 	UObjectTreeGraph(const FObjectInitializer& ObjInit);
 
 	/** Initializes the graph given a root object and a graph configuration. */
-	void Reset(
-			TObjectPtr<UObject> InRootObject, 
-			const FObjectTreeGraphConfig& InConfig, 
-			EObjectTreeGraphBuildSource InSource);
+	void Reset(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig);
 
 	/** Gets the root object. */
 	UObject* GetRootObject() const { return WeakRootObject.Get(); }
@@ -49,7 +44,7 @@ public:
 
 public:
 
-	void RebuildGraph(EObjectTreeGraphBuildSource InSource);
+	void RebuildGraph();
 
 private:
 

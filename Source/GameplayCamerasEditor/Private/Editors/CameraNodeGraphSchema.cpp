@@ -4,6 +4,7 @@
 
 #include "Core/BlendCameraNode.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraNodeHierarchy.h"
 #include "Core/CameraRigAsset.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphNode.h"
@@ -12,8 +13,10 @@
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
+#include "Framework/Notifications/NotificationManager.h"
 #include "GameplayCamerasEditorSettings.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 #include "ScopedTransaction.h"
 
@@ -62,23 +65,66 @@ FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
 	return GraphConfig;
 }
 
+void UCameraNodeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
+{
+	using namespace UE::Cameras;
+
+	// Only get the graph objects from the root interface.
+	CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, false);
+
+	// See if we are missing objects from AllNodeTreeObjects... if so, add them and notify the user.
+	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
+	if (CameraRig)
+	{
+		FCameraNodeHierarchy Hierarchy(CameraRig);
+
+		TSet<UObject*> AllNodeTreeObjects;
+		((IObjectTreeGraphRootObject*)CameraRig)->GetConnectableObjects(UCameraRigAsset::NodeTreeGraphName, AllNodeTreeObjects);
+
+		TSet<UObject*> MissingNodeTreeObjects;
+		if (Hierarchy.FindMissingConnectableObjects(AllNodeTreeObjects, MissingNodeTreeObjects))
+		{
+			FNotificationInfo NotificationInfo(
+					FText::Format(
+						LOCTEXT("AllNodeTreeObjectsMismatch", 
+							"Found {0} nodes missing from the internal list. Please re-save the asset."),
+						MissingNodeTreeObjects.Num()));
+			NotificationInfo.ExpireDuration = 4.0f;
+			FSlateNotificationManager::Get().AddNotification(NotificationInfo);
+
+			for (UObject* MissingObject : MissingNodeTreeObjects)
+			{
+				((IObjectTreeGraphRootObject*)CameraRig)->AddConnectableObject(UCameraRigAsset::NodeTreeGraphName, MissingObject);
+			}
+		}
+	}
+}
+
 void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const
 {
 	Super::OnCreateAllNodes(InGraph, InCreatedNodes);
 
-	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
-	if (ensure(CameraRig))
+	UObject* RootObject = InGraph->GetRootObject();
+	if (!RootObject)
 	{
-		for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
+		return;
+	}
+
+	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
+	if (!ensure(CameraRig))
+	{
+		return;
+	}
+	
+	for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
+	{
+		UObjectTreeGraphNode* const* InterfaceParameterNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter);
+		UObjectTreeGraphNode* const* CameraNodeNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter->Target);
+		if (InterfaceParameterNode && CameraNodeNode)
 		{
-			UObjectTreeGraphNode* const* InterfaceParameterNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter);
-			UObjectTreeGraphNode* const* CameraNodeNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter->Target);
-			if (InterfaceParameterNode && CameraNodeNode)
-			{
-				UEdGraphPin* InterfaceParameterSelfPin = (*InterfaceParameterNode)->GetSelfPin();
-				UEdGraphPin* CameraParameterPin = Cast<UCameraNodeGraphNode>(*CameraNodeNode)->GetPinForCameraParameterProperty(InterfaceParameter->TargetPropertyName);
-				InterfaceParameterSelfPin->MakeLinkTo(CameraParameterPin);
-			}
+			UEdGraphPin* InterfaceParameterSelfPin = (*InterfaceParameterNode)->GetSelfPin();
+			UEdGraphPin* CameraParameterPin = Cast<UCameraNodeGraphNode>(*CameraNodeNode)->GetPinForCameraParameterProperty(InterfaceParameter->TargetPropertyName);
+			InterfaceParameterSelfPin->MakeLinkTo(CameraParameterPin);
 		}
 	}
 }

@@ -75,7 +75,7 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor()
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional | RF_Standalone);
 	NodeGraph->Schema = SchemaClass;
-	NodeGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
+	NodeGraph->Reset(CameraRigAsset, GraphConfig);
 
 	NodeGraphChangedHandle = NodeGraph->AddOnGraphChangedHandler(
 			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));
@@ -100,7 +100,7 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 
 	TransitionGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional | RF_Standalone);
 	TransitionGraph->Schema = SchemaClass;
-	TransitionGraph->Reset(CameraRigAsset, GraphConfig, EObjectTreeGraphBuildSource::RootObjectPackage);
+	TransitionGraph->Reset(CameraRigAsset, GraphConfig);
 
 	TransitionGraphChangedHandle = TransitionGraph->AddOnGraphChangedHandler(
 			FOnGraphChanged::FDelegate::CreateSP(this, &SCameraRigAssetEditor::OnGraphChanged));

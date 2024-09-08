@@ -16,7 +16,7 @@ UObjectTreeGraph::UObjectTreeGraph(const FObjectInitializer& ObjInit)
 	Schema = UObjectTreeGraphSchema::StaticClass();
 }
 
-void UObjectTreeGraph::Reset(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig, EObjectTreeGraphBuildSource InSource)
+void UObjectTreeGraph::Reset(TObjectPtr<UObject> InRootObject, const FObjectTreeGraphConfig& InConfig)
 {
 	WeakRootObject = InRootObject;
 
@@ -26,7 +26,7 @@ void UObjectTreeGraph::Reset(TObjectPtr<UObject> InRootObject, const FObjectTree
 		Config.DefaultGraphNodeClass = UObjectTreeGraphNode::StaticClass();
 	}
 
-	RebuildGraph(InSource);
+	RebuildGraph();
 }
 
 UObjectTreeGraphNode* UObjectTreeGraph::FindObjectNode(UObject* InObject) const
@@ -49,12 +49,12 @@ const FObjectTreeGraphConfig& UObjectTreeGraph::GetConfig() const
 	return Config;
 }
 
-void UObjectTreeGraph::RebuildGraph(EObjectTreeGraphBuildSource InSource)
+void UObjectTreeGraph::RebuildGraph()
 {
 	const UObjectTreeGraphSchema* GraphSchema = Cast<UObjectTreeGraphSchema>(GetSchema());
 	if (ensure(GraphSchema))
 	{
-		GraphSchema->RebuildGraph(this, InSource);
+		GraphSchema->RebuildGraph(this);
 	}
 }
 

@@ -14,13 +14,6 @@ class UObjectTreeGraph;
 class UObjectTreeGraphNode;
 struct FObjectTreeGraphClassConfig;
 
-/** Specifies where to find graph node objects. */
-enum class EObjectTreeGraphBuildSource : uint8
-{
-	/** Create graph nodes from all eligible objects found in the same package. */
-	RootObjectPackage
-};
-
 /**
  * Schema class for an object tree graph.
  */
@@ -46,7 +39,7 @@ public:
 	UObjectTreeGraphSchema(const FObjectInitializer& ObjInit);
 
 	/** Rebuilds the graph from scratch. */
-	void RebuildGraph(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const;
+	void RebuildGraph(UObjectTreeGraph* InGraph) const;
 
 	/** Creates an object graph node for the given object. */
 	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
@@ -105,6 +98,7 @@ protected:
 	};
 
 	// UObjectTreeGraphSchema interface.
+	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const;
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
 	virtual UObjectTreeGraphNode* OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
 	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
@@ -118,10 +112,11 @@ protected:
 
 protected:
 
+	static void CollectAllReferencedObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects);
+	static bool CollectAllConnectableObjectsFromRootInterface(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects, bool bAllowNoRootInterface);
+
 	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraphNode* InNode) const;
 	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const;
-
-protected:
 
 	void ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const;
 	void ApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const;
@@ -130,7 +125,7 @@ protected:
 private:
 
 	void RemoveAllNodes(UObjectTreeGraph* InGraph) const;
-	void CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const;
+	void CreateAllNodes(UObjectTreeGraph* InGraph) const;
 	void CreateConnections(UObjectTreeGraphNode* InGraphNode, const FCreatedNodes& InCreatedNodes) const;
 };
 

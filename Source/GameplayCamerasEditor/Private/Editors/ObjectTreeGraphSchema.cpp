@@ -134,10 +134,10 @@ UObjectTreeGraphSchema::UObjectTreeGraphSchema(const FObjectInitializer& ObjInit
 {
 }
 
-void UObjectTreeGraphSchema::RebuildGraph(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const
+void UObjectTreeGraphSchema::RebuildGraph(UObjectTreeGraph* InGraph) const
 {
 	RemoveAllNodes(InGraph);
-	CreateAllNodes(InGraph, InSource);
+	CreateAllNodes(InGraph);
 	InGraph->NotifyGraphChanged();
 }
 
@@ -150,38 +150,69 @@ void UObjectTreeGraphSchema::RemoveAllNodes(UObjectTreeGraph* InGraph) const
 	}
 }
 
-void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTreeGraphBuildSource InSource) const
+void UObjectTreeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
 {
+	// By default, collect all objects referenced directly or indirectly by the root object, within
+	// the same package, unless the root object implements the IObjectTreeGraphRootObject interface,
+	// in which case get the list of objects from it.
+	// Override this method to collect objects differently.
+	const bool bHasRootInterface = CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, true);
+	if (!bHasRootInterface)
+	{
+		CollectAllReferencedObjects(InGraph, OutAllObjects);
+	}
+}
+
+void UObjectTreeGraphSchema::CollectAllReferencedObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects)
+{
+	using namespace UE::ObjectTreeGraph;
+
 	UObject* RootObject = InGraph->GetRootObject();
 	if (!RootObject)
 	{
 		return;
 	}
 
-	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
+	// Make sure the root object itself is in there.
+	OutAllObjects.Add(RootObject);
 
+	// Use a reference collector that doesn't go outside of the root object package.
+	TArray<UObject*> ReferencedObjects;
+	FPackageReferenceCollector Collector(RootObject, ReferencedObjects);
+	Collector.CollectReferences();
+	OutAllObjects.Append(ReferencedObjects);
+}
+
+bool UObjectTreeGraphSchema::CollectAllConnectableObjectsFromRootInterface(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects, bool bAllowNoRootInterface)
+{
+	UObject* RootObject = InGraph->GetRootObject();
+	if (!RootObject)
+	{
+		return true;
+	}
+
+	// Make sure the root object itself is in there.
+	OutAllObjects.Add(RootObject);
+
+	// Get all the objects we need from the dedicated interface for this.
+	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObject);
+	ensureMsgf(RootObjectInterface || bAllowNoRootInterface,
+			TEXT("Root object '%s' was expected to implement IObjectTreeGraphRootObject, but doesn't."),
+			*GetNameSafe(RootObject));
+	if (RootObjectInterface)
+	{
+		const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
+		RootObjectInterface->GetConnectableObjects(GraphConfig.GraphName, OutAllObjects);
+		return true;
+	}
+	return false;
+}
+
+void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph) const
+{
+	// Collect the objects.
 	TSet<UObject*> AllObjects;
-	// Gather up all the objects we need for the graph. Start by all objects that are referenced (directly or
-	// indirectly) by the root object. Our custom reference collector will not collect references that go outside
-	// of the root object's package.
-	if (GraphConfig.bAutoCollectInitialObjects)
-	{
-		using namespace UE::ObjectTreeGraph;
-
-		// Make sure the root object itself is in there.
-		AllObjects.Add(RootObject);
-
-		TArray<UObject*> ReferencedObjects;
-		FPackageReferenceCollector Collector(RootObject, ReferencedObjects);
-		Collector.StopAtObjectClasses(GraphConfig.StopAutoCollectAtObjectClasses);
-		Collector.CollectReferences();
-		AllObjects.Append(ReferencedObjects);
-	}
-	// Add any other custom objects the root object may want.
-	if (IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObject))
-	{
-		RootObjectInterface->GetConnectableObjects(GraphConfig.GraphName, AllObjects);
-	}
+	CollectAllObjects(InGraph, AllObjects);
 	
 	// Create all the nodes.
 	FCreatedNodes CreatedNodes;
@@ -197,8 +228,11 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph, EObjectTr
 	InGraph->RootObjectNode = nullptr;
 	if (!AllObjects.IsEmpty())
 	{
+		UObject* RootObject = InGraph->GetRootObject();
 		UObjectTreeGraphNode** CreatedRootObjectNode = CreatedNodes.CreatedNodes.Find(RootObject);
-		if (ensure(CreatedRootObjectNode))
+		if (ensureMsgf(CreatedRootObjectNode, 
+					TEXT("Can't find root object '%s' in the list of created graph nodes!"),
+					*GetNameSafe(RootObject)))
 		{
 			InGraph->RootObjectNode = *CreatedRootObjectNode;
 		}

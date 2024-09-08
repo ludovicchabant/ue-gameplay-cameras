@@ -37,6 +37,7 @@ protected:
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 
 	// UObjectTreeGraphSchema interface.
+	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const override;
 	virtual void FilterGraphContextPlaceableClasses(TArray<UClass*>& InOutClasses) const override;
 
 protected:

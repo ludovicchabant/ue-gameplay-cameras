@@ -20,7 +20,6 @@ void UCameraSharedTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConf
 	InOutGraphConfig.ConnectableObjectClasses.Add(UCameraAsset::StaticClass());
 	InOutGraphConfig.GraphDisplayInfo.PlainName = LOCTEXT("NodeGraphPlainName", "SharedTransitions");
 	InOutGraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("NodeGraphDisplayName", "Shared Transitions");
-	InOutGraphConfig.StopAutoCollectAtObjectClasses.Add(UCameraRigAsset::StaticClass());
 	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraAsset::StaticClass())
 		.HasSelfPin(false)
 		.OnlyAsRoot()

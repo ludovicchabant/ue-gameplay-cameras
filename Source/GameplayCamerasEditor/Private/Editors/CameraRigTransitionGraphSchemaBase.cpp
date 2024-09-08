@@ -37,6 +37,14 @@ FObjectTreeGraphConfig UCameraRigTransitionGraphSchemaBase::BuildGraphConfig() c
 	return GraphConfig;
 }
 
+void UCameraRigTransitionGraphSchemaBase::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
+{
+	using namespace UE::Cameras;
+
+	// Only get the graph objects from the root interface.
+	CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, false);
+}
+
 void UCameraRigTransitionGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
 	ETransitionGraphContextActions PossibleActions = GetTransitionGraphContextActions(ContextMenuBuilder);
