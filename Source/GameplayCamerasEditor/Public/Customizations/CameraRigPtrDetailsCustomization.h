@@ -31,13 +31,14 @@ public:
 
 private:
 
-	enum class EPickerMode { StandardPicker, CameraRigPicker, CameraDirectorRigPicker };
+	enum class EPickerMode { PrefabCameraRigPicker, AnyCameraRigPicker, SelfCameraRigPicker, CameraDirectorRigPicker };
 
 	EPickerMode DeterminePickerMode();
 
 	FText OnGetComboText() const;
 	FText OnGetComboToolTipText() const;
-	TSharedRef<SWidget> OnBuildCameraRigNamePicker();
+	TSharedRef<SWidget> OnBuildAnyCameraRigNamePicker();
+	TSharedRef<SWidget> OnBuildSelfCameraRigNamePicker();
 	TSharedRef<SWidget> OnBuildCameraDirectorRigNamePicker();
 	TSharedRef<SWidget> BuildCameraRigNamePickerImpl(FCameraRigPickerConfig& PickerConfig);
 	void OnPickerAssetSelected(UCameraRigAsset* SelectedItem);
