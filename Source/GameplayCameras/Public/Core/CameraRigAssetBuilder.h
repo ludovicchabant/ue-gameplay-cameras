@@ -4,6 +4,7 @@
 
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
+#include "Core/CameraNodeHierarchy.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
@@ -50,7 +51,7 @@ private:
 
 	void BuildCameraRigImpl();
 
-	void FlattenCameraNodeHierarchy();
+	void BuildCameraNodeHierarchy();
 
 	void CallPreBuild();
 
@@ -74,7 +75,7 @@ private:
 
 	UCameraRigAsset* CameraRig = nullptr;
 
-	TArray<UCameraNode*> FlattenedNodes;
+	FCameraNodeHierarchy CameraNodeHierarchy;
 
 	using FDrivenParameterKey = TTuple<FStructProperty*, UCameraNode*>;
 	TMap<FDrivenParameterKey, UCameraVariableAsset*> OldDrivenParameters;

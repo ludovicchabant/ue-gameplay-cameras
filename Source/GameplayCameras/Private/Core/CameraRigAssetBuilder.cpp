@@ -329,7 +329,7 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 		return;
 	}
 
-	FlattenCameraNodeHierarchy();
+	BuildCameraNodeHierarchy();
 
 	CallPreBuild();
 
@@ -340,38 +340,19 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 	BuildAllocationInfo();
 }
 
-void FCameraRigAssetBuilder::FlattenCameraNodeHierarchy()
+void FCameraRigAssetBuilder::BuildCameraNodeHierarchy()
 {
 	// Build a flat list of the camera rig's node hierarchy. It's easier to iterate during
 	// our build process.
-	FlattenedNodes.Reset();
-
-	TArray<UCameraNode*> NodeStack;
-	NodeStack.Add(CameraRig->RootNode);
-	while (!NodeStack.IsEmpty())
-	{
-		UCameraNode* CurrentNode = NodeStack.Pop();
-		FlattenedNodes.Add(CurrentNode);
-
-		FCameraNodeChildrenView CurrentChildren = CurrentNode->GetChildren();
-		for (UCameraNode* Child : ReverseIterate(CurrentChildren))
-		{
-			if (Child)
-			{
-				NodeStack.Add(Child);
-			}
-		}
-	}
+	CameraNodeHierarchy.Build(CameraRig);
 
 #if WITH_EDITORONLY_DATA
 	// Check that all the camera nodes that are in the tree are also inside the camera 
 	// rig's AllNodeTreeObjects. This shouldn't happen unless someone added camera nodes
 	// directly via C++, or if there's a bug in the camera rig editor code, so emit a
 	// warning if that happens.
-	TSet<UObject*> FlattenedNodesSet(MakeArrayView((UObject**)FlattenedNodes.GetData(), FlattenedNodes.Num()));
-	TSet<UObject*> AllNodeTreeObjectsSet(ObjectPtrDecay(CameraRig->AllNodeTreeObjects));
-	TSet<UObject*> MissingNodeTreeObjects = FlattenedNodesSet.Difference(AllNodeTreeObjectsSet);
-	if (!MissingNodeTreeObjects.IsEmpty())
+	TSet<UObject*> MissingNodeTreeObjects;
+	if (CameraNodeHierarchy.FindMissingConnectableObjects(ObjectPtrDecay(CameraRig->AllNodeTreeObjects), MissingNodeTreeObjects))
 	{
 		BuildLog.AddMessage(EMessageSeverity::Warning, 
 				FText::Format(
@@ -385,7 +366,7 @@ void FCameraRigAssetBuilder::FlattenCameraNodeHierarchy()
 
 void FCameraRigAssetBuilder::CallPreBuild()
 {
-	for (UCameraNode* CameraNode : FlattenedNodes)
+	for (UCameraNode* CameraNode : CameraNodeHierarchy.GetFlattenedHierarchy())
 	{
 		CameraNode->PreBuild(BuildLog);
 	}
@@ -403,7 +384,7 @@ void FCameraRigAssetBuilder::GatherOldDrivenParameters()
 	// Note that parameters driven by user-defined variables are left alone.
 
 	TSet<UCameraVariableAsset*> GatheredVariables;
-	TSet<UCameraNode*> CameraNodesToGather(FlattenedNodes);
+	TSet<UCameraNode*> CameraNodesToGather(CameraNodeHierarchy.GetFlattenedHierarchy());
 
 	// Start by going through all interface parameters, remembering what private variable 
 	// they were associated with originally. Also collect that private variable to be
@@ -427,7 +408,7 @@ void FCameraRigAssetBuilder::GatherOldDrivenParameters()
 				*GetPathNameSafe(CameraRig));
 	}
 
-	// Next go through all the camera nodes we know of. Nodes in FlattenedNodes are the ones
+	// Next go through all the camera nodes we know of. Nodes in CameraNodeHierarchy are the ones
 	// connected to the camera rig's root node, so we are missing nodes that were disconnected
 	// since the last build. We could use AllNodeTreeObjects for that, but it only exists in 
 	// editor builds, and we don't want to rely on unit tests or runtime data manipulation to 
@@ -443,7 +424,7 @@ void FCameraRigAssetBuilder::GatherOldDrivenParameters()
 					CameraNodesToGather.Add(CameraNode);
 				}
 			});
-	const int32 NumStrayCameraNodes = (CameraNodesToGather.Num() - FlattenedNodes.Num());
+	const int32 NumStrayCameraNodes = (CameraNodesToGather.Num() - CameraNodeHierarchy.Num());
 	if (NumStrayCameraNodes > 0)
 	{
 		UE_LOG(LogCameraSystem, Verbose, TEXT("Collected %d stray camera nodes while building camera rig '%s'."),
@@ -823,7 +804,7 @@ void FCameraRigAssetBuilder::BuildAllocationInfo()
 	Storage.GetAllocationInfo(AllocationInfo.EvaluatorInfo);
 
 	// Compute the allocation info for camera variables.
-	for (UCameraNode* CameraNode : FlattenedNodes)
+	for (UCameraNode* CameraNode : CameraNodeHierarchy.GetFlattenedHierarchy())
 	{
 		BuildAllocationInfo(CameraNode);
 	}
