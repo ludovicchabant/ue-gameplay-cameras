@@ -332,7 +332,7 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 
 void FCameraVariableTable::OverrideAll(const FCameraVariableTable& OtherTable)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::All;
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::AllPublic;
 	InternalOverride(OtherTable, Filter, nullptr, false, nullptr);
 }
 
@@ -353,6 +353,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
 	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
 	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
+	const bool bPrivates = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Private);
 
 	for (const FEntry& OtherEntry : OtherTable.Entries)
 	{
@@ -362,7 +363,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::WrittenThisFrame))
 				&& ((bInputs && bOtherEntryIsInput) || (bOutputs && !bOtherEntryIsInput))
-				&& !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private)
+				&& (bPrivates || !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private))
 				&& IsVariableInMask(OtherEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.
@@ -424,7 +425,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 
 void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::All;
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::AllPublic;
 	InternalLerp(ToTable, Filter, Factor, nullptr, false, nullptr);
 }
 
@@ -445,6 +446,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
 	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
 	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
+	const bool bPrivates = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Private);
 
 	for (const FEntry& ToEntry : ToTable.Entries)
 	{
@@ -454,7 +456,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 		if (EnumHasAnyFlags(ToFlags, EEntryFlags::Written)
 				&& (!bChangedOnly || EnumHasAnyFlags(ToFlags, EEntryFlags::WrittenThisFrame))
 				&& ((bInputs && bToEntryIsInput) || (bOutputs && !bToEntryIsInput))
-				&& !EnumHasAnyFlags(ToFlags, EEntryFlags::Private)
+				&& (bPrivates || !EnumHasAnyFlags(ToFlags, EEntryFlags::Private))
 				&& IsVariableInMask(ToEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.

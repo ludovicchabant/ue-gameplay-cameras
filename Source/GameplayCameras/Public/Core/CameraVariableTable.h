@@ -26,17 +26,19 @@ struct TCameraVariableInterpolation;
 enum class ECameraVariableTableFilter
 {
 	None = 0,
-	/** Only include input variables. */
+	/** Include input variables. */
 	Input = 1 << 0,
-	/** Only include output variables (i.e. anything not an input). */
+	/** Include output variables (i.e. anything not an input). */
 	Output = 1 << 1,
-	/** Only include changed variables. */
+	/** Include private variables. */
+	Private = 1 << 3,
+	/** Include changed variables. */
 	ChangedOnly = 1 << 2,
 
 	/** All variables. */
-	All = Input | Output,
+	AllPublic = Input | Output,
 	/** All changed variables. */
-	AllChanged = Input | Output | ChangedOnly
+	AllPublicChanged = Input | Output | ChangedOnly
 };
 ENUM_CLASS_FLAGS(ECameraVariableTableFilter)
 
