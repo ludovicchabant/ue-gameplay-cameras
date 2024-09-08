@@ -155,6 +155,16 @@ public:
 	UPROPERTY(EditAnywhere, Category="Transition")
 	bool bOverrideInitialOrientation = false;
 
+	/**
+	 * Whether this transition allows merging two similar camera rigs together.
+	 * Similar camera rigs run the same underlying camera rig prefab with different parameter
+	 * overrides. When merged, instead of pushing a new camera rig instance on the blend stack,
+	 * only the parameter overrides are kept. These parameter overrides are blended together
+	 * and the underlying camera rig prefab is run only once.
+	 */
+	UPROPERTY(EditAnywhere, Category="Advanced")
+	bool bAllowCameraRigMerging = false;
+
 public:
 
 	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;

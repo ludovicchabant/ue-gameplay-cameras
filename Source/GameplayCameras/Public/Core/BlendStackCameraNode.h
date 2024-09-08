@@ -154,6 +154,9 @@ protected:
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
 		UBlendStackRootCameraNode* EntryRootNode);
 
+	void PushVariantEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+
 	void FreezeEntry(FCameraRigEntry& Entry);
 
 	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
@@ -161,6 +164,7 @@ protected:
 	void BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
 
 #if WITH_EDITOR
+	void AddPackageListeners(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager, FCameraRigEntry& Entry);
 #endif

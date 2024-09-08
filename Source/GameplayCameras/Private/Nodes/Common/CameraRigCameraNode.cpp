@@ -6,6 +6,7 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigBuildContext.h"
+#include "Core/CameraRigParameterOverrideEvaluator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCameraNode)
 
@@ -14,94 +15,12 @@
 namespace UE::Cameras
 {
 
-namespace Internal
-{
-
-template<typename ParameterOverrideType>
-void ApplyParameterOverrides(
-		const UCameraRigAsset* CameraRig, 
-		TArrayView<const ParameterOverrideType> ParameterOverrides, 
-		FCameraVariableTable& OutVariableTable)
-{
-	for (const ParameterOverrideType& ParameterOverride : ParameterOverrides)
-	{
-		using ParameterType = decltype(ParameterOverrideType::Value);
-		using ValueType = typename ParameterType::ValueType;
-
-		if (!ParameterOverride.PrivateVariableGuid.IsValid())
-		{
-#if WITH_EDITOR
-			// Ignore un-built parameter overrides in the editor since the user could have just added
-			// an override while PIE is running. They need to hit the Build button for the override
-			// to apply.
-			continue;
-#else
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Invalid parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
-					*ParameterOverride.InterfaceParameterName,
-					*GetPathNameSafe(CameraRig));
-#endif
-		}
-
-		FCameraVariableID InterfaceParameterID(FCameraVariableID::FromHashValue(GetTypeHash(ParameterOverride.PrivateVariableGuid)));
-
-		if (ParameterOverride.Value.Variable != nullptr)
-		{
-			// The override is driven by a variable... read its value and set it as the value for the
-			// prefab's variable. Basically, we forward the value from one variable to the next.
-			FCameraVariableDefinition OverrideDefinition(ParameterOverride.Value.Variable->GetVariableDefinition());
-
-			const ValueType* OverrideValuePtr = OutVariableTable.FindValue<ValueType>(OverrideDefinition.VariableID);
-			if (OverrideValuePtr)
-			{
-				OutVariableTable.SetValue<ValueType>(InterfaceParameterID, *OverrideValuePtr);
-			}
-			else
-			{
-				// Once again, ignore un-built data. Only emit errors when running outside of the editor.
-#if !WITH_EDITOR
-				UE_LOG(LogCameraSystem, Error, 
-						TEXT("Camera variable '%s' for parameter override '%s' in camera rig '%s' isn't in the variable "
-							"table. Was it built/cooked?"),
-						*GetNameSafe(ParameterOverride.Value.Variable),
-						*ParameterOverride.InterfaceParameterName,
-						*GetPathNameSafe(CameraRig));
-#endif
-			}
-		}
-		else
-		{
-			// The override is a fixed value. Just set that on the prefab's variable.
-			OutVariableTable.SetValue<ValueType>(
-					InterfaceParameterID,
-					ParameterOverride.Value.Value);
-		}
-	}
-}
-
-}  // namespace Internal
-
-class FCameraRigCameraNodeEvaluator : public FCameraNodeEvaluator
-{
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FCameraRigCameraNodeEvaluator)
-
-protected:
-
-	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-
-private:
-
-	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable);
-
-private:
-
-	FCameraNodeEvaluator* CameraRigRootEvaluator = nullptr;
-};
-
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraRigCameraNodeEvaluator)
+
+FCameraRigCameraNodeEvaluator::FCameraRigCameraNodeEvaluator()
+{
+	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate);
+}
 
 FCameraNodeEvaluatorChildrenView FCameraRigCameraNodeEvaluator::OnGetChildren()
 {
@@ -123,35 +42,43 @@ void FCameraRigCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParam
 void FCameraRigCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	// Apply overrides right away.
-	ApplyParameterOverrides(OutResult.VariableTable);
+	ApplyParameterOverrides(OutResult.VariableTable, false);
+}
+
+void FCameraRigCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
+{
+	// Keep applying overrides in case they are driven by a variable.
+	const bool bDrivenOverridesOnly = true; //(Params.EvaluationParams.EvaluationType == ECameraNodeEvaluationType::Standard);
+	ApplyParameterOverrides(OutResult.VariableTable, bDrivenOverridesOnly);
 }
 
 void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Keep applying overrides in case they are driven by a variable.
-	// TODO: we could skip this step for constant overrides.
-	ApplyParameterOverrides(OutResult.VariableTable);
-
 	if (CameraRigRootEvaluator)
 	{
 		CameraRigRootEvaluator->Run(Params, OutResult);
 	}
 }
 
-void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable)
+void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly)
 {
-	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
+	if (bApplyParameterOverrides)
+	{
+		const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
 
-	const UCameraRigAsset* CameraRig = PrefabNode->CameraRigReference.GetCameraRig();
-	const FCameraRigParameterOverrides& ParameterOverrides = PrefabNode->CameraRigReference.GetParameterOverrides();
+		FCameraRigParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
+		OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
+	}
+}
 
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	Internal::ApplyParameterOverrides(\
-			CameraRig,\
-			ParameterOverrides.Get##ValueName##Overrides(),\
-			OutVariableTable);
-UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
+bool FCameraRigCameraNodeEvaluator::IsApplyingParameterOverrides() const
+{
+	return bApplyParameterOverrides;
+}
+
+void FCameraRigCameraNodeEvaluator::SetApplyParameterOverrides(bool bShouldApply)
+{
+	bApplyParameterOverrides = bShouldApply;
 }
 
 namespace Internal

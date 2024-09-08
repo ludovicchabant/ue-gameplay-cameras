@@ -39,6 +39,8 @@ struct FCameraNodePreBlendParams
 	const FCameraPose& LastCameraPose;
 	/** The variable table of the node tree being blended. */
 	const FCameraVariableTable& ChildVariableTable;
+	/** Extra filter for variable table blending. */
+	ECameraVariableTableFilter ExtraVariableTableFilter = ECameraVariableTableFilter::None;
 };
 
 /**

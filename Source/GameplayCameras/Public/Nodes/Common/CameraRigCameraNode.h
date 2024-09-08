@@ -8,11 +8,6 @@
 
 #include "CameraRigCameraNode.generated.h"
 
-namespace UE::Cameras
-{
-	class FCameraRigCameraNodeEvaluator;
-}
-
 /**
  * A camera node that runs a camera rig's own node tree.
  */
@@ -41,7 +36,7 @@ private:
 
 	// Deprecated properties, predating FCameraRigAssetReference
 
-	UPROPERTY()
+	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
 	TObjectPtr<UCameraRigAsset> CameraRig_DEPRECATED;
 
 	UPROPERTY()
@@ -73,4 +68,40 @@ private:
 	UPROPERTY()
 	TArray<FTransform3dCameraRigParameterOverride> Transform3dOverrides_DEPRECATED;
 };
+
+namespace UE::Cameras
+{
+
+class FCameraRigCameraNodeEvaluator : public FCameraNodeEvaluator
+{
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FCameraRigCameraNodeEvaluator)
+
+public:
+
+	FCameraRigCameraNodeEvaluator();
+
+	// Internal API.
+	bool IsApplyingParameterOverrides() const;
+	void SetApplyParameterOverrides(bool bShouldApply);
+
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
+	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly);
+
+private:
+
+	FCameraNodeEvaluator* CameraRigRootEvaluator = nullptr;
+	bool bApplyParameterOverrides = true;
+};
+
+}  // namesapce UE::Cameras
 

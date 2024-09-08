@@ -12,7 +12,6 @@
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraNodeEvaluationResultDebugBlock.h"
-#include "Debug/CameraNodeEvaluatorDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "HAL/IConsoleManager.h"
@@ -21,6 +20,7 @@
 #include "Math/ColorList.h"
 #include "Modules/ModuleManager.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
+#include "Nodes/Common/CameraRigCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackCameraNode)
 
@@ -55,19 +55,59 @@ FBlendStackCameraNodeEvaluator::~FBlendStackCameraNodeEvaluator()
 
 void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
 {
+	bool bSearchedForTransition = false;
+	const UCameraRigTransition* Transition = nullptr;
+
 	if (!Entries.IsEmpty())
 	{
-		// Don't push anything if what is being requested is already the
-		// active camera rig.
-		const FCameraRigEntry& TopEntry(Entries.Top());
-		if (!TopEntry.bIsFrozen
-				&& TopEntry.CameraRig == Params.CameraRig
+		FCameraRigEntry& TopEntry(Entries.Top());
+		if (!TopEntry.bIsFrozen 
 				&& TopEntry.EvaluationContext == Params.EvaluationContext)
 		{
-			return;
+			// Don't push anything is what is being requested is already the active 
+			// camera rig.
+			if (TopEntry.CameraRig == Params.CameraRig)
+			{
+				return;
+			}
+
+			// See if we can merge the new camera rig onto the active camera rig.
+			const EBlendStackEntryComparison Comparison = TopEntry.RootEvaluator->Compare(Params.CameraRig);
+
+			if (Comparison == EBlendStackEntryComparison::Active)
+			{
+				// This camera rig is already the active one on the merged stack.
+				return;
+			}
+
+			if (Comparison == EBlendStackEntryComparison::EligibleForMerge)
+			{
+				// This camera rig can be merged with the one current running. However, we
+				// only do it if the transition explicitly allows it.
+				bSearchedForTransition = true;
+				Transition = FindTransition(Params);
+
+				if (Transition && Transition->bAllowCameraRigMerging)
+				{
+					PushVariantEntry(Params, Transition);
+					return;
+				}
+			}
 		}
 	}
 
+	// It's a legitimate new entry in the blend stack.
+	if (!bSearchedForTransition)
+	{
+		bSearchedForTransition = true;
+		Transition = FindTransition(Params);
+	}
+
+	PushNewEntry(Params, Transition);
+}
+
+void FBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition)
+{
 	// Create the new root node to wrap the new camera rig's root node, and the specific
 	// blend node for this transition.
 	// We need to const-cast here to be able to use our own blend stack node as the outer
@@ -81,7 +121,7 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 		// Find a transition and use its blend. If no transition is found,
 		// make a camera cut transition.
 		UBlendCameraNode* ModeBlend = nullptr;
-		if (const UCameraRigTransition* Transition = FindTransition(Params))
+		if (Transition)
 		{
 			ModeBlend = Transition->Blend;
 			UsedTransition = Transition;
@@ -107,18 +147,9 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	}
 
 #if WITH_EDITOR
-	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
-	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
-	Params.CameraRig->GatherPackages(NewEntry.ListenedPackages);
-	for (const UPackage* ListenPackage : NewEntry.ListenedPackages)
-	{
-		int32& NumListens = AllListenedPackages.FindOrAdd(ListenPackage, 0);
-		if (NumListens == 0)
-		{
-			LiveEditManager->AddListener(ListenPackage, this);
-		}
-		++NumListens;
-	}
+	// Listen to changes to the packages inside which this camera rig is defined. We will hot-reload the
+	// camera node evaluators for this camera rig when we detect changes.
+	AddPackageListeners(NewEntry);
 #endif  // WITH_EDITOR
 
 	// Important: we need to move the new entry here because copying evaluator storage
@@ -129,6 +160,28 @@ void FBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Par
 	{
 		BroadcastCameraRigEvent(EBlendStackCameraRigEventType::Pushed, Entries.Last(), UsedTransition);
 	}
+}
+
+void FBlendStackCameraNodeEvaluator::PushVariantEntry(const FBlendStackCameraPushParams& PushParams, const UCameraRigTransition* Transition)
+{
+	const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(PushParams.CameraRig->RootNode);
+	const UBlendCameraNode* Blend = Transition ? Transition->Blend : nullptr;
+
+	FCameraRigEntry& TopEntry = Entries.Top();
+	FCameraNodeEvaluatorBuilder Builder(TopEntry.EvaluatorStorage);
+	FCameraNodeEvaluatorBuildParams BuildParams(Builder);
+	TopEntry.RootEvaluator->MergeCameraRig(BuildParams, PrefabNode, Blend);
+
+	// Swap out the camera rig registered as "active" for this entry.
+#if WITH_EDITOR
+	RemoveListenedPackages(TopEntry);
+#endif
+	{
+		TopEntry.CameraRig = PushParams.CameraRig;
+	}
+#if WITH_EDITOR
+	AddPackageListeners(TopEntry);
+#endif
 }
 
 bool FBlendStackCameraNodeEvaluator::InitializeEntry(
@@ -526,6 +579,27 @@ void FBlendStackCameraNodeEvaluator::PopEntries(int32 FirstIndexToKeep)
 }
 
 #if WITH_EDITOR
+
+void FBlendStackCameraNodeEvaluator::AddPackageListeners(FCameraRigEntry& Entry)
+{
+	if (!ensure(Entry.CameraRig))
+	{
+		return;
+	}
+
+	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
+	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+	Entry.CameraRig->GatherPackages(Entry.ListenedPackages);
+	for (const UPackage* ListenPackage : Entry.ListenedPackages)
+	{
+		int32& NumListens = AllListenedPackages.FindOrAdd(ListenPackage, 0);
+		if (NumListens == 0)
+		{
+			LiveEditManager->AddListener(ListenPackage, this);
+		}
+		++NumListens;
+	}
+}
 
 void FBlendStackCameraNodeEvaluator::RemoveListenedPackages(FCameraRigEntry& Entry)
 {
