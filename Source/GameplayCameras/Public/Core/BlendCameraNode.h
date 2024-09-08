@@ -52,6 +52,12 @@ struct FCameraNodePreBlendResult
 
 	/** The variable table to received blended parameters. */
 	FCameraVariableTable& VariableTable;
+
+	/** Whether the blend has reached 100%. */
+	bool bIsBlendFull = false;
+
+	/** Whether the blend is finished. */
+	bool bIsBlendFinished = false;
 };
 
 /**
