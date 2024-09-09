@@ -14,7 +14,7 @@
 
 FText UAssetDefinition_CameraRigAsset::GetAssetDisplayName() const
 {
-	return LOCTEXT("AssetDisplayName", "Camera Rig");
+	return LOCTEXT("AssetDisplayName", "Camera Rig Prefab");
 }
 
 FLinearColor UAssetDefinition_CameraRigAsset::GetAssetColor() const

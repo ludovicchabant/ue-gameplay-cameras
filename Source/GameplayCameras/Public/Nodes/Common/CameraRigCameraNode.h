@@ -11,7 +11,7 @@
 /**
  * A camera node that runs a camera rig's own node tree.
  */
-UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Utility"))
+UCLASS(MinimalAPI, meta=(DisplayName="Camera Rig Prefab", CameraNodeCategories="Common,Utility"))
 class UCameraRigCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
