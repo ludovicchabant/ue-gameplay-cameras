@@ -2,26 +2,14 @@
 
 #pragma once
 
-#include "Components/ActorComponent.h"
-#include "Core/CameraEvaluationContext.h"
-#include "Core/RootCameraNode.h"
 #include "CoreTypes.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "Templates/SharedPointerFwd.h"
-#include "UObject/ObjectMacros.h"
-#include "UObject/ObjectPtr.h"
 
 #include "ActivateCameraRigFunctions.generated.h"
 
 class APlayerController;
 class UCameraRigAsset;
-class UGameplayCameraSystemHost;
-
-namespace UE::Cameras
-{
-	class FCameraEvaluationContext;
-	class FCameraSystemEvaluator;
-}  // namespace UE::Cameras
+enum class ECameraRigLayer : uint8;
 
 /**
  * Blueprint functions for activating camera rigs in the base/global/visual layers.
@@ -37,65 +25,22 @@ class UActivateCameraRigFunctions : public UBlueprintFunctionLibrary
 
 public:
 
-	/** Activates the given camera rig in the base layer. */
+	/** Activates the given camera rig prefab in the base layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera", meta=(WorldContext="WorldContextObject"))
 	static void ActivateBaseCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
-	/** Activates the given camera rig in the global layer. */
+	/** Activates the given camera rig prefab in the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
 	static void ActivateGlobalCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
-	/** Activates the given camera rig in the visual layer. */
+	/** Activates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
 	static void ActivateVisualCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
-	/** Activates the given camera rig in the given layer. */
+private:
+
+	/** Activates the given camera rig in the given layer. Should not be used with Main layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
 	static void ActivateCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
-};
-
-/**
- * A component, attached to a player controller, that can run camera rigs activated from
- * a global place like the Blueprint functions inside UActivateCameraRigFunctions.
- */
-UCLASS(Hidden, MinimalAPI)
-class UControllerGameplayCameraEvaluationComponent : public UActorComponent
-{
-	GENERATED_BODY()
-
-public:
-
-	UControllerGameplayCameraEvaluationComponent(const FObjectInitializer& ObjectInitializer);
-
-	/** Activates a new camera rig. */
-	void ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
-
-public:
-
-	// UActorComponent interface.
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-private:
-
-	void ActivateCameraRigs();
-	void EnsureEvaluationContext();
-	void EnsureCameraSystemHost();
-
-private:
-
-	struct FCameraRigInfo
-	{
-		TObjectPtr<UCameraRigAsset> CameraRig;
-		ECameraRigLayer EvaluationLayer;
-		bool bActivated = false;
-	};
-
-	TArray<FCameraRigInfo> CameraRigInfos;
-
-	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
-
-	UPROPERTY()
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 };
 
