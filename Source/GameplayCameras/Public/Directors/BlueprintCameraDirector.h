@@ -10,11 +10,72 @@
 
 #include "BlueprintCameraDirector.generated.h"
 
+class UCameraRigAsset;
 class UCameraRigProxyAsset;
 class UCameraRigProxyTable;
+enum class ECameraRigLayer : uint8;
+
+namespace UE::Cameras
+{
+
+/** Information about a persitent camera rig to be activated or deactivated. */
+struct FBlueprintPersistentCameraRigInfo
+{
+	UCameraRigAsset* CameraRig;
+	ECameraRigLayer Layer;
+};
 
 /**
- * Parameter struct for the Blueprint camera director evaluator.
+ * The evaluation result for the Blueprint camera director evaluator.
+ */
+struct FBlueprintCameraDirectorEvaluationResult
+{
+	/** The list of camera rigs that should be active this frame. */
+	TArray<UCameraRigProxyAsset*> ActiveCameraRigProxies;
+
+	/** The list of camera rigs that should be active this frame. */
+	TArray<UCameraRigAsset*> ActiveCameraRigs;
+
+	/** The list of persistent camera rigs to activate. */
+	TArray<FBlueprintPersistentCameraRigInfo> ActivePersistentCameraRigs;
+
+	/** The list of persistent camera rigs to deactivate. */
+	TArray<FBlueprintPersistentCameraRigInfo> InactivePersistentCameraRigs;
+
+	/** Reset this result for a new evaluation. */
+	void Reset();
+};
+
+}  // namespace UE::Cameras
+
+/**
+ * Parameter struct for activating the Blueprint camera director evaluator.
+ */
+USTRUCT(BlueprintType)
+struct FBlueprintCameraDirectorActivateParams
+{
+	GENERATED_BODY()
+
+	/** The owner (if any) of the evaluation context we are running inside of. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TObjectPtr<UObject> EvaluationContextOwner;
+};
+
+/**
+ * Parameter struct for deactivating the Blueprint camera director evaluator.
+ */
+USTRUCT(BlueprintType)
+struct FBlueprintCameraDirectorDeactivateParams
+{
+	GENERATED_BODY()
+
+	/** The owner (if any) of the evaluation context we were running inside of. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TObjectPtr<UObject> EvaluationContextOwner;
+};
+
+/**
+ * Parameter struct for running the Blueprint camera director evaluator.
  */
 USTRUCT(BlueprintType)
 struct FBlueprintCameraDirectorEvaluationParams
@@ -28,26 +89,6 @@ struct FBlueprintCameraDirectorEvaluationParams
 	/** The owner (if any) of the evaluation context we are running inside of. */
 	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
 	TObjectPtr<UObject> EvaluationContextOwner;
-
-	/** The evaluation context we are running inside of. */
-	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
-};
-
-/**
- * The evaluation result for the Blueprint camera director evaluator.
- */
-USTRUCT(BlueprintType)
-struct FBlueprintCameraDirectorEvaluationResult
-{
-	GENERATED_BODY()
-
-	/** The list of camera rigs that should be active this frame. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<TObjectPtr<UCameraRigProxyAsset>> ActiveCameraRigProxies;
-
-	/** The list of camera rigs that should be active this frame. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TArray<TObjectPtr<UCameraRigAsset>> ActiveCameraRigs;
 };
 
 /**
@@ -59,6 +100,20 @@ class UBlueprintCameraDirectorEvaluator : public UObject
 	GENERATED_BODY()
 
 public:
+
+	/**
+	 * Override this method in Blueprint to execute custom logic when this
+	 * camera director gets activated.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Activation")
+	void ActivateCameraDirector(const FBlueprintCameraDirectorActivateParams& Params);
+
+	/**
+	 * Override this method in Blueprint to execute custom logic when this
+	 * camera director gets deactivated.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Activation")
+	void DeactivateCameraDirector(const FBlueprintCameraDirectorDeactivateParams& Params);
 	
 	/**
 	 * Override this method in Blueprint to execute the custom logic that determines
@@ -66,6 +121,22 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
 	void RunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params);
+
+public:
+
+	/** Activates the given camera rig prefab in the base layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void ActivateBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+	/** Activates the given camera rig prefab in the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void ActivateGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+	/** Activates the given camera rig prefab in the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void ActivateVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+public:
 
 	/** Specifies a camera rig to be active this frame. */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
@@ -112,20 +183,28 @@ public:
 
 public:
 
+	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
+	using FBlueprintCameraDirectorEvaluationResult = UE::Cameras::FBlueprintCameraDirectorEvaluationResult;
+
+	/** Native wrapper for ActivateCameraDirector. */
+	void NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params);
+
+	/** Native wrapper for DeactivateCameraDirector. */
+	void NativeDeactivateCameraDirector(const UE::Cameras::FCameraDirectorDeactivateParams& Params);
+
 	/** Native wrapper for RunCameraDirector. */
-	void NativeRunCameraDirector(
-			const FBlueprintCameraDirectorEvaluationParams& Params,
-			FBlueprintCameraDirectorEvaluationResult& OutResult);
+	void NativeRunCameraDirector(const UE::Cameras::FCameraDirectorEvaluationParams& Params);
 
-protected:
-
-	/** The current camera director evaluation result. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	FBlueprintCameraDirectorEvaluationResult CurrentResult;
+	/** Get the last result for this camera director. */
+	const FBlueprintCameraDirectorEvaluationResult& GetEvaluationResult() const { return EvaluationResult; }
 
 private:
 
-	TSharedPtr<UE::Cameras::FCameraEvaluationContext> CurrentContext;
+	/** The current camera director evaluation result. */
+	FBlueprintCameraDirectorEvaluationResult EvaluationResult;
+
+	/** The current evaluation context. */
+	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
 };
 
 /**

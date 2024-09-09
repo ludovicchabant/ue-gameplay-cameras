@@ -5,11 +5,15 @@
 #include "Components/ActorComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
 #include "Core/CameraRigProxyTable.h"
+#include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/ControllerGameplayCameraEvaluationComponent.h"
 #include "GameplayCameras.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraDirector)
@@ -19,6 +23,12 @@
 namespace UE::Cameras
 {
 
+void FBlueprintCameraDirectorEvaluationResult::Reset()
+{
+	ActiveCameraRigProxies.Reset();
+	ActiveCameraRigs.Reset();
+}
+
 class FBlueprintCameraDirectorEvaluator : public FCameraDirectorEvaluator
 {
 	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(GAMEPLAYCAMERAS_API, FBlueprintCameraDirectorEvaluator)
@@ -26,14 +36,26 @@ class FBlueprintCameraDirectorEvaluator : public FCameraDirectorEvaluator
 protected:
 
 	virtual void OnInitialize(const FCameraDirectorInitializeParams& Params) override;
+	virtual void OnActivate(const FCameraDirectorActivateParams& Params) override;
+	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) override;
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
 
 private:
 
+	void ActivateTransientCameraRigs(
+			const FCameraDirectorEvaluationParams& Params, 
+			const FBlueprintCameraDirectorEvaluationResult& BlueprintResult, 
+			FCameraDirectorEvaluationResult& OutResult);
+	void ActivateDeactivePersistentCameraRigs(
+			TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+			const FBlueprintCameraDirectorEvaluationResult& BlueprintResult);
+
 	const UCameraRigAsset* FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy);
 
 private:
+
+	FCameraSystemEvaluator* OwningEvaluator = nullptr;
 
 	TObjectPtr<UBlueprintCameraDirectorEvaluator> EvaluatorBlueprint;
 };
@@ -65,70 +87,133 @@ void FBlueprintCameraDirectorEvaluator::OnInitialize(const FCameraDirectorInitia
 	}
 }
 
+void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivateParams& Params)
+{
+	OwningEvaluator = Params.Evaluator;
+
+	if (EvaluatorBlueprint)
+	{
+		EvaluatorBlueprint->NativeActivateCameraDirector(Params);
+
+		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
+	}
+	else
+	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate Blueprint camera director, no Blueprint class was set!"));
+	}
+}
+
+void FBlueprintCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params)
+{
+	if (EvaluatorBlueprint)
+	{
+		EvaluatorBlueprint->NativeDeactivateCameraDirector(Params);
+
+		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
+	}
+
+	OwningEvaluator = nullptr;
+}
+
 void FBlueprintCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	if (EvaluatorBlueprint)
 	{
-		FBlueprintCameraDirectorEvaluationParams BlueprintParams;
-		BlueprintParams.DeltaTime = Params.DeltaTime;
-		BlueprintParams.EvaluationContext = Params.OwnerContext;
-		if (Params.OwnerContext)
+		EvaluatorBlueprint->NativeRunCameraDirector(Params);
+
+		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		ActivateTransientCameraRigs(Params, BlueprintResult, OutResult);
+		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
+	}
+}
+
+void FBlueprintCameraDirectorEvaluator::ActivateTransientCameraRigs(
+		const FCameraDirectorEvaluationParams& Params, 
+		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult, 
+		FCameraDirectorEvaluationResult& OutResult)
+{
+	TArray<const UCameraRigAsset*, TInlineAllocator<2>> CameraRigs;
+	const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
+
+	// Gather camera rigs.
+	for (const UCameraRigAsset* ActiveCameraRig : BlueprintResult.ActiveCameraRigs)
+	{
+		if (ActiveCameraRig)
 		{
-			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+			CameraRigs.Add(ActiveCameraRig);
 		}
-
-		FBlueprintCameraDirectorEvaluationResult BlueprintResult;
-
-		EvaluatorBlueprint->NativeRunCameraDirector(BlueprintParams, BlueprintResult);
-
-		TArray<const UCameraRigAsset*, TInlineAllocator<2>> CameraRigs;
-		const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
-
-		// Gather camera rigs.
-		for (const UCameraRigAsset* ActiveCameraRig : BlueprintResult.ActiveCameraRigs)
+		else
 		{
-			if (ActiveCameraRig)
-			{
-				CameraRigs.Add(ActiveCameraRig);
-			}
-			else
-			{
-				UE_LOG(
-						LogCameraSystem, 
-						Error, 
-						TEXT("Null camera rig specified in camera director '%s'."),
-						*EvaluatorBlueprint->GetClass()->GetPathName());
-			}
-		}
-
-		// Resolve camera rig proxies.
-		for (const UCameraRigProxyAsset* ActiveCameraRigProxy : BlueprintResult.ActiveCameraRigProxies)
-		{
-			const UCameraRigAsset* ActiveCameraRig = FindCameraRigByProxy(ActiveCameraRigProxy);
-			if (ActiveCameraRig)
-			{
-				CameraRigs.Add(ActiveCameraRig);
-			}
-			else
-			{
-				UE_LOG(
-						LogCameraSystem, 
-						Error, 
-						TEXT("No camera rig found mapped to proxy '%s' in camera '%s'."),
-						*ActiveCameraRigProxy->GetPathName(), *CameraAsset->GetPathName());
-			}
-		}
-
-		// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
-		// make them run in our own owner context.
-		for (const UCameraRigAsset* ActiveCameraRig : CameraRigs)
-		{
-			OutResult.Add(Params.OwnerContext, ActiveCameraRig);
+			UE_LOG(
+					LogCameraSystem, 
+					Error, 
+					TEXT("Null camera rig specified in camera director '%s'."),
+					*EvaluatorBlueprint->GetClass()->GetPathName());
 		}
 	}
-	else
+
+	// Resolve camera rig proxies.
+	for (const UCameraRigProxyAsset* ActiveCameraRigProxy : BlueprintResult.ActiveCameraRigProxies)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't run Blueprint camera director, no Blueprint class was set!"));
+		const UCameraRigAsset* ActiveCameraRig = FindCameraRigByProxy(ActiveCameraRigProxy);
+		if (ActiveCameraRig)
+		{
+			CameraRigs.Add(ActiveCameraRig);
+		}
+		else
+		{
+			UE_LOG(
+					LogCameraSystem, 
+					Error, 
+					TEXT("No camera rig found mapped to proxy '%s' in camera '%s'."),
+					*ActiveCameraRigProxy->GetPathName(), *CameraAsset->GetPathName());
+		}
+	}
+
+	// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
+	// make them run in our own owner context.
+	for (const UCameraRigAsset* ActiveCameraRig : CameraRigs)
+	{
+		OutResult.Add(Params.OwnerContext, ActiveCameraRig);
+	}
+}
+
+void FBlueprintCameraDirectorEvaluator::ActivateDeactivePersistentCameraRigs(
+		TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult)
+{
+	if (!ensure(OwningEvaluator))
+	{
+		return;
+	}
+
+	FRootCameraNodeEvaluator* RootNodeEvaluator = OwningEvaluator->GetRootNodeEvaluator();
+
+	APlayerController* PlayerController = EvaluationContext->GetPlayerController();
+	TSharedPtr<const FCameraEvaluationContext> ControllerEvaluationContext;
+	if (ensure(PlayerController))
+	{
+		ControllerEvaluationContext = UControllerGameplayCameraEvaluationComponent::FindOrAddEvaluationContext(PlayerController);
+	}
+
+	for (const FBlueprintPersistentCameraRigInfo& CameraRigInfo : BlueprintResult.InactivePersistentCameraRigs)
+	{
+		FDeactivateCameraRigParams DeactivateParams;
+		DeactivateParams.EvaluationContext = ControllerEvaluationContext;
+		DeactivateParams.CameraRig = CameraRigInfo.CameraRig;
+		DeactivateParams.Layer = CameraRigInfo.Layer;
+		RootNodeEvaluator->DeactivateCameraRig(DeactivateParams);
+	}
+
+	for (const FBlueprintPersistentCameraRigInfo& CameraRigInfo : BlueprintResult.ActivePersistentCameraRigs)
+	{
+		FActivateCameraRigParams ActivateParams;
+		ActivateParams.EvaluationContext = ControllerEvaluationContext;
+		ActivateParams.CameraRig = CameraRigInfo.CameraRig;
+		ActivateParams.Layer = CameraRigInfo.Layer;
+		RootNodeEvaluator->ActivateCameraRig(ActivateParams);
 	}
 }
 
@@ -158,25 +243,40 @@ void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollect
 
 }  // namespace UE::Cameras
 
+void UBlueprintCameraDirectorEvaluator::ActivateBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Base });
+}
+
+void UBlueprintCameraDirectorEvaluator::ActivateGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Global });
+}
+
+void UBlueprintCameraDirectorEvaluator::ActivateVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
+}
+
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig)
 {
-	CurrentResult.ActiveCameraRigs.Add(CameraRig);
+	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy)
 {
-	CurrentResult.ActiveCameraRigProxies.Add(CameraRigProxy);
+	EvaluationResult.ActiveCameraRigProxies.Add(CameraRigProxy);
 }
 
 AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
 {
-	if (CurrentContext)
+	if (EvaluationContext)
 	{
-		if (UActorComponent* ContextOwnerAsComponent = Cast<UActorComponent>(CurrentContext->GetOwner()))
+		if (UActorComponent* ContextOwnerAsComponent = Cast<UActorComponent>(EvaluationContext->GetOwner()))
 		{
 			return ContextOwnerAsComponent->GetOwner();
 		}
-		else if (AActor* ContextOwnerAsActor = Cast<AActor>(CurrentContext->GetOwner()))
+		else if (AActor* ContextOwnerAsActor = Cast<AActor>(EvaluationContext->GetOwner()))
 		{
 			return ContextOwnerAsActor;
 		}
@@ -196,9 +296,9 @@ AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubc
 
 FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraPose() const
 {
-	if (CurrentContext)
+	if (EvaluationContext)
 	{
-		return FBlueprintCameraPose::FromCameraPose(CurrentContext->GetInitialResult().CameraPose);
+		return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
 	}
 	else
 	{
@@ -211,9 +311,9 @@ FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraP
 
 FBlueprintCameraVariableTable UBlueprintCameraDirectorEvaluator::GetInitialContextVariableTable() const
 {
-	if (CurrentContext)
+	if (EvaluationContext)
 	{
-		return FBlueprintCameraVariableTable(&CurrentContext->GetInitialResult().VariableTable);
+		return FBlueprintCameraVariableTable(&EvaluationContext->GetInitialResult().VariableTable);
 	}
 	else
 	{
@@ -226,9 +326,9 @@ FBlueprintCameraVariableTable UBlueprintCameraDirectorEvaluator::GetInitialConte
 
 void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose)
 {
-	if (CurrentContext)
+	if (EvaluationContext)
 	{
-		InCameraPose.ApplyTo(CurrentContext->GetInitialResult().CameraPose);
+		InCameraPose.ApplyTo(EvaluationContext->GetInitialResult().CameraPose);
 	}
 	else
 	{
@@ -238,16 +338,51 @@ void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBluep
 	}
 }
 
-void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params, FBlueprintCameraDirectorEvaluationResult& OutResult)
+void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params)
 {
-	CurrentContext = Params.EvaluationContext;
-	CurrentResult = OutResult;
+	EvaluationContext = Params.OwnerContext;
+
+	EvaluationResult.Reset();
 	{
-		// Run the Blueprint logic.
-		RunCameraDirector(Params);
+		FBlueprintCameraDirectorActivateParams BlueprintParams;
+		if (Params.OwnerContext)
+		{
+			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+		}
+
+		ActivateCameraDirector(BlueprintParams);
 	}
-	OutResult = CurrentResult;
-	CurrentContext.Reset();
+}
+
+void UBlueprintCameraDirectorEvaluator::NativeDeactivateCameraDirector(const UE::Cameras::FCameraDirectorDeactivateParams& Params)
+{
+	EvaluationResult.Reset();
+	{
+		FBlueprintCameraDirectorDeactivateParams BlueprintParams;
+		if (Params.OwnerContext)
+		{
+			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+		}
+
+		DeactivateCameraDirector(BlueprintParams);
+	}
+
+	EvaluationContext = nullptr;
+}
+
+void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const UE::Cameras::FCameraDirectorEvaluationParams& Params)
+{
+	EvaluationResult.Reset();
+	{
+		FBlueprintCameraDirectorEvaluationParams BlueprintParams;
+		BlueprintParams.DeltaTime = Params.DeltaTime;
+		if (Params.OwnerContext)
+		{
+			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+		}
+
+		RunCameraDirector(BlueprintParams);
+	}
 }
 
 FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
