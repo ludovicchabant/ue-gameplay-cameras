@@ -56,6 +56,21 @@ struct FActivateCameraRigParams
 };
 
 /**
+ * Parameter structure for deaactivating a running camera rig.
+ */
+struct FDeactivateCameraRigParams
+{
+	/** The evaluation context in which the camera rig runs. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset that was instantiated. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+
+	/** The evaluation layer on which the camera rig is running. */
+	ECameraRigLayer Layer = ECameraRigLayer::Main;
+};
+
+/**
  * Parameter structure for building a single camera rig hierarchy.
  */
 struct FSingleCameraRigHierarchyBuildParams
@@ -91,6 +106,9 @@ public:
 	/** Activates a camera rig. */
 	void ActivateCameraRig(const FActivateCameraRigParams& Params);
 
+	/** Deactivates a camera rig. */
+	void DeactivateCameraRig(const FDeactivateCameraRigParams& Params);
+
 	/**
 	 * Builds the hierarchy of the system for a given single camera rig.
 	 * This is expected to return the nodes of all the layers, except for the main layer which
@@ -118,6 +136,9 @@ protected:
 
 	/** Activates a camera rig. */
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
+	
+	/** Deactivates a camera rig. */
+	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) {}
 
 	/* Builds the hierarchy of the system for a given single camera rig. */
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) {}

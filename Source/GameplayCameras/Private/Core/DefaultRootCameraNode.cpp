@@ -17,11 +17,11 @@ namespace UE::Cameras::Private
 
 TObjectPtr<UBlendStackCameraNode> CreateBlendStack(
 		UObject* This, const FObjectInitializer& ObjectInit,
-		const FName& Name, bool bAutoPop = true, bool bBlendFirstCameraRig = false)
+		const FName& Name, ECameraBlendStackType BlendStackType, bool bBlendFirstCameraRig)
 {
 	TObjectPtr<UBlendStackCameraNode> NewBlendStack = ObjectInit.CreateDefaultSubobject<UBlendStackCameraNode>(
 			This, Name);
-	NewBlendStack->bAutoPop = bAutoPop;
+	NewBlendStack->BlendStackType = BlendStackType;
 	NewBlendStack->bBlendFirstCameraRig = bBlendFirstCameraRig;
 	return NewBlendStack;
 }
@@ -33,10 +33,10 @@ UDefaultRootCameraNode::UDefaultRootCameraNode(const FObjectInitializer& ObjectI
 {
 	using namespace UE::Cameras::Private;
 
-	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), false, true);
-	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"));
-	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), false, true);
-	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), false, true);
+	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), ECameraBlendStackType::Persistent, true);
+	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"), ECameraBlendStackType::Transient, false);
+	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), ECameraBlendStackType::Persistent, true);
+	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), ECameraBlendStackType::Persistent, true);
 }
 
 FCameraNodeEvaluatorPtr UDefaultRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
@@ -53,15 +53,16 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FDefaultRootCameraNodeEvaluator)
 void FDefaultRootCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UDefaultRootCameraNode* Data = GetCameraNodeAs<UDefaultRootCameraNode>();
-	BaseLayer = BuildBlendStackEvaluator(Params, Data->BaseLayer);
-	MainLayer = BuildBlendStackEvaluator(Params, Data->MainLayer);
-	GlobalLayer = BuildBlendStackEvaluator(Params, Data->GlobalLayer);
-	VisualLayer = BuildBlendStackEvaluator(Params, Data->VisualLayer);
+	BaseLayer = BuildBlendStackEvaluator<FPersistentBlendStackCameraNodeEvaluator>(Params, Data->BaseLayer);
+	MainLayer = BuildBlendStackEvaluator<FTransientBlendStackCameraNodeEvaluator>(Params, Data->MainLayer);
+	GlobalLayer = BuildBlendStackEvaluator<FPersistentBlendStackCameraNodeEvaluator>(Params, Data->GlobalLayer);
+	VisualLayer = BuildBlendStackEvaluator<FPersistentBlendStackCameraNodeEvaluator>(Params, Data->VisualLayer);
 }
 
-FBlendStackCameraNodeEvaluator* FDefaultRootCameraNodeEvaluator::BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode)
+template<typename EvaluatorType>
+EvaluatorType* FDefaultRootCameraNodeEvaluator::BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode)
 {
-	FBlendStackCameraNodeEvaluator* BlendStackEvaluator = Params.BuildEvaluatorAs<FBlendStackCameraNodeEvaluator>(BlendStackNode);
+	EvaluatorType* BlendStackEvaluator = Params.BuildEvaluatorAs<EvaluatorType>(BlendStackNode);
 	BlendStackEvaluator->OnCameraRigEvent().AddRaw(this, &FDefaultRootCameraNodeEvaluator::OnBlendStackEvent);
 	return BlendStackEvaluator;
 }
@@ -81,13 +82,69 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 
 void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
 {
-	FBlendStackCameraNodeEvaluator* TargetStack = GetBlendStackEvaluator(Params.Layer);
-	if (ensure(TargetStack))
+	if (Params.Layer == ECameraRigLayer::Main)
 	{
 		FBlendStackCameraPushParams PushParams;
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
-		TargetStack->Push(PushParams);
+		MainLayer->Push(PushParams);
+	}
+	else
+	{
+		FPersistentBlendStackCameraNodeEvaluator* TargetLayer = nullptr;
+		switch (Params.Layer)
+		{
+			case ECameraRigLayer::Base:
+				TargetLayer = BaseLayer;
+				break;
+			case ECameraRigLayer::Global:
+				TargetLayer = GlobalLayer;
+				break;
+			case ECameraRigLayer::Visual:
+				TargetLayer = VisualLayer;
+				break;
+		}
+		if (ensure(TargetLayer))
+		{
+			FBlendStackCameraInsertParams InsertParams;
+			InsertParams.EvaluationContext = Params.EvaluationContext;
+			InsertParams.CameraRig = Params.CameraRig;
+			TargetLayer->Insert(InsertParams);
+		}
+	}
+}
+
+void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params)
+{
+	if (Params.Layer == ECameraRigLayer::Main)
+	{
+		FBlendStackCameraFreezeParams FreezeParams;
+		FreezeParams.CameraRig = Params.CameraRig;
+		FreezeParams.EvaluationContext = Params.EvaluationContext;
+		MainLayer->Freeze(FreezeParams);
+	}
+	else
+	{
+		FPersistentBlendStackCameraNodeEvaluator* TargetLayer = nullptr;
+		switch (Params.Layer)
+		{
+			case ECameraRigLayer::Base:
+				TargetLayer = BaseLayer;
+				break;
+			case ECameraRigLayer::Global:
+				TargetLayer = GlobalLayer;
+				break;
+			case ECameraRigLayer::Visual:
+				TargetLayer = VisualLayer;
+				break;
+		}
+		if (ensure(TargetLayer))
+		{
+			FBlendStackCameraRemoveParams RemoveParams;
+			RemoveParams.EvaluationContext = Params.EvaluationContext;
+			RemoveParams.CameraRig = Params.CameraRig;
+			TargetLayer->Remove(RemoveParams);
+		}
 	}
 }
 
@@ -130,23 +187,6 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 
 	GlobalLayer->Run(Params.EvaluationParams, OutResult);
 	// Don't run the visual layer.
-}
-
-FBlendStackCameraNodeEvaluator* FDefaultRootCameraNodeEvaluator::GetBlendStackEvaluator(ECameraRigLayer Layer) const
-{
-	switch (Layer)
-	{
-		case ECameraRigLayer::Base:
-			return BaseLayer;
-		case ECameraRigLayer::Main:
-			return MainLayer;
-		case ECameraRigLayer::Global:
-			return GlobalLayer;
-		case ECameraRigLayer::Visual:
-			return VisualLayer;
-		default:
-			return nullptr;
-	}
 }
 
 void FDefaultRootCameraNodeEvaluator::OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent)

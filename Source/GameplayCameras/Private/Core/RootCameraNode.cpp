@@ -22,6 +22,11 @@ void FRootCameraNodeEvaluator::ActivateCameraRig(const FActivateCameraRigParams&
 	OnActivateCameraRig(Params);
 }
 
+void FRootCameraNodeEvaluator::DeactivateCameraRig(const FDeactivateCameraRigParams& Params)
+{
+	OnDeactivateCameraRig(Params);
+}
+
 void FRootCameraNodeEvaluator::BuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
 {
 	OnBuildSingleCameraRigHierarchy(Params, OutHierarchy);

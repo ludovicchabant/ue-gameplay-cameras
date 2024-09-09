@@ -43,7 +43,8 @@ public:
 namespace UE::Cameras
 {
 
-class FBlendStackCameraNodeEvaluator;
+class FPersistentBlendStackCameraNodeEvaluator;
+class FTransientBlendStackCameraNodeEvaluator;
 
 /**
  * Evaluator for the default root camera node.
@@ -65,23 +66,23 @@ protected:
 
 	// FRootCameraNodeEvaluator interface.
 	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
+	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) override;
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) override;
 	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 private:
 
-	FBlendStackCameraNodeEvaluator* BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode);
-
-	FBlendStackCameraNodeEvaluator* GetBlendStackEvaluator(ECameraRigLayer Layer) const;
+	template<typename EvaluatorType>
+	EvaluatorType* BuildBlendStackEvaluator(const FCameraNodeEvaluatorBuildParams& Params, UBlendStackCameraNode* BlendStackNode);
 
 	void OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent);
 
 private:
 
-	FBlendStackCameraNodeEvaluator* BaseLayer;
-	FBlendStackCameraNodeEvaluator* MainLayer;
-	FBlendStackCameraNodeEvaluator* GlobalLayer;
-	FBlendStackCameraNodeEvaluator* VisualLayer;
+	FPersistentBlendStackCameraNodeEvaluator* BaseLayer;
+	FTransientBlendStackCameraNodeEvaluator* MainLayer;
+	FPersistentBlendStackCameraNodeEvaluator* GlobalLayer;
+	FPersistentBlendStackCameraNodeEvaluator* VisualLayer;
 };
 
 }  // namespace UE::Cameras

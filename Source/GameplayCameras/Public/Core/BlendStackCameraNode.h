@@ -37,6 +37,20 @@ class IGameplayCamerasLiveEditManager;
 
 }  // namespace UE::Cameras
 
+UENUM()
+enum class ECameraBlendStackType
+{
+	/**
+	 * Camera rigs in a transient blend stack get automatically popped out of the stack 
+	 * when another rig has reached 100% blend above them.
+	 */
+	Transient,
+	/**
+	 * Camera rigs in a persistent blend stack stay in the stack until explicitly removed.
+	 */
+	Persistent
+};
+
 /**
  * A blend stack implemented as a camera node.
  */
@@ -53,11 +67,10 @@ protected:
 public:
 
 	/** 
-	 * Whether to automatically pop camera rigs out of the stack when another rig
-	 * has reached 100% blend above them.
+	 * The type of blend stack this should run as.
 	 */
 	UPROPERTY()
-	bool bAutoPop = true;
+	ECameraBlendStackType BlendStackType = ECameraBlendStackType::Transient;
 
 	/**
 	 * Whether to blend-in the first camera rig when the stack is previously empty.
@@ -68,21 +81,6 @@ public:
 
 namespace UE::Cameras
 {
-
-/**
- * Parameter structure for pushing a camera rig onto a blend stack.
- */
-struct FBlendStackCameraPushParams
-{
-	/** The evaluator currently running.*/
-	FCameraSystemEvaluator* Evaluator = nullptr;
-
-	/** The evaluation context within which a camera rig's node tree should run. */
-	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
-
-	/** The source camera rig asset to instantiate and push on the blend stack. */
-	TObjectPtr<const UCameraRigAsset> CameraRig;
-};
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlendStackCameraRigEvent, const FBlendStackCameraRigEvent&);
 
@@ -100,9 +98,6 @@ class FBlendStackCameraNodeEvaluator
 public:
 
 	~FBlendStackCameraNodeEvaluator();
-
-	/** Push a new camera rig onto the blend stack. */
-	void Push(const FBlendStackCameraPushParams& Params);
 
 	/** Returns information about the top (active) camera rig, if any. */
 	FCameraRigEvaluationInfo GetActiveCameraRigEvaluationInfo() const;
@@ -138,28 +133,16 @@ protected:
 
 	struct FCameraRigEntry;
 
-	// Utility functions for finding an appropriate transition.
-	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
-	const UCameraRigTransition* FindTransition(
-			TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
-			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
-			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
-
-	void PopEntries(int32 FirstIndexToKeep);
-
 	bool InitializeEntry(
 		FCameraRigEntry& NewEntry, 
 		const UCameraRigAsset* CameraRig,
-		FCameraSystemEvaluator* Evaluator,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
 		UBlendStackRootCameraNode* EntryRootNode);
 
-	void PushVariantEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
-	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
-
 	void FreezeEntry(FCameraRigEntry& Entry);
 
-	void GatherEntryParameterEvaluators(FCameraNodeEvaluator* RootEvaluator, TArray<FCameraNodeEvaluator*>& OutParameterEvaluators);
+	void PopEntry(int32 EntryIndex);
+	void PopEntries(int32 FirstIndexToKeep);
 
 	void BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition = nullptr) const;
 
@@ -224,6 +207,110 @@ protected:
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
+/**
+ * Parameter structure for pushing a camera rig onto a transient blend stack.
+ */
+struct FBlendStackCameraPushParams
+{
+	/** The evaluation context within which a camera rig's node tree should run. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset to instantiate and push on the blend stack. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+};
+
+/**
+ * Parameter structure for freezing a camera rig inside a transient blend stack.
+ */
+struct FBlendStackCameraFreezeParams
+{
+	/** The evaluation context within which a camera rig's node tree is running. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset that is running. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+};
+
+/**
+ * Evaluator for a transient blend stack.
+ */
+class FTransientBlendStackCameraNodeEvaluator 
+	: public FBlendStackCameraNodeEvaluator
+{
+
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FTransientBlendStackCameraNodeEvaluator, FBlendStackCameraNodeEvaluator)
+
+public:
+
+	/** Push a new camera rig onto the blend stack. */
+	void Push(const FBlendStackCameraPushParams& Params);
+
+	/** Freeze a camera rig. */
+	void Freeze(const FBlendStackCameraFreezeParams& Params);
+
+	/** Freeze all camera rigs that belong to a given evaluation context. */
+	void FreezeAll(TSharedPtr<FCameraEvaluationContext> EvaluationContext);
+
+private:
+
+	// Utility functions for finding an appropriate transition.
+	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
+	const UCameraRigTransition* FindTransition(
+			TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
+			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
+			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
+
+	void PushVariantEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+
+};
+
+/**
+ * Parameter structure for inserting a camera rig into a persistent blend stack.
+ */
+struct FBlendStackCameraInsertParams
+{
+	/** The evaluation context within which a camera rig's node tree should run. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset to instantiate and push on the blend stack. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+};
+
+/**
+ * Parameter structure for removing a camera rig from a persistent blend stack.
+ */
+struct FBlendStackCameraRemoveParams
+{
+	/** The evaluation context within which a camera rig's node tree should run. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The source camera rig asset to instantiate and push on the blend stack. */
+	TObjectPtr<const UCameraRigAsset> CameraRig;
+};
+
+/**
+ * Evaluator for a persistent blend stack.
+ */
+class FPersistentBlendStackCameraNodeEvaluator 
+	: public FBlendStackCameraNodeEvaluator
+{
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FPersistentBlendStackCameraNodeEvaluator, FBlendStackCameraNodeEvaluator)
+
+public:
+
+	/** Insert a new camera rig onto the blend stack. */
+	void Insert(const FBlendStackCameraInsertParams& Params);
+
+	/** Remove an existing camera rig from the blend stack. */
+	void Remove(const FBlendStackCameraRemoveParams& Params);
+
+private:
+
+	// Utility functions for finding an appropriate transition.
+	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
+};
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 class FBlendStackSummaryCameraDebugBlock : public FCameraDebugBlock
@@ -243,6 +330,7 @@ protected:
 private:
 
 	int32 NumEntries;
+	ECameraBlendStackType BlendStackType;
 };
 
 class FBlendStackCameraDebugBlock : public FCameraDebugBlock
