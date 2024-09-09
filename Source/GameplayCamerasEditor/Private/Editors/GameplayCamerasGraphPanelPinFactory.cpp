@@ -28,15 +28,6 @@ TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdGraphPi
 		}
 	}
 
-	if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Object && 
-			Pin->PinType.PinSubCategoryObject == UCameraRigAsset::StaticClass())
-	{
-		if (TSharedPtr<SGraphPin> PinWidget = CreateCameraRigPickerPin(Pin))
-		{
-			return PinWidget;
-		}
-	}
-
 	const FEdGraphPinType& PinType = Pin->PinType;
 	const UClass* PinPropertyClass = Cast<const UClass>(PinType.PinSubCategoryObject);
 	if (PinType.PinCategory == UEdGraphSchema_K2::PC_Object && PinPropertyClass)
@@ -84,7 +75,25 @@ TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateFunctionParame
 
 TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCameraRigPickerPin(UEdGraphPin* Pin) const
 {
-	return SNew(SCameraRigNameGraphPin, Pin);
+	UEdGraphNode* OwningNode = Pin->GetOwningNode();
+	if (!OwningNode)
+	{
+		return nullptr;
+	}
+	const UClass* OwningNodeClass = OwningNode->GetClass();
+	const FString& UseCameraRigPickerForPinsMetaData = OwningNodeClass->GetMetaData(TEXT("UseCameraRigPickerForPins"));
+	if (UseCameraRigPickerForPinsMetaData.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	TArray<FString> CameraRigPickerPinNames;
+	UseCameraRigPickerForPinsMetaData.ParseIntoArray(CameraRigPickerPinNames, TEXT(","));
+	if (CameraRigPickerPinNames.Contains(Pin->GetName()))
+	{
+		return SNew(SCameraRigNameGraphPin, Pin);
+	}
+	return nullptr;
 }
 
 TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCameraVariablePickerPin(UEdGraphPin* Pin) const

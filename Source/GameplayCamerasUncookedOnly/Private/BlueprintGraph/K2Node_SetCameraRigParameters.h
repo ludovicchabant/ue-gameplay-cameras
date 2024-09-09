@@ -17,7 +17,7 @@ class UCameraRigAsset;
  * found on it. On compile, this node gets expanded into the appropriate number of individual setter
  * function calls for each parameter (see UCameraRigParameterInterop).
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(UseCameraRigPickerForPins="CameraRig"))
 class UK2Node_SetCameraRigParameters : public UK2Node
 {
 	GENERATED_BODY()
