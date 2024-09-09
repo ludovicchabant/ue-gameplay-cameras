@@ -60,6 +60,7 @@ void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationCont
 	FContextEntry NewEntry;
 
 	FCameraEvaluationContextActivateParams ActivateParams;
+	ActivateParams.Evaluator = Evaluator;
 	Context->Activate(ActivateParams);
 	
 	NewEntry.WeakContext = Context;

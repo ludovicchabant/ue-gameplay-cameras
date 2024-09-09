@@ -17,6 +17,7 @@ namespace UE::Cameras
 class FCameraDirectorEvaluator;
 class FCameraDirectorEvaluatorStorage;
 class FCameraEvaluationContext;
+class FCameraSystemEvaluator;
 
 /**
  * Parameter structure for initializing a newly created camera director evaluator.
@@ -35,10 +36,16 @@ struct FCameraDirectorInitializeParams
  */
 struct FCameraDirectorActivateParams
 {
+	/** The camera system that will run the camera director. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
+
 	/** The evaluation context that owns the camera director. */
 	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
+/**
+ * Parameter structure for deactivating a camera director evaluator.
+ */
 struct FCameraDirectorDeactivateParams
 {
 	/** The evaluation context that owns the camera director. */
@@ -57,9 +64,14 @@ struct FCameraDirectorEvaluationParams
 	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
+/**
+ * Structure describing a camera rig that should be active.
+ */
 struct FActiveCameraRigInfo
 {
+	/** The evaluation context to run the specified camera rig. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+	/** The camera rig that should be running. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
 };
 
@@ -69,7 +81,8 @@ struct FActiveCameraRigInfo
 struct FCameraDirectorEvaluationResult
 {
 	using FActiveCameraRigInfos = TArray<FActiveCameraRigInfo, TInlineAllocator<2>>;
-	/** The camera rig(s) that the director says should be active this frame. */
+
+	/** The camera rig(s) that the director says should be active this frame in the main layer. */
 	FActiveCameraRigInfos ActiveCameraRigs;
 
 	void Add(TSharedPtr<const FCameraEvaluationContext> InContext, TObjectPtr<const UCameraRigAsset> InCameraRig)

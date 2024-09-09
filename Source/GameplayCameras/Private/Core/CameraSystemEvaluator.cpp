@@ -193,7 +193,6 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			const FActiveCameraRigInfo& ActiveCameraRig = DirectorResult.ActiveCameraRigs[0];
 
 			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.Evaluator = this;
 			CameraRigParams.EvaluationContext = ActiveCameraRig.EvaluationContext;
 			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
@@ -225,7 +224,6 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			const UCameraRigAsset* CombinedCameraRig = CameraRigCombinationRegistry->FindOrCreateCombination(Combination);
 
 			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.Evaluator = this;
 			CameraRigParams.EvaluationContext = CommonContext;
 			CameraRigParams.CameraRig = CombinedCameraRig;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);

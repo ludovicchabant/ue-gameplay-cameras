@@ -85,7 +85,6 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 	if (ensure(TargetStack))
 	{
 		FBlendStackCameraPushParams PushParams;
-		PushParams.Evaluator = Params.Evaluator;
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
 		TargetStack->Push(PushParams);

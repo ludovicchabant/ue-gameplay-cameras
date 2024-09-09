@@ -206,7 +206,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 
 	// Initialize the node evaluators.
 	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
-	InitParams.Evaluator = Evaluator;
+	InitParams.Evaluator = OwningEvaluator;
 	InitParams.EvaluationContext = EvaluationContext;
 	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
 	RootEvaluator->Initialize(InitParams, NewEntry.Result);

@@ -16,6 +16,8 @@ class UCameraDirector;
 namespace UE::Cameras
 {
 
+class FCameraSystemEvaluator;
+
 /**
  * Parameter struct for initializing an evaluation context.
  */
@@ -35,6 +37,7 @@ struct FCameraEvaluationContextInitializeParams
  */
 struct FCameraEvaluationContextActivateParams
 {
+	FCameraSystemEvaluator* Evaluator = nullptr;
 };
 
 /**

@@ -116,7 +116,6 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 			FActivateCameraRigParams Params;
 			Params.CameraRig = CameraRigInfo.CameraRig;
 			Params.EvaluationContext = EvaluationContext;
-			Params.Evaluator = SystemEvaluator.Get();
 			Params.Layer = CameraRigInfo.EvaluationLayer;
 			RootNodeEvaluator->ActivateCameraRig(Params);
 

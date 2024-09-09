@@ -18,7 +18,6 @@ class UCameraDirector;
 class UCameraRigAsset;
 class UCanvas;
 class URootCameraNode;
-enum class ECameraRigLayer : uint8;
 struct FMinimalViewInfo;
 
 namespace UE::Cameras

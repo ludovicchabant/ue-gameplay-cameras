@@ -19,8 +19,7 @@ enum class ECameraRigLayer : uint8
 	Base UMETA(DisplayName="Base Layer"),
 	Main UMETA(DisplayName="Main Layer"),
 	Global UMETA(DisplayName="Global Layer"),
-	Visual UMETA(DisplayName="Visual Layer"),
-	ScratchMain UMETA(Hidden)
+	Visual UMETA(DisplayName="Visual Layer")
 };
 ENUM_CLASS_FLAGS(ECameraRigLayer)
 
@@ -46,9 +45,6 @@ struct FRootCameraNodeCameraRigEvent;
  */
 struct FActivateCameraRigParams
 {
-	/** The evaluator currently running.*/
-	FCameraSystemEvaluator* Evaluator = nullptr;
-
 	/** The evaluation context in which the camera rig runs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
