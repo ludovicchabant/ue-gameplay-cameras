@@ -27,6 +27,8 @@ void FBlueprintCameraDirectorEvaluationResult::Reset()
 {
 	ActiveCameraRigProxies.Reset();
 	ActiveCameraRigs.Reset();
+	ActivePersistentCameraRigs.Reset();
+	InactivePersistentCameraRigs.Reset();
 }
 
 class FBlueprintCameraDirectorEvaluator : public FCameraDirectorEvaluator
@@ -184,6 +186,11 @@ void FBlueprintCameraDirectorEvaluator::ActivateDeactivePersistentCameraRigs(
 		TSharedPtr<FCameraEvaluationContext> EvaluationContext,
 		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult)
 {
+	if (BlueprintResult.InactivePersistentCameraRigs.IsEmpty() && BlueprintResult.ActivePersistentCameraRigs.IsEmpty())
+	{
+		return;
+	}
+
 	if (!ensure(OwningEvaluator))
 	{
 		return;
