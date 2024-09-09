@@ -126,15 +126,27 @@ public:
 
 	/** Activates the given camera rig prefab in the base layer. */
 	UFUNCTION(BlueprintCallable, Category="Activation")
-	void ActivateBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
+	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Activation")
-	void ActivateGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
+	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Activation")
-	void ActivateVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
+	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+	/** Deactivates the given camera rig prefab in the base layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+	/** Deactivates the given camera rig prefab in the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
+
+	/** Deactivates the given camera rig prefab in the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Activation")
+	void DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 public:
 
@@ -150,6 +162,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
+
+	/**
+	 * Specifies an external camera rig prefab asset to be active this frame.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void ActivateCameraRigPrefab(UCameraRigAsset* CameraRig);
 
 public:
 

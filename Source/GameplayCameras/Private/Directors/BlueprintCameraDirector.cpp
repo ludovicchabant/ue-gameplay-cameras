@@ -250,19 +250,34 @@ void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollect
 
 }  // namespace UE::Cameras
 
-void UBlueprintCameraDirectorEvaluator::ActivateBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
+void UBlueprintCameraDirectorEvaluator::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
 	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Base });
 }
 
-void UBlueprintCameraDirectorEvaluator::ActivateGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
+void UBlueprintCameraDirectorEvaluator::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
 	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Global });
 }
 
-void UBlueprintCameraDirectorEvaluator::ActivateVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
+void UBlueprintCameraDirectorEvaluator::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
 	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
+}
+
+void UBlueprintCameraDirectorEvaluator::DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Base });
+}
+
+void UBlueprintCameraDirectorEvaluator::DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Global });
+}
+
+void UBlueprintCameraDirectorEvaluator::DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
+{
+	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig)
@@ -273,6 +288,11 @@ void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* Camer
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy)
 {
 	EvaluationResult.ActiveCameraRigProxies.Add(CameraRigProxy);
+}
+
+void UBlueprintCameraDirectorEvaluator::ActivateCameraRigPrefab(UCameraRigAsset* CameraRig)
+{
+	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
 }
 
 AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
