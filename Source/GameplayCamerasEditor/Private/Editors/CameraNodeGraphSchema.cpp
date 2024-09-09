@@ -95,6 +95,7 @@ void UCameraNodeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<U
 			for (UObject* MissingObject : MissingNodeTreeObjects)
 			{
 				((IObjectTreeGraphRootObject*)CameraRig)->AddConnectableObject(UCameraRigAsset::NodeTreeGraphName, MissingObject);
+				OutAllObjects.Add(MissingObject);
 			}
 		}
 	}
