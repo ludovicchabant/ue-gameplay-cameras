@@ -22,6 +22,7 @@
 UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
+	bWantsOnUpdateTransform = true;
 	PrimaryComponentTick.bCanEverTick = true;
 
 #if WITH_EDITORONLY_DATA
@@ -241,6 +242,12 @@ void UGameplayCameraComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	if (EvaluationContext)
 	{
 		EvaluationContext->Update(this);
+
+		if (bIsCameraCutNextFrame)
+		{
+			EvaluationContext->GetInitialResult().bIsCameraCut = true;
+			bIsCameraCutNextFrame = false;
+		}
 	}
 }
 
@@ -254,6 +261,16 @@ void UGameplayCameraComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 		PreviewMeshComponent->DestroyComponent();
 	}
 #endif  // WITH_EDITORONLY_DATA
+}
+
+void UGameplayCameraComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport)
+{
+	Super::OnUpdateTransform(UpdateTransformFlags, Teleport);
+
+	if (EvaluationContext && Teleport != ETeleportType::None)
+	{
+		bIsCameraCutNextFrame = true;
+	}
 }
 
 #if WITH_EDITORONLY_DATA
@@ -280,6 +297,7 @@ void FGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent*
 {
 	const FTransform& OwnerTransform = Owner->GetComponentTransform();
 	InitialResult.CameraPose.SetTransform(OwnerTransform);
+	InitialResult.bIsCameraCut = false;
 	InitialResult.bIsValid = true;
 }
 

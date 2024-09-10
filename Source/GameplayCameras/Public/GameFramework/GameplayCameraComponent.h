@@ -76,6 +76,9 @@ public:
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
+	// USceneComponent interface.
+	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
+
 private:
 
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
@@ -106,6 +109,8 @@ protected:
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
 
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
+
+	bool bIsCameraCutNextFrame = false;
 
 	UPROPERTY()
 	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
