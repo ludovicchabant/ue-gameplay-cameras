@@ -56,6 +56,14 @@ void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalView
 		Evaluator->Update(UpdateParams);
 
 		Evaluator->GetEvaluatedCameraView(DesiredView);
+
+		if (bSetPlayerControllerRotation)
+		{
+			if (APlayerController* PlayerController = WeakPlayerController.Get())
+			{
+				PlayerController->SetControlRotation(Evaluator->GetEvaluatedResult().CameraPose.GetRotation());
+			}
+		}
 	}
 }
 

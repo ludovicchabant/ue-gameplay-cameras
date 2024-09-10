@@ -9,6 +9,8 @@
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/GameplayCameraComponent.h"
+#include "GameFramework/GameplayCameraSystemActor.h"
+#include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameFramework/Pawn.h"
 #include "GameplayCameras.h"
@@ -68,6 +70,13 @@ void UGameplayControlRotationComponent::BeginPlay()
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't find camera system host on the player controller."));
 		return;
+	}
+
+	// Make sure that if there's an auto-spawned camera system actor, it doesn't set the control rotation.
+	AGameplayCameraSystemActor* AutoSpawnedCameraSystemActor = AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(PlayerController);
+	if (AutoSpawnedCameraSystemActor)
+	{
+		AutoSpawnedCameraSystemActor->GetCameraSystemComponent()->bSetPlayerControllerRotation = false;
 	}
 
 	// Create the evaluation service, with a copy of our parameters.
