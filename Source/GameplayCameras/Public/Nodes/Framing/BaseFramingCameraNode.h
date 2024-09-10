@@ -12,6 +12,7 @@
 #include "BaseFramingCameraNode.generated.h"
 
 class FArchive;
+class UVector3dCameraVariable;
 
 /**
  * The base class for a standard scren-space framing camera node.
@@ -22,6 +23,13 @@ class UBaseFramingCameraNode : public UCameraNode
 	GENERATED_BODY()
 
 public:
+
+	/**
+	 * A camera variable providing the location of the target to frame. If unspecified,
+	 * the player pawn's location will be used by default.
+	 */
+	UPROPERTY(EditAnywhere, Category="Target")
+	TObjectPtr<UVector3dCameraVariable> TargetLocation;
 
 	/** The ideal horizontal screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
@@ -133,6 +141,8 @@ protected:
 
 protected:
 
+	/** Gets the target location. */
+	TOptional<FVector3d> AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult);
 	/** Updates the framing state for the current tick, see State member field. */
 	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
 	/** Computes the desired reframing for the current tick, see Desired member field. */

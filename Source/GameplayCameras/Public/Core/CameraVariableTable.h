@@ -103,8 +103,14 @@ public:
 	template<typename ValueType>
 	ValueType GetValue(FCameraVariableID VariableID, typename TCallTraits<ValueType>::ParamType DefaultValue) const;
 
+	template<typename VariableAssetType>
+	typename VariableAssetType::ValueType GetValue(const VariableAssetType* VariableAsset) const;
+
 	template<typename ValueType>
 	bool TryGetValue(FCameraVariableID VariableID, ValueType& OutValue) const;
+
+	template<typename VariableAssetType>
+	bool TryGetValue(const VariableAssetType* VariableAsset, typename VariableAssetType::ValueType& OutValue) const;
 
 	bool ContainsValue(FCameraVariableID VariableID) const;
 
@@ -266,6 +272,12 @@ ValueType FCameraVariableTable::GetValue(FCameraVariableID VariableID, typename 
 	return DefaultValue;
 }
 
+template<typename VariableAssetType>
+typename VariableAssetType::ValueType FCameraVariableTable::GetValue(const VariableAssetType* VariableAsset) const
+{
+	return GetValue(VariableAsset->GetVariableID(), VariableAsset->GetDefaultValue());
+}
+
 template<typename ValueType>
 bool FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ValueType& OutValue) const
 {
@@ -275,6 +287,12 @@ bool FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ValueType& 
 		return true;
 	}
 	return false;
+}
+
+template<typename VariableAssetType>
+bool FCameraVariableTable::TryGetValue(const VariableAssetType* VariableAsset, typename VariableAssetType::ValueType& OutValue) const
+{
+	return TryGetValue(VariableAsset->GetVariableID(), OutValue);
 }
 
 template<typename ValueType>

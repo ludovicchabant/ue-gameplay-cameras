@@ -4,11 +4,10 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
+#include "Core/CameraVariableAssets.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
 #include "Math/CameraFramingMath.h"
 #include "Math/CameraPoseMath.h"
@@ -70,12 +69,14 @@ void FPanningFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// TODO get the target some other way
-	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-	APawn* Pawn = PlayerController->GetPawn();
-	const FVector3d TargetLocation = Pawn->GetActorLocation();
+	TOptional<FVector3d> OptTargetLocation = AcquireTargetLocation(Params, OutResult);
+	if (!OptTargetLocation.IsSet())
+	{
+		return;
+	}
 
 	// Let the base class figure out all the screen-space framing stuff.
+	const FVector3d TargetLocation = OptTargetLocation.GetValue();
 	const FTransform3d LastShotTransform = BuildPanningShotTransform(OutResult.CameraPose);
 	UpdateFramingState(Params, OutResult, TargetLocation, LastShotTransform);
 	ComputeDesiredState(Params.DeltaTime);
@@ -87,6 +88,7 @@ void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 		FCameraPose LastShotPose(OutResult.CameraPose);
 		LastShotPose.SetTransform(LastShotTransform);
 
+		APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
 		const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(LastShotPose, PlayerController);
 		const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(LastShotPose, AspectRatio));
 

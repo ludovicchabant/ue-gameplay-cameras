@@ -9,6 +9,8 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
 #include "HAL/IConsoleManager.h"
 #include "Math/CameraPoseMath.h"
@@ -64,6 +66,25 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 
 	Readers.DeadZoneMargin.Initialize(BaseFramingNode->DeadZone);
 	Readers.SoftZoneMargin.Initialize(BaseFramingNode->SoftZone);
+}
+
+TOptional<FVector3d> FBaseFramingCameraNodeEvaluator::AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult)
+{
+	const UBaseFramingCameraNode* DollyNode = GetCameraNodeAs<UBaseFramingCameraNode>();
+	if (DollyNode->TargetLocation)
+	{
+		FVector3d TargetLocation;
+		const bool bGotTargetLocation = InResult.VariableTable.TryGetValue(DollyNode->TargetLocation.Get(), TargetLocation);
+		return bGotTargetLocation ? TOptional<FVector3d>(TargetLocation) : TOptional<FVector3d>();
+	}
+	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
+	{
+		APawn* Pawn = PlayerController->GetPawn();
+		FVector3d TargetLocation = Pawn->GetActorLocation();
+		return TOptional<FVector3d>(TargetLocation);
+	}
+
+	return TOptional<FVector3d>();
 }
 
 void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming)
