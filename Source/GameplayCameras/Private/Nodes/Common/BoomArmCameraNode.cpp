@@ -187,9 +187,16 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 
 			CumulativePull = ClampedPull;
 		}
-		else
+		else if (!Params.bIsFirstFrame && OutResult.bIsCameraCut)
 		{
-			LastPivotLocation = BoomPivot.GetLocation();
+			// On camera cuts, we re-use last frame's cumulative pull without updating it.
+			const FVector3d ForwardBoomOrientation = BoomRotation.RotateVector(FVector3d::ForwardVector);
+			FinalTransform.SetLocation(FinalTransform.GetLocation() - ForwardBoomOrientation * CumulativePull);
+
+			// Leave bDebugDidClampPull to what it was last frame.
+		}
+		else if (Params.bIsFirstFrame)
+		{
 			CumulativePull = 0.0;
 		}
 
