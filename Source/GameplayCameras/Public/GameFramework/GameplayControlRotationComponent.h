@@ -32,6 +32,26 @@ public:
 	/** Create a new control rotation component. */
 	UGameplayControlRotationComponent(const FObjectInitializer& ObjectInit);
 
+	/**
+	 * Activates management of a player controller's control rotation. The component will set
+	 * the control rotation every frame based on the latest camera system update.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Control Rotation")
+	void ActivateControlRotationManagementForPlayerIndex(int32 PlayerIndex);
+
+	/**
+	 * Activates management of a player controller's control rotation. The component will set
+	 * the control rotation every frame based on the latest camera system update.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Control Rotation")
+	void ActivateControlRotationManagementForPlayerController(APlayerController* PlayerController);
+
+	/**
+	 * Deactivates management of a player controller's control rotation.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Control Rotation")
+	void DeactivateControlRotationManagement();
+
 public:
 
 	// UActorComponent interface
@@ -57,6 +77,18 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Category="Input")
 	float AxisActionMagnitudeThreshold = 0.1f;
+
+	/**
+	 * If AutoActivate is set, auto-activates control rotation management for the given player.
+	 * This is equivalent to calling ActivateControlRotationManagement on BeginPlay.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Activation", meta=(EditCondition="bAutoActivate"))
+	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
+
+private:
+
+	void InitializeControlRotationService(APlayerController* PlayerController);
+	void TeardownControlRotationService(bool bAllowUninitialized);
 
 private:
 

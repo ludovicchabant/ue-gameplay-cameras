@@ -33,44 +33,80 @@ void UGameplayControlRotationComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsActive() && AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
+	{
+		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
+		ActivateControlRotationManagementForPlayerIndex(PlayerIndex);
+	}
+}
+
+void UGameplayControlRotationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
 	using namespace UE::Cameras;
 
-	// We need to grab our owner actor, and then find the gameplay camera component and the enhanced
-	// input component that we will be coordinating.
-	AActor* OwnerActor = GetOwner();
-	if (!OwnerActor)
+	TeardownControlRotationService(true);
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void UGameplayControlRotationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (PlayerController && ControlRotationService)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("GameplayControlRotationComponent '%s' doesn't belong to any actor"),
+		// This may be technically one frame late (i.e. we set the control rotation computed 
+		// late last tick) unless the camera system is setup to process player input into camera
+		// rotation early in the frame.
+		PlayerController->SetControlRotation(ControlRotationService->GetCurrentControlRotation());
+	}
+}
+
+void UGameplayControlRotationComponent::ActivateControlRotationManagementForPlayerIndex(int32 PlayerIndex)
+{
+	APlayerController* ForPlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
+	ActivateControlRotationManagementForPlayerController(ForPlayerController);
+}
+
+void UGameplayControlRotationComponent::ActivateControlRotationManagementForPlayerController(APlayerController* InPlayerController)
+{
+	InitializeControlRotationService(InPlayerController);
+}
+
+void UGameplayControlRotationComponent::DeactivateControlRotationManagement()
+{
+	TeardownControlRotationService(false);
+}
+
+void UGameplayControlRotationComponent::InitializeControlRotationService(APlayerController* InPlayerController)
+{
+	using namespace UE::Cameras;
+
+	if (ControlRotationService)
+	{
+		UE_LOG(LogCameraSystem, Error,
+				TEXT("GameplayControlRotationComponent '%s' has already been activated"),
 				*GetNameSafe(this));
 		return;
 	}
 
-	UGameplayCameraComponent* GameplayCameraComponent = OwnerActor->FindComponentByClass<UGameplayCameraComponent>();
-	if (!GameplayCameraComponent)
+	if (!InPlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("GameplayControlRotationComponent '%s' couldn't find a GameplayCameraComponent on owner '%s'"),
-				*GetNameSafe(this), *GetNameSafe(OwnerActor));
+		UE_LOG(LogCameraSystem, Error, 
+				TEXT("GameplayControlRotationComponent '%s' can't activate: no player controller given or found!"),
+				*GetNameSafe(this));
 		return;
 	}
 
-	// Find where the camera system is running from.
-	PlayerController = GameplayCameraComponent->GetPlayerController();
-	if (!ensure(PlayerController))
-	{
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("GameplayCameraComponent '%s' hasn't activated for any player yet"),
-				*GetNameSafe(GameplayCameraComponent));
-		return;
-	}
-
-	CameraSystemHost = UGameplayCameraSystemHost::FindHost(PlayerController);
-	if (!CameraSystemHost)
+	UGameplayCameraSystemHost* FoundHost = UGameplayCameraSystemHost::FindHost(InPlayerController);
+	if (!FoundHost)
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't find camera system host on the player controller."));
 		return;
 	}
+
+	PlayerController = InPlayerController;
+	CameraSystemHost = FoundHost;
 
 	// Make sure that if there's an auto-spawned camera system actor, it doesn't set the control rotation.
 	AGameplayCameraSystemActor* AutoSpawnedCameraSystemActor = AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(PlayerController);
@@ -93,32 +129,27 @@ void UGameplayControlRotationComponent::BeginPlay()
 	CameraSystem->RegisterEvaluationService(ControlRotationService.ToSharedRef());
 }
 
-void UGameplayControlRotationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void UGameplayControlRotationComponent::TeardownControlRotationService(bool bAllowUninitialized)
 {
 	using namespace UE::Cameras;
 
-	if (CameraSystemHost)
+	if (!ControlRotationService || !CameraSystemHost)
 	{
-		TSharedPtr<FCameraSystemEvaluator> CameraSystem = CameraSystemHost->GetCameraSystemEvaluator();
-		CameraSystem->UnregisterEvaluationService(ControlRotationService.ToSharedRef());
+		if (!bAllowUninitialized)
+		{
+			UE_LOG(LogCameraSystem, Error,
+					TEXT("GameplayCameraComponent '%s' isn't active"),
+					*GetNameSafe(this));
+		}
+		return;
 	}
 
-	ControlRotationService.Reset();
+	TSharedPtr<FCameraSystemEvaluator> CameraSystem = CameraSystemHost->GetCameraSystemEvaluator();
+	CameraSystem->UnregisterEvaluationService(ControlRotationService.ToSharedRef());
 
-	Super::EndPlay(EndPlayReason);
-}
-
-void UGameplayControlRotationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	if (PlayerController)
-	{
-		// This may be technically one frame late (i.e. we set the control rotation computed 
-		// late last tick) unless the camera system is setup to process player input into camera
-		// rotation early in the frame.
-		PlayerController->SetControlRotation(ControlRotationService->GetCurrentControlRotation());
-	}
+	ControlRotationService = nullptr;
+	CameraSystemHost = nullptr;
+	PlayerController = nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -21,9 +21,6 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 	: Super(ObjectInit)
 {
 #if WITH_EDITORONLY_DATA
-	bTickInEditor = true;
-	PrimaryComponentTick.bCanEverTick = true;
-
 	if (GIsEditor && !IsRunningCommandlet())
 	{
 		static ConstructorHelpers::FObjectFinder<UStaticMesh> EditorCameraMesh(
@@ -190,7 +187,7 @@ void UGameplayCameraSystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
+	if (IsActive() && AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
 		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
 		ActivateCameraSystemForPlayerIndex(PlayerIndex);
@@ -202,11 +199,6 @@ void UGameplayCameraSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayR
 	DeactivateCameraSystem();
 
 	Super::EndPlay(EndPlayReason);
-}
-
-void UGameplayCameraSystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
@@ -228,20 +220,6 @@ void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierar
 	}
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
-
-#if WITH_EDITOR
-
-bool UGameplayCameraSystemComponent::GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut)
-{
-	const bool bIsCameraSystemActive = IsActive();
-	if (bIsCameraSystemActive)
-	{
-		GetCameraView(DeltaTime, ViewOut);
-	}
-	return bIsCameraSystemActive;
-}
-
-#endif  // WITH_EDITOR
 
 void UGameplayCameraSystemComponent::OnBecomeViewTarget()
 {

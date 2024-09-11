@@ -61,13 +61,7 @@ public:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
-
-	// USceneComponent interface
-#if WITH_EDITOR
-	virtual bool GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut) override;
-#endif  // WITH_EDITOR
 
 public:
 
@@ -84,10 +78,10 @@ private:
 public:
 
 	/**
-	 * If set, auto-activates the camera system for the given player.
+	 * If AutoActivate is set, auto-activates the camera system for the given player.
 	 * This sets this actor as the view target, and is equivalent to calling ActivateCameraSystem on BeginPlay.
 	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation, meta=(EditCondition="bAutoActivate"))
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
 	/**

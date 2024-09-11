@@ -93,6 +93,9 @@ void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
 		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 	}
+
+	// Don't deactivate the component: we still need to update our evaluation context while any
+	// running camera rigs blend out.
 }
 
 void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController* PlayerController)
@@ -132,6 +135,9 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+
+	// Make sure the component is active so it receives tick updates to maintain the evaluation context.
+	Activate();
 }
 
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
@@ -228,7 +234,7 @@ void UGameplayCameraComponent::BeginPlay()
 	}
 #endif
 
-	if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
+	if (IsActive() && AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
 		const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
 		ActivateCameraForPlayerIndex(PlayerIndex);
