@@ -94,14 +94,14 @@ private:
 public:
 
 	/** The camera asset to run. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
 	TObjectPtr<UCameraAsset> Camera;
 
 	/**
 	 * If set, auto-activates this component's camera for the given player.
 	 * This is equivalent to calling ActivateCamera on BeginPlay.
 	 */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
 protected:

@@ -87,14 +87,14 @@ public:
 	 * If set, auto-activates the camera system for the given player.
 	 * This sets this actor as the view target, and is equivalent to calling ActivateCameraSystem on BeginPlay.
 	 */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
 	/**
 	 * If enabled, sets the evaluated camera orientation as the player controller rotation every frame.
 	 * This is set on the player controller that this component was activated for.
 	 */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
 	bool bSetPlayerControllerRotation = true;
 
 private:
