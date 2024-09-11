@@ -5,9 +5,10 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraVariableAssets.h"
+#include "Core/CameraVariableReferences.h"
 #include "GameplayCamerasDelegates.h"
 #include "Logging/TokenizedMessage.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
@@ -283,6 +284,19 @@ void SetupPrivateVariable(
 			ParameterOverride, CameraRigNode);
 
 	DoSetupPrivateVariable(Builder, InterfaceParameter, &ParameterOverride->Value, ReusedVariable);
+}
+
+void AddCameraVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVariableTableAllocationInfo& AllocationInfo)
+{
+	if (Variable)
+	{
+		FCameraVariableDefinition VariableDefinition = Variable->GetVariableDefinition();
+		AllocationInfo.VariableDefinitions.Add(VariableDefinition);
+		if (Variable->bAutoReset)
+		{
+			AllocationInfo.AutoResetVariables.Add(Variable);
+		}
+	}
 }
 
 }  // namespace Internal
@@ -819,6 +833,8 @@ void FCameraRigAssetBuilder::BuildAllocationInfo()
 
 void FCameraRigAssetBuilder::BuildAllocationInfo(UCameraNode* CameraNode)
 {
+	using namespace UE::Cameras::Internal;
+
 	// Look for properties that are camera parameters, and gather what camera variables they reference. 
 	// This is for both exposed rig parameters (which we just built in BuildNewDrivenParameters) and 
 	// for parameters driven by user-defined variables.
@@ -835,15 +851,12 @@ void FCameraRigAssetBuilder::BuildAllocationInfo(UCameraNode* CameraNode)
 		if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 		{\
 			auto* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(CameraNode);\
-			if (CameraParameterPtr->Variable)\
-			{\
-				FCameraVariableDefinition VariableDefinition = CameraParameterPtr->Variable->GetVariableDefinition();\
-				AllocationInfo.VariableTableInfo.VariableDefinitions.Add(VariableDefinition);\
-				if (CameraParameterPtr->Variable->bAutoReset)\
-				{\
-					AllocationInfo.VariableTableInfo.AutoResetVariables.Add(CameraParameterPtr->Variable);\
-				}\
-			}\
+			AddCameraVariableToAllocationInfo(CameraParameterPtr->Variable, AllocationInfo.VariableTableInfo);\
+		}\
+		else if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
+		{\
+			auto* CameraVariableReferencePtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(CameraNode);\
+			AddCameraVariableToAllocationInfo(CameraVariableReferencePtr->Variable, AllocationInfo.VariableTableInfo);\
 		}\
 		else
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
