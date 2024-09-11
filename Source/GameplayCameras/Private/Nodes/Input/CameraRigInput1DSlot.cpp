@@ -100,9 +100,9 @@ void UCameraRigInput1DSlot::OnBuild(FCameraRigBuildContext& BuildContext)
 	{
 		VariableDefinition = FBuiltInCameraVariables::Get().GetDefinition(BuiltInVariable);
 	}
-	else if (Variable)
+	else if (CustomVariable.IsValid())
 	{
-		VariableDefinition = Variable->GetVariableDefinition();
+		VariableDefinition = CustomVariable.Get()->GetVariableDefinition();
 	}
 	else if (InputSlotParameters.bIsPreBlended)
 	{

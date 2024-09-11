@@ -9,6 +9,7 @@
 #define UE_DEFINE_CAMERA_VARIABLE_REFERENCE(ValueName)\
 	F##ValueName##CameraVariableReference() {}\
 	F##ValueName##CameraVariableReference(VariableAssetType* InVariable) : Variable(InVariable) {}\
+	bool IsValid() const { return (bool)Variable; }\
 	U##ValueName##CameraVariable* Get() const { return Variable.Get(); }\
 	operator U##ValueName##CameraVariable* () const { return Variable.Get(); }
 

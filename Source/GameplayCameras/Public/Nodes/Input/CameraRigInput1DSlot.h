@@ -4,6 +4,7 @@
 
 #include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraVariableReferences.h"
 #include "Nodes/Input/CameraRigInputSlotTypes.h"
 #include "Nodes/Input/Input1DCameraNode.h"
 #include "UObject/ObjectPtr.h"
@@ -40,7 +41,7 @@ public:
 
 	/** The variable to use to blend with other input slots. */
 	UPROPERTY(EditAnywhere, Category="Input", meta=(EditCondition="BuiltInVariable == EBuiltInDoubleCameraVariable::None"))
-	TObjectPtr<UDoubleCameraVariable> Variable;
+	FDoubleCameraVariableReference CustomVariable;
 
 public:
 
