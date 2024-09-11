@@ -275,7 +275,7 @@ ValueType FCameraVariableTable::GetValue(FCameraVariableID VariableID, typename 
 template<typename VariableAssetType>
 typename VariableAssetType::ValueType FCameraVariableTable::GetValue(const VariableAssetType* VariableAsset) const
 {
-	return GetValue(VariableAsset->GetVariableID(), VariableAsset->GetDefaultValue());
+	return GetValue<typename VariableAssetType::ValueType>(VariableAsset->GetVariableID(), VariableAsset->GetDefaultValue());
 }
 
 template<typename ValueType>

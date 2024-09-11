@@ -15,6 +15,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ControllerGameplayCameraEvaluationComponent.h"
 #include "GameplayCameras.h"
+#include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraDirector)
 
@@ -338,9 +339,12 @@ FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraP
 
 FBlueprintCameraVariableTable UBlueprintCameraDirectorEvaluator::GetInitialContextVariableTable() const
 {
+	using namespace UE::Cameras;
+
 	if (EvaluationContext)
 	{
-		return FBlueprintCameraVariableTable(&EvaluationContext->GetInitialResult().VariableTable);
+		FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
+		return FBlueprintCameraVariableTable(&VariableTable, VariableAutoResetService);
 	}
 	else
 	{
@@ -367,7 +371,10 @@ void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBluep
 
 void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params)
 {
+	using namespace UE::Cameras;
+
 	EvaluationContext = Params.OwnerContext;
+	VariableAutoResetService = Params.Evaluator->FindEvaluationService<FAutoResetCameraVariableService>();
 
 	EvaluationResult.Reset();
 	{
@@ -394,6 +401,7 @@ void UBlueprintCameraDirectorEvaluator::NativeDeactivateCameraDirector(const UE:
 		DeactivateCameraDirector(BlueprintParams);
 	}
 
+	VariableAutoResetService = nullptr;
 	EvaluationContext = nullptr;
 }
 

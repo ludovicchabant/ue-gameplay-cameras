@@ -127,6 +127,21 @@ public:
 	/** Get currently registered evaluation services. */
 	GAMEPLAYCAMERAS_API void GetEvaluationServices(TArray<TSharedPtr<FCameraEvaluationService>>& OutEvaluationServices) const;
 
+	/** Finds an evaluation service of the given type. */
+	GAMEPLAYCAMERAS_API TSharedPtr<FCameraEvaluationService> FindEvaluationService(const FCameraObjectTypeID& TypeID) const;
+	
+	/** Finds an evaluation service of the given type. */
+	template<typename EvaluationServiceType>
+	TSharedPtr<EvaluationServiceType> FindEvaluationService() const
+	{
+		TSharedPtr<FCameraEvaluationService> EvaluationService = FindEvaluationService(EvaluationServiceType::StaticTypeID());
+		if (EvaluationService)
+		{
+			return StaticCastSharedPtr<EvaluationServiceType>(EvaluationService);
+		}
+		return nullptr;
+	}
+
 public:
 
 	/** Run an update of the camera system. */

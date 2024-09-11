@@ -100,6 +100,8 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 		return;
 	}
 
+	CameraSystemEvaluator = Params.Evaluator;
+
 	OnActivate(Params);
 
 	AutoCreateDirectorEvaluator();
@@ -133,6 +135,8 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	// along with this context.
 
 	OnDeactivate(Params);
+
+	CameraSystemEvaluator = nullptr;
 
 	bActivated = false;
 }

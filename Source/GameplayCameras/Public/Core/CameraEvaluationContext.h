@@ -86,6 +86,9 @@ public:
 	/** Gets the camera asset that is hosted in this context. */
 	const UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
+	/** Gets the camera system evaluator. Only valid if this evaluation context is active. */
+	FCameraSystemEvaluator* GetCameraSystemEvaluator() const { return CameraSystemEvaluator; }
+
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
@@ -147,6 +150,8 @@ private:
 
 	FCameraDirectorEvaluatorStorage DirectorEvaluatorStorage;
 	FCameraDirectorEvaluator* DirectorEvaluator = nullptr;
+
+	FCameraSystemEvaluator* CameraSystemEvaluator = nullptr;
 
 	TWeakPtr<FCameraEvaluationContext> WeakParent;
 

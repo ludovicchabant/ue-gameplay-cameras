@@ -13,6 +13,7 @@
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameplayCameras.h"
 #include "Kismet/GameplayStatics.h"
+#include "Services/AutoResetCameraVariableService.h"
 #include "UObject/ConstructorHelpers.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
@@ -169,9 +170,15 @@ void UGameplayCameraComponent::SetInitialPose(const FBlueprintCameraPose& Camera
 
 FBlueprintCameraVariableTable UGameplayCameraComponent::GetInitialVariableTable() const
 {
+	using namespace UE::Cameras;
+
 	if (EvaluationContext)
 	{
-		return FBlueprintCameraVariableTable(&EvaluationContext->GetInitialResult().VariableTable);
+		FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
+		FCameraSystemEvaluator* CameraSystemEvaluator = EvaluationContext->GetCameraSystemEvaluator();
+		TSharedPtr<FAutoResetCameraVariableService> VariableAutoResetService = 
+			CameraSystemEvaluator->FindEvaluationService<FAutoResetCameraVariableService>();
+		return FBlueprintCameraVariableTable(&VariableTable, VariableAutoResetService);
 	}
 	else
 	{

@@ -4,6 +4,7 @@
 
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
+#include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraVariableTable)
 
@@ -30,15 +31,20 @@
 #define UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_SET_VARIABLE(VariableType)\
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_VALIDATE()\
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_VALIDATE_PARAM()\
-	VariableTable.GetVariableTable()->SetValue(Variable, Value, true);
+	VariableTable.GetVariableTable()->SetValue(Variable, Value, true);\
+	if (Variable->bAutoReset && VariableTable.VariableAutoResetService)\
+	{\
+		VariableTable.VariableAutoResetService->AddAutoResetVariable(Variable);\
+	}
 
 FBlueprintCameraVariableTable::FBlueprintCameraVariableTable()
 	: PrivateVariableTable(nullptr)
 {
 }
 
-FBlueprintCameraVariableTable::FBlueprintCameraVariableTable(FCameraVariableTable* InVariableTable)
+FBlueprintCameraVariableTable::FBlueprintCameraVariableTable(FCameraVariableTable* InVariableTable, TSharedPtr<UE::Cameras::FAutoResetCameraVariableService> InVariableAutoResetService)
 	: PrivateVariableTable(InVariableTable)
+	, VariableAutoResetService(InVariableAutoResetService)
 {
 }
 

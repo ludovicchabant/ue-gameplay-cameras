@@ -149,6 +149,18 @@ void FCameraSystemEvaluator::GetEvaluationServices(TArray<TSharedPtr<FCameraEval
 	OutEvaluationServices = EvaluationServices;
 }
 
+TSharedPtr<FCameraEvaluationService> FCameraSystemEvaluator::FindEvaluationService(const FCameraObjectTypeID& TypeID) const
+{
+	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
+	{
+		if (EvaluationService.Get()->IsKindOf(TypeID))
+		{
+			return EvaluationService;
+		}
+	}
+	return nullptr;
+}
+
 void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
 {
 	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
