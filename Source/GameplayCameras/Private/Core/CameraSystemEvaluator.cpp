@@ -27,6 +27,27 @@ namespace UE::Cameras
 
 extern bool GGameplayCamerasDebugEnable;
 
+void FCameraSystemEvaluationResult::Reset()
+{
+	CameraPose.ClearAllChangedFlags();
+	VariableTable.ClearAllWrittenThisFrameFlags();
+	bIsCameraCut = false;
+	bIsValid = false;
+}
+
+void FCameraSystemEvaluationResult::Reset(const FCameraNodeEvaluationResult& NodeResult)
+{
+	Reset();
+
+	// Make the camera poses actually equal, so that we get the exact same changed-flags.
+	CameraPose = NodeResult.CameraPose;
+
+	VariableTable.OverrideAll(NodeResult.VariableTable);
+
+	bIsCameraCut = NodeResult.bIsCameraCut;
+	bIsValid = true;
+}
+
 FCameraSystemEvaluator::FCameraSystemEvaluator()
 {
 }
@@ -176,6 +197,17 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 {
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
+	// Reset our result' flags.
+	RootNodeResult.CameraPose.ClearAllChangedFlags();
+	RootNodeResult.VariableTable.ClearAllWrittenThisFrameFlags();
+
+	// Run the variable auto-reset service here, because the other (third party) services
+	// should get the reset variable values.
+	if (VariableAutoResetService)
+	{
+		VariableAutoResetService->PerformVariableResets(RootNodeResult.VariableTable, ContextStack);
+	}
+
 	// Pre-update all services.
 	PreUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
 
@@ -248,7 +280,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 		NodeParams.Evaluator = this;
 		NodeParams.DeltaTime = Params.DeltaTime;
 
-		RootNodeResult.Reset(false);
+		RootNodeResult.Reset();
 
 		// Run the root camera node.
 		RootEvaluator->Run(NodeParams, RootNodeResult);
@@ -260,10 +292,10 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	PostUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
 
 	// Harvest the result.
-	Result.CameraPose.OverrideAll(RootNodeResult.CameraPose);
-	Result.VariableTable.OverrideAll(RootNodeResult.VariableTable);
-	Result.bIsCameraCut = RootNodeResult.bIsCameraCut;
-	Result.bIsValid = true;
+	Result.Reset(RootNodeResult);
+
+	// End of update things...
+	ContextStack.OnEndCameraSystemUpdate();
 }
 
 void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)

@@ -18,16 +18,11 @@ FCameraNodeEvaluatorInitializeParams::FCameraNodeEvaluatorInitializeParams(FCame
 {
 }
 
-void FCameraNodeEvaluationResult::Reset(bool bResetVariableTable)
+void FCameraNodeEvaluationResult::Reset()
 {
 	CameraPose.Reset();
 	CameraRigJoints.Reset();
 	PostProcessSettings.Reset();
-
-	if (bResetVariableTable)
-	{
-		VariableTable.UnsetAllValues();
-	}
 
 	bIsCameraCut = false;
 	bIsValid = false;

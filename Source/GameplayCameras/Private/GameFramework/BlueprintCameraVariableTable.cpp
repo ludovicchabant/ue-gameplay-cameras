@@ -34,7 +34,7 @@
 	VariableTable.GetVariableTable()->SetValue(Variable, Value, true);\
 	if (Variable->bAutoReset && VariableTable.VariableAutoResetService)\
 	{\
-		VariableTable.VariableAutoResetService->AddAutoResetVariable(Variable);\
+		VariableTable.VariableAutoResetService->RegisterVariableUseFromScripting(Variable);\
 	}
 
 FBlueprintCameraVariableTable::FBlueprintCameraVariableTable()

@@ -5,6 +5,7 @@
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/CameraVariableTable.h"
 
 namespace UE::Cameras
 {
@@ -103,6 +104,17 @@ void FCameraEvaluationContextStack::PopContext()
 	Entries.Pop();
 }
 
+void FCameraEvaluationContextStack::GetAllContexts(TArray<TSharedPtr<FCameraEvaluationContext>>& OutContexts) const
+{
+	for (const FContextEntry& Entry : Entries)
+	{
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			OutContexts.Add(Context);
+		}
+	}
+}
+
 void FCameraEvaluationContextStack::Reset()
 {
 	for (FContextEntry& Entry : Entries)
@@ -128,6 +140,35 @@ void FCameraEvaluationContextStack::AddReferencedObjects(FReferenceCollector& Co
 		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
 		{
 			Context->AddReferencedObjects(Collector);
+		}
+	}
+}
+
+void FCameraEvaluationContextStack::OnEndCameraSystemUpdate()
+{
+	// Reset all written-this-frame flags on evaluation contexts, so we properly get those flags set
+	// regardless of when, during next frame, they set their variables. This is because various 
+	// gameplay systems, Blueprint scripting, whatever, might set variables at any time.
+	TArray<TSharedPtr<FCameraEvaluationContext>> ContextsToVisit;
+	for (const FContextEntry& Entry : Entries)
+	{
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			ContextsToVisit.Add(Context);
+		}
+	}
+	while (!ContextsToVisit.IsEmpty())
+	{
+		TSharedPtr<FCameraEvaluationContext> Context = ContextsToVisit.Pop();
+		Context->GetInitialResult().VariableTable.ClearAllWrittenThisFrameFlags();
+
+		TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts(Context->GetChildrenContexts());
+		for (TSharedPtr<FCameraEvaluationContext> ChildContext : ReverseIterate(ChildrenContexts))
+		{
+			if (ChildContext)
+			{
+				ContextsToVisit.Add(ChildContext);
+			}
 		}
 	}
 }

@@ -215,6 +215,11 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 
 				continue;
 			}
+
+			// Reset this entry's flags for this frame.
+			FCameraNodeEvaluationResult& CurResult = Entry.Result;
+			CurResult.CameraPose.ClearAllChangedFlags();
+			CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
 		}
 		// else: frozen entries may have null contexts or invalid initial results
 		//       because we're not going to update them anyway. We will however blend
@@ -249,8 +254,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		// Override it with whatever the evaluation context has set on its result.
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
-
-		CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
 
 		// Gather input parameters.
 		if (!Entry.bInputRunThisFrame)
@@ -341,8 +344,6 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
 		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
 		CurResult.bIsValid = true;
-
-		CurResult.CameraPose.ClearAllChangedFlags();
 
 		// Run the camera rig's root node.
 		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();

@@ -152,8 +152,18 @@ public:
 
 	// Lower level API.
 
-	void SetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr);
-	bool TrySetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr);
+	void SetValue(
+			FCameraVariableID VariableID, 
+			ECameraVariableType ExpectedVariableType, 
+			const uint8* InRawValuePtr,
+			bool bMarkAsWrittenThisFrame = true);
+
+	bool TrySetValue(
+			FCameraVariableID VariableID, 
+			ECameraVariableType ExpectedVariableType, 
+			const uint8* InRawValuePtr,
+			bool bMarkAsWrittenThisFrame = true);
+
 	bool IsValueWritten(FCameraVariableID VariableID) const;
 	void UnsetValue(FCameraVariableID VariableID);
 	void UnsetAllValues();

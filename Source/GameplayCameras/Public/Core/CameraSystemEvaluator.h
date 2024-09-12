@@ -73,6 +73,14 @@ struct FCameraSystemEvaluationResult
 
 	/** Whether this result is valid. */
 	bool bIsValid = false;
+
+public:
+
+	/** Reset this result to its default (non-valid) state.  */
+	void Reset();
+
+	/** Set this result to be equivalent to the given evaluation result. */
+	void Reset(const FCameraNodeEvaluationResult& NodeResult);
 };
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

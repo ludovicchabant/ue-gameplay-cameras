@@ -227,7 +227,11 @@ bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 	return EntryLookup.Contains(VariableID);
 }
 
-void FCameraVariableTable::SetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr)
+void FCameraVariableTable::SetValue(
+		FCameraVariableID VariableID, 
+		ECameraVariableType ExpectedVariableType, 
+		const uint8* InRawValuePtr,
+		bool bMarkAsWrittenThisFrame)
 {
 	FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
@@ -237,11 +241,19 @@ void FCameraVariableTable::SetValue(FCameraVariableID VariableID, ECameraVariabl
 		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
 		uint8* ValuePtr = Memory + Entry->Offset;
 		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
-		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+		Entry->Flags |= EEntryFlags::Written;
+		if (bMarkAsWrittenThisFrame)
+		{
+			Entry->Flags |= EEntryFlags::WrittenThisFrame;
+		}
 	}
 }
 
-bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType, const uint8* InRawValuePtr)
+bool FCameraVariableTable::TrySetValue(
+		FCameraVariableID VariableID,
+		ECameraVariableType ExpectedVariableType,
+		const uint8* InRawValuePtr,
+		bool bMarkAsWrittenThisFrame)
 {
 	if (FEntry* Entry = FindEntry(VariableID))
 	{
@@ -250,7 +262,11 @@ bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, ECameraVari
 		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
 		uint8* ValuePtr = Memory + Entry->Offset;
 		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
-		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+		Entry->Flags |= EEntryFlags::Written;
+		if (bMarkAsWrittenThisFrame)
+		{
+			Entry->Flags |= EEntryFlags::WrittenThisFrame;
+		}
 		return true;
 	}
 	return false;
@@ -412,7 +428,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 				uint8* ThisValuePtr = Memory + ThisEntry->Offset;
 				const uint8* OtherValuePtr = OtherTable.Memory + OtherEntry.Offset;
 				FMemory::Memcpy(ThisValuePtr, OtherValuePtr, ValueSize);
-				EnumAddFlags(ThisEntry->Flags, EEntryFlags::Written);
+				EnumAddFlags(ThisEntry->Flags, EEntryFlags::Written | (OtherFlags & EEntryFlags::WrittenThisFrame));
 
 				if (OutMask)
 				{
@@ -466,7 +482,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 				// We already have the other table's variable in our table. Let's check
 				// that the types match, and then interpolate the values.
 #if WITH_EDITORONLY_DATA
-				checkf(FromEntry->DebugName == ToEntry.DebugName,
+				ensureMsgf(FromEntry->DebugName == ToEntry.DebugName,
 						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
 						FromEntry->ID.GetValue(), *FromEntry->DebugName, *ToEntry.DebugName);
 #endif
@@ -476,7 +492,7 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 #else
 				const FString& DebugName = GUnavailableVariableDebugName;
 #endif
-				checkf(FromEntry->Type == ToEntry.Type, 
+				ensureMsgf(FromEntry->Type == ToEntry.Type, 
 						TEXT("Camera variable name collision! Expected '%d' (%s) to be of type '%s' but other table has type '%s'!"),
 						FromEntry->ID.GetValue(), *DebugName,
 						*UEnum::GetValueAsString(FromEntry->Type), *UEnum::GetValueAsString(ToEntry.Type));
@@ -497,7 +513,11 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 				}
-				EnumAddFlags(FromEntry->Flags, EEntryFlags::Written);
+				// We consider this variable "written to this frame" if it was written in either variable tables this frame.
+				// If the value interpolates because the from/to values are different, but neither was written this frame, we
+				// don't consider the interpolated value written this frame either.
+				const EEntryFlags FromFlags = FromEntry->Flags;
+				EnumAddFlags(FromEntry->Flags, EEntryFlags::Written | (FromFlags & EEntryFlags::WrittenThisFrame) | (ToFlags & EEntryFlags::WrittenThisFrame));
 			}
 			else
 			{
@@ -521,7 +541,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 				uint8* FromValuePtr = Memory + FromEntry->Offset;
 				const uint8* ToValuePtr = ToTable.Memory + ToEntry.Offset;
 				FMemory::Memcpy(FromValuePtr, ToValuePtr, ValueSize);
-				EnumAddFlags(FromEntry->Flags, EEntryFlags::Written);
+				EnumAddFlags(FromEntry->Flags, EEntryFlags::Written | (ToFlags & EEntryFlags::WrittenThisFrame));
 			}
 
 			if (OutMask)

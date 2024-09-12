@@ -89,8 +89,8 @@ public:
 
 	FCameraPose();
 
-	/** Resets this camera pose to its default values. */
-	void Reset(bool bSetAllChangedFlags = true);
+	/** Resets this camera pose to its default values, with all changed flags off. */
+	void Reset();
 
 public:
 

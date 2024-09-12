@@ -36,6 +36,12 @@ public:
 	/** Push a new context on the stack and instantiate its director. */
 	void PushContext(TSharedRef<FCameraEvaluationContext> Context);
 
+	/**
+	 * Tries to add a context inside the active context. This will query the active context's
+	 * director in order to find an "available spot" for the child context.
+	 * 
+	 * @return Whether the child context was acccepted.
+	 */
 	bool AddChildContext(TSharedRef<FCameraEvaluationContext> Context);
 
 	/** Remove an existing context from the stack. */
@@ -47,6 +53,9 @@ public:
 	/** The number of contexts on the stack. */
 	int32 NumContexts() const { return Entries.Num(); }
 
+	/** Gets all the contexts in the stack, from bottom to top. */
+	void GetAllContexts(TArray<TSharedPtr<FCameraEvaluationContext>>& OutContexts) const;
+
 	/** Empties the stack of all contexts. */
 	void Reset();
 
@@ -55,6 +64,7 @@ public:
 	// Internal API
 	void Initialize(FCameraSystemEvaluator& InEvaluator);
 	void AddReferencedObjects(FReferenceCollector& Collector);
+	void OnEndCameraSystemUpdate();
 
 private:
 

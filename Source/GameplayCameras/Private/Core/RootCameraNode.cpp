@@ -39,13 +39,8 @@ void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluati
 	// an update result that isn't representative of what would happen normally.
 	if (FCameraSystemEvaluator* Evaluator = Params.EvaluationParams.Evaluator)
 	{
-		FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
-		ServiceUpdateParams.Evaluator = Evaluator;
-		ServiceUpdateParams.DeltaTime = Params.EvaluationParams.DeltaTime;
-
-		FCameraEvaluationServiceUpdateResult ServiceUpdateResult(OutResult);
-
-		Evaluator->VariableAutoResetService->PreUpdate(ServiceUpdateParams, ServiceUpdateResult);
+		// TODO: we might have to reset variables on the context's initial result too?
+		Evaluator->VariableAutoResetService->PerformVariableResets(OutResult.VariableTable);
 	}
 
 	OnRunSingleCameraRig(Params, OutResult);

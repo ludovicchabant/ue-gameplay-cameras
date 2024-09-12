@@ -179,7 +179,7 @@ struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
 public:
 
 	/** Reset this result to its default (non-valid) state.  */
-	void Reset(bool bResetVariableTable);
+	void Reset();
 
 	/** Override this result with the given other result. */
 	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult);

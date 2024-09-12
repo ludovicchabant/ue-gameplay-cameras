@@ -79,14 +79,11 @@ FCameraPose::FCameraPose()
 {
 }
 
-void FCameraPose::Reset(bool bSetAllChangedFlags)
+void FCameraPose::Reset()
 {
 	*this = FCameraPose();
 
-	if (bSetAllChangedFlags)
-	{
-		SetAllChangedFlags();
-	}
+	ClearAllChangedFlags();
 }
 
 void FCameraPose::SetAllChangedFlags()
@@ -291,7 +288,6 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 		{\
 			if (!bChangedOnly || ToPoseChangedFlags.PropName)\
 			{\
-				ensureMsgf(ChangedFlags.PropName, TEXT("Interpolating " #PropName " from default value!"));\
 				Set##PropName(FMath::Lerp(Get##PropName(), ToPose.Get##PropName(), Factor));\
 			}\
 			OutMask.PropName = true;\
@@ -352,7 +348,6 @@ void FCameraPose::InternalLerpChanged(const FCameraPose& ToPose, float Factor, c
 		{\
 			if ((!bChangedOnly || ToPoseChangedFlags.PropName) && Factor >= 0.5f)\
 			{\
-				ensureMsgf(ChangedFlags.PropName, TEXT("Interpolating " #PropName " from default value!"));\
 				Set##PropName(ToPose.Get##PropName());\
 			}\
 			OutMask.PropName = true;\
