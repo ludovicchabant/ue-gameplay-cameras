@@ -23,7 +23,7 @@ FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
 	VariableDefinition.bIsPrivate = bIsPrivate;
 	VariableDefinition.bIsInput = bIsInput;
 #if WITH_EDITORONLY_DATA
-	VariableDefinition.VariableName = GetName();
+	VariableDefinition.VariableName = GetDisplayName();
 #endif
 	return VariableDefinition;
 }
@@ -59,7 +59,7 @@ void UCameraVariableAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 	}
 }
 
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 
 FString UCameraVariableAsset::GetDisplayName() const
 {
@@ -69,6 +69,10 @@ FString UCameraVariableAsset::GetDisplayName() const
 	}
 	return GetName();
 }
+
+#endif  // WITH_EDITORONLY_DATA
+
+#if WITH_EDITOR
 
 FText UCameraVariableAsset::GetDisplayText() const
 {
@@ -80,3 +84,4 @@ FText UCameraVariableAsset::GetDisplayText() const
 }
 
 #endif  // WITH_EDITOR
+

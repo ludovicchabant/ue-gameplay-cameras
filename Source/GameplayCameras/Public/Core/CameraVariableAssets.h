@@ -30,8 +30,11 @@ public:
 	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
 	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 	FString GetDisplayName() const;
+#endif  // WITH_EDITORONLY_DATA
+
+#if WITH_EDITOR
 	FText GetDisplayText() const;
 
 	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
