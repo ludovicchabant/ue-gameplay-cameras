@@ -8,6 +8,7 @@
 #include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraPoseDebugBlock.h"
+#include "Debug/CameraRigJointsDebugBlock.h"
 #include "Debug/DebugTextRenderer.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "Math/ColorList.h"
@@ -25,11 +26,13 @@ FCameraNodeEvaluationResultDebugBlock::FCameraNodeEvaluationResultDebugBlock()
 
 void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraNodeEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder)
 {
+	NumPostProcessSettings = InResult.PostProcessSettings.GetEntries().Num();
 	bIsCameraCut = InResult.bIsCameraCut;
 	bIsValid = InResult.bIsValid;
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
+	AddChild(&Builder.BuildDebugBlock<FCameraRigJointsDebugBlock>(InResult.CameraRigJoints, InResult.VariableTable));
 }
 
 void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraSystemEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder)
@@ -39,6 +42,7 @@ void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraSystemEvalua
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
+	// No rig joints exposed on the camera system result.
 }
 
 FCameraPoseDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetCameraPoseDebugBlock()
@@ -79,6 +83,11 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 		Renderer.AddText(TEXT("  {cam_warning}IsCameraCut"));
 	}
 
+	if (NumPostProcessSettings > 0)
+	{
+		Renderer.AddText(TEXT("  {cam_notice}%d post-FX"), NumPostProcessSettings);
+	}
+
 	Renderer.NewLine();
 	Renderer.SetTextColor(Colors.Default);
 
@@ -97,6 +106,14 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 		Renderer.AddIndent();
 		Renderer.SetTextColor(Colors.Default);
 		ChildrenView[1]->DebugDraw(Params, Renderer);
+		Renderer.RemoveIndent();
+	}
+	if (ChildrenView.IsValidIndex(2))
+	{
+		Renderer.AddText(TEXT("{cam_title}Camera Rig Joints:"));
+		Renderer.AddIndent();
+		Renderer.SetTextColor(Colors.Default);
+		ChildrenView[2]->DebugDraw(Params, Renderer);
 		Renderer.RemoveIndent();
 	}
 

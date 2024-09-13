@@ -314,6 +314,22 @@ void FCameraVariableTable::ClearAllWrittenThisFrameFlags()
 	}
 }
 
+bool FCameraVariableTable::TryGetVariableDefinition(FCameraVariableID VariableID, FCameraVariableDefinition& OutVariableDefinition) const
+{
+	if (const FEntry* Entry = FindEntry(VariableID))
+	{
+		OutVariableDefinition.VariableID = Entry->ID;
+		OutVariableDefinition.VariableType = Entry->Type;
+		OutVariableDefinition.bIsPrivate = EnumHasAnyFlags(Entry->Flags, EEntryFlags::Private);
+		OutVariableDefinition.bIsInput = EnumHasAnyFlags(Entry->Flags, EEntryFlags::Input);
+#if WITH_EDITORONLY_DATA
+		OutVariableDefinition.VariableName = Entry->DebugName;
+#endif  // WITH_EDITORONLY_DATA
+		return true;
+	}
+	return false;
+}
+
 void FCameraVariableTable::Serialize(FArchive& Ar)
 {
 	if (Ar.IsSaving())
