@@ -4,15 +4,24 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationContextStack.h"
-#include "Core/CameraIKAim.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
+#include "Debug/CameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
+#include "HAL/IConsoleManager.h"
 
 namespace UE::Cameras
 {
+
+bool GGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowUnchanged(
+	TEXT("GameplayCameras.Debug.OrientationInitialization.ShowLastTargetPreservation"),
+	GGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation,
+	TEXT(""));
 
 UE_DEFINE_CAMERA_EVALUATION_SERVICE(FOrientationInitializationService)
 
@@ -173,6 +182,8 @@ void FOrientationInitializationService::TryPreserveTarget(const FCameraRigEvalua
 
 	FVector3d TargetToPreserve = LastResult.CameraPose.GetTarget();
 
+	// Relative target preservation means that if the context turned since last frame, we want to preserve
+	// a target that has "turned" along with it.
 	if (bUseRelativeTarget && bHasPreviousContextTransform &&
 			(PreviousEvaluationContext == nullptr || CameraRigInfo.EvaluationContext == PreviousEvaluationContext))
 	{
@@ -193,7 +204,65 @@ void FOrientationInitializationService::TryPreserveTarget(const FCameraRigEvalua
 
 	FCameraIKAim CameraAim;
 	CameraAim.Run(AimParams, CameraRigInfo);
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	DebugLastEvaluatedTarget = LastResult.CameraPose.GetTarget();
+	CameraAim.GetLastRunDebugInfo(LastAimDebugInfo);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+class FOrientationInitializationDebugBlock : public FCameraDebugBlock
+{
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FOrientationInitializationDebugBlock)
+
+public:
+
+	FOrientationInitializationDebugBlock() = default;
+	FOrientationInitializationDebugBlock(const FOrientationInitializationService& InService);
+
+protected:
+
+	// FCameraDebugBlock interface.
+	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+	virtual void OnSerialize(FArchive& Ar) override;
+
+private:
+
+	FVector3d LastEvaluatedTarget;
+	FCameraIKAimDebugInfo AimDebugInfo;
+};
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FOrientationInitializationDebugBlock)
+
+void FOrientationInitializationService::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	Builder.AttachDebugBlock<FOrientationInitializationDebugBlock>(*this);
+}
+
+FOrientationInitializationDebugBlock::FOrientationInitializationDebugBlock(const FOrientationInitializationService& InService)
+{
+	LastEvaluatedTarget = InService.DebugLastEvaluatedTarget;
+	AimDebugInfo = InService.LastAimDebugInfo;
+}
+
+void FOrientationInitializationDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	if (GGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation)
+	{
+		AimDebugInfo.DebugDraw(Params, Renderer);
+
+		Renderer.DrawSphere(LastEvaluatedTarget, 1.f, 8, FLinearColor::Green, 1.f);
+	}
+}
+
+void FOrientationInitializationDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << AimDebugInfo;
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

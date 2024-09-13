@@ -45,6 +45,12 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowUnchanged(
 	GGameplayCamerasDebugPoseStatsShowUnchanged,
 	TEXT(""));
 
+bool GGameplayCamerasDebugPoseStatsShowVariableIDs = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowVariableIDs(
+	TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"),
+	GGameplayCamerasDebugPoseStatsShowVariableIDs,
+	TEXT(""));
+
 bool GGameplayCamerasDebugDrawBackground = true;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugDrawBackground(
 	TEXT("GameplayCameras.Debug.DrawBackground"),
@@ -125,7 +131,7 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 		{
 			ResultDebugBlock.Initialize(CameraSystem.GetEvaluatedResult(), Builder);
 			ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
-			ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
+			ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"));
 		}
 		FPlayerControllersDebugBlock& PlayerControllersDebugBlock = Builder.BuildDebugBlock<FPlayerControllersDebugBlock>();
 		PoseStatsCategory.AddChild(&PlayerControllersDebugBlock);

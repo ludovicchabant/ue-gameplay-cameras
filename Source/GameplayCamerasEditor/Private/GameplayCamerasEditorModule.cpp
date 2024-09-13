@@ -21,6 +21,8 @@
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
+#include "Debugger/SEvaluationServicesDebugPanel.h"
+#include "Debugger/SCameraPoseStatsDebugPanel.h"
 #include "Debugger/SGameplayCamerasDebugger.h"
 #include "Directors/BlueprintCameraDirector.h"
 #include "EdGraph/EdGraph.h"
@@ -417,6 +419,14 @@ private:
 		RegisterDebugCategoryPanel(FCameraDebugCategories::BlendStacks, FOnCreateDebugCategoryPanel::CreateLambda([](const FString&)
 					{
 						return SNew(SBlendStacksDebugPanel);
+					}));
+		RegisterDebugCategoryPanel(FCameraDebugCategories::Services, FOnCreateDebugCategoryPanel::CreateLambda([](const FString&)
+					{
+						return SNew(SEvaluationServicesDebugPanel);
+					}));
+		RegisterDebugCategoryPanel(FCameraDebugCategories::PoseStats, FOnCreateDebugCategoryPanel::CreateLambda([](const FString&)
+					{
+						return SNew(SCameraPoseStatsDebugPanel);
 					}));
 	}
 

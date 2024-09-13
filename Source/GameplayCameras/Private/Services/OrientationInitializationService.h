@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraEvaluationService.h"
+#include "Core/CameraIKAim.h"
 #include "Core/CameraRigTransition.h"
 
 namespace UE::Cameras
@@ -22,6 +23,10 @@ protected:
 	virtual void OnPostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) override;
 	virtual void OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent) override;
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	void TryInitializeContextYawPitch(const FCameraRigEvaluationInfo& CameraRigInfo);
@@ -37,6 +42,13 @@ private:
 	FVector3d PreviousContextLocation;
 	FRotator3d PreviousContextRotation;
 	bool bHasPreviousContextTransform = false;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FVector3d DebugLastEvaluatedTarget;
+	FCameraIKAimDebugInfo LastAimDebugInfo;
+
+	friend class FOrientationInitializationDebugBlock;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 }  // namespace UE::Cameras

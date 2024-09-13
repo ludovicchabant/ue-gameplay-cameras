@@ -6,6 +6,7 @@
 #include "Core/CameraNodeEvaluatorHierarchy.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Math/MathFwd.h"
+#include "GameplayCameras.h"
 
 namespace UE::Cameras
 {
@@ -38,6 +39,38 @@ struct FCameraIKAimParams
 	uint8 MaxIterations = 0;
 };
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+struct FCameraIKAimIterationDebugInfo
+{
+	FVector3d CameraPoseLocation;
+	FRotator3d CameraPoseRotation;
+	double ErrorAngle = 0;
+	double ErrorDistance = 0;
+ 
+	FVector3d PivotJointLocation = FVector3d::ZeroVector;
+	FVector2d YawPitchCorrection = FVector2d::ZeroVector;
+
+	bool bNeededSolver = false;
+	bool bFoundSolver = false;
+	bool bSolvingSuccess = false;
+};
+
+struct FCameraIKAimDebugInfo
+{
+	TArray<FCameraIKAimIterationDebugInfo, TInlineAllocator<4>> Iterations;
+
+	FVector3d DesiredTarget = FVector3d::ZeroVector;
+	bool bSucceeded = false;
+
+	void DebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) const;
+};
+
+FArchive& operator<< (FArchive& Ar, FCameraIKAimIterationDebugInfo& IterationDebugInfo);
+FArchive& operator<< (FArchive& Ar, FCameraIKAimDebugInfo& DebugInfo);
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 /**
  * A class that can manipulate a camera rig in order to aim it at a desired target.
  */
@@ -47,6 +80,10 @@ public:
 
 	/** Executes the aiming. */
 	bool Run(const FCameraIKAimParams& Params, const FCameraRigEvaluationInfo& CameraRigInfo);
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	void GetLastRunDebugInfo(FCameraIKAimDebugInfo& OutDebugInfo) const;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:
 
@@ -85,6 +122,10 @@ private:
 	
 	FCameraNodeEvaluatorHierarchy CameraSystemHierarchy;
 	TArray<uint8> EvaluatorSnapshot;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FCameraIKAimDebugInfo LastRunDebugInfo;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 }  // namespace UE::Cameras

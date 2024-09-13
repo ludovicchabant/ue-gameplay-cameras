@@ -12,8 +12,11 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableTable.h"
 #include "Core/RootCameraNode.h"
+#include "Debug/CameraDebugRenderer.h"
+#include "Engine/Engine.h"
 #include "GameplayCameras.h"
 #include "GameplayCamerasSettings.h"
+#include "Math/Ray.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
 
@@ -97,15 +100,32 @@ bool FCameraIKAim::DoRun(const FCameraIKAimParams& Params, const FCameraRigEvalu
 		++IterationInfo.IterationIndex;
 	}
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	LastRunDebugInfo.DesiredTarget = Params.TargetLocation;
+	LastRunDebugInfo.bSucceeded = (IterationInfo.Result == EAimResult::Completed);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 	return IterationInfo.Result == EAimResult::Completed || IterationInfo.Result == EAimResult::Corrected;
 }
 
 void FCameraIKAim::DoRunIteration(const FCameraIKAimParams& Params, const FCameraRigEvaluationInfo& CameraRigInfo, FAimIterationInfo& IterationInfo)
 {
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FCameraIKAimIterationDebugInfo& IterationDebugInfo = LastRunDebugInfo.Iterations.Emplace_GetRef();
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 	// Run the system. We restore its state after each run.
 	RunRootCameraNode(Params, CameraRigInfo);
 
+	// Check how far we are from the desired target.
 	const bool bContinueIteration = CheckTolerance(Params, CameraRigInfo, IterationInfo);
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	IterationDebugInfo.CameraPoseLocation = ScratchResult.CameraPose.GetLocation();
+	IterationDebugInfo.CameraPoseRotation = ScratchResult.CameraPose.GetRotation();
+	IterationDebugInfo.ErrorAngle = IterationInfo.ErrorAngle;
+	IterationDebugInfo.ErrorDistance = IterationInfo.ErrorDistance;
+	IterationDebugInfo.bNeededSolver = bContinueIteration;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	if (!bContinueIteration)
 	{
 		return;
@@ -119,6 +139,9 @@ void FCameraIKAim::DoRunIteration(const FCameraIKAimParams& Params, const FCamer
 			{
 				return Item.VariableID == YawPitchDefinition.VariableID;
 			});
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	IterationDebugInfo.bFoundSolver = (FoundItem != nullptr);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	if (!FoundItem)
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("Can't figure out how to aim camera rig '%s'."), *CameraRigInfo.CameraRig->GetPathName());
@@ -220,14 +243,16 @@ bool FCameraIKAim::CheckTolerance(const FCameraIKAimParams& Params, const FCamer
 
 	const double ErrorAngle = FMath::RadiansToDegrees(FMath::Asin(SinAngle));
 	IterationInfo.ErrorAngle = ErrorAngle;
+
+	const double ErrorDistance = OrthLength / TargetDistance;
+	IterationInfo.ErrorDistance = ErrorDistance;
+
 	if (ErrorAngle <= Params.AngleTolerance)
 	{
 		IterationInfo.Result = EAimResult::Completed;
 		return false;
 	}
 
-	const double ErrorDistance = OrthLength / TargetDistance;
-	IterationInfo.ErrorDistance = ErrorDistance;
 	if (ErrorDistance <= Params.DistanceTolerance)
 	{
 		IterationInfo.Result = EAimResult::Completed;
@@ -242,6 +267,11 @@ void FCameraIKAim::AimTwoBonesCameraRig(const FCameraIKAimParams& Params, const 
 	FRotator3d Correction;
 	const bool bGotCorrection = ComputeTwoBonesCorrection(
 			ScratchResult.CameraPose, PivotTransform.GetLocation(), Params.TargetLocation, Correction);
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FCameraIKAimIterationDebugInfo& IterationDebugInfo = LastRunDebugInfo.Iterations.Last();
+	IterationDebugInfo.PivotJointLocation = PivotTransform.GetLocation();
+	IterationDebugInfo.bSolvingSuccess = bGotCorrection;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	if (!bGotCorrection)
 	{
 		IterationInfo.Result = EAimResult::Failed;
@@ -256,6 +286,10 @@ void FCameraIKAim::AimTwoBonesCameraRig(const FCameraIKAimParams& Params, const 
 	Operation.Yaw = FConsumableDouble::Delta(Correction.Yaw);
 	Operation.Pitch = FConsumableDouble::Delta(Correction.Pitch);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	IterationDebugInfo.YawPitchCorrection = FVector2d(Correction.Yaw, Correction.Pitch);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 	CameraSystemHierarchy.ForEachEvaluator(TEXT("ActiveCameraRig"), ECameraNodeEvaluatorFlags::SupportsOperations,
 			[&OperationParams, &Operation](FCameraNodeEvaluator* Evaluator)
 			{
@@ -264,13 +298,18 @@ void FCameraIKAim::AimTwoBonesCameraRig(const FCameraIKAimParams& Params, const 
 
 	if (Operation.Yaw.HasValue() || Operation.Pitch.HasValue())
 	{
-		UE_LOG(LogCameraSystem, Warning, TEXT("Aborting aiming of camera rig '%s': not all corrections were consumed by the camera nodes."),
+		UE_LOG(LogCameraSystem, Warning, 
+				TEXT("Aborting aiming of camera rig '%s': not all corrections were consumed by the camera nodes."),
 				*CameraRigInfo.CameraRig->GetPathName());
 		IterationInfo.Result = EAimResult::Aborted;
-		return;
 	}
-
-	IterationInfo.Result = EAimResult::Corrected;
+	else
+	{
+		IterationInfo.Result = EAimResult::Corrected;
+	}
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	IterationDebugInfo.bSolvingSuccess = (IterationInfo.Result == EAimResult::Corrected);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 bool FCameraIKAim::ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection)
@@ -435,6 +474,114 @@ bool FCameraIKAim::RaySphereIntersectExit(const FVector3d& RayStart, const FVect
 	// D < 0.0
 	return false;
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FCameraIKAim::GetLastRunDebugInfo(FCameraIKAimDebugInfo& OutDebugInfo) const
+{
+	OutDebugInfo = LastRunDebugInfo;
+}
+
+void FCameraIKAimDebugInfo::DebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) const
+{
+	Renderer.AddText(TEXT("IK aiming "));
+	if (bSucceeded)
+	{
+		Renderer.AddText(TEXT("{cam_good}succeeded"));
+	}
+	else
+	{
+		Renderer.AddText(TEXT("{cam_error}failed"));
+	}
+	Renderer.AddText(TEXT("{cam_default} in %d iterations\n"), Iterations.Num());
+
+	UFont* TinyFont = GEngine->GetTinyFont();
+	Renderer.DrawSphere(DesiredTarget, 1.f, 8, FLinearColor::Yellow, 1.f);
+
+	Renderer.AddIndent();
+	{
+		int32 IterationIndex = 1;
+		for (const FCameraIKAimIterationDebugInfo& IterationDebugInfo : Iterations)
+		{
+			const bool bDirectionIsNormalized = true;
+			const FVector3d TargetDir = FVector3d::ForwardVector;
+			FRay3d DirectionRay(
+					IterationDebugInfo.CameraPoseLocation, 
+					IterationDebugInfo.CameraPoseRotation.RotateVector(TargetDir), bDirectionIsNormalized);
+
+			Renderer.DrawLine(
+					IterationDebugInfo.CameraPoseLocation,
+					DirectionRay.PointAt(1000.0),
+					FLinearColor::Yellow);
+			Renderer.DrawText(
+					IterationDebugInfo.CameraPoseLocation,
+					FString::Format(TEXT("Iteration {0}"), { IterationIndex }),
+					FLinearColor::Yellow,
+					TinyFont);
+
+			Renderer.AddText(
+					TEXT("%d : error angle %.2fdeg, error distance %.1fcm, "),
+					IterationIndex,
+					IterationDebugInfo.ErrorAngle, IterationDebugInfo.ErrorDistance);
+
+			++IterationIndex;
+
+			if (!IterationDebugInfo.bNeededSolver)
+			{
+				Renderer.AddText(TEXT(" {cam_good}reached tolerance{cam_default}\n"));
+				continue;
+			}
+			if (!IterationDebugInfo.bFoundSolver)
+			{
+				Renderer.AddText(TEXT(" {cam_error}couldn't find solver{cam_default}\n"));
+				continue;
+			}
+			
+			Renderer.AddText(TEXT(" pivot %s"), *IterationDebugInfo.PivotJointLocation.ToString());
+			Renderer.AddText(
+					TEXT(" correction Yaw=%.1f Pitch=%.1f"), 
+					IterationDebugInfo.YawPitchCorrection.X,
+					IterationDebugInfo.YawPitchCorrection.Y);
+
+			if (!IterationDebugInfo.bSolvingSuccess)
+			{
+				Renderer.AddText(TEXT(", {cam_error}couldn't compute correction{cam_default}\n"));
+				continue;
+			}
+
+			Renderer.NewLine();
+		}
+	}
+	Renderer.RemoveIndent();
+}
+
+FArchive& operator<< (FArchive& Ar, FCameraIKAimIterationDebugInfo& IterationDebugInfo)
+{
+	Ar << IterationDebugInfo.CameraPoseLocation;
+	Ar << IterationDebugInfo.CameraPoseRotation;
+	Ar << IterationDebugInfo.ErrorAngle;
+	Ar << IterationDebugInfo.ErrorDistance;
+
+	Ar << IterationDebugInfo.PivotJointLocation;
+	Ar << IterationDebugInfo.YawPitchCorrection;
+
+	Ar << IterationDebugInfo.bNeededSolver;
+	Ar << IterationDebugInfo.bFoundSolver;
+	Ar << IterationDebugInfo.bSolvingSuccess;
+
+	return Ar;
+}
+
+FArchive& operator<< (FArchive& Ar, FCameraIKAimDebugInfo& DebugInfo)
+{
+	Ar << DebugInfo.Iterations;
+	Ar << DebugInfo.DesiredTarget;
+	Ar << DebugInfo.bSucceeded;
+
+	return Ar;
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 
