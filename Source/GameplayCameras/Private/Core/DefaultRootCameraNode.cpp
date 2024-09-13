@@ -163,6 +163,8 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 
 	FCameraNodeEvaluator* RootEvaluator = Params.CameraRigInfo.RootEvaluator;
 
+	// Emulate what the main blend stack does.
+
 	{
 		const FCameraNodeEvaluationResult* CameraRigResult = Params.CameraRigInfo.LastResult;
 		FCameraBlendedParameterUpdateParams InputParams(Params.EvaluationParams, CameraRigResult->CameraPose);
@@ -172,21 +174,20 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 		Hierarchy.CallUpdateParameters(InputParams, InputResult);
 	}
 
-	{
-		OutResult.CameraPose.ClearAllChangedFlags();
-		OutResult.VariableTable.ClearAllWrittenThisFrameFlags();
+	// No parameter blending: we are running this camera rig in isolation.
 
+	{
 		const FCameraNodeEvaluationResult& InitialResult = Params.CameraRigInfo.EvaluationContext->GetInitialResult();
 		OutResult.CameraPose.OverrideChanged(InitialResult.CameraPose);
 		OutResult.VariableTable.OverrideAll(InitialResult.VariableTable);
-
-		OutResult.bIsValid = true;
 
 		RootEvaluator->Run(Params.EvaluationParams, OutResult);
 	}
 
 	GlobalLayer->Run(Params.EvaluationParams, OutResult);
 	// Don't run the visual layer.
+
+	OutResult.bIsValid = true;
 }
 
 void FDefaultRootCameraNodeEvaluator::OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent)

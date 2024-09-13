@@ -61,8 +61,6 @@ bool FCameraIKAim::DoRun(const FCameraIKAimParams& Params, const FCameraRigEvalu
 
 	// Initialize our scratch result.
 	ScratchResult.VariableTable.Initialize(CameraRigInfo.CameraRig->AllocationInfo.VariableTableInfo);
-	ScratchResult.VariableTable.OverrideAll(CameraSystemEvaluator->GetEvaluatedResult().VariableTable);
-	ScratchResult.VariableTable.Override(CameraRigInfo.LastResult->VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
 
 	// Initialize our hierarchy caches.
 	FRootCameraNodeEvaluator* CameraSystemRootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
@@ -136,6 +134,14 @@ void FCameraIKAim::RunRootCameraNode(const FCameraIKAimParams& Params, const FCa
 {
 	const FCameraSystemEvaluationResult& LastResult = Params.Evaluator->GetEvaluatedResult();
 	const FCameraNodeEvaluationResult& ContextInitialResult = CameraRigInfo.EvaluationContext->GetInitialResult();
+
+	// Reset the scratch result the same way the camera system does it at the beginning of each frame.
+	ScratchResult.Reset();
+
+	// Make sure the camera rig will get its private variables, such as rig interface parameter overrides.
+	ScratchResult.VariableTable.Override(
+			CameraRigInfo.LastResult->VariableTable, 
+			ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
 
 	FRootCameraNodeEvaluator* RootEvaluator = Params.Evaluator->GetRootNodeEvaluator();
 
