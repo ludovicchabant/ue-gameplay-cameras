@@ -210,11 +210,7 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 
 void FBoomArmCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
 {
-	if (InputSlotEvaluator)
-	{
-		InputSlotEvaluator->ExecuteOperation(Params, Operation);
-	}
-	else
+	if (!InputSlotEvaluator)
 	{
 		// If we don't have an input slot, we use the pawn rotation directly in OnRun. So let's handle
 		// some operations by affecting that pawn rotation ourselves.
