@@ -102,7 +102,7 @@ public:
 
 	/** Collision channel to use for the line trace. */
 	UPROPERTY(EditAnywhere, Category="Collision")
-	TEnumAsByte<ECollisionChannel> CollisionChannel;
+	TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_Camera;
 
 	/** The interpolation to use when pushing the camera towards the safe position. */
 	UPROPERTY(EditAnywhere, Category="Collision")

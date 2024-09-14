@@ -24,10 +24,10 @@ public:
 
 	/** Whether to move the camera to the pawn's location. */
 	UPROPERTY(EditAnywhere, Category=Common)
-	FBooleanCameraParameter AttachToLocation;
+	FBooleanCameraParameter AttachToLocation = true;
 
 	/** Whether to align the camera rotation to the pawn's orientation. */
 	UPROPERTY(EditAnywhere, Category=Common)
-	FBooleanCameraParameter AttachToRotation;
+	FBooleanCameraParameter AttachToRotation = false;
 };
 
