@@ -98,6 +98,9 @@ void FTargetRayCastCameraNodeEvaluator::RunLineTrace(UWorld* World, APlayerContr
 	const FVector3d RayStart = CameraPose.GetLocation();
 	const FVector3d RayEnd = RayStart + CameraPose.GetAimDir() * GTargetRayCastLength;
 
+	const UTargetRayCastCameraNode* RayCastNode = GetCameraNodeAs<UTargetRayCastCameraNode>();
+	ECollisionChannel TraceChannel = RayCastNode->TraceChannel;
+
 	FHitResult HitResult;
 
 	// Ignore the player pawn by default.
@@ -108,7 +111,7 @@ void FTargetRayCastCameraNodeEvaluator::RunLineTrace(UWorld* World, APlayerContr
 	const bool bGotHit = World->LineTraceSingleByChannel(
 			HitResult, 
 			RayStart, RayEnd,
-			ECollisionChannel::ECC_Camera,
+			TraceChannel,
 			QueryParams);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

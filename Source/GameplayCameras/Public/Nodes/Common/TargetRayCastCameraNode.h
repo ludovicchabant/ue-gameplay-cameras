@@ -15,6 +15,12 @@ class UTargetRayCastCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	/** Trace channel to use for the ray-cast. */
+	UPROPERTY(EditAnywhere, Category="Ray-Cast")
+	TEnumAsByte<ECollisionChannel> TraceChannel = ECollisionChannel::ECC_Camera;
+
 protected:
 
 	// UCameraNode interface.
