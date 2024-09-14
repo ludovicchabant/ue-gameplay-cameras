@@ -5,6 +5,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
 #include "Engine/EngineTypes.h"
+#include "Nodes/CameraNodeTypes.h"
 
 #include "OcclusionMaterialCameraNode.generated.h"
 
@@ -27,10 +28,22 @@ public:
 
 	/** Collision channel to use for the occlusion testing. */
 	UPROPERTY(EditAnywhere, Category="Occlusion")
-	TEnumAsByte<ECollisionChannel> OcclusionChannel;
+	TEnumAsByte<ECollisionChannel> OcclusionChannel = ECollisionChannel::ECC_Camera;
 
-	/** World-space offset from the target to the occlusion trace's end. */
-	UPROPERTY(EditAnywhere, Category="Occlusion")
+	/** 
+	 * The position of the occlusion trace's target. Objects encountered between the current
+	 * camera pose location and this target will have the transparency material applied to
+	 * them until they move out of the way.
+	 */
+	UPROPERTY(EditAnywhere, Category="Occlusion Target")
+	ECameraNodeOriginPosition OcclusionTargetPosition = ECameraNodeOriginPosition::Pawn;
+
+	/** The space in which to apply the occlusion target offset. */
+	UPROPERTY(EditAnywhere, Category="Occlusion Target")
+	ECameraNodeSpace OcclusionTargetOffsetSpace = ECameraNodeSpace::World;
+
+	/** Offset from the target to the occlusion trace's end. */
+	UPROPERTY(EditAnywhere, Category="Occlusion Target")
 	FVector3dCameraParameter OcclusionTargetOffset;
 
 public:

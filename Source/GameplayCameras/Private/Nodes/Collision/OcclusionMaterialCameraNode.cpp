@@ -13,6 +13,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameplayCameras.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Math/CameraNodeSpaceMath.h"
 #include "Misc/AssertionMacros.h"
 #include "WorldCollision.h"
 
@@ -42,7 +43,7 @@ protected:
 
 private:
 
-	void RunOcclusionTrace(UWorld* World, APlayerController* PlayerController, FCameraNodeEvaluationResult& OutResult);
+	void RunOcclusionTrace(UWorld* World, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 	void HandleOcclusionTraceResult(UWorld* World);
 
 	void ApplyOcclusionMaterial(TSet<UStaticMeshComponent*> MeshComponents);
@@ -91,37 +92,59 @@ void FOcclusionMaterialCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 	}
 
 	UWorld* World = Params.EvaluationContext->GetWorld();
-	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-	if (!World || !PlayerController)
+	if (!World)
 	{
 		return;
 	}
 
 	HandleOcclusionTraceResult(World);
-	RunOcclusionTrace(World, PlayerController, OutResult);
+	RunOcclusionTrace(World, Params, OutResult);
 }
 
-void FOcclusionMaterialCameraNodeEvaluator::RunOcclusionTrace(UWorld* World, APlayerController* PlayerController, FCameraNodeEvaluationResult& OutResult)
+void FOcclusionMaterialCameraNodeEvaluator::RunOcclusionTrace(UWorld* World, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	static FName OcclusionTraceTag(TEXT("CameraOcclusion"));
 	static FName OcclusionTraceOwnerTag(TEXT("OcclusionMaterialCameraNode"));
 
-	APawn* Pawn = PlayerController->GetPawn();
-
-	// TODO fix this hardcoded nonsense
-	const FVector3d OcclusionTarget = Pawn->GetActorLocation();
-
 	const UOcclusionMaterialCameraNode* OcclusionMaterialNode = GetCameraNodeAs<UOcclusionMaterialCameraNode>();
+
+	const FCameraNodeSpaceParams SpaceParams(Params, OutResult);
+
+	FVector3d OcclusionTarget;
+	const bool bGotOcclusionTarget = FCameraNodeSpaceMath::GetCameraNodeOriginPosition(
+			SpaceParams, OcclusionMaterialNode->OcclusionTargetPosition, OcclusionTarget);
+	if (!bGotOcclusionTarget)
+	{
+		return;
+	}
+
+	const FVector3d OcclusionTargetOffset = OcclusionTargetOffsetReader.Get(OutResult.VariableTable);
+	if (!OcclusionTargetOffset.IsZero())
+	{
+		FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(
+				SpaceParams,
+				OcclusionTarget, OcclusionTargetOffset, OcclusionMaterialNode->OcclusionTargetOffsetSpace,
+				OcclusionTarget);
+	}
+
 	ECollisionChannel OcclusionChannel = OcclusionMaterialNode->OcclusionChannel;
 
 	const float OcclusionSphereRadius = OcclusionSphereRadiusReader.Get(OutResult.VariableTable);
-	const FVector3d TraceEndOffset = OcclusionTargetOffsetReader.Get(OutResult.VariableTable);
 
 	const FVector3d TraceStart(OutResult.CameraPose.GetLocation());
-	const FVector3d TraceEnd(OcclusionTarget + TraceEndOffset);
+	const FVector3d TraceEnd(OcclusionTarget);
+
+	// Ignore the player pawn by default.
+	APawn* Pawn = nullptr;
+	if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = SpaceParams.GetActiveContext())
+	{
+		if (APlayerController* PlayerController = ActiveContext->GetPlayerController())
+		{
+			Pawn = PlayerController->GetPawn();
+		}
+	}
 
 	FCollisionShape SweepShape = FCollisionShape::MakeSphere(OcclusionSphereRadius);
-	// Ignore the player pawn by default.
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(StartOcclusionSweep), false, Pawn);
 	QueryParams.TraceTag = OcclusionTraceTag;
 	QueryParams.OwnerTag = OcclusionTraceOwnerTag;
