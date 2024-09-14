@@ -18,6 +18,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
+#include "Math/CameraNodeSpaceMath.h"
 #include "Misc/AssertionMacros.h"
 #include "WorldCollision.h"
 
@@ -41,14 +42,8 @@ protected:
 
 private:
 
-	TOptional<FVector3d> GetFinalSafePosition(
-			const FCameraNodeEvaluationParams& Params, 
-			const FCameraNodeEvaluationResult& OutResult);
-	TOptional<FVector3d> GetSafePosition(
-			const FCameraNodeEvaluationParams& Params, 
-			TSharedPtr<const FCameraEvaluationContext> ActiveContext,
-			const FCameraRigJoint* PivotJoint,
-			const FCameraNodeEvaluationResult& OutResult);
+	TOptional<FVector3d> GetFinalSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
+	TOptional<FVector3d> GetSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
 
 	void RunCollisionTrace(UWorld* World, APlayerController* PlayerController, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 	void HandleAsyncCollisionTraceResult(UWorld* World, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
@@ -76,7 +71,7 @@ private:
 	bool bDebugCollisionEnabled = false;
 	bool bDebugFoundHit = false;
 	bool bDebugGotSafePosition = false;
-	bool bDebugGotSafePositionOffsetSpace = false;
+	bool bDebugGotSafePositionOffset = false;
 	FString DebugHitObjectName;
 	FVector3d DebugSafePosition;
 #endif
@@ -87,7 +82,7 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCollisionPushCameraNodeEvaluator)
 UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FCollisionPushCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bCollisionEnabled)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bGotSafePosition)
-	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bGotSafePositionOffsetSpace)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bGotSafePositionOffset)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(ECollisionSafePosition, SafePositionType)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(ECollisionSafePositionOffsetSpace, SafePositionOffsetSpace)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(float, PushFactor);
@@ -182,107 +177,56 @@ TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetFinalSafePosition(con
 		return TOptional<FVector3d>();
 	}
 
-	const UCollisionPushCameraNode* ThisNode = GetCameraNodeAs<UCollisionPushCameraNode>();
-
-	// Get the active context.
-	const FCameraEvaluationContextStack& ContextStack = Params.Evaluator->GetEvaluationContextStack();
-	TSharedPtr<const FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
-	
-	// See if we have a pivot.
-	const FBuiltInCameraVariables& BuiltInVariables = FBuiltInCameraVariables::Get();
-	TArrayView<const FCameraRigJoint> Joints = OutResult.CameraRigJoints.GetJoints();
-	const FCameraRigJoint* PivotJoint = Joints.FindByPredicate([&BuiltInVariables](const FCameraRigJoint& Joint)
-			{
-				return Joint.VariableID == BuiltInVariables.YawPitchDefinition;
-			});
-
 	// Get the safe position itself first.
-	TOptional<FVector3d> OptSafePosition = GetSafePosition(Params, ActiveContext, PivotJoint, OutResult);	
+	TOptional<FVector3d> OptSafePosition = GetSafePosition(Params, OutResult);	
 	if (!OptSafePosition.IsSet())
 	{
 		return TOptional<FVector3d>();
 	}
 
 	// Apply the offset in the specified space.
+	FVector3d SafePosition = OptSafePosition.GetValue();
+	bool bGotSafePositionOffset = true;
 	const FVector3d SafePositionOffset = SafePositionOffsetReader.Get(OutResult.VariableTable);
-
-	FVector3d WorldSafePositionOffset = SafePositionOffset;
-	bool bGotSafePositionOffsetSpace = false;
-
-	switch (ThisNode->SafePositionOffsetSpace)
+	if (!SafePositionOffset.IsZero())
 	{
-		case ECollisionSafePositionOffsetSpace::ActiveContext:
-			if (ActiveContext)
-			{
-				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				WorldSafePositionOffset = InitialResult.CameraPose.GetRotation().RotateVector(SafePositionOffset);
-				bGotSafePositionOffsetSpace = true;
-			}
-			break;
-		case ECollisionSafePositionOffsetSpace::OwningContext:
-			{
-				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				WorldSafePositionOffset = InitialResult.CameraPose.GetRotation().RotateVector(SafePositionOffset);
-				bGotSafePositionOffsetSpace = true;
-			}
-			break;
-		case ECollisionSafePositionOffsetSpace::Pivot:
-			if (PivotJoint)
-			{
-				WorldSafePositionOffset = PivotJoint->Transform.TransformVectorNoScale(SafePositionOffset);
-				bGotSafePositionOffsetSpace = true;
-			}
-			else if (ActiveContext)
-			{
-				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				WorldSafePositionOffset = InitialResult.CameraPose.GetRotation().RotateVector(SafePositionOffset);
-				bGotSafePositionOffsetSpace = true;
-			}
-			break;
-		case ECollisionSafePositionOffsetSpace::CameraPose:
-			{
-				WorldSafePositionOffset = OutResult.CameraPose.GetRotation().RotateVector(SafePositionOffset);
-				bGotSafePositionOffsetSpace = true;
-			}
-			break;
-		case ECollisionSafePositionOffsetSpace::Pawn:
-			if (ActiveContext)
-			{
-				if (APlayerController* PlayerController = ActiveContext->GetPlayerController())
-				{
-					if (APawn* Pawn = PlayerController->GetPawnOrSpectator())
-					{
-						const FTransform3d& PawnTransform = Pawn->GetActorTransform();
-						WorldSafePositionOffset = PawnTransform.TransformVectorNoScale(SafePositionOffset);
-						bGotSafePositionOffsetSpace = true;
-					}
-				}
-			}
-			break;
+		ECameraNodeSpace SafePositionOffsetSpace;
+		const UCollisionPushCameraNode* ThisNode = GetCameraNodeAs<UCollisionPushCameraNode>();
+		switch (ThisNode->SafePositionOffsetSpace)
+		{
+			case ECollisionSafePositionOffsetSpace::ActiveContext:
+				SafePositionOffsetSpace = ECameraNodeSpace::ActiveContext;
+				break;
+			case ECollisionSafePositionOffsetSpace::OwningContext:
+				SafePositionOffsetSpace = ECameraNodeSpace::OwningContext;
+				break;
+			case ECollisionSafePositionOffsetSpace::Pivot:
+				SafePositionOffsetSpace = ECameraNodeSpace::Pivot;
+				break;
+			case ECollisionSafePositionOffsetSpace::CameraPose:
+				SafePositionOffsetSpace = ECameraNodeSpace::CameraPose;
+				break;
+			case ECollisionSafePositionOffsetSpace::Pawn:
+				SafePositionOffsetSpace = ECameraNodeSpace::Pawn;
+				break;
+			default:
+				ensure(false);
+				SafePositionOffsetSpace = ECameraNodeSpace::Pivot;
+				break;
+		}
+
+		bGotSafePositionOffset = FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(
+				Params, OutResult, SafePosition, SafePositionOffset, SafePositionOffsetSpace, SafePosition);
 	}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	bDebugGotSafePositionOffsetSpace = bGotSafePositionOffsetSpace;
+	bDebugGotSafePositionOffset = bGotSafePositionOffset;
 #endif
 
-	if (bGotSafePositionOffsetSpace)
-	{
-		return OptSafePosition.GetValue() + WorldSafePositionOffset;
-	}
-	else
-	{
-		return OptSafePosition.GetValue();
-	}
+	return SafePosition;
 }
 
-TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(
-		const FCameraNodeEvaluationParams& Params, 
-		TSharedPtr<const FCameraEvaluationContext> ActiveContext,
-		const FCameraRigJoint* PivotJoint,
-		const FCameraNodeEvaluationResult& OutResult)
+TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult)
 {
 	const UCollisionPushCameraNode* ThisNode = GetCameraNodeAs<UCollisionPushCameraNode>();
 
@@ -304,56 +248,29 @@ TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(
 	}
 	
 	// Compute the base safe position.
-	FVector3d SafePosition;
-	bool bGotSafePosition = false;
-
+	ECameraNodeOriginPosition OriginPosition;
 	switch (ThisNode->SafePosition)
 	{
 		case ECollisionSafePosition::ActiveContext:
-			if (ActiveContext)
-			{
-				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				SafePosition = InitialResult.CameraPose.GetLocation();
-				bGotSafePosition = true;
-			}
+			OriginPosition = ECameraNodeOriginPosition::ActiveContext;
 			break;
 		case ECollisionSafePosition::OwningContext:
-			{
-				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				SafePosition = InitialResult.CameraPose.GetLocation();
-				bGotSafePosition = true;
-			}
+			OriginPosition = ECameraNodeOriginPosition::OwningContext;
 			break;
 		case ECollisionSafePosition::Pivot:
-			if (PivotJoint)
-			{
-				SafePosition = PivotJoint->Transform.GetLocation();
-				bGotSafePosition = true;
-			}
-			else if (ActiveContext)
-			{
-				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
-				SafePosition = InitialResult.CameraPose.GetLocation();
-				bGotSafePosition = true;
-			}
+			OriginPosition = ECameraNodeOriginPosition::Pivot;
 			break;
 		case ECollisionSafePosition::Pawn:
-			if (ActiveContext)
-			{
-				if (APlayerController* PlayerController = ActiveContext->GetPlayerController())
-				{
-					if (APawn* Pawn = PlayerController->GetPawnOrSpectator())
-					{
-						SafePosition = Pawn->GetActorTransform().GetLocation();
-						bGotSafePosition = true;
-					}
-				}
-			}
+			OriginPosition = ECameraNodeOriginPosition::Pawn;
+			break;
+		default:
+			ensure(false);
+			OriginPosition = ECameraNodeOriginPosition::Pivot;
 			break;
 	}
+
+	FVector3d SafePosition;
+	const bool bGotSafePosition = FCameraNodeSpaceMath::GetCameraNodeOriginPosition(Params, OutResult, OriginPosition, SafePosition);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	bDebugGotSafePosition = bGotSafePosition;
@@ -565,7 +482,7 @@ void FCollisionPushCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlo
 
 	const UCollisionPushCameraNode* ThisNode = GetCameraNodeAs<UCollisionPushCameraNode>();
 	DebugBlock.bGotSafePosition = bDebugGotSafePosition;
-	DebugBlock.bGotSafePositionOffsetSpace = bDebugGotSafePositionOffsetSpace;
+	DebugBlock.bGotSafePositionOffset = bDebugGotSafePositionOffset;
 	DebugBlock.SafePositionType = ThisNode->SafePosition;
 	DebugBlock.SafePositionOffsetSpace = ThisNode->SafePositionOffsetSpace;
 
@@ -624,7 +541,7 @@ void FCollisionPushCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		Renderer.SetTextColor(Colors.Default);
 	}
 
-	if (!bGotSafePositionOffsetSpace)
+	if (!bGotSafePositionOffset)
 	{
 		Renderer.NewLine();
 		Renderer.SetTextColor(Colors.Error);
