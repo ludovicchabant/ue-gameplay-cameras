@@ -18,7 +18,7 @@ namespace UE::Cameras
 {
 
 bool GGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation = false;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowUnchanged(
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation(
 	TEXT("GameplayCameras.Debug.OrientationInitialization.ShowLastTargetPreservation"),
 	GGameplayCamerasDebugOrientationInitializationShowLastTargetPreservation,
 	TEXT(""));
