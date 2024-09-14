@@ -56,7 +56,7 @@ void FCameraRigJointsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& 
 					*Entry.Location.ToString(),
 					*Entry.Rotation.ToString(),
 					*Entry.VariableName,
-					Entry.VariableID);
+					Entry.VariableID.GetValue());
 		}
 	}
 	Renderer.RemoveIndent();
