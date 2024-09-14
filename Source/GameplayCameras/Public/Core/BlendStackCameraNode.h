@@ -37,18 +37,24 @@ class IGameplayCamerasLiveEditManager;
 
 }  // namespace UE::Cameras
 
+/**
+ * Describes a type of blend stack.
+ */
 UENUM()
 enum class ECameraBlendStackType
 {
 	/**
-	 * Camera rigs in a transient blend stack get automatically popped out of the stack 
-	 * when another rig has reached 100% blend above them.
+	 * Camera rigs are evaluated in isolation before being blended together, and get 
+	 * automatically popped out of the stack when another rig has reached 100% blend above 
+	 * them.
 	 */
-	Transient,
+	IsolatedTransient,
 	/**
-	 * Camera rigs in a persistent blend stack stay in the stack until explicitly removed.
+	 * Camera rigs are evaluated in an additive way, i.e. the result of a lower camera rig
+	 * becomes the input of the next ones. Also, camera rigs stay in the stack until explicitly 
+	 * removed.
 	 */
-	Persistent
+	AdditivePersistent
 };
 
 /**
@@ -70,13 +76,7 @@ public:
 	 * The type of blend stack this should run as.
 	 */
 	UPROPERTY()
-	ECameraBlendStackType BlendStackType = ECameraBlendStackType::Transient;
-
-	/**
-	 * Whether to blend-in the first camera rig when the stack is previously empty.
-	 */
-	UPROPERTY()
-	bool bBlendFirstCameraRig = false;
+	ECameraBlendStackType BlendStackType = ECameraBlendStackType::IsolatedTransient;
 };
 
 namespace UE::Cameras
@@ -116,7 +116,6 @@ protected:
 	// FCameraNodeEvaluator interface
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
 	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
@@ -151,6 +150,19 @@ protected:
 	void RemoveListenedPackages(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager, FCameraRigEntry& Entry);
 #endif
+
+protected:
+
+	struct FResolvedEntry
+	{
+		FCameraRigEntry& Entry;
+		TSharedPtr<const FCameraEvaluationContext> Context;
+		int32 EntryIndex;
+		bool bHasPreBlendedParameters;
+	};
+
+	void ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries);
+	void OnRunFinished();
 
 protected:
 
@@ -251,7 +263,18 @@ public:
 	/** Freeze all camera rigs that belong to a given evaluation context. */
 	void FreezeAll(TSharedPtr<FCameraEvaluationContext> EvaluationContext);
 
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
 private:
+
+	// Update methods.
+	void InternalPreBlendPrepare(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void InternalPreBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void InternalPostBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	// Utility functions for finding an appropriate transition.
 	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
@@ -305,7 +328,15 @@ public:
 	/** Remove an existing camera rig from the blend stack. */
 	void Remove(const FBlendStackCameraRemoveParams& Params);
 
+protected:
+
+	// FCameraNodeEvaluator interface.
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
 private:
+
+	// Update methods.
+	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	// Utility functions for finding an appropriate transition.
 	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;

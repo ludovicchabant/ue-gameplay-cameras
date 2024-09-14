@@ -17,12 +17,11 @@ namespace UE::Cameras::Private
 
 TObjectPtr<UBlendStackCameraNode> CreateBlendStack(
 		UObject* This, const FObjectInitializer& ObjectInit,
-		const FName& Name, ECameraBlendStackType BlendStackType, bool bBlendFirstCameraRig)
+		const FName& Name, ECameraBlendStackType BlendStackType)
 {
 	TObjectPtr<UBlendStackCameraNode> NewBlendStack = ObjectInit.CreateDefaultSubobject<UBlendStackCameraNode>(
 			This, Name);
 	NewBlendStack->BlendStackType = BlendStackType;
-	NewBlendStack->bBlendFirstCameraRig = bBlendFirstCameraRig;
 	return NewBlendStack;
 }
 
@@ -33,10 +32,10 @@ UDefaultRootCameraNode::UDefaultRootCameraNode(const FObjectInitializer& ObjectI
 {
 	using namespace UE::Cameras::Private;
 
-	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), ECameraBlendStackType::Persistent, true);
-	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"), ECameraBlendStackType::Transient, false);
-	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), ECameraBlendStackType::Persistent, true);
-	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), ECameraBlendStackType::Persistent, true);
+	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), ECameraBlendStackType::AdditivePersistent);
+	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"), ECameraBlendStackType::IsolatedTransient);
+	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), ECameraBlendStackType::AdditivePersistent);
+	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), ECameraBlendStackType::AdditivePersistent);
 }
 
 FCameraNodeEvaluatorPtr UDefaultRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const

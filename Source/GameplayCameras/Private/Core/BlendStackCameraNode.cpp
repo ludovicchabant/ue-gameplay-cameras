@@ -30,9 +30,9 @@ FCameraNodeEvaluatorPtr UBlendStackCameraNode::OnBuildEvaluator(FCameraNodeEvalu
 
 	switch (BlendStackType)
 	{
-		case ECameraBlendStackType::Persistent:
+		case ECameraBlendStackType::AdditivePersistent:
 			return Builder.BuildEvaluator<FPersistentBlendStackCameraNodeEvaluator>();
-		case ECameraBlendStackType::Transient:
+		case ECameraBlendStackType::IsolatedTransient:
 			return Builder.BuildEvaluator<FTransientBlendStackCameraNodeEvaluator>();
 		default:
 			ensure(false);
@@ -155,29 +155,18 @@ void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 	OwningEvaluator = Params.Evaluator;
 }
 
-void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries)
 {
-	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
-
 	// Build up these structures so we don't re-resolve evaluation context weak-pointers
 	// multiple times in this function..
-	struct FResolvedEntry
-	{
-		FCameraRigEntry& Entry;
-		TSharedPtr<const FCameraEvaluationContext> Context;
-		int32 EntryIndex;
-	};
-
-	TArray<FResolvedEntry> ResolvedEntries;
-
-	// While we make these resolved entries, emit warnings and errors as needed.
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
 		FCameraRigEntry& Entry(Entries[Index]);
 		TSharedPtr<const FCameraEvaluationContext> CurContext = Entry.EvaluationContext.Pin();
 
-		ResolvedEntries.Add({ Entry, CurContext, Index });
+		OutResolvedEntries.Add({ Entry, CurContext, Index });
 
+		// While we make these resolved entries, emit warnings and errors as needed.
 		if (!Entry.bIsFrozen)
 		{
 			// Check that we still have a valid context. If not, let's freeze the entry, since
@@ -231,177 +220,10 @@ void FBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 		Entry.bLogWarnings = true;
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
+}
 
-	// Gather parameters to pre-blend, and evaluate blend nodes.
-	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
-	{
-		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-
-		if (UNLIKELY(Entry.bIsFrozen))
-		{
-			continue;
-		}
-
-		FCameraNodeEvaluationParams CurParams(Params);
-		CurParams.EvaluationContext = ResolvedEntry.Context;
-		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
-
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-		// Start with the input given to us.
-		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
-
-		// Override it with whatever the evaluation context has set on its result.
-		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
-		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
-
-		// Gather input parameters.
-		if (!Entry.bInputRunThisFrame)
-		{
-			FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
-			FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
-
-			Entry.EvaluatorHierarchy.ForEachEvaluator(ECameraNodeEvaluatorFlags::NeedsParameterUpdate,
-					[&InputParams, &InputResult](FCameraNodeEvaluator* ParameterEvaluator)
-					{
-						ParameterEvaluator->UpdateParameters(InputParams, InputResult);
-					});
-
-			Entry.bInputRunThisFrame = true;
-		}
-
-		// Run blends.
-		// Note that we pass last frame's camera pose to the Run() method. This may change.
-		// Blends aren't expected to use the camera pose to do any logic until BlendResults().
-		if (!Entry.bBlendRunThisFrame)
-		{
-			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
-			if (EntryBlendEvaluator)
-			{
-				EntryBlendEvaluator->Run(CurParams, CurResult);
-			}
-
-			Entry.bBlendRunThisFrame = true;
-		}
-	}
-
-	// Blend input variables.
-	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
-	{
-		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-		if (!Entry.bIsFrozen)
-		{
-			FCameraNodeEvaluationParams CurParams(Params);
-			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
-			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
-
-			FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
-
-			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
-			if (EntryBlendEvaluator)
-			{
-				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
-			}
-			else
-			{
-				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
-			}
-		}
-		else
-		{
-			// Frozen entries still contribute to the blend using their last evaluated values.
-			OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
-		}
-	}
-
-	// Run the root nodes. They will use the pre-blended inputs from the last step.
-	// Frozen entries are skipped, since they only ever use the last result they produced.
-	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
-	{
-		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-
-		if (UNLIKELY(Entry.bIsFrozen))
-		{
-			continue;
-		}
-
-		FCameraNodeEvaluationParams CurParams(Params);
-		CurParams.EvaluationContext = ResolvedEntry.Context;
-		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
-
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-		// Start with the input given to us.
-		CurResult.CameraPose = OutResult.CameraPose;
-		CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
-		CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
-
-		// Override it with whatever the evaluation context has set on its result.
-		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
-		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
-		CurResult.bIsValid = true;
-
-		// Run the camera rig's root node.
-		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
-		if (RootEvaluator)
-		{
-			RootEvaluator->Run(CurParams, CurResult);
-		}
-	}
-
-	// Now blend all the results, keeping track of blends that have reached 100% so
-	// that we can remove any camera rigs below (since they would have been completely
-	// blended out by that).
-	int32 PopEntriesBelow = INDEX_NONE;
-	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
-	{
-		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-		if (!Entry.bIsFrozen)
-		{
-			FCameraNodeEvaluationParams CurParams(Params);
-			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
-			FCameraNodeBlendParams BlendParams(CurParams, CurResult);
-
-			FCameraNodeBlendResult BlendResult(OutResult);
-
-			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
-			if (EntryBlendEvaluator)
-			{
-				EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
-
-				if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
-				{
-					PopEntriesBelow = ResolvedEntry.EntryIndex;
-				}
-			}
-			else
-			{
-				OutResult.OverrideAll(CurResult);
-
-				PopEntriesBelow = ResolvedEntry.EntryIndex;
-			}
-		}
-		else
-		{
-			OutResult.OverrideAll(CurResult);
-
-			PopEntriesBelow = ResolvedEntry.EntryIndex;
-		}
-	}
-
-	// Pop out camera rigs that have been blended out.
-	if (BlendStackNode->BlendStackType == ECameraBlendStackType::Transient && PopEntriesBelow != INDEX_NONE)
-	{
-		PopEntries(PopEntriesBelow);
-	}
-
+void FBlendStackCameraNodeEvaluator::OnRunFinished()
+{
 	// Reset transient flags.
 	for (FCameraRigEntry& Entry : Entries)
 	{
@@ -753,6 +575,210 @@ void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<FCameraEvalua
 	}
 }
 
+void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	// Validate our entries and resolve evaluation context weak pointers.
+	TArray<FResolvedEntry> ResolvedEntries;
+	ResolveEntries(ResolvedEntries);
+
+	// Gather parameters to pre-blend, and evaluate blend nodes.
+	InternalPreBlendPrepare(ResolvedEntries, Params, OutResult);
+
+	// Blend input variables.
+	InternalPreBlendExecute(ResolvedEntries, Params, OutResult);
+
+	// Run the root nodes. They will use the pre-blended inputs from the last step.
+	// Frozen entries are skipped, since they only ever use the last result they produced.
+	InternalUpdate(ResolvedEntries, Params, OutResult);
+
+	// Now blend all the results, keeping track of blends that have reached 100% so
+	// that we can remove any camera rigs below (since they would have been completely
+	// blended out by that).
+	InternalPostBlendExecute(ResolvedEntries, Params, OutResult);
+
+	// Tidy up.
+	OnRunFinished();
+}
+
+void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+
+		if (UNLIKELY(Entry.bIsFrozen))
+		{
+			continue;
+		}
+
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = ResolvedEntry.Context;
+		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		// Start with the input given to us.
+		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
+
+		// Override it with whatever the evaluation context has set on its result.
+		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
+		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
+
+		// Gather input parameters if needed (and remember if it was indeed needed).
+		if (!Entry.bInputRunThisFrame)
+		{
+			bool bHasPreBlendedParameters = false;
+			FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
+			FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
+
+			Entry.EvaluatorHierarchy.ForEachEvaluator(ECameraNodeEvaluatorFlags::NeedsParameterUpdate,
+					[&bHasPreBlendedParameters, &InputParams, &InputResult](FCameraNodeEvaluator* ParameterEvaluator)
+					{
+						ParameterEvaluator->UpdateParameters(InputParams, InputResult);
+						bHasPreBlendedParameters = true;
+					});
+
+			ResolvedEntry.bHasPreBlendedParameters = bHasPreBlendedParameters;
+			Entry.bInputRunThisFrame = true;
+		}
+
+		// Run blends.
+		// Note that we pass last frame's camera pose to the Run() method. This may change.
+		// Blends aren't expected to use the camera pose to do any logic until BlendResults().
+		if (!Entry.bBlendRunThisFrame)
+		{
+			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (EntryBlendEvaluator)
+			{
+				EntryBlendEvaluator->Run(CurParams, CurResult);
+			}
+
+			Entry.bBlendRunThisFrame = true;
+		}
+	}
+}
+
+void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		if (!Entry.bIsFrozen)
+		{
+			FCameraNodeEvaluationParams CurParams(Params);
+			CurParams.EvaluationContext = ResolvedEntry.Context;
+			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+
+			FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
+
+			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (EntryBlendEvaluator)
+			{
+				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
+			}
+			else
+			{
+				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+			}
+		}
+		else
+		{
+			// Frozen entries still contribute to the blend using their last evaluated values.
+			OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+		}
+	}
+}
+
+void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+
+		if (UNLIKELY(Entry.bIsFrozen))
+		{
+			continue;
+		}
+
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = ResolvedEntry.Context;
+		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		// Start with the input given to us.
+		CurResult.CameraPose = OutResult.CameraPose;
+		CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
+		CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
+
+		// Override it with whatever the evaluation context has set on its result.
+		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
+		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
+		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
+		CurResult.bIsValid = true;
+
+		// Run the camera rig's root node.
+		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
+		if (RootEvaluator)
+		{
+			RootEvaluator->Run(CurParams, CurResult);
+		}
+	}
+}
+
+void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	int32 PopEntriesBelow = INDEX_NONE;
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+		if (!Entry.bIsFrozen)
+		{
+			FCameraNodeEvaluationParams CurParams(Params);
+			CurParams.EvaluationContext = ResolvedEntry.Context;
+			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			FCameraNodeBlendParams BlendParams(CurParams, CurResult);
+
+			FCameraNodeBlendResult BlendResult(OutResult);
+
+			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (EntryBlendEvaluator)
+			{
+				EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
+
+				if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
+				{
+					PopEntriesBelow = ResolvedEntry.EntryIndex;
+				}
+			}
+			else
+			{
+				OutResult.OverrideAll(CurResult);
+
+				PopEntriesBelow = ResolvedEntry.EntryIndex;
+			}
+		}
+		else
+		{
+			OutResult.OverrideAll(CurResult);
+
+			PopEntriesBelow = ResolvedEntry.EntryIndex;
+		}
+	}
+
+	// Pop out camera rigs that have been blended out.
+	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
+	if (BlendStackNode->BlendStackType == ECameraBlendStackType::IsolatedTransient && PopEntriesBelow != INDEX_NONE)
+	{
+		PopEntries(PopEntriesBelow);
+	}
+}
+
 const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
 {
 	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
@@ -825,13 +851,7 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 			}
 		}
 	}
-	else if (BlendStackNode->bBlendFirstCameraRig)
-	{
-		return FindTransition(
-				ToCameraRig->EnterTransitions,
-				nullptr, nullptr, false,
-				ToCameraRig, ToCameraAsset);
-	}
+	// else: make the first camera rig in the stack start at 100% blend immediately.
 
 	return nullptr;
 }
@@ -913,6 +933,112 @@ void FPersistentBlendStackCameraNodeEvaluator::Remove(const FBlendStackCameraRem
 				Entry.EvaluationContext == Params.EvaluationContext)
 		{
 			PopEntry(Index);
+		}
+	}
+}
+
+void FPersistentBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	// Validate our entries and resolve evaluation context weak pointers.
+	TArray<FResolvedEntry> ResolvedEntries;
+	ResolveEntries(ResolvedEntries);
+
+	// Run the stack!
+	InternalUpdate(ResolvedEntries, Params, OutResult);
+
+	// Tidy things up.
+	OnRunFinished();
+}
+
+void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+
+		if (!Entry.bIsFrozen)
+		{
+			FCameraNodeEvaluationParams CurParams(Params);
+			CurParams.EvaluationContext = ResolvedEntry.Context;
+			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+
+			FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+			// Start with the input given to us.
+			{
+				CurResult.CameraPose = OutResult.CameraPose;
+				CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
+				CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
+				CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
+
+				// Override it with whatever the evaluation context has set on its result.
+				const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
+				CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
+				CurResult.VariableTable.OverrideAll(ContextResult.VariableTable);
+
+				// Setup flags.
+				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
+				CurResult.bIsValid = true;
+			}
+
+			// Update pre-blended parameters.
+			{
+				FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
+				FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
+
+				Entry.EvaluatorHierarchy.ForEachEvaluator(ECameraNodeEvaluatorFlags::NeedsParameterUpdate,
+						[&InputParams, &InputResult](FCameraNodeEvaluator* ParameterEvaluator)
+						{
+							ParameterEvaluator->UpdateParameters(InputParams, InputResult);
+						});
+			}
+
+			// Run the blend node.
+			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+			if (EntryBlendEvaluator)
+			{
+				EntryBlendEvaluator->Run(CurParams, CurResult);
+			}
+
+			// Blend pre-blended parameters.
+			if (EntryBlendEvaluator)
+			{
+				FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+				FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
+
+				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
+			}
+			else
+			{
+				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+			}
+
+			// Run the camera rig's root node.
+			FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
+			if (RootEvaluator)
+			{
+				RootEvaluator->Run(CurParams, CurResult);
+			}
+
+			// Blend the results.
+			if (EntryBlendEvaluator)
+			{
+				FCameraNodeBlendParams BlendParams(CurParams, CurResult);
+				FCameraNodeBlendResult BlendResult(OutResult);
+
+				EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
+			}
+			else
+			{
+				OutResult.OverrideAll(CurResult);
+			}
+		}
+		else
+		{
+			FCameraNodeEvaluationResult& CurResult(Entry.Result);
+
+			OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+			OutResult.OverrideAll(CurResult);
 		}
 	}
 }
