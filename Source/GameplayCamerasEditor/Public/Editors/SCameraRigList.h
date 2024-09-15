@@ -110,6 +110,8 @@ private:
 	void UpdateItemSource();
 	void UpdateFilteredItemSource();
 
+	TSharedPtr<FCameraRigListItem> FindListItem(UCameraRigAsset* InCameraRig);
+
 	TSharedRef<ITableRow> OnListGenerateItemRow(TSharedPtr<FCameraRigListItem> Item, const TSharedRef<STableViewBase>& OwnerTable);
 	void OnListItemScrolledIntoView(TSharedPtr<FCameraRigListItem> Item, const TSharedPtr<ITableRow>& ItemWidget);
 	void OnListMouseButtonDoubleClick(TSharedPtr<FCameraRigListItem> Item);
@@ -138,6 +140,7 @@ private:
 
 	TArray<TSharedPtr<FCameraRigListItem>> FilteredItemSource;
 	TSharedPtr<FCameraRigListItem> DeferredRequestRenameItem;
+	UCameraRigAsset* DeferredFinishAddCameraRig = nullptr;
 
 	bool bUpdateItemSource = false;
 	bool bUpdateFilteredItemSource = false;

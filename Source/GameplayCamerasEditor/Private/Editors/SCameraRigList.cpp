@@ -231,6 +231,23 @@ void SCameraRigList::Tick(const FGeometry& AllottedGeometry, const double InCurr
 		ListView->RequestListRefresh();
 	}
 
+	if (DeferredFinishAddCameraRig)
+	{
+		// If we just added a new camera rig, find it in the list of items. We're going 
+		// to request for it to be open in the graph editor, and enter rename mode.
+		TSharedPtr<FCameraRigListItem> AddedListItem = FindListItem(DeferredFinishAddCameraRig);
+		DeferredFinishAddCameraRig = nullptr;
+
+		if (AddedListItem)
+		{
+			ListView->SetSelection(AddedListItem);
+			OnRequestEditCameraRig.ExecuteIfBound(AddedListItem->CameraRigAsset);
+
+			DeferredRequestRenameItem = AddedListItem;
+			ListView->RequestScrollIntoView(AddedListItem);
+		}
+	}
+
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 }
 
@@ -297,6 +314,7 @@ void SCameraRigList::OnAddCameraRig()
 			);
 	CameraAsset->AddCameraRig(NewCameraRig);
 
+	DeferredFinishAddCameraRig = NewCameraRig;
 	bUpdateItemSource = true;
 }
 
@@ -431,6 +449,20 @@ void SCameraRigList::UpdateFilteredItemSource()
 					return SearchTextFilter->PassesFilter(Item);
 				});
 	}
+}
+
+TSharedPtr<FCameraRigListItem> SCameraRigList::FindListItem(UCameraRigAsset* InCameraRig)
+{
+	TSharedPtr<FCameraRigListItem>* FoundItem = FilteredItemSource.FindByPredicate(
+			[InCameraRig](TSharedPtr<FCameraRigListItem> Item)
+			{
+				return Item->CameraRigAsset == InCameraRig;
+			});
+	if (FoundItem)
+	{
+		return *FoundItem;
+	}
+	return nullptr;
 }
 
 TSharedRef<ITableRow> SCameraRigList::OnListGenerateItemRow(TSharedPtr<FCameraRigListItem> Item, const TSharedRef<STableViewBase>& OwnerTable)
