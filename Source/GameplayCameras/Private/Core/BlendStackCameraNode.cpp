@@ -8,6 +8,8 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetReference.h"
+#include "Core/CameraRigCombinationRegistry.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
@@ -787,6 +789,9 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 	const UCameraAsset* ToCameraAsset = ToContext ? ToContext->GetCameraAsset() : nullptr;
 	const UCameraRigAsset* ToCameraRig = Params.CameraRig;
 
+	// If the new entry is a combination, look for transitions on its "main" camera rig.
+	ToCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(ToCameraRig);
+
 	// Find a transition that works for blending towards ToCameraRig.
 	// If the stack isn't empty, we need to find a transition that works between the previous and 
 	// next camera rigs. If the stack is empty, we blend the new camera rig in from nothing if
@@ -801,6 +806,9 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 		TSharedPtr<const FCameraEvaluationContext> FromContext = TopEntry.EvaluationContext.Pin();
 		const UCameraAsset* FromCameraAsset = FromContext ? FromContext->GetCameraAsset() : nullptr;
 		const UCameraRigAsset* FromCameraRig = TopEntry.CameraRig;
+
+		// If the top entry is a combination, look for transitions on its "main" camera rig.
+		FromCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(FromCameraRig);
 
 		if (!TopEntry.bIsFrozen)
 		{

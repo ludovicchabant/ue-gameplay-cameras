@@ -54,6 +54,10 @@ class UCombinedCameraRigsCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	static const UCameraRigAsset* GetMainCameraRigIfCombination(const UCameraRigAsset* InCameraRig);
+
 protected:
 
 	// UCameraNode interface.

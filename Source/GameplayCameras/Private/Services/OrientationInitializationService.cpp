@@ -6,6 +6,7 @@
 #include "Core/CameraEvaluationContextStack.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigCombinationRegistry.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
@@ -56,9 +57,13 @@ void FOrientationInitializationService::OnRootCameraNodeEvent(const FRootCameraN
 	{
 		ECameraRigInitialOrientation InitialOrientation = ECameraRigInitialOrientation::None;
 
-		if (InEvent.CameraRigInfo.CameraRig)
+		if (const UCameraRigAsset* NewCameraRig = InEvent.CameraRigInfo.CameraRig)
 		{
-			InitialOrientation = InEvent.CameraRigInfo.CameraRig->InitialOrientation;
+			// If the new camera rig is a combination, find its initial orientation settings
+			// on its main rig.
+			NewCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(NewCameraRig);
+
+			InitialOrientation = NewCameraRig->InitialOrientation;
 		}
 
 		if (InEvent.Transition && InEvent.Transition->bOverrideInitialOrientation)

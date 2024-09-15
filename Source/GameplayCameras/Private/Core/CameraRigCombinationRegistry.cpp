@@ -130,6 +130,27 @@ void FCombinedCameraRigsCameraNodeEvaluator::ApplyParameterOverrides(FCameraVari
 
 }  // namespace UE::Cameras
 
+const UCameraRigAsset* UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(const UCameraRigAsset* InCameraRig)
+{
+	if (!InCameraRig || !InCameraRig->RootNode)
+	{
+		return InCameraRig;
+	}
+
+	if (const UCombinedCameraRigsCameraNode* CameraRigCombinationNode = Cast<UCombinedCameraRigsCameraNode>(InCameraRig->RootNode))
+	{
+		if (!CameraRigCombinationNode->CameraRigReferences.IsEmpty())
+		{
+			if (const UCameraRigAsset* MainCameraRig = CameraRigCombinationNode->CameraRigReferences[0].GetCameraRig())
+			{
+				return MainCameraRig;
+			}
+		}
+	}
+
+	return InCameraRig;
+}
+
 FCameraNodeEvaluatorPtr UCombinedCameraRigsCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
 	using namespace UE::Cameras;
