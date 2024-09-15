@@ -46,6 +46,16 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("ClassIcon.CameraVariableCollection", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraVariableCollection", Icon16x16));
 	Set("ClassThumbnail.CameraVariableCollection", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraVariableCollection", Icon64x64));
 
+	// Camera actors and components.
+	Set("ClassIcon.GameplayCameraComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_64", Icon64x64));
+	Set("ClassIcon.GameplayCameraActor", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraActor", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_64", Icon64x64));
+	Set("ClassIcon.GameplayCameraSystemComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraSystemComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_64", Icon64x64));
+	Set("ClassIcon.GameplayCameraSystemActor", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraSystemActor", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_64", Icon64x64));
+
 	// Camera asset editor icons.
 	Set("CameraAssetEditor.ShowCameraDirector", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraDirector", Icon20x20));
 	Set("CameraAssetEditor.ShowCameraRigs", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraRigs", Icon20x20));
@@ -100,6 +110,8 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("CameraVariableCollectionEditor.Entry.Value", FTextBlockStyle(NormalText).SetFont(DEFAULT_FONT("Regular", 10)));
 
 	// Debugger tool icons.
+	Set("Debugger.TabIcon", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_16", Icon16x16));
+
 	Set("Debugger.DebugInfoEnabled.Icon", new IMAGE_BRUSH_SVG("Icons/DebugInfo-ToggleCheck", Icon16x16, FStyleColors::AccentGreen));
 	Set("Debugger.DebugInfoDisabled.Icon", new IMAGE_BRUSH_SVG("Icons/DebugInfo-ToggleCheck", Icon16x16, FStyleColors::AccentGray));
 

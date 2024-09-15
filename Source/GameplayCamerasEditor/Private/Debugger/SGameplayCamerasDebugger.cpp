@@ -40,12 +40,15 @@ const FName SGameplayCamerasDebugger::ToolbarName(TEXT("GameplayCamerasDebugger.
 
 void SGameplayCamerasDebugger::RegisterTabSpawners()
 {
+	TSharedRef<FGameplayCamerasEditorStyle> CamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
+
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
 		SGameplayCamerasDebugger::WindowName,
 		FOnSpawnTab::CreateStatic(&SGameplayCamerasDebugger::SpawnGameplayCamerasDebugger)
 	)
 	.SetDisplayName(LOCTEXT("TabDisplayName", "Cameras Debugger"))
 	.SetTooltipText(LOCTEXT("TabTooltipText", "Open the Cameras Debugger tab."))
+	.SetIcon(FSlateIcon(CamerasEditorStyle->GetStyleSetName(), "Debugger.TabIcon"))
 	.SetGroup(WorkspaceMenu::GetMenuStructure().GetDeveloperToolsDebugCategory())
 	.SetCanSidebarTab(false);
 }

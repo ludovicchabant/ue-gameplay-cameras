@@ -2,11 +2,11 @@
 
 #include "GameFramework/GameplayCameraSystemComponent.h"
 
-#include "Components/StaticMeshComponent.h"
+#include "Components/BillboardComponent.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
-#include "Engine/StaticMesh.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
@@ -21,11 +21,27 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 	: Super(ObjectInit)
 {
 #if WITH_EDITORONLY_DATA
+	EditorSpriteComponent = CreateEditorOnlyDefaultSubobject<UBillboardComponent>(TEXT("Sprite"));
 	if (GIsEditor && !IsRunningCommandlet())
 	{
-		static ConstructorHelpers::FObjectFinder<UStaticMesh> EditorCameraMesh(
-				TEXT("/Engine/EditorMeshes/Camera/SM_CineCam.SM_CineCam"));
-		PreviewMesh = EditorCameraMesh.Object;
+		static ConstructorHelpers::FObjectFinder<UTexture2D> EditorSpriteTextureFinder(
+				TEXT("/GameplayCameras/Textures/S_GameplayCameraSystem.S_GameplayCameraSystem"));
+
+		UTexture2D* EditorSpriteTexture = EditorSpriteTextureFinder.Object;
+
+		if (EditorSpriteTexture && EditorSpriteComponent)
+		{
+			EditorSpriteComponent->SpriteInfo.Category = TEXT("Cameras");
+			EditorSpriteComponent->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Cameras", "Cameras");
+
+			EditorSpriteComponent->SetSprite(EditorSpriteTexture);
+			EditorSpriteComponent->SetRelativeScale3D(FVector3d(EditorSpriteTextureScale));
+
+			EditorSpriteComponent->bHiddenInGame = true;
+			EditorSpriteComponent->bIsScreenSizeScaled = true;
+			EditorSpriteComponent->SetUsingAbsoluteScale(true);
+			EditorSpriteComponent->SetupAttachment(this);
+		}
 	}
 #endif  // WITH_EDITORONLY_DATA
 }
@@ -84,21 +100,6 @@ void UGameplayCameraSystemComponent::OnRegister()
 				TEXT("Game"), FDebugDrawDelegate::CreateUObject(this, &UGameplayCameraSystemComponent::DebugDraw));
 	}
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
-#if WITH_EDITORONLY_DATA
-	if (PreviewMesh && !PreviewMeshComponent)
-	{
-		PreviewMeshComponent = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transactional | RF_TextExportTransient);
-		PreviewMeshComponent->SetupAttachment(this);
-		PreviewMeshComponent->SetIsVisualizationComponent(true);
-		PreviewMeshComponent->SetStaticMesh(PreviewMesh);
-		PreviewMeshComponent->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
-		PreviewMeshComponent->bHiddenInGame = true;
-		PreviewMeshComponent->CastShadow = false;
-		PreviewMeshComponent->CreationMethod = CreationMethod;
-		PreviewMeshComponent->RegisterComponentWithWorld(GetWorld());
-	}
-#endif	// WITH_EDITORONLY_DATA
 }
 
 void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 PlayerIndex)
@@ -207,13 +208,6 @@ void UGameplayCameraSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayR
 void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
-
-#if WITH_EDITORONLY_DATA
-	if (PreviewMeshComponent)
-	{
-		PreviewMeshComponent->DestroyComponent();
-	}
-#endif  // WITH_EDITORONLY_DATA
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	if (DebugDrawDelegateHandle.IsValid())

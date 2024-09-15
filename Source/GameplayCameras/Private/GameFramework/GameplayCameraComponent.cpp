@@ -299,7 +299,21 @@ void UGameplayCameraComponent::UpdatePreviewMeshTransform()
 	}
 }
 
-#endif
+#endif  // WITH_EDITORONLY_DATA
+
+#if WITH_EDITOR
+
+bool UGameplayCameraComponent::GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut)
+{
+	// TODO: in the future, run the camera asset in a private camera system evaluator, with a UI
+	//		 to pick which camera rig to preview.
+	const FTransform3d& ComponentTransform = GetComponentTransform();
+	ViewOut.Location = ComponentTransform.GetLocation();
+	ViewOut.Rotation = ComponentTransform.Rotator();
+	return true;
+}
+
+#endif  // WITH_EDITOR
 
 namespace UE::Cameras
 {
