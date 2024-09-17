@@ -57,7 +57,7 @@ protected:
 
 private:
 
-	int32 NumPostProcessSettings = 0;
+	bool bHasAnyPostProcessSettings;
 	bool bIsCameraCut;
 	bool bIsValid;
 };

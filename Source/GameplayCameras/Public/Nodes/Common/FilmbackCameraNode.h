@@ -34,6 +34,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Filmback", meta=(ClampMin="0.001", ForceUnits=mm))
 	FFloatCameraParameter SensorHeight;
 
+	/** The camera sensor sensitivity in ISO. */
+	UPROPERTY(EditAnywhere, Category="Filmback")
+	FFloatCameraParameter ISO;
+
 	/** Whether to constrain the aspect ratio of the evaluated camera. */
 	UPROPERTY(EditAnywhere, Category="Filmback")
 	FBooleanCameraParameter ConstrainAspectRatio = false;

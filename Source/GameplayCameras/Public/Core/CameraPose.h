@@ -10,6 +10,7 @@
 #include "CameraPose.generated.h"
 
 class FArchive;
+struct FPostProcessSettings;
 enum EAspectRatioAxisConstraint : int;
 
 #define UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
@@ -19,10 +20,14 @@ enum EAspectRatioAxisConstraint : int;
 #define UE_CAMERA_POSE_FOR_INTERPOLABLE_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(double, TargetDistance)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  Aperture)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  ShutterSpeed)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  FocusDistance)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorWidth)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorHeight)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  ISO)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SqueezeFactor)\
+	UE_CAMERA_POSE_FOR_PROPERTY(int32,  DiaphragmBladeCount)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  PhysicalCameraBlendWeight)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  NearClippingPlane)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  FarClippingPlane)
 
@@ -31,6 +36,7 @@ enum EAspectRatioAxisConstraint : int;
 	UE_CAMERA_POSE_FOR_PROPERTY(float, FocalLength)
 
 #define UE_CAMERA_POSE_FOR_FLIPPING_PROPERTIES()\
+	UE_CAMERA_POSE_FOR_PROPERTY(bool, EnablePhysicalCamera)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, ConstrainAspectRatio)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, OverrideAspectRatioAxisConstraint)\
 	UE_CAMERA_POSE_FOR_PROPERTY(EAspectRatioAxisConstraint, AspectRatioAxisConstraint)
@@ -173,6 +179,19 @@ public:
 	/** Gets the default sensor size. */
 	static void GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight);
 
+	/**
+	 * Applies the necessary post-process settings given the current values
+	 * on this camera pose.
+	 *
+	 * This function doesn't do anything if EnablePhysicalCamera is false, or if
+	 * PhysicalCameraBlendWeight is zero or less.
+	 *
+	 * @param PostProcessSettings  The post-process settings to modify
+	 * @param bOverwriteSettings   Whether to overwrite values found to already be set
+	 * @return  Whether post-process settings were created.
+	 */
+	bool ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings = false) const;
+
 public:
 
 	// Interpolation
@@ -233,6 +252,10 @@ private:
 	UPROPERTY()
 	float Aperture = 2.8f;
 
+	/** The shutter speed of the camera's lens, in 1/seconds */
+	UPROPERTY()
+	float ShutterSpeed = 60.f;
+
 	/** The focus distance of the camera's lens, in world units */
 	UPROPERTY()
 	float FocusDistance = -1.f;
@@ -245,9 +268,17 @@ private:
 	UPROPERTY()
 	float SensorHeight = 18.67f;
 
+	/** The camera sensor sensitivity in ISO. */
+	UPROPERTY()
+	float ISO = 100.f;
+
 	/** Squeeze factor for anamorphic lenses */
 	UPROPERTY()
 	float SqueezeFactor = 1.f;
+
+	/** Number of blades in the lens diaphragm */
+	UPROPERTY()
+	int32 DiaphragmBladeCount = 8;
 
 	/** The distance to the near clipping plane, in world units */
 	UPROPERTY()
@@ -256,6 +287,20 @@ private:
 	/** The distance to the far clipping plane, in world units */
 	UPROPERTY()
 	float FarClippingPlane = -1.f;
+
+	/** 
+	 * An internal weight for the physical camera post-process settings, used when blending between 
+	 * cameras with EnablePhysicalCamera enabled/disabled.
+	 */
+	UPROPERTY()
+	float PhysicalCameraBlendWeight = 0.f;
+
+	/** 
+	 * Whether to setup post-process settings based on physical camera properties such as Aperture,
+	 * FocusDistance, DiaphragmBladeCount, and so on.
+	 */
+	UPROPERTY()
+	bool EnablePhysicalCamera = false;
 
 	/** Whether to constrain aspect ratio */
 	UPROPERTY()

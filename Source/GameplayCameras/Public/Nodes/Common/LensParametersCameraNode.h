@@ -23,16 +23,27 @@ protected:
 
 public:
 
-	/** Manually-controlled focus distance (manual focus mode only) */
-	UPROPERTY(EditAnywhere, Category="Lens Parameters", meta=(Units=cm))
-	FFloatCameraParameter FocusDistance;
-
 	/** Current focal length of the camera (i.e. controls FoV, zoom) */
 	UPROPERTY(EditAnywhere, Category="Lens Parameters")
 	FFloatCameraParameter FocalLength;
 
+	/** Manually-controlled focus distance (manual focus mode only) */
+	UPROPERTY(EditAnywhere, Category="Lens Parameters", meta=(Units=cm))
+	FFloatCameraParameter FocusDistance;
+
 	/** Current aperture, in terms of f-stop (e.g. 2.8 for f/2.8) */
 	UPROPERTY(EditAnywhere, Category="Lens Parameters")
 	FFloatCameraParameter Aperture;
+
+	/** Current shutter speed, in 1/seconds */
+	UPROPERTY(EditAnywhere, Category="Lens Parameters", DisplayName="Shutter Speed (1/s)")
+    FFloatCameraParameter ShutterSpeed;
+
+	/** 
+	 * Whether post-process settings should be automatically applied to reflect
+	 * the lens settings.
+	 */
+	UPROPERTY(EditAnywhere, Category="Lens Parameters")
+	FBooleanCameraParameter EnablePhysicalCamera = false;
 };
 

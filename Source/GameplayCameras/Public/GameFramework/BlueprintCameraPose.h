@@ -52,6 +52,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float Aperture = 2.8f;
 
+	/** The shutter speed of the camera's lens, in 1/seconds */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float ShutterSpeed = 60.f;
+
 	/** The focus distance of the camera, if different from target distance. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float FocusDistance = -1.f;
@@ -64,9 +68,17 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float SensorHeight = 18.67f;
 
+	/** The camera sensor sensitivity in ISO. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float ISO = 100.f;
+
 	/** The squeeze factor of the camera's lens. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float SqueezeFactor = 1.f;
+
+	/** Number of blades in the lens diaphragm */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	int32 DiaphragmBladeCount = 8;
 
 	/** The camera's near clipping plane. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
@@ -75,6 +87,17 @@ public:
 	/** The camera's far clipping plane. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float FarClippingPlane = -1.f;
+
+	/** Internal weight for physical camera post-process settings. */
+	UPROPERTY()
+	float PhysicalCameraBlendWeight = 0.f;
+
+	/** 
+	 * Whether to setup post-process settings based on physical camera properties such as Aperture,
+	 * FocusDistance, DiaphragmBladeCount, and so on.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	bool EnablePhysicalCamera = false;
 
 	/** Whether the camera should constrain aspect ratio. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")

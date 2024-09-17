@@ -3,10 +3,18 @@
 #include "Core/CameraPose.h"
 
 #include "Engine/EngineTypes.h"
+#include "Engine/Scene.h"
 #include "GameplayCameras.h"
+#include "HAL/IConsoleManager.h"
 #include "Math/Ray.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraPose)
+
+float GGameplayCamerasDefaultMinFstop = 0.f;
+static FAutoConsoleVariableRef CVarGameplayCamerasDefaultMinFstop(
+	TEXT("GameplayCameras.DefaultMinFstop"),
+	GGameplayCamerasDefaultMinFstop,
+	TEXT("(Default: 0. Minimum camera lens aperture (f-stop) that defines the curvature of the diaphragm blades."));
 
 const FCameraPoseFlags& FCameraPoseFlags::All()
 {
@@ -166,6 +174,41 @@ void FCameraPose::GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHe
 {
 	OutSensorWidth = 24.89f;
 	OutSensorHeight = 18.67f;
+}
+
+bool FCameraPose::ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings) const
+{
+	if (!EnablePhysicalCamera || PhysicalCameraBlendWeight <= 0.f)
+	{
+		return false;
+	}
+
+#define UE_LERP_PP(SettingName, Value)\
+	if (!PostProcessSettings.bOverride_##SettingName || bOverwriteSettings)\
+	{\
+		PostProcessSettings.bOverride_##SettingName = true;\
+		PostProcessSettings.SettingName = FMath::Lerp(PostProcessSettings.SettingName, Value, PhysicalCameraBlendWeight);\
+	}
+
+	UE_LERP_PP(CameraISO, ISO);
+	UE_LERP_PP(CameraShutterSpeed, ShutterSpeed);
+
+	UE_LERP_PP(DepthOfFieldFstop, Aperture);
+	UE_LERP_PP(DepthOfFieldBladeCount, DiaphragmBladeCount);
+
+	// TODO: add this to the camera pose?
+	UE_LERP_PP(DepthOfFieldMinFstop, GGameplayCamerasDefaultMinFstop);
+
+	// TODO: support minimum-focus-distance?
+	UE_LERP_PP(DepthOfFieldFocalDistance, FocusDistance);
+
+	// TODO: support overscan?
+	UE_LERP_PP(DepthOfFieldSensorWidth, SensorWidth);
+	UE_LERP_PP(DepthOfFieldSqueezeFactor, SqueezeFactor);
+
+#undef UE_LERP_PP
+
+	return true;
 }
 
 FRay3d FCameraPose::GetAimRay() const

@@ -2,7 +2,6 @@
 
 #include "Nodes/Common/PostProcessCameraNode.h"
 
-#include "Core/CameraParameterReader.h"
 #include "Core/CameraPose.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(PostProcessCameraNode)
@@ -16,32 +15,17 @@ class FPostProcessCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-
-private:
-
-	TCameraParameterReader<float> PostProcessBlendWeightReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FPostProcessCameraNodeEvaluator)
-
-void FPostProcessCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
-{
-	const UPostProcessCameraNode* PostProcessNode = GetCameraNodeAs<UPostProcessCameraNode>();
-	PostProcessBlendWeightReader.Initialize(PostProcessNode->PostProcessBlendWeight);
-}
 
 void FPostProcessCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FCameraPose& OutPose = OutResult.CameraPose;
 
-	float PostProcessBlendWeight = PostProcessBlendWeightReader.Get(OutResult.VariableTable);
-	if (PostProcessBlendWeight > 0)
-	{
-		const UPostProcessCameraNode* PostProcessNode = GetCameraNodeAs<UPostProcessCameraNode>();
-		OutResult.PostProcessSettings.Add(PostProcessNode->PostProcessSettings, PostProcessBlendWeight);
-	}
+	const UPostProcessCameraNode* PostProcessNode = GetCameraNodeAs<UPostProcessCameraNode>();
+	OutResult.PostProcessSettings.OverrideChanged(PostProcessNode->PostProcessSettings);
 }
 
 }  // namespace UE::Cameras

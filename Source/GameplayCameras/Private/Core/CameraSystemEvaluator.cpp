@@ -347,13 +347,11 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	// TODO: add support for ortho cameras.
 	DesiredView.PerspectiveNearClipPlane = CameraPose.GetNearClippingPlane();
 
-	for (const FPostProcessSettingsCollectionEntry& PostProcessEntry : RootNodeResult.PostProcessSettings.GetEntries())
-	{
-		DesiredView.PostProcessSettings = PostProcessEntry.PostProcessSettings;
-		DesiredView.PostProcessBlendWeight = PostProcessEntry.PostProcessBlendWeight;
-		// TODO: support multiple post-process settings by getting the PlayerCameraManager
-		break;
-	}
+	const FPostProcessSettingsCollection& PostProcessSettings = RootNodeResult.PostProcessSettings;
+	DesiredView.PostProcessSettings = PostProcessSettings.Get();
+	DesiredView.PostProcessBlendWeight = 1.f;
+	// Create the physical camera settings if needed. Don't overwrite settings that were set by hand.
+	CameraPose.ApplyPhysicalCameraSettings(DesiredView.PostProcessSettings, false);
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

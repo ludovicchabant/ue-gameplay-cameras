@@ -22,9 +22,11 @@ protected:
 
 private:
 
-	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<float> FocalLengthReader;
+	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<float> ApertureReader;
+	TCameraParameterReader<float> ShutterSpeedReader;
+	TCameraParameterReader<bool> EnablePhysicalCameraReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FLensParametersCameraNodeEvaluator)
@@ -32,31 +34,42 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FLensParametersCameraNodeEvaluator)
 void FLensParametersCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	const ULensParametersCameraNode* LensParametersNode = GetCameraNodeAs<ULensParametersCameraNode>();
-	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	FocalLengthReader.Initialize(LensParametersNode->FocalLength);
+	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	ApertureReader.Initialize(LensParametersNode->Aperture);
+	ShutterSpeedReader.Initialize(LensParametersNode->ShutterSpeed);
+	EnablePhysicalCameraReader.Initialize(LensParametersNode->EnablePhysicalCamera);
 }
 
 void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FCameraPose& OutPose = OutResult.CameraPose;
 
-	float FocusDistance = FocusDistanceReader.Get(OutResult.VariableTable);
-	if (FocusDistance > 0)
-	{
-		OutPose.SetFocusDistance(FocusDistance);
-	}
 	float FocalLength = FocalLengthReader.Get(OutResult.VariableTable);
 	if (FocalLength > 0)
 	{
 		OutPose.SetFocalLength(FocalLength);
 		OutPose.SetFieldOfView(-1);
 	}
+	float FocusDistance = FocusDistanceReader.Get(OutResult.VariableTable);
+	if (FocusDistance > 0)
+	{
+		OutPose.SetFocusDistance(FocusDistance);
+	}
 	float Aperture = ApertureReader.Get(OutResult.VariableTable);
 	if (Aperture > 0)
 	{
 		OutPose.SetAperture(Aperture);
 	}
+	float ShutterSpeed = ShutterSpeedReader.Get(OutResult.VariableTable);
+	if (ShutterSpeed > 0)
+	{
+		OutPose.SetShutterSpeed(ShutterSpeed);
+	}
+
+	const bool bEnablePhysicalCamera = EnablePhysicalCameraReader.Get(OutResult.VariableTable);
+	OutPose.SetEnablePhysicalCamera(bEnablePhysicalCamera);
+	OutPose.SetPhysicalCameraBlendWeight(bEnablePhysicalCamera ? 1.f : 0.f);
 }
 
 }  // namespace UE::Cameras

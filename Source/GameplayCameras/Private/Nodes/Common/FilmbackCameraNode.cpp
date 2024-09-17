@@ -23,6 +23,7 @@ private:
 
 	TCameraParameterReader<float> SensorWidthReader;
 	TCameraParameterReader<float> SensorHeightReader;
+	TCameraParameterReader<float> ISOReader;
 	TCameraParameterReader<bool> ConstrainAspectRatioReader;
 	TCameraParameterReader<bool> OverrideAspectRatioAxisConstraintReader;
 };
@@ -34,6 +35,7 @@ void FFilmbackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitia
 	const UFilmbackCameraNode* FilmbackNode = GetCameraNodeAs<UFilmbackCameraNode>();
 	SensorWidthReader.Initialize(FilmbackNode->SensorWidth);
 	SensorHeightReader.Initialize(FilmbackNode->SensorHeight);
+	ISOReader.Initialize(FilmbackNode->ISO);
 	ConstrainAspectRatioReader.Initialize(FilmbackNode->ConstrainAspectRatio);
 	OverrideAspectRatioAxisConstraintReader.Initialize(FilmbackNode->OverrideAspectRatioAxisConstraint);
 }
@@ -51,6 +53,11 @@ void FFilmbackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Para
 	if (SensorHeight > 0)
 	{
 		OutPose.SetSensorHeight(SensorHeight);
+	}
+	float ISO = ISOReader.Get(OutResult.VariableTable);
+	if (ISO > 0)
+	{
+		OutPose.SetISO(ISO);
 	}
 
 	OutPose.SetConstrainAspectRatio(ConstrainAspectRatioReader.Get(OutResult.VariableTable));
