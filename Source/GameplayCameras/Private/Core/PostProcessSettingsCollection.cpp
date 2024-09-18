@@ -5,10 +5,10 @@
 namespace UE::Cameras
 {
 
-const FPostProcessSettings FPostProcessSettingsCollection::DefaultPostProcessSettings;
-
 void FPostProcessSettingsCollection::Reset()
 {
+	static const FPostProcessSettings DefaultPostProcessSettings;
+
 	PostProcessSettings = DefaultPostProcessSettings;
 	bHasAnySetting = false;
 }
@@ -599,6 +599,8 @@ void FPostProcessSettingsCollection::InternalLerpChanged(const FPostProcessSetti
 
 void FPostProcessSettingsCollection::Serialize(FArchive& Ar)
 {
+	static const FPostProcessSettings DefaultPostProcessSettings;
+
 	UScriptStruct* PostProcessSettingsStruct = FPostProcessSettings::StaticStruct();
 	PostProcessSettingsStruct->SerializeItem(Ar, &PostProcessSettings, &DefaultPostProcessSettings);
 

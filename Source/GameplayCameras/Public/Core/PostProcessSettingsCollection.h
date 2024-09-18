@@ -64,8 +64,6 @@ private:
 
 private:
 
-	static const FPostProcessSettings DefaultPostProcessSettings;
-
 	FPostProcessSettings PostProcessSettings;
 	bool bHasAnySetting = false;
 };
