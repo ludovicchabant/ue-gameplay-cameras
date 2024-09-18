@@ -41,9 +41,9 @@ void FCameraAssetEditorCommands::RegisterCommands()
 	UI_COMMAND(AddCameraRig, "Add Camera Rig", "Adds a new camera rig",
 			EUserInterfaceActionType::Button, FInputChord());
 	UI_COMMAND(DeleteCameraRig, "Delete Camera Rig", "Deletes the selected camera rig(s)",
-			EUserInterfaceActionType::Button, FInputChord());
+			EUserInterfaceActionType::Button, FInputChord(EKeys::Delete));
 	UI_COMMAND(RenameCameraRig, "Rename Camera Rig", "Renames the selected camera rig",
-			EUserInterfaceActionType::Button, FInputChord());
+			EUserInterfaceActionType::Button, FInputChord(EKeys::F2));
 
 	UI_COMMAND(ShowMessages, "Messages", "Shows the message log for this camera asset",
 			EUserInterfaceActionType::ToggleButton, FInputChord());
