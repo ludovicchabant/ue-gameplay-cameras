@@ -314,7 +314,7 @@ void FPostProcessSettingsCollection::InternalLerpChanged(const FPostProcessSetti
 	FPostProcessSettings& ThisPP = PostProcessSettings;
 	const FPostProcessSettings& ToPP = ToPostProcessSettings;
 
-	// We need to a poor man's version of FSceneView::OverridePostProcessSettings... differences include:
+	// We need to an equivalent of FSceneView::OverridePostProcessSettings... differences include:
 	//
 	// 1) Flipping non-interpolatable properties at 50% blend, instead of always overwriting them.
 	// 2) A few things not being supported, such as accumulating ambient cubmaps.
