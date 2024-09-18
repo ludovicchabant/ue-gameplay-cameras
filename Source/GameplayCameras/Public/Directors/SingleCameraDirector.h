@@ -30,7 +30,7 @@ protected:
 public:
 
 	/** The camera rig to run every frame. */
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Category=Common, meta=(UseSelfCameraRigPicker=true))
 	TObjectPtr<UCameraRigAsset> CameraRig;
 };
 
