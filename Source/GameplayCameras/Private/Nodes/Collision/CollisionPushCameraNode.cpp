@@ -300,7 +300,7 @@ void FCollisionPushCameraNodeEvaluator::RunCollisionTrace(UWorld* World, APlayer
 	const FVector3d TraceEnd(OutResult.CameraPose.GetLocation());
 
 	double TraceLength = FVector3d::Distance(TraceStart, TraceEnd);
-	if (!ensure(TraceLength > 0))
+	if (TraceLength <= 0)
 	{
 		return;
 	}
