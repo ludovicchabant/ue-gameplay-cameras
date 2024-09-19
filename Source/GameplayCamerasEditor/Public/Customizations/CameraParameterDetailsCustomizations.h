@@ -3,13 +3,16 @@
 #pragma once
 
 #include "Core/CameraParameters.h"
-#include "CoreTypes.h"
 #include "IPropertyTypeCustomization.h"
+#include "Layout/Visibility.h"
+#include "TickableEditorObject.h"
+#include "Types/SlateStructs.h"
 
 class FPropertyEditorModule;
 class IDetailLayoutBuilder;
 class IPropertyUtilities;
 class SComboButton;
+class SHorizontalBox;
 class SWidget;
 
 namespace UE::Cameras
@@ -18,7 +21,9 @@ namespace UE::Cameras
 /**
  * Base details customization for camera parameters.
  */
-class FCameraParameterDetailsCustomization : public IPropertyTypeCustomization
+class FCameraParameterDetailsCustomization 
+	: public IPropertyTypeCustomization
+	, public FTickableEditorObject
 {
 public:
 
@@ -29,9 +34,14 @@ public:
 
 public:
 
-	/** IPropertyTypeCustomization interface */
+	// IPropertyTypeCustomization interface.
 	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+
+	// FTickableEditorObject interface.
+	virtual void Tick(float DeltaTime) override;
+	virtual ETickableTickType GetTickableTickType() const override { return ETickableTickType::Always; }
+	virtual TStatId GetStatId() const override { RETURN_QUICK_DECLARE_CYCLE_STAT(FCameraParameterDetailsCustomization, STATGROUP_Tickables); }
 
 protected:
 
@@ -40,25 +50,52 @@ protected:
 
 private:
 
-	TSharedRef<SWidget> BuildCameraVariableBrowser();
+	enum class ECameraVariableValue
+	{
+		NotSet,
+		Set,
+		MultipleSet,
+		Invalid
+	};
+
+	struct FCameraVariableInfo
+	{
+		UCameraVariableAsset* CommonVariable = nullptr;
+		ECameraVariableValue VariableValue = ECameraVariableValue::NotSet;
+		bool bIsExposedParameterVariable = false;
+
+		FText InfoText;
+		FText ErrorText;
+	};
 
 	void UpdateVariableInfo();
-	bool HasVariableInfoText() const;
+
+	TSharedRef<SWidget> BuildCameraVariableBrowser();
+
+	bool IsValueEditorEnabled() const;
+	bool IsCameraVariableBrowserEnabled() const;
+
+	FText GetVariableInfoText() const;
+	EVisibility GetVariableInfoTextVisibility() const;
+	FOptionalSize GetVariableInfoTextMaxWidth() const;
+
+	FText GetVariableErrorText() const;
+	EVisibility GetVariableErrorTextVisibility() const;
+	FOptionalSize GetVariableErrorTextMaxWidth() const;
 
 	bool CanClearVariable() const;
 	void OnClearVariable();
 
 	void OnSetVariable(UCameraVariableAsset* InVariable);
-	void OnResetToDefault();
+
+	bool IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> InPropertyHandle) const;
+	void OnResetToDefault(TSharedPtr<IPropertyHandle> InPropertyHandle);
 
 protected:
 
 	UClass* VariableClass = nullptr;
 
-	UCameraVariableAsset* CommonVariable = nullptr;
-	FText VariableInfoText;
-	FText VariableErrorText;
-	bool bIsExposedParameterVariable = false;
+	FCameraVariableInfo VariableInfo;
 
 	TSharedPtr<IPropertyUtilities> PropertyUtilities;
 
@@ -66,6 +103,7 @@ protected:
 	TSharedPtr<IPropertyHandle> ValueProperty;
 	TSharedPtr<IPropertyHandle> VariableProperty;
 
+	TSharedPtr<SHorizontalBox> LayoutBox;
 	TSharedPtr<SComboButton> VariableBrowserButton;
 };
 

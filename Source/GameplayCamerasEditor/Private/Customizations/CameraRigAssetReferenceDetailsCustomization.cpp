@@ -273,6 +273,12 @@ void FCameraRigParameterOverrideDetailRow::BuildDetailPropertyRowImpl(IDetailChi
 	ParameterOverrideRow->GetPropertyHandle()->SetOnChildPropertyValueChanged(FSimpleDelegate::CreateSP(
 				this, &FCameraRigParameterOverrideDetailRow::OnPropertyValueChanged<ParameterOverrideType>));
 
+	// We need to add our own custom reset-to-default logic, which sets the default value as determined
+	// by the values inside the camera rig prefab. However, camera parameters also have a detail 
+	// customization that has a custom reset-to-default logic. Slate complaines when both the outer and
+	// inner rows have custom reset-to-default logic, so suppress the inner one.
+	ParameterOverrideRow->GetPropertyHandle()->SetInstanceMetaData("NoCustomCameraParameterResetToDefault", "true");
+
 	FResetToDefaultOverride ResetToDefault = FResetToDefaultOverride::Create(
 			FIsResetToDefaultVisible::CreateSP(
 				this, &FCameraRigParameterOverrideDetailRow::OnIsResetToDefaultVisible<ParameterOverrideType>),
