@@ -296,6 +296,13 @@ void UBlueprintCameraDirectorEvaluator::ActivateCameraRigPrefab(UCameraRigAsset*
 	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
 }
 
+UCameraRigAsset* UBlueprintCameraDirectorEvaluator::GetCameraRig(UCameraRigAsset* CameraRig) const
+{
+	// This function is only here to provide an easy way to pick a camera rig from the referencing 
+	// camera asset, using the custom rig picker. Then we just return it.
+	return CameraRig;
+}
+
 AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
 {
 	if (EvaluationContext)

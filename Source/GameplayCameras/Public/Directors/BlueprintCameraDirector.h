@@ -171,6 +171,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void ActivateCameraRigPrefab(UCameraRigAsset* CameraRig);
 
+	/** Gets a camera rig from the referencing camera asset. */
+	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(HideSelfPin=true))
+	UCameraRigAsset* GetCameraRig(
+			UPARAM(meta=(UseBlueprintCameraDirectorRigPicker=true))
+			UCameraRigAsset* CameraRig) const;
+
 public:
 
 	/**
