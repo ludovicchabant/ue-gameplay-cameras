@@ -24,28 +24,12 @@
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/SCompoundWidget.h"
 #include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "CameraParameterDetailsCustomization"
 
 namespace UE::Cameras
 {
-
-//class SCameraParameterLayoutBox : public SCompoundWidget
-//{
-//public:
-//
-//protected:
-//
-//	// SCompoundWidget interface.
-//	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
-//	{
-//		SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-//
-//		this->GetPaintSpaceGeometry();
-//	}
-//};
 
 void FCameraParameterDetailsCustomization::Register(FPropertyEditorModule& PropertyEditorModule)
 {
