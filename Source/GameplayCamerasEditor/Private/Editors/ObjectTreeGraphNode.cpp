@@ -192,7 +192,9 @@ void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
 
 	InParentArrayPin->Modify();
 
-	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, PropertyName);
+	FName ChildPinName = PropertyName;
+	ChildPinName.SetNumber(NewIndex);
+	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, ChildPinName);
 	ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
 
 	ChildPin->ParentPin = InParentArrayPin;
@@ -243,6 +245,7 @@ void UObjectTreeGraphNode::RefreshArrayPropertyPinNames()
 			for (int32 PinIndex = 0; PinIndex < Pin->SubPins.Num(); ++PinIndex)
 			{
 				UEdGraphPin* ChildPin = Pin->SubPins[PinIndex];
+				ChildPin->PinName.SetNumber(PinIndex);
 				ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), PinIndex);
 			}
 		}

@@ -629,6 +629,11 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 {
 	const FPinConnectionResponse Response = CanCreateConnection(A, B);
 
+	if (A->LinkedTo.Contains(B) && B->LinkedTo.Contains(A))
+	{
+		return false;
+	}
+
 	FScopedTransaction Transaction(LOCTEXT("CreateConnection", "Create Connection"));
 
 	bool bModified = true;
@@ -713,6 +718,46 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 	Actions.Apply();
 
 	return true;
+}
+
+void UObjectTreeGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
+{
+	const FScopedTransaction Transaction(LOCTEXT("BreakNodeLinks", "Break Node Links"));
+
+	FDelayedPinActions Actions;
+	TArray<UEdGraphPin*> CachedPins = TargetNode.Pins;
+
+#if WITH_EDITOR
+	TSet<UEdGraphNode*> NodeList;
+	NodeList.Add(&TargetNode);
+#endif
+	
+	for (UEdGraphPin* TargetPin : CachedPins)
+	{
+		if (TargetPin && TargetPin->SubPins.Num() == 0)
+		{
+#if WITH_EDITOR
+			for (UEdGraphPin* OtherPin : TargetPin->LinkedTo)
+			{
+				UEdGraphNode* OtherNode = OtherPin ? OtherPin->GetOwningNode() : nullptr;
+				if (OtherNode)
+				{
+					OtherNode->PinConnectionListChanged(OtherPin);
+					NodeList.Add(OtherNode);
+				}
+			}
+#endif
+
+			BreakPinLinks(*TargetPin, false);
+		}
+	}
+	
+#if WITH_EDITOR
+	for (UEdGraphNode* Node : NodeList)
+	{
+		Node->NodeConnectionListChanged();
+	}
+#endif
 }
 
 void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
