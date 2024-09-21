@@ -75,6 +75,12 @@ AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSyst
 			SpawnedActor = World->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
 
 			SpawnedActor->Rename(nullptr, PlayerController);
+			
+			UGameplayCameraSystemComponent* CameraSystemComponent = SpawnedActor->CameraSystemComponent;
+			if (ensure(CameraSystemComponent))
+			{
+				CameraSystemComponent->bSetPlayerControllerRotation = Settings->bAutoSpawnCameraSystemActorSetsControlRotation;
+			}
 		}
 		else
 		{

@@ -90,7 +90,7 @@ public:
 	 * This is set on the player controller that this component was activated for.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
-	bool bSetPlayerControllerRotation = true;
+	bool bSetPlayerControllerRotation = false;
 
 private:
 	
