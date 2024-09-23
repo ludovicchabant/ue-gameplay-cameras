@@ -17,7 +17,7 @@
 #include "Customizations/CameraRigPtrDetailsCustomization.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/CameraVariableReferenceDetailsCustomizations.h"
-#include "Customizations/SingleCameraDirectorDetailsCustomization.h"
+#include "Customizations/FilmbackCameraNodeDetailsCustomization.h"
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
@@ -490,6 +490,9 @@ private:
 					&FCameraRigPtrDetailsCustomization::MakeInstance));
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAssetReference", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
+
+		PropertyEditorModule.RegisterCustomClassLayout("FilmbackCameraNode", FOnGetDetailCustomizationInstance::CreateStatic(
+					&FFilmbackCameraNodeDetailsCustomization::MakeInstance));
 	}
 
 	void UnregisterDetailsCustomizations()
@@ -506,6 +509,8 @@ private:
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigProxyTableEntry");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAssetReference");
+
+			PropertyEditorModule->UnregisterCustomClassLayout("FilmbackCameraNode");
 		}
 	}
 

@@ -23,6 +23,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"AssetDefinition",
 				"AssetRegistry",
 				"BlueprintGraph",
+				"CinematicCamera",
 				"Core",
 				"CoreUObject",
 				"DeveloperSettings",
