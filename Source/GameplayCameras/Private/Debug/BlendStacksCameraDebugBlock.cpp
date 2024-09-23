@@ -46,10 +46,8 @@ void FBlendStacksCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 
 	for (int32 Index = 0; Index < MaxIndex; ++Index)
 	{
-		Renderer.SetTextColor(Colors.Notice);
 		Renderer.AddText(BlendStackNames.IsValidIndex(Index) ? BlendStackNames[Index] : TEXT("<unnamed blend stack>"));
 		Renderer.NewLine();
-		Renderer.SetTextColor(Colors.Default);
 
 		if (BlendStackBlocks.IsValidIndex(Index))
 		{

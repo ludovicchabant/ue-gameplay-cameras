@@ -381,14 +381,14 @@ void FBlendStackRootCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPar
 {
 	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
 
-	Renderer.AddText(TEXT("{cam_passive}<Blend>\n"));
+	Renderer.AddText(TEXT("{cam_passive}<Blend>{cam_default}\n"));
 	Renderer.AddIndent();
 	ChildrenView[0]->DebugDraw(Params, Renderer);
 	Renderer.RemoveIndent();
 
 	if (!BlendedParameterOverridesEntries.IsEmpty())
 	{
-		Renderer.AddText(TEXT("{cam_passive}<%d Merged Camera Rigs>\n"), BlendedParameterOverridesEntries.Num());
+		Renderer.AddText(TEXT("{cam_passive}<%d Merged Camera Rigs>{cam_default}\n"), BlendedParameterOverridesEntries.Num());
 		Renderer.AddIndent();
 		{
 			int32 ChildIndex = 0;
@@ -402,7 +402,7 @@ void FBlendStackRootCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPar
 		Renderer.RemoveIndent();
 	}
 
-	Renderer.AddText(TEXT("{cam_passive}<CameraRig %s>\n"), *CameraRigAssetName);
+	Renderer.AddText(TEXT("{cam_passive}<CameraRig> {cam_default}Running {cam_notice}%s{cam_default}\n"), *CameraRigAssetName);
 	Renderer.AddIndent();
 	ChildrenView[2]->DebugDraw(Params, Renderer);
 	Renderer.RemoveIndent();

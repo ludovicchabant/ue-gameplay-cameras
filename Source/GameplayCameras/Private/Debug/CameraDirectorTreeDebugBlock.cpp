@@ -3,6 +3,8 @@
 #include "Debug/CameraDirectorTreeDebugBlock.h"
 
 #include "Core/CameraAsset.h"
+#include "Core/CameraDirector.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationContextStack.h"
 #include "Debug/CameraDebugBlockBuilder.h"
@@ -56,11 +58,17 @@ void FCameraDirectorTreeDebugBlock::InitializeEntry(TSharedPtr<FCameraEvaluation
 {
 	if (Context)
 	{
-		const UObject* ContextOwner = Context->GetOwner();
+		const FCameraObjectTypeRegistry& TypeRegistry = FCameraObjectTypeRegistry::Get();
+		const FName ContextTypeName = TypeRegistry.GetTypeNameSafe(Context->GetTypeID());
 
+		const UObject* ContextOwner = Context->GetOwner();
+		const FCameraDirectorEvaluator* DirectorEvaluator = Context->GetDirectorEvaluator();
+
+		EntryDebugInfo.ContextClassName = ContextTypeName;
+		EntryDebugInfo.OwnerName = *GetPathNameSafe(ContextOwner);
+		EntryDebugInfo.OwnerClassName = ContextOwner ? ContextOwner->GetClass()->GetFName() : NAME_None;
 		EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
-		EntryDebugInfo.OwnerName = *GetNameSafe(ContextOwner);
-		EntryDebugInfo.OwnerClassName = *GetNameSafe(ContextOwner ? ContextOwner->GetClass() : nullptr);
+		EntryDebugInfo.CameraDirectorClassName = DirectorEvaluator->GetCameraDirector()->GetFName();
 		EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
 		EntryDebugInfo.bIsValid = true;
 
@@ -95,8 +103,8 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 
 	const int32 MinNum = FMath::Min(ChildrenView.Num(), CameraDirectors.Num());
 
-	Renderer.SetTextColor(Colors.Hightlighted);
-	Renderer.AddText("Inactive Directors\n\n");
+	Renderer.SetTextColor(Colors.Notice);
+	Renderer.AddText("Inactive Directors\n");
 	Renderer.SetTextColor(Colors.Default);
 	Renderer.AddIndent();
 
@@ -105,18 +113,36 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 		if (Index == CameraDirectors.Num() - 1)
 		{
 			Renderer.RemoveIndent();
-			Renderer.NewLine();
 
 			Renderer.SetTextColor(Colors.Notice);
-			Renderer.AddText("Active Director\n\n");
+			Renderer.AddText("Active Director\n");
 			Renderer.SetTextColor(Colors.Default);
 			Renderer.AddIndent();
 		}
 
+		Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Index + 1);
+
 		const FDirectorDebugInfo& EntryDebugInfo(CameraDirectors[Index]);
 		if (EntryDebugInfo.bIsValid)
 		{
-			Renderer.AddText(TEXT("Camera asset: {cam_notice}%s{cam_default}\n"), *EntryDebugInfo.CameraAssetName);
+			Renderer.AddText(TEXT("{cam_passive}[%s]{cam_default}"), 
+					*EntryDebugInfo.CameraDirectorClassName.ToString());
+			Renderer.AddIndent();
+			{
+				Renderer.AddText(TEXT("Context {cam_passive}[%s]{cam_default}\n"), *EntryDebugInfo.ContextClassName.ToString());
+
+				Renderer.AddText(TEXT("Owned by {cam_passive}[%s]{cam_default}\n"), *EntryDebugInfo.OwnerClassName.ToString());
+				Renderer.AddIndent();
+				{
+					Renderer.AddText(*EntryDebugInfo.OwnerName);
+				}
+				Renderer.RemoveIndent();
+
+				Renderer.AddText(TEXT("{cam_passive}From camera asset {cam_notice}%s{cam_default}\n"), 
+						*EntryDebugInfo.CameraAssetName);
+			}
+			Renderer.RemoveIndent();
+
 			Renderer.DrawCoordinateSystem(EntryDebugInfo.InitialContextTransform);
 		}
 		else
@@ -144,9 +170,11 @@ void FCameraDirectorTreeDebugBlock::OnSerialize(FArchive& Ar)
 
 FArchive& operator<< (FArchive& Ar, FCameraDirectorTreeDebugBlock::FDirectorDebugInfo& DirectorDebugInfo)
 {
-	Ar << DirectorDebugInfo.CameraAssetName;
+	Ar << DirectorDebugInfo.ContextClassName;
 	Ar << DirectorDebugInfo.OwnerClassName;
 	Ar << DirectorDebugInfo.OwnerName;
+	Ar << DirectorDebugInfo.CameraAssetName;
+	Ar << DirectorDebugInfo.CameraDirectorClassName;
 	Ar << DirectorDebugInfo.InitialContextTransform;
 	Ar << DirectorDebugInfo.bIsValid;
 	return Ar;

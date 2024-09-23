@@ -43,9 +43,11 @@ private:
 
 	struct FDirectorDebugInfo
 	{
-		FString CameraAssetName;
-		FString OwnerClassName;
+		FName ContextClassName;
+		FName OwnerClassName;
 		FString OwnerName;
+		FString CameraAssetName;
+		FName CameraDirectorClassName;
 		FTransform3d InitialContextTransform = FTransform3d::Identity;
 		bool bIsValid = false;
 	};
