@@ -26,16 +26,16 @@ void FCameraObjectTypeRegistry::RegisterType(FCameraObjectTypeID TypeID, FCamera
 	TypeInfos.Insert(TypeID.GetTypeID(), MoveTemp(TypeInfo));
 }
 
-FCameraObjectTypeID FCameraObjectTypeRegistry::FindTypeByName(const FName& TypeName)
+FCameraObjectTypeID FCameraObjectTypeRegistry::FindTypeByName(const FName& TypeName) const
 {
-	if (uint32* RegisteredTypeID = TypeIDsByName.Find(TypeName))
+	if (const uint32* RegisteredTypeID = TypeIDsByName.Find(TypeName))
 	{
 		return FCameraObjectTypeID{ *RegisteredTypeID };
 	}
 	return FCameraObjectTypeID::Invalid();
 }
 
-const FCameraObjectTypeInfo* FCameraObjectTypeRegistry::GetTypeInfo(FCameraObjectTypeID TypeID)
+const FCameraObjectTypeInfo* FCameraObjectTypeRegistry::GetTypeInfo(FCameraObjectTypeID TypeID) const
 {
 	if (ensureMsgf(
 				TypeID.IsValid() && TypeInfos.IsValidIndex(TypeID.GetTypeID()),
@@ -45,6 +45,19 @@ const FCameraObjectTypeInfo* FCameraObjectTypeRegistry::GetTypeInfo(FCameraObjec
 		return &TypeInfo;
 	}
 	return nullptr;
+}
+
+FName FCameraObjectTypeRegistry::GetTypeNameSafe(FCameraObjectTypeID TypeID) const
+{
+	if (TypeID.IsValid())
+	{
+		if (const FCameraObjectTypeInfo* TypeInfo = GetTypeInfo(TypeID))
+		{
+			return TypeInfo->TypeName;
+		}
+	}
+
+	return NAME_None;
 }
 
 void FCameraObjectTypeRegistry::ConstructObject(FCameraObjectTypeID TypeID, void* Ptr)

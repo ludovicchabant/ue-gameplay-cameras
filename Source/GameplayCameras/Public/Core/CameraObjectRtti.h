@@ -85,8 +85,9 @@ public:
 	GAMEPLAYCAMERAS_API static FCameraObjectTypeRegistry& Get();
 
 	GAMEPLAYCAMERAS_API void RegisterType(FCameraObjectTypeID TypeID, FCameraObjectTypeInfo&& TypeInfo);
-	GAMEPLAYCAMERAS_API FCameraObjectTypeID FindTypeByName(const FName& TypeName);
-	GAMEPLAYCAMERAS_API const FCameraObjectTypeInfo* GetTypeInfo(FCameraObjectTypeID TypeID);
+	GAMEPLAYCAMERAS_API FCameraObjectTypeID FindTypeByName(const FName& TypeName) const;
+	GAMEPLAYCAMERAS_API const FCameraObjectTypeInfo* GetTypeInfo(FCameraObjectTypeID TypeID) const;
+	GAMEPLAYCAMERAS_API FName GetTypeNameSafe(FCameraObjectTypeID TypeID) const;
 
 	GAMEPLAYCAMERAS_API void ConstructObject(FCameraObjectTypeID TypeID, void* Ptr);
 
