@@ -268,6 +268,19 @@ void UCameraRigAsset::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 
 	}
 }
 
+EObjectTreeGraphObjectSupportFlags UCameraRigAsset::GetSupportFlags(FName InGraphName) const
+{
+	if (UPackage* OuterPackage = Cast<UPackage>(GetOuter()))
+	{
+		// Can't rename a standalone rig prefab -- you have to rename it in the content browser.
+		return EObjectTreeGraphObjectSupportFlags::CommentText;
+	}
+	else
+	{
+		return EObjectTreeGraphObjectSupportFlags::CommentText | EObjectTreeGraphObjectSupportFlags::CustomRename;
+	}
+}
+
 const FString& UCameraRigAsset::GetGraphNodeCommentText(FName InGraphName) const
 {
 	if (InGraphName == NodeTreeGraphName)
@@ -295,6 +308,16 @@ void UCameraRigAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FStr
 	{
 		TransitionGraphNodeComment = NewComment;
 	}
+}
+
+void UCameraRigAsset::GetGraphNodeName(FName InGraphName, FText& OutName) const
+{
+	OutName = FText::FromString(GetDisplayName());
+}
+
+void UCameraRigAsset::OnRenameGraphNode(FName InGraphName, const FString& NewName)
+{
+	Interface.DisplayName = NewName;
 }
 
 void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const

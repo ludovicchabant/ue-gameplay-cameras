@@ -62,7 +62,7 @@ public:
 	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) {}
 
 	/** Gets the custom name for the graph node. */
-	virtual const FString& GetGraphNodeName(FName InGraphName) const { static const FString EmptyString; return EmptyString; }
+	virtual void GetGraphNodeName(FName InGraphName, FText& OutName) const {}
 	/** Called to save a new custom name. */
 	virtual void OnRenameGraphNode(FName InGraphName, const FString& NewName) {}
 

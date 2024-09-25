@@ -24,14 +24,6 @@ void UCameraRigTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig&
 		.OnlyAsRoot()
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
-	InOutGraphConfig.OnFormatObjectDisplayName = FOnFormatObjectDisplayName::CreateLambda(
-			[](const UObject* Object, FText& InOutDisplayNameText)
-			{
-				if (const UCameraRigAsset* CameraRigAsset = Cast<UCameraRigAsset>(Object))
-				{
-					InOutDisplayNameText = FText::FromString(CameraRigAsset->GetDisplayName());
-				}
-			});
 }
 
 ETransitionGraphContextActions UCameraRigTransitionGraphSchema::GetTransitionGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const

@@ -163,7 +163,7 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UObject* InObject) const
 		const IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
 		if (GraphObject && GraphObject->HasSupportFlags(GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename))
 		{
-			DisplayNameText = FText::FromString(GraphObject->GetGraphNodeName(GraphName));
+			GraphObject->GetGraphNodeName(GraphName, DisplayNameText);
 		}
 
 		if (DisplayNameText.IsEmpty() && ClassConfig.NodeTitleUsesObjectName())

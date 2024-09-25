@@ -53,14 +53,6 @@ FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
 		.SelfPinName(NAME_None)  // No self pin name, we just want the title
 		.CanCreateNew(false)
 		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
-	GraphConfig.OnFormatObjectDisplayName = FOnFormatObjectDisplayName::CreateLambda(
-			[](const UObject* Object, FText& InOutDisplayNameText)
-			{
-				if (const UCameraRigAsset* CameraRigAsset = Cast<UCameraRigAsset>(Object))
-				{
-					InOutDisplayNameText = FText::FromString(CameraRigAsset->GetDisplayName());
-				}
-			});
 
 	return GraphConfig;
 }

@@ -269,9 +269,11 @@ protected:
 #if WITH_EDITOR
 	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
 	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
-	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
+	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override;
 	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
 	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
+	virtual void GetGraphNodeName(FName InGraphName, FText& OutName) const override;
+	virtual void OnRenameGraphNode(FName InGraphName, const FString& NewName) override;
 #endif
 
 	// IObjectTreeGraphRootObject interface.
