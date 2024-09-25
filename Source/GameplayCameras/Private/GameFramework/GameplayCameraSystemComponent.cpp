@@ -107,7 +107,9 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 Pl
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
 	if (!PlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no player controller found!"));
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera system: no player controller found!"),
+				ELogVerbosity::Error);
 		return;
 	}
 
@@ -116,6 +118,14 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 Pl
 
 void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APlayerController* PlayerController)
 {
+	if (!PlayerController)
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera system: invalid player controller given!"),
+				ELogVerbosity::Error);
+		return;
+	}
+
 	if (APlayerController* ActivePlayerController = WeakPlayerController.Get())
 	{
 		if (ActivePlayerController != PlayerController)
@@ -127,7 +137,9 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 	AActor* OwningActor = GetOwner();
 	if (!OwningActor)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera system: no owning actor found!"));
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera system: no owning actor found!"),
+				ELogVerbosity::Error);
 		return;
 	}
 
@@ -136,7 +148,7 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 		CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
 		if (!CameraSystemHost)
 		{
-			UE_LOG(LogCameraSystem, Error, TEXT("can't create camera system host!"));
+			FFrame::KismetExecutionMessage(TEXT("can't create camera system host!"), ELogVerbosity::Error);
 			return;
 		}
 	}

@@ -72,7 +72,9 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(int32 PlayerIndex
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
 	if (!PlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera: no player controller found!"));
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera: no player controller found!"),
+				ELogVerbosity::Error);
 		return;
 	}
 
@@ -102,21 +104,28 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 {
 	using namespace UE::Cameras;
 
-	if (!ensureMsgf(PlayerController, TEXT("Can't activate gameplay camera component: invalid player controller!")))
+	if (!PlayerController)
 	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera component: invalid player controller!"),
+				ELogVerbosity::Error);
 		return;
 	}
 
 	if (!Camera)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera asset was set!"));
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera component: no camera asset was set!"),
+				ELogVerbosity::Error);
 		return;
 	}
 	
 	CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
 	if (!CameraSystemHost)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate gameplay camera component: no camera system host found!"));
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't activate gameplay camera component: no camera system host found!"),
+				ELogVerbosity::Error);
 		return;
 	}
 

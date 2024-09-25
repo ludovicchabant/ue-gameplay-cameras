@@ -58,7 +58,9 @@ AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSyst
 		}
 		else
 		{
-			UE_LOG(LogCameraSystem, Error, TEXT("Can't auto-manage active view target: no camera system host found!"));
+			FFrame::KismetExecutionMessage(
+					TEXT("Can't auto-manage active view target: no camera system host found!"),
+					ELogVerbosity::Error);
 			return nullptr;
 		}
 	}
