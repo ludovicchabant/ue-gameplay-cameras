@@ -90,10 +90,8 @@ void FBlendStackRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 		}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-		if (const UCameraRigAsset* CameraRig = RootNode->RootNode->GetTypedOuter<UCameraRigAsset>())
-		{
-			CameraRigAssetName = GetNameSafe(CameraRig);
-		}
+		const UCameraRigAsset* CameraRig = RootNode->RootNode->GetTypedOuter<UCameraRigAsset>();
+		CameraRigAssetName = CameraRig ? CameraRig->GetDisplayName() : TEXT("<None>");
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 }
