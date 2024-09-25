@@ -137,6 +137,12 @@ public:
 
 private:
 
+#if WITH_EDITOR
+	void CleanUpStrayObjects();
+#endif
+
+private:
+
 	/** The camera director to use in this camera. */
 	UPROPERTY(Instanced)
 	TObjectPtr<UCameraDirector> CameraDirector;

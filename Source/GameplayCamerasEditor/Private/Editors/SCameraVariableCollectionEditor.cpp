@@ -162,11 +162,6 @@ void SCameraVariableCollectionListRow::OnVariableNameCommitted(const FText& Text
 		const FString NewDisplayName = Text.ToString();
 		CameraVariable->Modify();
 		CameraVariable->DisplayName = NewDisplayName;
-
-		// We just set the display name, but also rename the object itself, which helps for debugging.
-		FName NewObjectName = MakeObjectNameFromDisplayLabel(NewDisplayName, CameraVariable->GetFName());
-		NewObjectName = MakeUniqueObjectName(CameraVariable->GetOuter(), CameraVariable->GetClass(), NewObjectName);
-		CameraVariable->Rename(*NewObjectName.ToString());
 	}
 
 	if (OnTextComitted.IsBound())

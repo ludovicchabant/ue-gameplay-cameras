@@ -5,6 +5,8 @@
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraRigAsset.h"
+#include "UObject/ObjectRedirector.h"
 #include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
@@ -110,6 +112,7 @@ void UCameraAsset::PostLoad()
 {
 	Super::PostLoad();
 
+#if WITH_EDITOR
 	if (CameraDirector)
 	{
 		EObjectFlags Flags = CameraDirector->GetFlags();
@@ -122,9 +125,67 @@ void UCameraAsset::PostLoad()
 			CameraDirector->ClearFlags(RF_Public | RF_Standalone);
 		}
 	}
+
+	CleanUpStrayObjects();
+#endif  // WITH_EDITOR
 }
 
 #if WITH_EDITOR
+
+void UCameraAsset::CleanUpStrayObjects()
+{
+	UPackage* CameraAssetPackage = GetOutermost();
+	if (!CameraAssetPackage || CameraAssetPackage == GetTransientPackage())
+	{
+		return;
+	}
+
+	// Some older versions of the camera editors had a bug that could lead to
+	// stray deleted camera rigs being left in the package. Let's clean them up.
+	TSet<UObject*> StrayObjects;
+	TSet<UCameraRigAsset*> KnownCameraRigs(CameraRigs);
+
+	TArray<UObject*> ObjectsInPackage;
+	GetObjectsWithPackage(CameraAssetPackage, ObjectsInPackage);
+	for (UObject* Object : ObjectsInPackage)
+	{
+		UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(Object);
+		if (!CameraRig)
+		{
+			continue;
+		}
+		if (KnownCameraRigs.Contains(CameraRig))
+		{
+			continue;
+		}
+
+		Modify();
+
+		CameraRig->ClearFlags(RF_Public | RF_Standalone);
+		StrayObjects.Add(CameraRig);
+	}
+
+	if (StrayObjects.Num() > 0)
+	{
+		// Also clean-up any redirectors to these objects.
+		for (UObject* Object : ObjectsInPackage)
+		{
+			if (UObjectRedirector* Redirector = Cast<UObjectRedirector>(Object))
+			{
+				if (StrayObjects.Contains(Redirector->DestinationObject))
+				{
+					Redirector->ClearFlags(RF_Public | RF_Standalone);
+					Redirector->DestinationObject = nullptr;
+				}
+			}
+		}
+
+		UE_LOG(LogCameraSystem, Warning,
+				TEXT("Cleaned up %d stray camera rigs in camera asset '%s'. Please resave the asset."),
+				StrayObjects.Num(), *GetPathNameSafe(this));
+	}
+}
+
 
 void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -186,7 +247,7 @@ void UCameraAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 
 	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
 	{
-		// Build on save.
+		// Build when saving/cooking.
 		BuildCamera();
 	}
 

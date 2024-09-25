@@ -25,6 +25,12 @@ protected:
 	// UObject interface
 	virtual void PostLoad() override;
 
+private:
+
+#if WITH_EDITOR
+	void CleanUpStrayObjects();
+#endif
+
 public:
 
 	/** The variables in this collection. */

@@ -10,6 +10,7 @@
 #include "ObjectTools.h"
 #include "Serialization/FindReferencersArchive.h"
 #include "Subsystems/AssetEditorSubsystem.h"
+#include "UObject/ObjectRedirector.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Notifications/SNotificationList.h"
@@ -173,6 +174,7 @@ void SDeleteCameraObjectDialog::PerformReferenceReplacement()
 	// fails to recurse into the package (that's because it's using object references, and packages don't really
 	// reference their asset directly).
 	TArray<UPackage*> DirtiedPackages;
+	TArray<UPackage*> PackagesToDeleteFrom;
 	TSet<UObject*> ObjectsToReplaceWithin;
 	for (const FName PackageName : ReferencingPackages)
 	{
@@ -194,6 +196,7 @@ void SDeleteCameraObjectDialog::PerformReferenceReplacement()
 		if (ensure(Package))
 		{
 			DirtiedPackages.Add(Package);
+			PackagesToDeleteFrom.Add(Package);
 
 			UObject* PackageAsset = Package->FindAssetInPackage();
 			if (ensure(PackageAsset))
@@ -215,6 +218,29 @@ void SDeleteCameraObjectDialog::PerformReferenceReplacement()
 		SaveParams.bIsExplicitSave = true;
 
 		FEditorFileUtils::PromptForCheckoutAndSave(ObjectPtrDecay(DirtiedPackages), SaveParams);
+	}
+
+	// Remove some flags that prevent objects from being collected.
+	for (UObject* Object : ObjectsToDelete)
+	{
+		Object->ClearFlags(RF_Public | RF_Standalone);
+	}
+
+	// Remove any object redirectors. This should be safe since we deleted any references.
+	TSet<UObject*> ObjectsToDeleteSet(ObjectsToDelete);
+	for (UPackage* Package : PackagesToDeleteFrom)
+	{
+		TArray<UObject*> ObjectsInPackage;
+		GetObjectsWithPackage(Package, ObjectsInPackage);
+		for (UObject* Object : ObjectsInPackage)
+		{
+			UObjectRedirector* Redirector = Cast<UObjectRedirector>(Object);
+			if (Redirector && ObjectsToDeleteSet.Contains(Redirector->DestinationObject))
+			{
+				Redirector->ClearFlags(RF_Public | RF_Standalone);
+				Redirector->DestinationObject = nullptr;
+			}
+		}
 	}
 
 	// Optionally rename objects with a TRASH prefix, helpful for debugging sometimes.

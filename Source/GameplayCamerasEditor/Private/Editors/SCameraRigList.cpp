@@ -108,15 +108,10 @@ void SCameraRigListEntry::OnTextCommitted(const FText& Text, ETextCommit::Type C
 		FScopedTransaction Transaction(LOCTEXT("RenameCameraRig", "Rename Camera Rig"));
 
 		UCameraRigAsset* CameraRigAsset = Item->CameraRigAsset;
-		CameraRigAsset->Modify();
 
-		// Set the interface name, but also rename the object itself, which helps for debugging.
 		const FString NewDisplayName = Text.ToString();
+		CameraRigAsset->Modify();
 		CameraRigAsset->Interface.DisplayName = NewDisplayName;
-
-		FName NewObjectName = MakeObjectNameFromDisplayLabel(NewDisplayName, CameraRigAsset->GetFName());
-		NewObjectName = MakeUniqueObjectName(CameraRigAsset->GetOuter(), UCameraRigAsset::StaticClass(), NewObjectName);
-		CameraRigAsset->Rename(*NewObjectName.ToString());
 	}
 }
 
@@ -315,10 +310,9 @@ void SCameraRigList::OnAddCameraRig()
 
 	CameraAsset->Modify();
 
-	const FName NewCameraRigName = MakeUniqueObjectName(CameraAsset, UCameraRigAsset::StaticClass(), TEXT("NewCameraRig"));
 	UCameraRigAsset* NewCameraRig = NewObject<UCameraRigAsset>(
-			CameraAsset, 
-			NewCameraRigName, 
+			CameraAsset,
+			NAME_None,
 			RF_Transactional | RF_Public  // Must be referenceable from camera directors.
 			);
 	CameraAsset->AddCameraRig(NewCameraRig);
