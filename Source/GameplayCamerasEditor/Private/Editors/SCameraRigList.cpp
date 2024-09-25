@@ -194,6 +194,8 @@ void SCameraRigList::Construct(const FArguments& InArgs)
 		ListView->SetSelection(FilteredItemSource[0]);
 		OnRequestEditCameraRig.ExecuteIfBound(FilteredItemSource[0]->CameraRigAsset);
 	}
+
+	CameraAsset->EventHandlers.Register(EventHandler, this);
 }
 
 SCameraRigList::~SCameraRigList()
@@ -253,6 +255,11 @@ FReply SCameraRigList::OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& I
 		return FReply::Handled();
 	}
 	return SCompoundWidget::OnKeyDown(MyGeometry, InKeyEvent);
+}
+
+void SCameraRigList::OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event)
+{
+	RequestListRefresh();
 }
 
 TSharedPtr<SWidget> SCameraRigList::GenerateToolbar()

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Misc/TextFilter.h"
 #include "UObject/ObjectPtr.h"
@@ -67,7 +68,9 @@ private:
  * A panel that shows a list of camera rigs on a camera asset.
  * Can add, rename, delete, etc. camera rigs in the list.
  */
-class SCameraRigList : public SCompoundWidget
+class SCameraRigList 
+	: public SCompoundWidget
+	, public ICameraAssetEventHandler
 {
 public:
 
@@ -90,6 +93,9 @@ protected:
 	// SWidget interface
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	virtual FReply OnKeyDown(const FGeometry& MyGeometry, const FKeyEvent& InKeyEvent) override;
+
+	// ICameraAssetEventHandler interface
+	virtual void OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event) override;
 
 private:
 
@@ -125,6 +131,8 @@ private:
 private:
 
 	TObjectPtr<UCameraAsset> CameraAsset;
+
+	TCameraEventHandler<ICameraAssetEventHandler> EventHandler;
 
 	FOnCameraRigListChanged OnCameraRigListChanged;
 	FOnCameraRigEvent OnRequestEditCameraRig;
