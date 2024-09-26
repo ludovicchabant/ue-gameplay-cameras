@@ -76,6 +76,10 @@ private:
 	void DebugDraw(UCanvas* Canvas, APlayerController* PlayController);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
+#if WITH_EDITOR
+	void CreateCameraSystemSpriteComponent();
+#endif  // WITH_EDITOR
+
 public:
 
 	/**
