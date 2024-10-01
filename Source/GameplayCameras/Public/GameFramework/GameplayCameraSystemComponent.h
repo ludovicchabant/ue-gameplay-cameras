@@ -9,7 +9,6 @@
 #include "GameplayCameraSystemComponent.generated.h"
 
 class APlayerController;
-class UBillboardComponent;
 class UCameraRigAsset;
 class UCanvas;
 class UGameplayCameraSystemHost;
@@ -113,10 +112,6 @@ private:
 	/** Sprite scaling for the editor. */
 	UPROPERTY(transient)
 	float EditorSpriteTextureScale = 0.5f;
-
-	/** Sprite component for the editor. */
-	UPROPERTY()
-	TObjectPtr<UBillboardComponent> EditorSpriteComponent;
 
 #endif	// WITH_EDITORONLY_DATA
 };
