@@ -5,6 +5,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraParameterReader.h"
 #include "Core/CameraParameters.h"
+#include "Core/CameraVariableReferences.h"
 #include "Nodes/Framing/CameraFramingZone.h"
 #include "Math/CameraFramingZoneMath.h"
 #include "Math/CriticalDamper.h"
@@ -29,7 +30,7 @@ public:
 	 * the player pawn's location will be used by default.
 	 */
 	UPROPERTY(EditAnywhere, Category="Target")
-	TObjectPtr<UVector3dCameraVariable> TargetLocation;
+	FVector3dCameraVariableReference TargetLocation;
 
 	/** The ideal horizontal screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")

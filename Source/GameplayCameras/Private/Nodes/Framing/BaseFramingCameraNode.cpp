@@ -70,11 +70,11 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 
 TOptional<FVector3d> FBaseFramingCameraNodeEvaluator::AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult)
 {
-	const UBaseFramingCameraNode* DollyNode = GetCameraNodeAs<UBaseFramingCameraNode>();
-	if (DollyNode->TargetLocation)
+	const UBaseFramingCameraNode* FramingNode = GetCameraNodeAs<UBaseFramingCameraNode>();
+	if (FramingNode->TargetLocation)
 	{
 		FVector3d TargetLocation;
-		const bool bGotTargetLocation = InResult.VariableTable.TryGetValue(DollyNode->TargetLocation.Get(), TargetLocation);
+		const bool bGotTargetLocation = InResult.VariableTable.TryGetValue(FramingNode->TargetLocation.Get(), TargetLocation);
 		return bGotTargetLocation ? TOptional<FVector3d>(TargetLocation) : TOptional<FVector3d>();
 	}
 	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
