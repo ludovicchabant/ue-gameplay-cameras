@@ -300,8 +300,13 @@ void FBlendStackCameraNodeEvaluator::AddPackageListeners(FCameraRigEntry& Entry)
 		return;
 	}
 
-	Entry.CameraRig->GatherPackages(Entry.ListenedPackages);
-	for (const UPackage* ListenPackage : Entry.ListenedPackages)
+	FCameraRigPackages EntryPackages;
+	Entry.CameraRig->GatherPackages(EntryPackages);
+
+	Entry.ListenedPackages.Reset();
+	Entry.ListenedPackages.Append(EntryPackages);
+
+	for (const UPackage* ListenPackage : EntryPackages)
 	{
 		int32& NumListens = AllListenedPackages.FindOrAdd(ListenPackage, 0);
 		if (NumListens == 0)
@@ -326,16 +331,19 @@ void FBlendStackCameraNodeEvaluator::RemoveListenedPackages(TSharedPtr<IGameplay
 		return;
 	}
 
-	for (const UPackage* ListenPackage : Entry.ListenedPackages)
+	for (TWeakObjectPtr<const UPackage> WeakListenPackage : Entry.ListenedPackages)
 	{
-		int32* NumListens = AllListenedPackages.Find(ListenPackage);
+		int32* NumListens = AllListenedPackages.Find(WeakListenPackage);
 		if (ensure(NumListens))
 		{
 			--(*NumListens);
 			if (*NumListens == 0)
 			{
-				LiveEditManager->RemoveListener(ListenPackage, this);
-				AllListenedPackages.Remove(ListenPackage);
+				if (const UPackage* ListenPackage = WeakListenPackage.Get())
+				{
+					LiveEditManager->RemoveListener(ListenPackage, this);
+				}
+				AllListenedPackages.Remove(WeakListenPackage);
 			}
 		}
 	}

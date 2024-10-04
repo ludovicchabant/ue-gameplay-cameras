@@ -196,7 +196,7 @@ protected:
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
 #if WITH_EDITOR
-		FCameraRigPackages ListenedPackages;
+		TArray<TWeakObjectPtr<const UPackage>, TInlineAllocator<4>> ListenedPackages;
 #endif  // WITH_EDITOR
 	};
 
@@ -210,7 +210,7 @@ protected:
 	FOnBlendStackCameraRigEvent OnCameraRigEventDelegate;
 
 #if WITH_EDITOR
-	TMap<const UPackage*, int32> AllListenedPackages;
+	TMap<TWeakObjectPtr<const UPackage>, int32> AllListenedPackages;
 #endif  // WITH_EDITOR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

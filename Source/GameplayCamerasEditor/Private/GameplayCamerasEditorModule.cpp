@@ -39,7 +39,6 @@
 #include "ISettingsModule.h"
 #include "K2Node_Event.h"
 #include "Kismet2/KismetEditorUtilities.h"
-#include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -594,8 +593,6 @@ private:
 
 		IGameplayCamerasModule& CamerasModule = FModuleManager::LoadModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 		CamerasModule.SetLiveEditManager(LiveEditManager);
-
-		FCoreUObjectDelegates::GetPostGarbageCollect().AddRaw(this, &FGameplayCamerasEditorModule::OnPostGarbageCollection);
 	}
 
 	void TeardownLiveEditManager()
@@ -608,10 +605,6 @@ private:
 		LiveEditManager.Reset();
 	}
 	
-	void OnPostGarbageCollection()
-	{
-	}
-
 private:
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasLiveEditManager> LiveEditManager;

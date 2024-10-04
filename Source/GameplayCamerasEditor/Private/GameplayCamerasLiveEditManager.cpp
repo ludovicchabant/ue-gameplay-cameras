@@ -3,6 +3,7 @@
 #include "GameplayCamerasLiveEditManager.h"
 
 #include "IGameplayCamerasLiveEditListener.h"
+#include "Misc/CoreDelegates.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -11,6 +12,12 @@ namespace UE::Cameras
 
 FGameplayCamerasLiveEditManager::FGameplayCamerasLiveEditManager()
 {
+	FCoreUObjectDelegates::GetPostGarbageCollect().AddRaw(this, &FGameplayCamerasLiveEditManager::OnPostGarbageCollection);
+}
+
+FGameplayCamerasLiveEditManager::~FGameplayCamerasLiveEditManager()
+{
+	FCoreUObjectDelegates::GetPostGarbageCollect().RemoveAll(this);
 }
 
 void FGameplayCamerasLiveEditManager::NotifyPostBuildAsset(const UPackage* InAssetPackage) const
@@ -51,6 +58,11 @@ void FGameplayCamerasLiveEditManager::RemoveListener(const UPackage* InAssetPack
 			}
 		}
 	}
+}
+
+void FGameplayCamerasLiveEditManager::OnPostGarbageCollection()
+{
+	RemoveGarbage();
 }
 
 void FGameplayCamerasLiveEditManager::RemoveGarbage()

@@ -17,6 +17,7 @@ class FGameplayCamerasLiveEditManager : public IGameplayCamerasLiveEditManager
 public:
 
 	FGameplayCamerasLiveEditManager();
+	~FGameplayCamerasLiveEditManager();
 
 public:
 
@@ -26,6 +27,8 @@ public:
 	virtual void RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
 
 private:
+
+	void OnPostGarbageCollection();
 
 	void RemoveGarbage();
 
