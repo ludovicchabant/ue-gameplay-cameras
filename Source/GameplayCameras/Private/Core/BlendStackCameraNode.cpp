@@ -813,79 +813,105 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
 {
-	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
-
-	TSharedPtr<const FCameraEvaluationContext> ToContext = Params.EvaluationContext;
-	const UCameraAsset* ToCameraAsset = ToContext ? ToContext->GetCameraAsset() : nullptr;
-	const UCameraRigAsset* ToCameraRig = Params.CameraRig;
-
-	// If the new entry is a combination, look for transitions on its "main" camera rig.
-	ToCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(ToCameraRig);
-
 	// Find a transition that works for blending towards ToCameraRig.
 	// If the stack isn't empty, we need to find a transition that works between the previous and 
 	// next camera rigs. If the stack is empty, we blend the new camera rig in from nothing if
 	// appropriate.
 	if (!Entries.IsEmpty())
 	{
+		// Grab information about the new entry to push.
+		TSharedPtr<const FCameraEvaluationContext> ToContext = Params.EvaluationContext;
+		const UCameraAsset* ToCameraAsset = ToContext ? ToContext->GetCameraAsset() : nullptr;
+
+		// Grab information about the top entry (i.e. the currently active camera rig).
+		const FCameraRigEntry& TopEntry = Entries.Top();
+		TSharedPtr<const FCameraEvaluationContext> FromContext = TopEntry.EvaluationContext.Pin();
+		const UCameraAsset* FromCameraAsset = FromContext ? FromContext->GetCameraAsset() : nullptr;
+
+		// If the new or current top entries are a combination, look for transitions on all 
+		// their combined camera rigs.
+		TArray<const UCameraRigAsset*> ToCombinedCameraRigs;
+		UCombinedCameraRigsCameraNode::GetAllCombinationCameraRigs(Params.CameraRig, ToCombinedCameraRigs);
+
+		TArray<const UCameraRigAsset*> FromCombinedCameraRigs;
+		UCombinedCameraRigsCameraNode::GetAllCombinationCameraRigs(TopEntry.CameraRig, FromCombinedCameraRigs);
+
+		const bool bFromFrozen = TopEntry.bIsFrozen;
 		const UCameraRigTransition* TransitionToUse = nullptr;
 
 		// Start by looking at exit transitions on the last active (top) camera rig.
-		const FCameraRigEntry& TopEntry = Entries.Top();
-
-		TSharedPtr<const FCameraEvaluationContext> FromContext = TopEntry.EvaluationContext.Pin();
-		const UCameraAsset* FromCameraAsset = FromContext ? FromContext->GetCameraAsset() : nullptr;
-		const UCameraRigAsset* FromCameraRig = TopEntry.CameraRig;
-
-		// If the top entry is a combination, look for transitions on its "main" camera rig.
-		FromCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(FromCameraRig);
-
-		if (!TopEntry.bIsFrozen)
+		for (const UCameraRigAsset* FromCameraRig : FromCombinedCameraRigs)
 		{
-			// Look for exit transitions on the last active camera rig itself.
-			TransitionToUse = FindTransition(
-					FromCameraRig->ExitTransitions,
-					FromCameraRig, FromCameraAsset, false,
-					ToCameraRig, ToCameraAsset);
-			if (TransitionToUse)
+			if (!FromCameraRig->ExitTransitions.IsEmpty())
 			{
-				return TransitionToUse;
-			}
-			
-			// Look for exit transitions on its parent camera asset.
-			if (FromCameraAsset)
-			{
-				TransitionToUse = FindTransition(
-						FromCameraAsset->GetExitTransitions(),
-						FromCameraRig, FromCameraAsset, false,
-						ToCameraRig, ToCameraAsset);
-				if (TransitionToUse)
+				// Look for exit transitions on the last active camera rig itself.
+				for (const UCameraRigAsset* ToCameraRig : ToCombinedCameraRigs)
 				{
-					return TransitionToUse;
+					TransitionToUse = FindTransition(
+							FromCameraRig->ExitTransitions,
+							FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToCameraRig, ToCameraAsset);
+					if (TransitionToUse)
+					{
+						return TransitionToUse;
+					}
+				}
+			}
+		}
+		for (const UCameraRigAsset* FromCameraRig : FromCombinedCameraRigs)
+		{
+			if (FromCameraAsset && !FromCameraAsset->GetExitTransitions().IsEmpty())
+			{
+				// Look for exit transitions on its parent camera asset.
+				for (const UCameraRigAsset* ToCameraRig : ToCombinedCameraRigs)
+				{
+					TransitionToUse = FindTransition(
+							FromCameraAsset->GetExitTransitions(),
+							FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToCameraRig, ToCameraAsset);
+					if (TransitionToUse)
+					{
+						return TransitionToUse;
+					}
 				}
 			}
 		}
 
 		// Now look at enter transitions on the new camera rig.
-		TransitionToUse = FindTransition(
-				ToCameraRig->EnterTransitions,
-				FromCameraRig, FromCameraAsset, TopEntry.bIsFrozen,
-				ToCameraRig, ToCameraAsset);
-		if (TransitionToUse)
+		for (const UCameraRigAsset* ToCameraRig : ToCombinedCameraRigs)
 		{
-			return TransitionToUse;
-		}
-
-		// Look at enter transitions on its parent camera asset.
-		if (ToCameraAsset)
-		{
-			TransitionToUse = FindTransition(
-					ToCameraAsset->GetEnterTransitions(),
-					FromCameraRig, FromCameraAsset, TopEntry.bIsFrozen,
-					ToCameraRig, ToCameraAsset);
-			if (TransitionToUse)
+			if (!ToCameraRig->EnterTransitions.IsEmpty())
 			{
-				return TransitionToUse;
+				// Look for enter transitions on the new camera rig itself.
+				for (const UCameraRigAsset* FromCameraRig : FromCombinedCameraRigs)
+				{
+					TransitionToUse = FindTransition(
+							ToCameraRig->EnterTransitions,
+							FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToCameraRig, ToCameraAsset);
+					if (TransitionToUse)
+					{
+						return TransitionToUse;
+					}
+				}
+			}
+		}
+		for (const UCameraRigAsset* ToCameraRig : ToCombinedCameraRigs)
+		{
+			if (ToCameraAsset && !ToCameraAsset->GetEnterTransitions().IsEmpty())
+			{
+				// Look at enter transitions on its parent camera asset.
+				for (const UCameraRigAsset* FromCameraRig : FromCombinedCameraRigs)
+				{
+					TransitionToUse = FindTransition(
+							ToCameraAsset->GetEnterTransitions(),
+							FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToCameraRig, ToCameraAsset);
+					if (TransitionToUse)
+					{
+						return TransitionToUse;
+					}
+				}
 			}
 		}
 	}

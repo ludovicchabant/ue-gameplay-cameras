@@ -56,7 +56,7 @@ class UCombinedCameraRigsCameraNode : public UCameraNode
 
 public:
 
-	static const UCameraRigAsset* GetMainCameraRigIfCombination(const UCameraRigAsset* InCameraRig);
+	static void GetAllCombinationCameraRigs(const UCameraRigAsset* InCameraRig, TArray<const UCameraRigAsset*>& OutCameraRigs);
 
 protected:
 

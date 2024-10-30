@@ -60,10 +60,17 @@ void FOrientationInitializationService::OnRootCameraNodeEvent(const FRootCameraN
 		if (const UCameraRigAsset* NewCameraRig = InEvent.CameraRigInfo.CameraRig)
 		{
 			// If the new camera rig is a combination, find its initial orientation settings
-			// on its main rig.
-			NewCameraRig = UCombinedCameraRigsCameraNode::GetMainCameraRigIfCombination(NewCameraRig);
-
-			InitialOrientation = NewCameraRig->InitialOrientation;
+			// on one of its combined rigs.
+			TArray<const UCameraRigAsset*> NewCombinedCameraRigs;
+			UCombinedCameraRigsCameraNode::GetAllCombinationCameraRigs(NewCameraRig, NewCombinedCameraRigs);
+			for (const UCameraRigAsset* NewCombinedCameraRig : NewCombinedCameraRigs)
+			{
+				if (NewCombinedCameraRig->InitialOrientation != ECameraRigInitialOrientation::None)
+				{
+					InitialOrientation = NewCombinedCameraRig->InitialOrientation;
+					break;
+				}
+			}
 		}
 
 		if (InEvent.Transition && InEvent.Transition->bOverrideInitialOrientation)
