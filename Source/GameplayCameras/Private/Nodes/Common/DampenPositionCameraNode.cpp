@@ -194,9 +194,6 @@ void FDampenPositionCameraNodeEvaluator::ComputeAxisDampers(const FCameraNodeEva
 			if (Params.EvaluationContext)
 			{
 				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
-				ensureMsgf(InitialResult.bIsValid,
-						TEXT("DampenPositionCameraNode: using invalid context result as damping space!"));
-
 				const FRotator3d ContextRotation = InitialResult.CameraPose.GetRotation();
 				AxesRotation = ContextRotation;
 			}

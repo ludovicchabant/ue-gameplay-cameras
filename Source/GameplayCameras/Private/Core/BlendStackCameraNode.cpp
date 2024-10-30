@@ -101,6 +101,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.CameraRig = CameraRig;
 	NewEntry.RootNode = EntryRootNode;
 	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
+	NewEntry.bWasContextInitialResultValid = EvaluationContext->GetInitialResult().bIsValid;
 	NewEntry.bIsFirstFrame = true;
 
 	return true;
@@ -207,6 +208,14 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 				continue;
 			}
 
+			// If the context was previously invalid, and this isn't the first frame, flag
+			// this update as a camera cut.
+			if (UNLIKELY(!Entry.bWasContextInitialResultValid && !Entry.bIsFirstFrame))
+			{
+				Entry.bForceCameraCut = true;
+			}
+			Entry.bWasContextInitialResultValid = true;
+
 			// Reset this entry's flags for this frame.
 			FCameraNodeEvaluationResult& CurResult = Entry.Result;
 			CurResult.CameraPose.ClearAllChangedFlags();
@@ -232,6 +241,7 @@ void FBlendStackCameraNodeEvaluator::OnRunFinished()
 		Entry.bIsFirstFrame = false;
 		Entry.bInputRunThisFrame = false;
 		Entry.bBlendRunThisFrame = false;
+		Entry.bForceCameraCut = false;
 	}
 }
 
@@ -739,7 +749,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		// Override it with whatever the evaluation context has set on its result.
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
+		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
 		CurResult.bIsValid = true;
 
 		// Run the camera rig's root node.
@@ -1007,7 +1017,7 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 				CurResult.VariableTable.Override(ContextResult.VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
 
 				// Setup flags.
-				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut;
+				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
 				CurResult.bIsValid = true;
 			}
 

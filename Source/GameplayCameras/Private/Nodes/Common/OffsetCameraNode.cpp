@@ -55,12 +55,9 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 		case ECameraNodeSpace::OwningContext:
 			if (Params.EvaluationContext)
 			{ 
-				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
-				ensureMsgf(InitialResult.bIsValid,
-						TEXT("OffsetCameraNode: using invalid context result as offset space!"));
-
 				// The offsets are meant to be treated as context-local. Let's get the context transform
 				// and apply the offsets using that transform's axes.
+				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
 				const FTransform3d ContextTransform = InitialResult.CameraPose.GetTransform();
 
 				const FVector3d WorldTranslationOffset = ContextTransform.TransformVector(TranslationOffset);

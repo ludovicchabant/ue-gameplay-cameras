@@ -70,7 +70,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeOriginPosition(const FCameraNodeSpacePar
 			if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				OutOrigin = InitialResult.CameraPose.GetLocation();
 				return true;
 			}
@@ -79,7 +78,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeOriginPosition(const FCameraNodeSpacePar
 			if (TSharedPtr<const FCameraEvaluationContext> OwningContext = Params.GetOwningContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = OwningContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				OutOrigin = InitialResult.CameraPose.GetLocation();
 				return true;
 			}
@@ -95,7 +93,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeOriginPosition(const FCameraNodeSpacePar
 				else if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 				{
 					const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-					ensure(InitialResult.bIsValid);
 					OutOrigin = InitialResult.CameraPose.GetLocation();
 					return true;
 				}
@@ -141,7 +138,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeSpaceTransform(const FCameraNodeSpacePar
 			if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				OutTransform = InitialResult.CameraPose.GetTransform();
 				return true;
 			}
@@ -150,7 +146,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeSpaceTransform(const FCameraNodeSpacePar
 			if (TSharedPtr<const FCameraEvaluationContext> OwningContext = Params.GetOwningContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = OwningContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				OutTransform = InitialResult.CameraPose.GetTransform();
 				return true;
 			}
@@ -166,7 +161,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeSpaceTransform(const FCameraNodeSpacePar
 				else if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 				{
 					const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-					ensure(InitialResult.bIsValid);
 					OutTransform = InitialResult.CameraPose.GetTransform();
 					return true;
 				}
@@ -222,7 +216,6 @@ bool FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(const FCameraNodeSpaceP
 			if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				WorldOffset = InitialResult.CameraPose.GetRotation().RotateVector(InOffset);
 				bGotWorldOffset = true;
 			}
@@ -231,7 +224,6 @@ bool FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(const FCameraNodeSpaceP
 			if (TSharedPtr<const FCameraEvaluationContext> OwningContext = Params.GetOwningContext())
 			{
 				const FCameraNodeEvaluationResult& InitialResult = OwningContext->GetInitialResult();
-				ensure(InitialResult.bIsValid);
 				WorldOffset = InitialResult.CameraPose.GetRotation().RotateVector(InOffset);
 				bGotWorldOffset = true;
 			}
@@ -247,7 +239,6 @@ bool FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(const FCameraNodeSpaceP
 				else if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
 				{
 					const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
-					ensure(InitialResult.bIsValid);
 					WorldOffset = InitialResult.CameraPose.GetRotation().RotateVector(InOffset);
 					bGotWorldOffset = true;
 				}

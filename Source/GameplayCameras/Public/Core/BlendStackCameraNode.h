@@ -184,10 +184,14 @@ protected:
 		FCameraNodeEvaluationResult Result;
 		/** Whether this is the first frame this entry runs. */
 		bool bIsFirstFrame = false;
+		/** Whether the context's initial result was valid last frame. */
+		bool bWasContextInitialResultValid = false;
 		/** Whether input slots were run (possibly from a preview update). */
 		bool bInputRunThisFrame = false;
 		/** Whether the blend node was run (possibly from a preview update). */
 		bool bBlendRunThisFrame = false;
+		/** Whether to force a camera cut on this entry this frame. */
+		bool bForceCameraCut = false;
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
 
