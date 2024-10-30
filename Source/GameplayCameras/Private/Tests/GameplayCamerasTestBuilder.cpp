@@ -6,62 +6,32 @@ namespace UE::Cameras::Test
 {
 
 FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(FName Name, UObject* Outer)
+	: TCameraRigAssetTestBuilderBase<FCameraRigAssetTestBuilder>(nullptr, Name, Outer)
 {
-	Initialize(nullptr, Name, Outer);
 }
 
-FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(TSharedRef<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer)
+FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer)
+	: TCameraRigAssetTestBuilderBase<FCameraRigAssetTestBuilder>(InNamedObjectRegistry, Name, Outer)
 {
-	Initialize(InNamedObjectRegistry, Name, Outer);
 }
 
-void FCameraRigAssetTestBuilder::Initialize(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer)
+FCameraEvaluationContextTestBuilder::FCameraEvaluationContextTestBuilder(UObject* Owner)
 {
-	if (Outer == nullptr)
+	if (Owner == nullptr)
 	{
-		Outer = GetTransientPackage();
+		Owner = GetTransientPackage();
 	}
 
-	CameraRig = NewObject<UCameraRigAsset>(Outer, Name);
-	TCameraObjectInitializer<UCameraRigAsset>::SetObject(CameraRig);
+	CameraAsset = NewObject<UCameraAsset>(Owner);
 
-	NamedObjectRegistry = InNamedObjectRegistry;
-	if (!NamedObjectRegistry)
-	{
-		NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
-	}
-}
+	FCameraEvaluationContextInitializeParams InitParams;
+	InitParams.Owner = Owner;
+	InitParams.CameraAsset = CameraAsset;
+	EvaluationContext = MakeShared<FCameraEvaluationContext>(InitParams);
 
-TCameraRigTransitionTestBuilder<FCameraRigAssetTestBuilder> FCameraRigAssetTestBuilder::AddEnterTransition()
-{
-	TCameraRigTransitionTestBuilder<ThisType> TransitionBuilder(*this, CameraRig);
-	CameraRig->EnterTransitions.Add(TransitionBuilder.Get());
-	return TransitionBuilder;
-}
+	TCameraObjectInitializer<FCameraEvaluationContext>::SetObject(EvaluationContext.Get());
 
-TCameraRigTransitionTestBuilder<FCameraRigAssetTestBuilder> FCameraRigAssetTestBuilder::AddExitTransition()
-{
-	TCameraRigTransitionTestBuilder<ThisType> TransitionBuilder(*this, CameraRig);
-	CameraRig->ExitTransitions.Add(TransitionBuilder.Get());
-	return TransitionBuilder;
-}
-
-FCameraRigAssetTestBuilder& FCameraRigAssetTestBuilder::ExposeParameter(const FString& ParameterName, UCameraNode* Target, FName TargetPropertyName)
-{
-	UCameraRigInterfaceParameter* InterfaceParameter = NewObject<UCameraRigInterfaceParameter>(CameraRig);
-	InterfaceParameter->InterfaceParameterName = ParameterName;
-	InterfaceParameter->Target = Target;
-	InterfaceParameter->TargetPropertyName = TargetPropertyName;
-	NamedObjectRegistry->Register(InterfaceParameter, ParameterName);
-	CameraRig->Interface.InterfaceParameters.Add(InterfaceParameter);
-	return *this;
-}
-
-FCameraRigAssetTestBuilder& FCameraRigAssetTestBuilder::ExposeParameter(const FString& ParameterName, const FString& TargetName, FName TargetPropertyName)
-{
-	UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
-	ensure(Target);
-	return ExposeParameter(ParameterName, Target, TargetPropertyName);
+	NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
 }
 
 }  // namespace UE::Cameras::Test
