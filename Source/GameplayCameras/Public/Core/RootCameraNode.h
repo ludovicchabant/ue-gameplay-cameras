@@ -109,6 +109,9 @@ public:
 	/** Deactivates a camera rig. */
 	void DeactivateCameraRig(const FDeactivateCameraRigParams& Params);
 
+	/** Gets information about the active camera rig in the main layer. */
+	void GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const;
+
 	/**
 	 * Builds the hierarchy of the system for a given single camera rig.
 	 * This is expected to return the nodes of all the layers, except for the main layer which
@@ -139,6 +142,9 @@ protected:
 	
 	/** Deactivates a camera rig. */
 	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) {}
+
+	/** Gets information about the active camera rig in the main layer. */
+	virtual void OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const {}
 
 	/* Builds the hierarchy of the system for a given single camera rig. */
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) {}

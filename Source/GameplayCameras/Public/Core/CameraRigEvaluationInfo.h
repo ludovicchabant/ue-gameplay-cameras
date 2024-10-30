@@ -28,7 +28,7 @@ struct FCameraRigEvaluationInfo
 	TObjectPtr<const UCameraRigAsset> CameraRig;
 	/** The last evaluated result for this camera rig. */
 	const FCameraNodeEvaluationResult* LastResult = nullptr;
-	/** The blend node evaluator of the camera rig. */
+	/** The root node evaluator of the camera rig. */
 	FCameraNodeEvaluator* RootEvaluator = nullptr;
 
 	FCameraRigEvaluationInfo()
