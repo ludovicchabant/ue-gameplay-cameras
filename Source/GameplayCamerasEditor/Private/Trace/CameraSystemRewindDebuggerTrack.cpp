@@ -136,9 +136,18 @@ FName FCameraSystemRewindDebuggerTrackCreator::GetTargetTypeNameInternal() const
 	return TargetTypeName;
 }
 
-FName FCameraSystemRewindDebuggerTrackCreator::GetNameInternal() const
+namespace
 {
 	static const FName TrackName("Gameplay Camera System");
+}
+	
+FName FCameraSystemRewindDebuggerTrackCreator::GetNameInternal() const
+{
+	return TrackName;
+}
+	
+FName FCameraSystemRewindDebuggerTrack::GetNameInternal() const
+{
 	return TrackName;
 }
 

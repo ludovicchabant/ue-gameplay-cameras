@@ -43,6 +43,7 @@ protected:
 
 	virtual FSlateIcon GetIconInternal() override;
 	virtual FText GetDisplayNameInternal() const override;
+	virtual FName GetNameInternal() const override;
 	virtual TSharedPtr<SWidget> GetTimelineViewInternal() override;
 
 private:
