@@ -134,7 +134,7 @@ FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetActiveCameraRigEvalu
 				ActiveEntry.EvaluationContext.Pin(),
 				ActiveEntry.CameraRig, 
 				&ActiveEntry.Result,
-				ActiveEntry.RootEvaluator->GetRootEvaluator());
+				ActiveEntry.RootEvaluator ? ActiveEntry.RootEvaluator->GetRootEvaluator() : nullptr);
 		return Info;
 	}
 	return FCameraRigEvaluationInfo();
