@@ -37,7 +37,7 @@ private:
 
 	TSharedRef<SWidget> OnBuildCameraRigPicker();
 	FText OnGetComboButtonText() const;
-	void OnCameraRigSelected(UCameraRigAsset* CameraRig);
+	void OnCameraRigSelected(const FAssetData& InSelectedAsset);
 
 private:
 

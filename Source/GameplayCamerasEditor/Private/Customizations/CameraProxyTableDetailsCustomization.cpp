@@ -2,12 +2,13 @@
 
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 
+#include "ContentBrowserModule.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyTable.h"
 #include "DetailCategoryBuilder.h"
 #include "DetailWidgetRow.h"
-#include "Editors/CameraRigPickerConfig.h"
+#include "IContentBrowserSingleton.h"
 #include "IDetailChildrenBuilder.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "Modules/ModuleManager.h"
@@ -108,23 +109,32 @@ TSharedRef<SWidget> FCameraProxyTableEntryDetailsCustomization::OnBuildCameraRig
 		return SNullWidget::NullWidget;
 	}
 
-	IGameplayCamerasEditorModule& CamerasEditorModule = FModuleManager::LoadModuleChecked<IGameplayCamerasEditorModule>("GameplayCamerasEditor");
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::Get().LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 
 	TObjectPtr<UCameraRigAsset>* CameraRigPtr = (TObjectPtr<UCameraRigAsset>*)RawData[0];
 	UCameraAsset* OuterCameraAsset = ProxyTables[0]->GetTypedOuter<UCameraAsset>();
 
-	FCameraRigPickerConfig CameraRigPickerConfig;
-	CameraRigPickerConfig.bCanSelectCameraAsset = false;
-	CameraRigPickerConfig.InitialCameraAssetSelection = FAssetData(OuterCameraAsset);
-	CameraRigPickerConfig.OnCameraRigSelected = FOnCameraRigSelected::CreateSP(
-			this, &FCameraProxyTableEntryDetailsCustomization::OnCameraRigSelected);
-	CameraRigPickerConfig.PropertyToSet = CameraRigPropertyHandle;
-	CameraRigPickerConfig.InitialCameraRigSelection = (*CameraRigPtr);
+	FAssetPickerConfig CameraRigPickerConfig;
 
-	return CamerasEditorModule.CreateCameraRigPicker(CameraRigPickerConfig);
+	FARFilter ARFilter;
+	ARFilter.ClassPaths.Add(FTopLevelAssetPath(UCameraRigAsset::StaticClass()->GetPathName()));
+
+	CameraRigPickerConfig.bShowBottomToolbar = true;
+	CameraRigPickerConfig.bAllowNullSelection = true;
+	CameraRigPickerConfig.bFocusSearchBoxWhenOpened = true;
+	CameraRigPickerConfig.SelectionMode = ESelectionMode::Single;
+	CameraRigPickerConfig.Filter = ARFilter;
+	CameraRigPickerConfig.SaveSettingsName = TEXT("CameraProxyTableEntryRigPickerSettings");
+	CameraRigPickerConfig.InitialAssetViewType = EAssetViewType::List;
+	CameraRigPickerConfig.InitialAssetSelection = FAssetData(*CameraRigPtr);
+	CameraRigPickerConfig.OnAssetSelected = FOnAssetSelected::CreateSP(
+			this, &FCameraProxyTableEntryDetailsCustomization::OnCameraRigSelected);
+	CameraRigPickerConfig.PropertyHandle = CameraRigPropertyHandle;
+
+	return ContentBrowserModule.Get().CreateAssetPicker(CameraRigPickerConfig);
 }
 
-void FCameraProxyTableEntryDetailsCustomization::OnCameraRigSelected(UCameraRigAsset* CameraRig)
+void FCameraProxyTableEntryDetailsCustomization::OnCameraRigSelected(const FAssetData& InSelectedAsset)
 {
 	ComboButton->SetIsOpen(false);
 }

@@ -30,8 +30,6 @@ namespace UE::Cameras
 
 		/** Called when the camera director has been changed. */
 		virtual void OnCameraDirectorChanged(UCameraAsset* InCameraAsset, const TCameraPropertyChangedEvent<UCameraDirector*>& Event) {}
-		/** Changed when the camera rigs have been changed. */
-		virtual void OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event) {}
 		/* Changed when the enter transitions have been changed. */
 		virtual void OnEnterTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
 		/* Changed when the exit transitions have been changed. */
@@ -57,13 +55,6 @@ public:
 	UCameraDirector* GetCameraDirector() const { return CameraDirector; }
 	/** Sets the camera director. */
 	GAMEPLAYCAMERAS_API void SetCameraDirector(UCameraDirector* InCameraDirector);
-
-	/** Gets the camera rigs. */
-	TArrayView<const TObjectPtr<UCameraRigAsset>> GetCameraRigs() const { return CameraRigs; }
-	/** Adds a a camera rig. */
-	GAMEPLAYCAMERAS_API void AddCameraRig(UCameraRigAsset* InCameraRig);
-	/** Removes a camera rig. */
-	GAMEPLAYCAMERAS_API int32 RemoveCameraRig(UCameraRigAsset* InCameraRig);
 
 	/** Gets the enter transitions. */
 	TArrayView<const TObjectPtr<UCameraRigTransition>> GetEnterTransitions() const { return EnterTransitions; }
@@ -137,19 +128,13 @@ public:
 
 private:
 
-#if WITH_EDITOR
-	void CleanUpStrayObjects();
-#endif
-
-private:
-
 	/** The camera director to use in this camera. */
 	UPROPERTY(Instanced)
 	TObjectPtr<UCameraDirector> CameraDirector;
 
-	/** The list of camera rigs used by this camera. */
+	/** The list of camera rigs used by this camera (deprecated). */
 	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs;
+	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs_DEPRECATED;
 
 	/** A list of default enter transitions for all the camera rigs in this asset. */
 	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Input))

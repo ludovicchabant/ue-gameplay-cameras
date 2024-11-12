@@ -154,9 +154,7 @@ public:
 
 	/** Specifies a camera rig to be active this frame. */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(
-			UPARAM(meta=(UseBlueprintCameraDirectorRigPicker=true))
-			UCameraRigAsset* CameraRig);
+	void ActivateCameraRig(UCameraRigAsset* CameraRig);
 
 	/**
 	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved
@@ -164,18 +162,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
-
-	/**
-	 * Specifies an external camera rig prefab asset to be active this frame.
-	 */
-	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRigPrefab(UCameraRigAsset* CameraRig);
-
-	/** Gets a camera rig from the referencing camera asset. */
-	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(HideSelfPin=true))
-	UCameraRigAsset* GetCameraRig(
-			UPARAM(meta=(UseBlueprintCameraDirectorRigPicker=true))
-			UCameraRigAsset* CameraRig) const;
 
 public:
 
@@ -264,6 +250,7 @@ protected:
 	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) override;
 #if WITH_EDITOR
 	virtual void OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams) override;
+	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) override;
 #endif
 };
 

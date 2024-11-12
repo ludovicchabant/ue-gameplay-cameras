@@ -20,6 +20,14 @@ struct FCameraDirectorFactoryCreateParams
 {
 };
 
+/**
+ * Parameter struct for gathering camera rigs used by a director.
+ */
+struct FCameraDirectorRigUsageInfo
+{
+	TArray<UCameraRigAsset*> CameraRigs;
+};
+
 #endif
 
 /**
@@ -43,6 +51,9 @@ public:
 #if WITH_EDITOR
 	/** Called by the asset factories to setup new data before the editor opens. */
 	void FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams);
+
+	/** Gets the list of camera rigs used by this camera director. */
+	void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo);
 #endif
 
 protected:
@@ -56,6 +67,9 @@ protected:
 #if WITH_EDITOR
 	/** Called by the asset factories to setup new data before the editor opens. */
 	virtual void OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams) {}
+
+	/** Gets the list of camera rigs used by this camera director. */
+	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) {}
 #endif
 };
 

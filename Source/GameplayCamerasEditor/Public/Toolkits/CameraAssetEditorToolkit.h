@@ -72,6 +72,8 @@ private:
 	void OnJumpToObject(UObject* Object);
 	void OnJumpToObject(UObject* Object, FName PropertyName);
 
+	void UpgradeLegacyCameraAssets();
+
 private:
 
 	static const FName SearchTabId;

@@ -2,17 +2,22 @@
 
 #include "Toolkits/CameraAssetEditorToolkit.h"
 
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetTools/CameraAssetEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraRigAsset.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SFindInObjectTreeGraph.h"
+#include "FileHelpers.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "GameplayCamerasEditorSettings.h"
+#include "Helpers/ObjectReferenceFinder.h"
+#include "IAssetTools.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
@@ -22,9 +27,9 @@
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraDirectorAssetEditorMode.h"
-#include "Toolkits/CameraRigsAssetEditorMode.h"
 #include "Toolkits/CameraSharedTransitionsAssetEditorMode.h"
 #include "Toolkits/StandardToolkitLayout.h"
+#include "UObject/Package.h"
 #include "Widgets/Docking/SDockTab.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAssetEditorToolkit)
@@ -180,7 +185,6 @@ void FCameraAssetEditorToolkit::RegisterToolbar()
 
 		FToolMenuSection& ModesSection = ToolbarMenu->AddSection("EditorModes", TAttribute<FText>(), InsertAfterAssetSection);
 		ModesSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowCameraDirector));
-		ModesSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowCameraRigs));
 		ModesSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowSharedTransitions));
 	}
 }
@@ -218,16 +222,12 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 		AddEditorMode(CameraDirectorEditor.ToSharedRef());
 	}
 
-	const FName CameraRigsModeName = FCameraRigsAssetEditorMode::ModeName;
-	AddEditorMode(MakeShared<FCameraRigsAssetEditorMode>(CameraAsset));
-
 	const FName SharedTransitionsModeName = FCameraSharedTransitionsAssetEditorMode::ModeName;
 	AddEditorMode(MakeShared<FCameraSharedTransitionsAssetEditorMode>(CameraAsset));
 
 	const FCameraAssetEditorCommands& Commands = FCameraAssetEditorCommands::Get();
 	TMap<FName, TSharedPtr<FUICommandInfo>> ModeCommands;
 	ModeCommands.Add(CameraDirectorModeName, Commands.ShowCameraDirector);
-	ModeCommands.Add(CameraRigsModeName, Commands.ShowCameraRigs);
 	ModeCommands.Add(SharedTransitionsModeName, Commands.ShowSharedTransitions);
 	for (auto& Pair : ModeCommands)
 	{
@@ -252,8 +252,10 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 
 	const FName InitialModeName = !Settings->LastCameraAssetToolkitModeName.IsNone() ? 
-		Settings->LastCameraAssetToolkitModeName : CameraRigsModeName;
+		Settings->LastCameraAssetToolkitModeName : CameraDirectorModeName;
 	SetEditorMode(InitialModeName);
+
+	UpgradeLegacyCameraAssets();
 }
 
 void FCameraAssetEditorToolkit::OnEditorToolkitModeActivated()
@@ -271,23 +273,30 @@ void FCameraAssetEditorToolkit::OnBuild()
 		return;
 	}
 
+	FCameraDirectorRigUsageInfo UsageInfo;
+
 	FCameraBuildLog BuildLog;
 	FCameraAssetBuilder Builder(BuildLog);
 	Builder.BuildCamera(
 			CameraAsset,
 			FCameraAssetBuilder::FCustomBuildStep::CreateLambda(
-				[](UCameraAsset* InCameraAsset, FCameraBuildLog& BuildLog)
+				[&UsageInfo](UCameraAsset* InCameraAsset, FCameraBuildLog& BuildLog)
 				{
 					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
 					for (const FOnBuildCameraAsset& Builder : GameplayCamerasEditorModule.GetCameraAssetBuilders())
 					{
 						Builder.ExecuteIfBound(InCameraAsset, BuildLog);
 					}
-					for (UCameraRigAsset* CameraRig : InCameraAsset->GetCameraRigs())
+
+					if (UCameraDirector* CameraDirector = InCameraAsset->GetCameraDirector())
 					{
-						for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
+						CameraDirector->GatherRigUsageInfo(UsageInfo);
+						for (UCameraRigAsset* CameraRig : UsageInfo.CameraRigs)
 						{
-							Builder.ExecuteIfBound(CameraRig, BuildLog);
+							for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
+							{
+								Builder.ExecuteIfBound(CameraRig, BuildLog);
+							}
 						}
 					}
 				}));
@@ -299,7 +308,7 @@ void FCameraAssetEditorToolkit::OnBuild()
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
 
-	for (UCameraRigAsset* CameraRigAsset : CameraAsset->GetCameraRigs())
+	for (UCameraRigAsset* CameraRigAsset : UsageInfo.CameraRigs)
 	{
 		FCameraRigPackages BuiltPackages;
 		CameraRigAsset->GatherPackages(BuiltPackages);
@@ -319,10 +328,6 @@ void FCameraAssetEditorToolkit::OnFindInCamera()
 
 void FCameraAssetEditorToolkit::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	TSharedPtr<FCameraRigsAssetEditorMode> CameraRigsMode = GetTypedEditorMode<FCameraRigsAssetEditorMode>(
-			FCameraRigsAssetEditorMode::ModeName);
-	CameraRigsMode->OnGetRootObjectsToSearch(OutSources);
-
 	TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
 			FCameraSharedTransitionsAssetEditorMode::ModeName);
 	SharedTransitionsMode->OnGetRootObjectsToSearch(OutSources);
@@ -369,15 +374,6 @@ void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyNa
 		return;
 	}
 	
-	if (bFindInCameraRig)
-	{
-		TSharedPtr<FCameraRigsAssetEditorMode> CameraRigsMode = GetTypedEditorMode<FCameraRigsAssetEditorMode>(
-				FCameraRigsAssetEditorMode::ModeName);
-		SetEditorMode(FCameraRigsAssetEditorMode::ModeName);
-		CameraRigsMode->JumpToObject(Object, PropertyName);
-		return;
-	}
-
 	if (bFindInSharedTranstions)
 	{
 		TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
@@ -387,7 +383,6 @@ void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyNa
 		return;
 	}
 }
-
 
 FText FCameraAssetEditorToolkit::GetBaseToolkitName() const
 {
@@ -408,6 +403,143 @@ FString FCameraAssetEditorToolkit::GetWorldCentricTabPrefix() const
 FLinearColor FCameraAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
 	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
+}
+
+void FCameraAssetEditorToolkit::UpgradeLegacyCameraAssets()
+{
+	if (!CameraAsset)
+	{
+		return;
+	}
+
+	UPackage* CameraAssetPackage = CameraAsset->GetOutermost();
+	if (!CameraAssetPackage || CameraAssetPackage == GetTransientPackage())
+	{
+		return;
+	}
+
+	// Gather all camera rigs found inside the camera package. Camera rigs used to be "owned"
+	// by the camera asset, but now we want them all to be shared assets.
+	TSet<UCameraRigAsset*> KnownCameraRigs;
+	{
+		TArray<UObject*> ObjectsInPackage;
+		GetObjectsWithPackage(CameraAssetPackage, ObjectsInPackage);
+		for (UObject* Object : ObjectsInPackage)
+		{
+			if (UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(Object))
+			{
+				KnownCameraRigs.Add(CameraRig);
+			}
+
+			// Also clean up any redirectors. They used to be created for a short time when
+			// renaming owned camera rigs wasn't doing the right thing.
+			if (UObjectRedirector* Redirector = Cast<UObjectRedirector>(Object))
+			{
+				if (KnownCameraRigs.Contains(Cast<UCameraRigAsset>(Redirector->DestinationObject)))
+				{
+					CameraAsset->Modify();
+
+					Redirector->ClearFlags(RF_Public | RF_Standalone);
+					Redirector->DestinationObject = nullptr;
+				}
+			}
+		}
+	}
+
+	// No owned camera rigs? We are done.
+	if (KnownCameraRigs.IsEmpty())
+	{
+		return;
+	}
+
+	// Start working!
+	FScopedSlowTask SlowTask(KnownCameraRigs.Num() + 1,
+			LOCTEXT("UpgradeLegacyCameraAssets", "Upgrading legacy camera asset"));
+	SlowTask.MakeDialog(true);
+
+	IAssetRegistry& AssetRegistry = FAssetRegistryModule::GetRegistry();
+	IAssetTools& AssetTools = IAssetTools::Get();
+
+	TArray<UPackage*> PackagesToSave;
+	PackagesToSave.Add(CameraAssetPackage);
+
+	// Look for packages that reference one of our camera rigs. We don't need to patch up their references
+	// since they will still point to the same object, but we will need to re-save those packages because
+	// the serialized soft-object-path will have changed to the new standalone camera rig asset package.
+	{
+		SlowTask.EnterProgressFrame();
+
+		TArray<FName> OnDiskReferencers;
+		AssetRegistry.GetReferencers(CameraAssetPackage->GetFName(), OnDiskReferencers);
+		TArray<UObject*> KnownCameraRigsArray(KnownCameraRigs.Array());
+
+		for (FName OnDiskReferencer : OnDiskReferencers)
+		{
+			UPackage* ReferencerPackage = FindPackage(nullptr, *OnDiskReferencer.ToString());
+			if (!ensure(ReferencerPackage))
+			{
+				continue;
+			}
+
+			UObject* ReferencingAsset = ReferencerPackage->FindAssetInPackage();
+			if (!ensure(ReferencingAsset))
+			{
+				continue;
+			}
+
+			FObjectReferenceFinder ReferenceFinder(ReferencingAsset, KnownCameraRigsArray);
+			ReferenceFinder.CollectReferences();
+
+			if (ReferenceFinder.HasAnyObjectReference())
+			{
+				ReferencingAsset->Modify();
+				ReferencerPackage->MarkPackageDirty();
+				PackagesToSave.Add(ReferencerPackage);
+			}
+		}
+	}
+
+	// Now create individual assets for each camera rig.
+	const FString CameraRigsBaseName = CameraAsset->GetName();
+	const FString CameraRigsBasePath = FPaths::GetPath(CameraAssetPackage->GetPathName());
+	const EObjectFlags CameraRigFlags = RF_Public | RF_Standalone | RF_Transactional;
+
+	for (UCameraRigAsset* CameraRig : KnownCameraRigs)
+	{
+		SlowTask.EnterProgressFrame();
+
+		// Name the new camera rigs like this: "<CameraAsset>_<CameraRig>"
+		const FString CameraRigPackageName = FString::Printf(TEXT("%s_%s"), *CameraRigsBaseName, *CameraRig->GetDisplayName());
+
+		FString CameraRigPackagePath;
+		FString CameraRigAssetName;
+		AssetTools.CreateUniqueAssetName(
+				CameraRigsBasePath / CameraRigPackageName, FString(), CameraRigPackagePath, CameraRigAssetName);
+
+		// Create the new package, and move the camera rig inside it as its main asset.
+		UPackage* CameraRigPackage = CreatePackage(*CameraRigPackagePath);
+		CameraRig->Rename(*CameraRigAssetName, CameraRigPackage, REN_DontCreateRedirectors);
+		CameraRig->SetFlags(CameraRigFlags);
+
+		// Notify the asset registry that a new asset was created.
+		AssetRegistry.AssetCreated(CameraRig);
+
+		CameraRigPackage->MarkPackageDirty();
+
+		PackagesToSave.Add(CameraRigPackage);
+	}
+
+	// Prompt the user to save all assets.
+	FEditorFileUtils::FPromptForCheckoutAndSaveParams SaveParams;
+	SaveParams.bCheckDirty = false;
+	SaveParams.bPromptToSave = true;
+	SaveParams.Title = LOCTEXT("SaveUpgradedAsset_Title", "Save upgraded packages");
+	SaveParams.Message = LOCTEXT(
+			"SaveUpgradedAsset_Message", 
+			"This camera asset had legacy private camera rigs. "
+			"They have been re-created as standalone assets, and referencing packages have been fixed up. "
+			"Please save all new and modified packages.");
+	FEditorFileUtils::PromptForCheckoutAndSave(PackagesToSave, SaveParams);
 }
 
 }  // namespace UE::Cameras

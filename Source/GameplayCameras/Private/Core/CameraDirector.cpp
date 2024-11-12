@@ -24,5 +24,10 @@ void UCameraDirector::FactoryCreateAsset(const FCameraDirectorFactoryCreateParam
 	OnFactoryCreateAsset(InParams);
 }
 
+void UCameraDirector::GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+{
+	OnGatherRigUsageInfo(UsageInfo);
+}
+
 #endif
 

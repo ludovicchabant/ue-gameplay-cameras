@@ -9,7 +9,6 @@ public class GameplayCamerasEditor : ModuleRules
 		PrivateIncludePathModuleNames.AddRange(
 			new string[] 
 			{
-				"AssetTools",
 				"Kismet",
 				"EditorWidgets",
 				"MessageLog",
@@ -22,6 +21,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"ApplicationCore",
 				"AssetDefinition",
 				"AssetRegistry",
+				"AssetTools",
 				"BlueprintGraph",
 				"CinematicCamera",
 				"Core",

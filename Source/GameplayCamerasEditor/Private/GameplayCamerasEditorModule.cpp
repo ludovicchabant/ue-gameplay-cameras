@@ -6,28 +6,25 @@
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "AssetTools/CameraRigProxyAssetEditor.h"
 #include "AssetTools/CameraVariableCollectionEditor.h"
-#include "Builders/BlueprintCameraDirectorEditorBuilder.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Commands/CameraRigTransitionEditorCommands.h"
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
-#include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
-#include "Customizations/CameraRigPtrDetailsCustomization.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
+#include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraVariableReferenceDetailsCustomizations.h"
 #include "Customizations/FilmbackCameraNodeDetailsCustomization.h"
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
-#include "Debugger/SEvaluationServicesDebugPanel.h"
 #include "Debugger/SCameraPoseStatsDebugPanel.h"
+#include "Debugger/SEvaluationServicesDebugPanel.h"
 #include "Debugger/SGameplayCamerasDebugger.h"
 #include "Directors/BlueprintCameraDirector.h"
 #include "EdGraph/EdGraph.h"
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
-#include "Editors/SCameraRigPicker.h"
 #include "Editors/SCameraVariablePicker.h"
 #include "Features/IModularFeatures.h"
 #include "GameplayCameras.h"
@@ -156,14 +153,6 @@ public:
 		UCameraVariableCollectionEditor* AssetEditor = NewObject<UCameraVariableCollectionEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
 		AssetEditor->Initialize(VariableCollection);
 		return AssetEditor;
-	}
-
-	virtual TSharedRef<SWidget> CreateCameraRigPicker(const FCameraRigPickerConfig& InPickerConfig) override
-	{
-		using namespace UE::Cameras;
-
-		return SNew(SCameraRigPicker)
-			.CameraRigPickerConfig(InPickerConfig);
 	}
 
 	virtual TSharedRef<SWidget> CreateCameraVariablePicker(const FCameraVariablePickerConfig& InPickerConfig) override
@@ -345,11 +334,7 @@ private:
 
 	void RegisterBuilders()
 	{
-		using namespace UE::Cameras;
-
-		BuiltInCameraAssetBuilders.Add(
-				RegisterCameraAssetBuilder(FOnBuildCameraAsset::CreateStatic(
-						&FBlueprintCameraDirectorEditorBuilder::OnBuildCameraAsset)));
+		// No default builders yet.
 	}
 
 	void UnregisterBuilders()
@@ -485,8 +470,6 @@ private:
 
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigProxyTableEntry", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraProxyTableEntryDetailsCustomization::MakeInstance));
-		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAsset", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
-					&FCameraRigPtrDetailsCustomization::MakeInstance));
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAssetReference", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
 

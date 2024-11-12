@@ -715,7 +715,6 @@ public:
 	TScopedCameraRigAssetTestBuilder<ThisType> AddCameraRig(FName Name = NAME_None)
 	{
 		TScopedCameraRigAssetTestBuilder<ThisType> CameraRigBuilder(*this, GetNamedObjectRegistry(), Name, CameraAsset);
-		CameraAsset->AddCameraRig(CameraRigBuilder.Get());
 		return CameraRigBuilder;
 	}
 

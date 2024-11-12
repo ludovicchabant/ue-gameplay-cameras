@@ -6,9 +6,9 @@
 #include "ContentBrowserModule.h"
 #include "Editor.h"
 #include "FileHelpers.h"
+#include "Helpers/ObjectReferenceFinder.h"
 #include "IContentBrowserSingleton.h"
 #include "ObjectTools.h"
-#include "Serialization/FindReferencersArchive.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "UObject/ObjectRedirector.h"
 #include "Widgets/Input/SButton.h"
@@ -422,11 +422,9 @@ void SDeleteCameraObjectDialog::ScanNextReferencingPackage()
 		return;
 	}
 
-	FFindReferencersArchive FindRefsArchive(PackageAsset, ObjectsToDelete);
-
-	TMap<UObject*, int32> NumReferencesMap;
-	TMultiMap<UObject*, FProperty*> ReferencingPropertiesMMap;
-	if (FindRefsArchive.GetReferenceCounts(NumReferencesMap, ReferencingPropertiesMMap) > 0)
+	FObjectReferenceFinder ReferenceFinder(PackageAsset, ObjectsToDelete);
+	ReferenceFinder.CollectReferences();
+	if (ReferenceFinder.HasAnyObjectReference())
 	{
 		// That package does reference one of the objects we want to delete. Keep it.
 		ReferencingPackages.Add(ReferencingPackageName);

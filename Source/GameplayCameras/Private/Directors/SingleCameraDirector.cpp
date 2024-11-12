@@ -52,15 +52,11 @@ void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& 
 
 #if WITH_EDITOR
 
-void USingleCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
+void USingleCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
 {
-	// Automatically set ourselves to use the first camera rig available.
-	if (UCameraAsset* OuterCameraAsset = GetTypedOuter<UCameraAsset>())
+	if (CameraRig)
 	{
-		if (OuterCameraAsset->GetCameraRigs().Num() > 0)
-		{
-			CameraRig = OuterCameraAsset->GetCameraRigs()[0];
-		}
+		UsageInfo.CameraRigs.Add(CameraRig);
 	}
 }
 

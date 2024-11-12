@@ -26,20 +26,5 @@ FSingleCameraDirectorAssetEditorMode::FSingleCameraDirectorAssetEditorMode(UCame
 	}
 }
 
-void FSingleCameraDirectorAssetEditorMode::OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event)
-{
-	USingleCameraDirector* CameraDirector = Cast<USingleCameraDirector>(InCameraAsset->GetCameraDirector());
-	if (!ensure(CameraDirector))
-	{
-		return;
-	}
-
-	if (!InCameraAsset->GetCameraRigs().Contains(CameraDirector->CameraRig))
-	{
-		CameraDirector->Modify();
-		CameraDirector->CameraRig = nullptr;
-	}
-}
-
 }  // namespace UE::Cameras
 

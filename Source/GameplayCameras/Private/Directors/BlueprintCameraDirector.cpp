@@ -12,9 +12,11 @@
 #include "Core/CameraRigProxyTable.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
+#include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/ControllerGameplayCameraEvaluationComponent.h"
 #include "GameplayCameras.h"
+#include "Helpers/OutgoingReferenceFinder.h"
 #include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraDirector)
@@ -291,18 +293,6 @@ void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProx
 	EvaluationResult.ActiveCameraRigProxies.Add(CameraRigProxy);
 }
 
-void UBlueprintCameraDirectorEvaluator::ActivateCameraRigPrefab(UCameraRigAsset* CameraRig)
-{
-	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
-}
-
-UCameraRigAsset* UBlueprintCameraDirectorEvaluator::GetCameraRig(UCameraRigAsset* CameraRig) const
-{
-	// This function is only here to provide an easy way to pick a camera rig from the referencing 
-	// camera asset, using the custom rig picker. Then we just return it.
-	return CameraRig;
-}
-
 AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
 {
 	if (EvaluationContext)
@@ -454,6 +444,26 @@ void UBlueprintCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactory
 	{
 		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
 	}
+}
+
+void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+{
+	using namespace UE::Cameras;
+
+	if (!CameraDirectorEvaluatorClass)
+	{
+		return;
+	}
+
+	UBlueprint* EvaluatorBlueprint = Cast<UBlueprint>(CameraDirectorEvaluatorClass->ClassGeneratedBy);
+	if (!ensure(EvaluatorBlueprint))
+	{
+		return;
+	}
+
+	FOutgoingReferenceFinder ReferenceFinder(EvaluatorBlueprint, UCameraRigAsset::StaticClass());
+	ReferenceFinder.CollectReferences();
+	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 }
 
 #endif

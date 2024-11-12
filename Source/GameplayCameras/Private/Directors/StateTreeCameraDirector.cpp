@@ -5,11 +5,14 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
 #include "Core/CameraRigProxyTable.h"
 #include "Directors/CameraDirectorStateTreeSchema.h"
 #include "GameplayCameras.h"
+#include "Helpers/OutgoingReferenceFinder.h"
 #include "Logging/TokenizedMessage.h"
+#include "StateTree.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeInstanceData.h"
 
@@ -270,6 +273,21 @@ void UStateTreeCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactory
 	{
 		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
 	}
+}
+
+void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+{
+	using namespace UE::Cameras;
+
+	UStateTree* StateTree = StateTreeReference.GetMutableStateTree();
+	if (!StateTree)
+	{
+		return;
+	}
+
+	FOutgoingReferenceFinder ReferenceFinder(StateTree, UCameraRigAsset::StaticClass());
+	ReferenceFinder.CollectReferences();
+	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 }
 
 #endif

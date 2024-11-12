@@ -18,10 +18,6 @@ public:
 
 	FBlueprintCameraDirectorAssetEditorMode(UCameraAsset* InCameraAsset);
 
-protected:
-
-	virtual void OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event) override;
-
 private:
 
 	TCameraEventHandler<ICameraAssetEventHandler> EventHandler;

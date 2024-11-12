@@ -27,33 +27,6 @@ void UCameraAsset::SetCameraDirector(UCameraDirector* InCameraDirector)
 	}
 }
 
-void UCameraAsset::AddCameraRig(UCameraRigAsset* InCameraRig)
-{
-	using namespace UE::Cameras;
-
-	ensure(InCameraRig);
-
-	CameraRigs.Add(InCameraRig);
-
-	TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent;
-	ChangedEvent.EventType = ECameraArrayChangedEventType::Add;
-	EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
-}
-
-int32 UCameraAsset::RemoveCameraRig(UCameraRigAsset* InCameraRig)
-{
-	using namespace UE::Cameras;
-
-	const int32 NumRemoved = CameraRigs.Remove(InCameraRig);
-	if (NumRemoved > 0)
-	{
-		TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent;
-		ChangedEvent.EventType = ECameraArrayChangedEventType::Remove;
-		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
-	}
-	return NumRemoved;
-}
-
 void UCameraAsset::AddEnterTransition(UCameraRigTransition* InTransition)
 {
 	using namespace UE::Cameras;
@@ -125,67 +98,10 @@ void UCameraAsset::PostLoad()
 			CameraDirector->ClearFlags(RF_Public | RF_Standalone);
 		}
 	}
-
-	CleanUpStrayObjects();
 #endif  // WITH_EDITOR
 }
 
 #if WITH_EDITOR
-
-void UCameraAsset::CleanUpStrayObjects()
-{
-	UPackage* CameraAssetPackage = GetOutermost();
-	if (!CameraAssetPackage || CameraAssetPackage == GetTransientPackage())
-	{
-		return;
-	}
-
-	// Some older versions of the camera editors had a bug that could lead to
-	// stray deleted camera rigs being left in the package. Let's clean them up.
-	TSet<UObject*> StrayObjects;
-	TSet<UCameraRigAsset*> KnownCameraRigs(CameraRigs);
-
-	TArray<UObject*> ObjectsInPackage;
-	GetObjectsWithPackage(CameraAssetPackage, ObjectsInPackage);
-	for (UObject* Object : ObjectsInPackage)
-	{
-		UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(Object);
-		if (!CameraRig)
-		{
-			continue;
-		}
-		if (KnownCameraRigs.Contains(CameraRig))
-		{
-			continue;
-		}
-
-		Modify();
-
-		CameraRig->ClearFlags(RF_Public | RF_Standalone);
-		StrayObjects.Add(CameraRig);
-	}
-
-	if (StrayObjects.Num() > 0)
-	{
-		// Also clean-up any redirectors to these objects.
-		for (UObject* Object : ObjectsInPackage)
-		{
-			if (UObjectRedirector* Redirector = Cast<UObjectRedirector>(Object))
-			{
-				if (StrayObjects.Contains(Redirector->DestinationObject))
-				{
-					Redirector->ClearFlags(RF_Public | RF_Standalone);
-					Redirector->DestinationObject = nullptr;
-				}
-			}
-		}
-
-		UE_LOG(LogCameraSystem, Warning,
-				TEXT("Cleaned up %d stray camera rigs in camera asset '%s'. Please resave the asset."),
-				StrayObjects.Num(), *GetPathNameSafe(this));
-	}
-}
-
 
 void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
@@ -197,11 +113,6 @@ void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChanged
 		TCameraPropertyChangedEvent<UCameraDirector*> ChangedEvent;
 		ChangedEvent.NewValue = CameraDirector;
 		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraDirectorChanged, this, ChangedEvent);
-	}
-	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, CameraRigs))
-	{
-		TCameraArrayChangedEvent<UCameraRigAsset*> ChangedEvent(PropertyChangedEvent.ChangeType);
-		EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraRigsChanged, this, ChangedEvent);
 	}
 	else if (PropertyName == GET_MEMBER_NAME_CHECKED(UCameraAsset, EnterTransitions))
 	{

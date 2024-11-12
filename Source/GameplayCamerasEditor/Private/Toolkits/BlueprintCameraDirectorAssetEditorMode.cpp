@@ -21,30 +21,6 @@ TSharedPtr<FCameraDirectorAssetEditorMode> FBlueprintCameraDirectorAssetEditorMo
 FBlueprintCameraDirectorAssetEditorMode::FBlueprintCameraDirectorAssetEditorMode(UCameraAsset* InCameraAsset)
 	: FCameraDirectorAssetEditorMode(InCameraAsset)
 {
-	if (InCameraAsset)
-	{
-		InCameraAsset->EventHandlers.Register(EventHandler, this);
-	}
-}
-
-void FBlueprintCameraDirectorAssetEditorMode::OnCameraRigsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigAsset*>& Event)
-{
-	UBlueprintCameraDirector* CameraDirector = Cast<UBlueprintCameraDirector>(InCameraAsset->GetCameraDirector());
-	if (!ensure(CameraDirector))
-	{
-		return;
-	}
-
-	TSet<UCameraRigAsset*> CameraRigs(InCameraAsset->GetCameraRigs());
-
-	for (FCameraRigProxyTableEntry& Entry : CameraDirector->CameraRigProxyTable->Entries)
-	{
-		if (!CameraRigs.Contains(Entry.CameraRig))
-		{
-			CameraDirector->CameraRigProxyTable->Modify();
-			Entry.CameraRig = nullptr;
-		}
-	}
 }
 
 }  // namespace UE::Cameras
