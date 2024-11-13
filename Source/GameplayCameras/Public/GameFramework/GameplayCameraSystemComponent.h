@@ -41,19 +41,19 @@ public:
 
 	/** Sets this component's actor as the view target for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	void ActivateCameraSystemForPlayerIndex(int32 PlayerIndex);
+	GAMEPLAYCAMERAS_API void ActivateCameraSystemForPlayerIndex(int32 PlayerIndex);
 
 	/** Sets this component's actor as the view target for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	void ActivateCameraSystemForPlayerController(APlayerController* PlayerController);
+	GAMEPLAYCAMERAS_API void ActivateCameraSystemForPlayerController(APlayerController* PlayerController);
 
 	/** Returns whether this component's actor is set as the view target for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	bool IsCameraSystemActiveForPlayController(APlayerController* PlayerController) const;
+	GAMEPLAYCAMERAS_API bool IsCameraSystemActiveForPlayController(APlayerController* PlayerController) const;
 
 	/** Removes this component's actor from being the view target. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	void DeactivateCameraSystem(AActor* NextViewTarget = nullptr);
+	GAMEPLAYCAMERAS_API void DeactivateCameraSystem(AActor* NextViewTarget = nullptr);
 
 public:
 

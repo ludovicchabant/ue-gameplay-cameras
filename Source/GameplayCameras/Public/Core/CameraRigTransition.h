@@ -21,7 +21,7 @@ namespace UE::Cameras
 /**
  * Parameter structure for camera transitions.
  */
-struct FCameraRigTransitionConditionMatchParams
+struct GAMEPLAYCAMERAS_API FCameraRigTransitionConditionMatchParams
 {
 	/** The previous camera rig. */
 	const UCameraRigAsset* FromCameraRig = nullptr;
@@ -37,11 +37,11 @@ struct FCameraRigTransitionConditionMatchParams
 /**
  * Base class for a camera transition condition.
  */
-UCLASS(Abstract, DefaultToInstanced, MinimalAPI, meta=(
+UCLASS(Abstract, DefaultToInstanced, meta=(
 			ObjectTreeGraphCategory="Transition Conditions",
 			ObjectTreeGraphSelfPinDirection="Output",
 			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
-class UCameraRigTransitionCondition 
+class GAMEPLAYCAMERAS_API UCameraRigTransitionCondition
 	: public UObject
 	, public IObjectTreeGraphObject
 {
@@ -130,8 +130,8 @@ enum class ECameraRigInitialOrientation
 /**
  * A camera transition.
  */
-UCLASS(MinimalAPI)
-class UCameraRigTransition 
+UCLASS()
+class GAMEPLAYCAMERAS_API UCameraRigTransition
 	: public UObject
 	, public IObjectTreeGraphObject
 {

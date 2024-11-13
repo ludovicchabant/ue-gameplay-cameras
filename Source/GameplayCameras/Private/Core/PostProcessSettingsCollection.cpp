@@ -128,6 +128,8 @@ void FPostProcessSettingsCollection::OverrideChanged(const FPostProcessSettings&
 		UE_SET_PP(LocalExposureDetailStrength);
 		UE_SET_PP(LocalExposureBlurredLuminanceBlend);
 		UE_SET_PP(LocalExposureBlurredLuminanceKernelSizePercent);
+		UE_SET_PP(LocalExposureHighlightThresholdStrength);
+		UE_SET_PP(LocalExposureShadowThresholdStrength);
 		UE_SET_PP(LocalExposureMiddleGreyBias);
 		UE_SET_PP(LensFlareIntensity);
 		UE_SET_PP(LensFlareTint);
@@ -204,6 +206,7 @@ void FPostProcessSettingsCollection::OverrideChanged(const FPostProcessSettings&
 
 		UE_SET_PP(LumenDiffuseColorBoost);
 		UE_SET_PP(LumenSkylightLeaking);
+		UE_SET_PP(LumenSkylightLeakingTint);
 		UE_SET_PP(LumenFullSkylightLeakingDistance);
 
 		UE_SET_PP(LumenRayLightingMode);
@@ -430,6 +433,8 @@ void FPostProcessSettingsCollection::InternalLerpChanged(const FPostProcessSetti
 		UE_LERP_PP(LocalExposureDetailStrength);
 		UE_LERP_PP(LocalExposureBlurredLuminanceBlend);
 		UE_LERP_PP(LocalExposureBlurredLuminanceKernelSizePercent);
+		UE_LERP_PP(LocalExposureHighlightThresholdStrength);
+		UE_LERP_PP(LocalExposureShadowThresholdStrength);
 		UE_LERP_PP(LocalExposureMiddleGreyBias);
 		UE_LERP_PP(LensFlareIntensity);
 		UE_LERP_PP(LensFlareTint);
@@ -515,6 +520,7 @@ void FPostProcessSettingsCollection::InternalLerpChanged(const FPostProcessSetti
 
 		UE_LERP_PP(LumenDiffuseColorBoost);
 		UE_LERP_PP(LumenSkylightLeaking);
+		UE_LERP_PP(LumenSkylightLeakingTint);
 		UE_LERP_PP(LumenFullSkylightLeakingDistance);
 
 		UE_SET_PP(LumenRayLightingMode);

@@ -20,7 +20,7 @@ struct FCameraNodeEvaluationResult;
  * A structure describing an active camera rig being evaluated, generally
  * inside a blend stack.
  */
-struct FCameraRigEvaluationInfo
+struct GAMEPLAYCAMERAS_API FCameraRigEvaluationInfo
 {
 	/** The context inside which the evaluation occurs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
