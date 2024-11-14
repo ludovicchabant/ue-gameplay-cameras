@@ -16,6 +16,7 @@
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
 #include "GameplayCamerasEditorSettings.h"
+#include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "Helpers/ObjectReferenceFinder.h"
 #include "IAssetTools.h"
 #include "IGameplayCamerasEditorModule.h"
@@ -256,6 +257,11 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 	SetEditorMode(InitialModeName);
 
 	UpgradeLegacyCameraAssets();
+}
+
+void FCameraAssetEditorToolkit::PostRegenerateMenusAndToolbars()
+{
+	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraAsset::StaticClass()));
 }
 
 void FCameraAssetEditorToolkit::OnEditorToolkitModeActivated()

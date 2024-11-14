@@ -33,6 +33,7 @@ protected:
 	virtual void UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager) override;
 	virtual void CreateWidgets() override;
 	virtual void PostInitAssetEditor() override;
+	virtual void PostRegenerateMenusAndToolbars() override;
 
 	// IToolkit interface
 	virtual FText GetBaseToolkitName() const override;

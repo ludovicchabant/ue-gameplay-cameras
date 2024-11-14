@@ -38,6 +38,7 @@ protected:
 	virtual void RegisterToolbar() override;
 	virtual void InitToolMenuContext(FToolMenuContext& MenuContext) override;
 	virtual void PostInitAssetEditor() override;
+	virtual void PostRegenerateMenusAndToolbars() override;
 
 	// IToolkit interface
 	virtual FText GetBaseToolkitName() const override;

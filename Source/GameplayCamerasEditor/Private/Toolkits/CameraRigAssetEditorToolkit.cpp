@@ -12,6 +12,7 @@
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
@@ -213,6 +214,13 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
+
+	RegenerateMenusAndToolbars();
+}
+
+void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()
+{
+	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraRigAsset::StaticClass()));
 }
 
 void FCameraRigAssetEditorToolkit::OnBuild()

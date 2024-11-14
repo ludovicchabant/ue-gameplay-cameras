@@ -5,6 +5,7 @@
 #include "AssetTools/CameraRigProxyAssetEditor.h"
 #include "Core/CameraRigProxyAsset.h"
 #include "Framework/Docking/LayoutExtender.h"
+#include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "PropertyEditorModule.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigProxyAssetEditorToolkit"
@@ -78,6 +79,12 @@ void FCameraRigProxyAssetEditorToolkit::CreateWidgets()
 
 void FCameraRigProxyAssetEditorToolkit::PostInitAssetEditor()
 {
+	RegenerateMenusAndToolbars();
+}
+
+void FCameraRigProxyAssetEditorToolkit::PostRegenerateMenusAndToolbars()
+{
+	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraRigProxyAsset::StaticClass()));
 }
 
 FText FCameraRigProxyAssetEditorToolkit::GetBaseToolkitName() const

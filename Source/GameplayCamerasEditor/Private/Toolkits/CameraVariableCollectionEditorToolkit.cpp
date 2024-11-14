@@ -10,6 +10,7 @@
 #include "Editors/SCameraVariableCollectionEditor.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IContentBrowserSingleton.h"
 #include "Modules/ModuleManager.h"
 #include "ObjectTools.h"
@@ -226,6 +227,13 @@ void FCameraVariableCollectionEditorToolkit::PostInitAssetEditor()
 		Commands.DeleteVariable,
 		FExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::OnDeleteVariable),
 		FCanExecuteAction::CreateSP(this, &FCameraVariableCollectionEditorToolkit::CanDeleteVariable));
+
+	RegenerateMenusAndToolbars();
+}
+
+void FCameraVariableCollectionEditorToolkit::PostRegenerateMenusAndToolbars()
+{
+	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraVariableCollection::StaticClass()));
 }
 
 FText FCameraVariableCollectionEditorToolkit::GetBaseToolkitName() const
