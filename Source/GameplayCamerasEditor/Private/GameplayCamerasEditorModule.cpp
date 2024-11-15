@@ -11,6 +11,7 @@
 #include "Commands/CameraRigTransitionEditorCommands.h"
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
+#include "Commands/ObjectTreeGraphEditorCommands.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
@@ -108,6 +109,7 @@ public:
 		FCameraRigTransitionEditorCommands::Unregister();
 		FCameraVariableCollectionEditorCommands::Unregister();
 		FGameplayCamerasDebuggerCommands::Unregister();
+		FObjectTreeGraphEditorCommands::Unregister();
 
 		UnregisterSettings();
 		UnregisterCameraDirectorEditors();
@@ -431,6 +433,7 @@ private:
 		FCameraRigTransitionEditorCommands::Register();
 		FCameraVariableCollectionEditorCommands::Register();
 		FGameplayCamerasDebuggerCommands::Register();
+		FObjectTreeGraphEditorCommands::Register();
 	}
 
 	void RegisterRewindDebuggerFeatures()

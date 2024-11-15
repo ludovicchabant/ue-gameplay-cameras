@@ -22,18 +22,26 @@ class UObjectTreeGraphNode;
 struct FObjectTreeGraphConfig;
 
 DECLARE_DELEGATE_OneParam(FOnBuildObjectTreeGraphConfig, FObjectTreeGraphConfig& InOutConfig);
+
+DECLARE_DELEGATE_OneParam(FOnSetupNewObject, UObject*);
 DECLARE_DELEGATE_RetVal_OneParam(FText, FOnGetObjectClassDisplayName, const UClass*);
-DECLARE_DELEGATE_TwoParams(FOnFormatObjectDisplayName, const UObject*, FText&);
+
 DECLARE_DELEGATE_TwoParams(FOnGetGraphDisplayInfo, const UObjectTreeGraph*, FGraphDisplayInfo&);
+DECLARE_DELEGATE_TwoParams(FOnFormatObjectDisplayName, const UObject*, FText&);
 
 #define OTGCC_FIELD(FieldType, FieldName)\
 	public:\
 		typename TCallTraits<FieldType>::ConstReference FieldName() const\
 			{ return _##FieldName; }\
 		FObjectTreeGraphClassConfig& FieldName(typename TCallTraits<FieldType>::ParamType InValue)\
-			{ _##FieldName = InValue; return *this; }\
+			{ _##FieldName = InValue; _bOverride##FieldName = true; return *this; }\
+		bool Has##FieldName##Override() const\
+			{ return _bOverride##FieldName; }\
 	private:\
 		FieldType _##FieldName;
+
+#define OTGCC_FIELD_FLAG(FieldName)\
+		bool _bOverride##FieldName;
 
 /**
  * A structure providing optional configuration options for a given object class.
@@ -62,9 +70,12 @@ public:
 	/** Color of the graph node's body. */
 	OTGCC_FIELD(TOptional<FLinearColor>, NodeBodyTintColor)
 
+	/** A custom callback to setup a newly created object added in the graph editor. */
+	OTGCC_FIELD(FOnSetupNewObject, OnSetupNewObject)
+
 	/** Whether the graph node title uses the underlying object's name instead of its class name. */
 	OTGCC_FIELD(bool, NodeTitleUsesObjectName)
-	/** A custom call back to get the object's display name used in the graph node title. */
+	/** A custom callback to get the object's display name used in the graph node title. */
 	OTGCC_FIELD(FOnGetObjectClassDisplayName, OnGetObjectClassDisplayName)
 
 	/** Whether users can create new objects of this class in the graph. */
@@ -74,6 +85,24 @@ public:
 
 	/** The metadata specifier to look for in order to categorize the 'create node' action for this class. */
 	OTGCC_FIELD(FName, CreateCategoryMetaData)
+
+private:
+
+	// Packed flags.
+	OTGCC_FIELD_FLAG(GraphNodeClass)
+	OTGCC_FIELD_FLAG(SelfPinName)
+	OTGCC_FIELD_FLAG(SelfPinFriendlyName)
+	OTGCC_FIELD_FLAG(SelfPinDirectionOverride)
+	OTGCC_FIELD_FLAG(HasSelfPin)
+	OTGCC_FIELD_FLAG(DefaultPropertyPinDirectionOverride)
+	OTGCC_FIELD_FLAG(NodeTitleColor)
+	OTGCC_FIELD_FLAG(NodeBodyTintColor)
+	OTGCC_FIELD_FLAG(OnSetupNewObject)
+	OTGCC_FIELD_FLAG(NodeTitleUsesObjectName)
+	OTGCC_FIELD_FLAG(OnGetObjectClassDisplayName)
+	OTGCC_FIELD_FLAG(CanCreateNew)
+	OTGCC_FIELD_FLAG(CanDelete)
+	OTGCC_FIELD_FLAG(CreateCategoryMetaData)
 
 public:
 
@@ -126,6 +155,89 @@ private:
 	TArray<FString> _StripDisplayNameSuffixes;
 	TMap<FName, EEdGraphPinDirection> _PropertyPinDirectionOverrides;
 };
+
+#undef OTGCC_FIELD
+#undef OTGCC_FIELD_FLAG
+
+#define OTGCCS_FIELD(FieldType, FieldName)\
+	public:\
+		typename TCallTraits<FieldType>::ConstReference FieldName() const\
+		{\
+			for (const FObjectTreeGraphClassConfig* InnerConfig : InnerConfigs)\
+			{\
+				if (InnerConfig->Has##FieldName##Override())\
+				{\
+					return InnerConfig->FieldName();\
+				}\
+			}\
+			return DefaultConfig.FieldName();\
+		}
+
+/**
+ * A composite of multiple class configurations, for handling configuration options set on
+ * different classes in a class hierarchy.
+ */
+struct FObjectTreeGraphClassConfigs
+{
+public:
+
+	/** The subclass of graph nodes to create. */
+	OTGCCS_FIELD(TSubclassOf<UObjectTreeGraphNode>, GraphNodeClass)
+
+	/** The name of the self pin. */
+	OTGCCS_FIELD(FName, SelfPinName)
+	/** The display name of the self pin. */
+	OTGCCS_FIELD(FText, SelfPinFriendlyName)
+	/** The direction of the self pin. */
+	OTGCCS_FIELD(TOptional<EEdGraphPinDirection>, SelfPinDirectionOverride)
+	/** Whether graph nodes for this class have a self pin. */
+	OTGCCS_FIELD(bool, HasSelfPin)
+
+	/** Default direction of property pins. */
+	OTGCCS_FIELD(TOptional<EEdGraphPinDirection>, DefaultPropertyPinDirectionOverride)
+
+	/** Color of the graph node's title. */
+	OTGCCS_FIELD(TOptional<FLinearColor>, NodeTitleColor)
+	/** Color of the graph node's body. */
+	OTGCCS_FIELD(TOptional<FLinearColor>, NodeBodyTintColor)
+
+	/** A custom callback to setup a newly created object added in the graph editor. */
+	OTGCCS_FIELD(FOnSetupNewObject, OnSetupNewObject)
+
+	/** Whether the graph node title uses the underlying object's name instead of its class name. */
+	OTGCCS_FIELD(bool, NodeTitleUsesObjectName)
+	/** A custom callback to get the object's display name used in the graph node title. */
+	OTGCCS_FIELD(FOnGetObjectClassDisplayName, OnGetObjectClassDisplayName)
+
+	/** Whether users can create new objects of this class in the graph. */
+	OTGCCS_FIELD(bool, CanCreateNew)
+	/** Whether users can duplicate objects of this class in the graph. */
+	OTGCCS_FIELD(bool, CanDelete)
+
+	/** The metadata specifier to look for in order to categorize the 'create node' action for this class. */
+	OTGCCS_FIELD(FName, CreateCategoryMetaData)
+
+public:
+
+	FObjectTreeGraphClassConfigs();
+	FObjectTreeGraphClassConfigs(TArrayView<const FObjectTreeGraphClassConfig*> InClassConfigs);
+
+public:
+
+	/** Gets the name suffixes to strip. */
+	void GetStripDisplayNameSuffixes(TArray<FString>& OutSuffixes) const;
+
+	/** Gets the custom property pin direction for a given named property. */
+	TOptional<EEdGraphPinDirection> GetPropertyPinDirectionOverride(const FName& InPropertyName) const;
+
+private:
+
+	static FObjectTreeGraphClassConfig DefaultConfig;
+
+	TArray<const FObjectTreeGraphClassConfig*, TInlineAllocator<2>> InnerConfigs;
+};
+
+#undef OTGCCS_FIELD
 
 /**
  * A structure that provides all the information needed to build, edit, and maintain an 
@@ -215,7 +327,7 @@ public:
 	void GetConnectableClasses(TArray<UClass*>& OutClasses, bool bPlaceableOnly = false);
 	
 	/** Gets the advanced class-specific configuration for the given class. */
-	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UClass* InObjectClass) const;
+	FObjectTreeGraphClassConfigs GetObjectClassConfigs(const UClass* InObjectClass) const;
 
 	/** Computes the display name of the given object. */
 	FText GetDisplayNameText(const UObject* InObject) const;
@@ -230,7 +342,7 @@ public:
 
 private:
 
-	FText GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfig& InClassConfig) const;
-	void FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfig& InClassConfig, FText& InOutDisplayNameText) const;
+	FText GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfigs& InClassConfig) const;
+	void FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfigs& InClassConfig, FText& InOutDisplayNameText) const;
 };
 

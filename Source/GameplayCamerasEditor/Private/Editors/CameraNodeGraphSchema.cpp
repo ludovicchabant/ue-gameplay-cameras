@@ -15,6 +15,7 @@
 #include "Editors/ObjectTreeGraphNode.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "GameplayCamerasEditorSettings.h"
+#include "Nodes/Common/ArrayCameraNode.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
@@ -53,6 +54,14 @@ FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
 		.SelfPinName(NAME_None)  // No self pin name, we just want the title
 		.CanCreateNew(false)
 		.GraphNodeClass(UCameraRigInterfaceParameterGraphNode::StaticClass());
+	GraphConfig.ObjectClassConfigs.Emplace(UArrayCameraNode::StaticClass())
+		.OnSetupNewObject(FOnSetupNewObject::CreateLambda([](UObject* NewObject)
+				{
+					// Add two new pins by default.
+					UArrayCameraNode* ArrayNode = CastChecked<UArrayCameraNode>(NewObject);
+					ArrayNode->Children.AddDefaulted();
+					ArrayNode->Children.AddDefaulted();
+				}));
 
 	return GraphConfig;
 }
@@ -205,7 +214,7 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 	return Super::CanCreateConnection(A, B);
 }
 
-bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
+bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
 	// Try to make a connection between a camera node's parameter pin and a camera rig interface parameter.
 	// First, figure out which is which.
@@ -269,7 +278,7 @@ bool UCameraNodeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, F
 	return true;
 }
 
-bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
+bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin) const
 {
 	// See if we have a rig parameter connection to break.
 	if (TargetPin->PinType.PinCategory == PC_Self || TargetPin->PinType.PinCategory == PC_CameraParameter)
@@ -302,17 +311,17 @@ bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin, FDelay
 	return false;
 }
 
-bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
+bool UCameraNodeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
 	UObjectTreeGraphNode* RigParameterNode = nullptr;
 
 	if (SourcePin->PinType.PinCategory == PC_Self && TargetPin->PinType.PinCategory == PC_CameraParameter)
 	{
-		return OnApplyDisconnection(SourcePin, Actions, false);
+		return OnApplyDisconnection(SourcePin);
 	}
 	else if (SourcePin->PinType.PinCategory == PC_CameraParameter && TargetPin->PinType.PinCategory == PC_Self)
 	{
-		return OnApplyDisconnection(TargetPin, Actions, false);
+		return OnApplyDisconnection(TargetPin);
 	}
 
 	return false;

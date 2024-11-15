@@ -3,6 +3,7 @@
 #include "Editors/SObjectTreeGraphEditor.h"
 
 #include "Algo/AnyOf.h"
+#include "Commands/ObjectTreeGraphEditorCommands.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "Editor.h"
@@ -75,6 +76,8 @@ SObjectTreeGraphEditor::~SObjectTreeGraphEditor()
 
 void SObjectTreeGraphEditor::InitializeBuiltInCommands()
 {
+	using namespace UE::Cameras;
+
 	if (BuiltInCommands.IsValid())
 	{
 		return;
@@ -82,6 +85,7 @@ void SObjectTreeGraphEditor::InitializeBuiltInCommands()
 
 	const FGenericCommands& GenericCommands = FGenericCommands::Get();
 	const FGraphEditorCommandsImpl& GraphEditorCommands = FGraphEditorCommands::Get();
+	const FObjectTreeGraphEditorCommands& ObjectTreeGraphEditorCommands = FObjectTreeGraphEditorCommands::Get();
 
 	BuiltInCommands = MakeShared<FUICommandList>();
 
@@ -156,6 +160,17 @@ void SObjectTreeGraphEditor::InitializeBuiltInCommands()
 
 	BuiltInCommands->MapAction(GraphEditorCommands.DistributeNodesVertically,
 			FExecuteAction::CreateSP(this, &SObjectTreeGraphEditor::OnDistributeNodesVertically)
+			);
+
+	// Custom commands.
+	BuiltInCommands->MapAction(ObjectTreeGraphEditorCommands.InsertArrayItemPinBefore,
+			FExecuteAction::CreateSP(this, &SObjectTreeGraphEditor::OnInsertArrayItemPinBefore)
+			);
+	BuiltInCommands->MapAction(ObjectTreeGraphEditorCommands.InsertArrayItemPinAfter,
+			FExecuteAction::CreateSP(this, &SObjectTreeGraphEditor::OnInsertArrayItemPinAfter)
+			);
+	BuiltInCommands->MapAction(ObjectTreeGraphEditorCommands.RemoveArrayItemPin,
+			FExecuteAction::CreateSP(this, &SObjectTreeGraphEditor::OnRemoveArrayItemPin)
 			);
 }
 
@@ -591,6 +606,51 @@ void SObjectTreeGraphEditor::OnDistributeNodesHorizontally()
 void SObjectTreeGraphEditor::OnDistributeNodesVertically()
 {
 	GraphEditor->OnDistributeNodesV();
+}
+
+void SObjectTreeGraphEditor::OnInsertArrayItemPinBefore()
+{
+	if (UEdGraphPin* SelectedPin = GraphEditor->GetGraphPinForMenu())
+	{
+		UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
+		const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(CurrentGraph->GetSchema());
+
+		Schema->InsertArrayItemPinBefore(SelectedPin);
+
+		GraphEditor->RefreshNode(*SelectedPin->GetOwningNode());
+	}
+}
+
+void SObjectTreeGraphEditor::OnInsertArrayItemPinAfter()
+{
+	if (UEdGraphPin* SelectedPin = GraphEditor->GetGraphPinForMenu())
+	{
+		UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
+		const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(CurrentGraph->GetSchema());
+
+		Schema->InsertArrayItemPinAfter(SelectedPin);
+
+		GraphEditor->RefreshNode(*SelectedPin->GetOwningNode());
+	}
+}
+
+void SObjectTreeGraphEditor::OnRemoveArrayItemPin()
+{
+	if (UEdGraphPin* SelectedPin = GraphEditor->GetGraphPinForMenu())
+	{
+		UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
+		const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(CurrentGraph->GetSchema());
+
+		// Get owning node before we remove the pin.
+		UEdGraphNode* OwningNode = SelectedPin->GetOwningNode();
+		
+		Schema->RemoveArrayItemPin(SelectedPin);
+
+		if (ensure(OwningNode))
+		{
+			GraphEditor->RefreshNode(*OwningNode);
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -65,8 +65,6 @@ void FObjectTreeGraphSearch::SearchObject(UObject* InObject, FSearchState& InOut
 	UClass* ObjectClass = InObject->GetClass();
 	const FObjectTreeGraphConfig& GraphConfig(*InOutState.GraphConfig);
 
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = GraphConfig.GetObjectClassConfig(ObjectClass);
-
 	if (MatchObject(InObject, InOutState))
 	{
 		InOutState.Results.Add(FSearchResult{ InOutState.RootObject, InOutState.GraphConfig, InObject });

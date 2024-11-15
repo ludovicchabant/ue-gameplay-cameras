@@ -4,6 +4,7 @@
 
 #include "Containers/Array.h"
 #include "EdGraph/EdGraphNode.h"
+#include "Editors/ObjectTreeGraphConfig.h"
 #include "UObject/UObjectGlobals.h"
 
 #include "ObjectTreeGraphNode.generated.h"
@@ -11,8 +12,6 @@
 class FObjectProperty;
 class UEdGraphPin;
 class UObjectTreeGraph;
-struct FObjectTreeGraphConfig;
-struct FObjectTreeGraphClassConfig;
 
 /**
  * A graph node that represents an object inside an object tree graph.
@@ -47,10 +46,10 @@ public:
 
 	/** Finds the pin for the given object property. */
 	UEdGraphPin* GetPinForProperty(FObjectProperty* InProperty) const;
+	/** Finds the invisible parent pin for the given array property. */
+	UEdGraphPin* GetPinForProperty(FArrayProperty* InProperty) const;
 	/** Finds the pin for the given item in an array property. */
 	UEdGraphPin* GetPinForProperty(FArrayProperty* InProperty, int32 Index) const;
-	/** Finds the extra free pin used to add new items in an array property. */
-	UEdGraphPin* GetPinForPropertyNewItem(FArrayProperty* InProperty, bool bCreateNew);
 	/** Gets the underlying property represented by the given pin. */
 	FProperty* GetPropertyForPin(const UEdGraphPin* InPin) const;
 	/** Gets the type of object that can connect to the given pin. */
@@ -87,8 +86,10 @@ public:
 public:
 
 	// Internal API.
-	void CreateNewItemPin(FArrayProperty& InArrayProperty);
-	void CreateNewItemPin(UEdGraphPin* InParentArrayPin);
+	void GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties) const;
+	void CreateNewItemPins(FArrayProperty& InArrayProperty, int32 NumExtraPins);
+	void CreateNewItemPins(UEdGraphPin* InParentArrayPin, int32 NumExtraPins);
+	void InsertNewItemPin(UEdGraphPin* InParentArrayPin, int32 Index);
 	void RemoveItemPin(UEdGraphPin* InItemPin);
 	void RefreshArrayPropertyPinNames();
 
@@ -99,11 +100,11 @@ protected:
 		UClass* ObjectClass;
 		UObjectTreeGraph* Graph;
 		const FObjectTreeGraphConfig& GraphConfig;
-		const FObjectTreeGraphClassConfig& ObjectClassConfig;
+		const FObjectTreeGraphClassConfigs ObjectClassConfigs;
 	};
 
 	FNodeContext GetNodeContext() const;
-	const FObjectTreeGraphClassConfig& GetObjectClassConfig() const;
+	const FObjectTreeGraphClassConfigs GetObjectClassConfigs() const;
 
 private:
 

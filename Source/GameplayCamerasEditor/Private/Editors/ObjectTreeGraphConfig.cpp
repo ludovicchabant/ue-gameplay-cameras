@@ -28,6 +28,38 @@ FObjectTreeGraphClassConfig& FObjectTreeGraphClassConfig::OnlyAsRoot()
 	return *this;
 }
 
+FObjectTreeGraphClassConfig FObjectTreeGraphClassConfigs::DefaultConfig;
+
+FObjectTreeGraphClassConfigs::FObjectTreeGraphClassConfigs()
+{
+}
+
+FObjectTreeGraphClassConfigs::FObjectTreeGraphClassConfigs(TArrayView<const FObjectTreeGraphClassConfig*> InClassConfigs)
+	: InnerConfigs(InClassConfigs)
+{
+}
+
+void FObjectTreeGraphClassConfigs::GetStripDisplayNameSuffixes(TArray<FString>& OutSuffixes) const
+{
+	for (const FObjectTreeGraphClassConfig* InnerConfig : InnerConfigs)
+	{
+		OutSuffixes.Append(InnerConfig->StripDisplayNameSuffixes());
+	}
+}
+
+TOptional<EEdGraphPinDirection> FObjectTreeGraphClassConfigs::GetPropertyPinDirectionOverride(const FName& InPropertyName) const
+{
+	for (const FObjectTreeGraphClassConfig* InnerConfig : InnerConfigs)
+	{
+		TOptional<EEdGraphPinDirection> DirectionOverride = InnerConfig->GetPropertyPinDirectionOverride(InPropertyName);
+		if (DirectionOverride.IsSet())
+		{
+			return DirectionOverride;
+		}
+	}
+	return TOptional<EEdGraphPinDirection>();
+}
+
 FObjectTreeGraphConfig::FObjectTreeGraphConfig()
 	: DefaultGraphNodeTitleColor(FLinearColor(0.549f, 0.745f, 0.698f))
 	, DefaultGraphNodeBodyTintColor(FLinearColor::White)
@@ -124,7 +156,7 @@ void FObjectTreeGraphConfig::GetConnectableClasses(TArray<UClass*>& OutClasses, 
 				continue;
 			}
 
-			const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(*ClassIt);
+			const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(*ClassIt);
 			if (!ClassConfig.CanCreateNew())
 			{
 				continue;
@@ -135,22 +167,22 @@ void FObjectTreeGraphConfig::GetConnectableClasses(TArray<UClass*>& OutClasses, 
 	}
 }
 
-const FObjectTreeGraphClassConfig& FObjectTreeGraphConfig::GetObjectClassConfig(const UClass* InObjectClass) const
+FObjectTreeGraphClassConfigs FObjectTreeGraphConfig::GetObjectClassConfigs(const UClass* InObjectClass) const
 {
-	static const FObjectTreeGraphClassConfig DefaultClassConfig;
+	TArray<const FObjectTreeGraphClassConfig*, TInlineAllocator<2>> ClassConfigs;
 	
 	while (InObjectClass)
 	{
 		const FObjectTreeGraphClassConfig* ClassConfig = ObjectClassConfigs.Find(InObjectClass);
 		if (ClassConfig)
 		{
-			return *ClassConfig;
+			ClassConfigs.Add(ClassConfig);
 		}
 
 		InObjectClass = InObjectClass->GetSuperClass();
 	}
 
-	return DefaultClassConfig;
+	return FObjectTreeGraphClassConfigs(ClassConfigs);
 }
 
 FText FObjectTreeGraphConfig::GetDisplayNameText(const UObject* InObject) const
@@ -158,7 +190,7 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UObject* InObject) const
 	if (InObject)
 	{
 		FText DisplayNameText;
-		const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObject->GetClass());
+		const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(InObject->GetClass());
 
 		const IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
 		if (GraphObject && GraphObject->HasSupportFlags(GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename))
@@ -186,13 +218,13 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass) const
 {
 	if (InClass)
 	{
-		const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InClass);
+		const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(InClass);
 		return GetDisplayNameText(InClass, ClassConfig);
 	}
 	return FText::GetEmpty();
 }
 
-FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfig& InClassConfig) const
+FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass, const FObjectTreeGraphClassConfigs& InClassConfig) const
 {
 	check(InClass);
 	
@@ -206,12 +238,14 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UClass* InClass, const FO
 	return DisplayNameText;
 }
 
-void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfig& InClassConfig, FText& InOutDisplayNameText) const
+void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, const FObjectTreeGraphClassConfigs& InClassConfig, FText& InOutDisplayNameText) const
 {
-	if (InClassConfig.StripDisplayNameSuffixes().Num() > 0)
+	TArray<FString> StripSuffixes;
+	InClassConfig.GetStripDisplayNameSuffixes(StripSuffixes);
+	if (StripSuffixes.Num() > 0)
 	{
 		FString DisplayName = InOutDisplayNameText.ToString();
-		for (const FString& StripSuffix : InClassConfig.StripDisplayNameSuffixes())
+		for (const FString& StripSuffix : StripSuffixes)
 		{
 			if (DisplayName.RemoveFromEnd(StripSuffix))
 			{
@@ -228,7 +262,7 @@ void FObjectTreeGraphConfig::FormatDisplayNameText(const UObject* InObject, cons
 
 EEdGraphPinDirection FObjectTreeGraphConfig::GetSelfPinDirection(const UClass* InObjectClass) const
 {
-	const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObjectClass);
+	const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(InObjectClass);
 	TOptional<EEdGraphPinDirection> PinDirectionOverride = ClassConfig.SelfPinDirectionOverride();
 	if (PinDirectionOverride.IsSet())
 	{
@@ -255,7 +289,7 @@ EEdGraphPinDirection FObjectTreeGraphConfig::GetSelfPinDirection(const UClass* I
 
 EEdGraphPinDirection FObjectTreeGraphConfig::GetPropertyPinDirection(const UClass* InObjectClass, const FName& InPropertyName) const
 {
-	const FObjectTreeGraphClassConfig& ClassConfig = GetObjectClassConfig(InObjectClass);
+	const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(InObjectClass);
 	TOptional<EEdGraphPinDirection> PinDirectionOverride = ClassConfig.GetPropertyPinDirectionOverride(InPropertyName);
 	if (PinDirectionOverride.IsSet())
 	{

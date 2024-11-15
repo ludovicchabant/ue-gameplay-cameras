@@ -53,13 +53,13 @@ TSharedPtr<SGraphNode> UObjectTreeGraphNode::CreateVisualWidget()
 FLinearColor UObjectTreeGraphNode::GetNodeTitleColor() const
 {
 	const FNodeContext NodeContext = GetNodeContext();
-	return NodeContext.ObjectClassConfig.NodeTitleColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleColor);
+	return NodeContext.ObjectClassConfigs.NodeTitleColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleColor);
 }
 
 FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 {
 	const FNodeContext NodeContext = GetNodeContext();
-	return NodeContext.ObjectClassConfig.NodeBodyTintColor().Get(NodeContext.GraphConfig.DefaultGraphNodeBodyTintColor);
+	return NodeContext.ObjectClassConfigs.NodeBodyTintColor().Get(NodeContext.GraphConfig.DefaultGraphNodeBodyTintColor);
 }
 
 FText UObjectTreeGraphNode::GetTooltipText() const
@@ -82,15 +82,15 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 
 	const FNodeContext NodeContext = GetNodeContext();
 	const FObjectTreeGraphConfig& OuterGraphConfig = NodeContext.GraphConfig;
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = NodeContext.ObjectClassConfig;
+	const FObjectTreeGraphClassConfigs ObjectClassConfigs = NodeContext.ObjectClassConfigs;
 
-	if (ObjectClassConfig.HasSelfPin())
+	if (ObjectClassConfigs.HasSelfPin())
 	{
 		FEdGraphPinType SelfPinType;
 		SelfPinType.PinCategory = UObjectTreeGraphSchema::PC_Self;
-		const FName& SelfPinName = ObjectClassConfig.SelfPinName();
+		const FName& SelfPinName = ObjectClassConfigs.SelfPinName();
 		UEdGraphPin* SelfPin = CreatePin(OuterGraphConfig.GetSelfPinDirection(NodeContext.ObjectClass), SelfPinType, SelfPinName);
-		SelfPin->PinFriendlyName = ObjectClassConfig.SelfPinFriendlyName();
+		SelfPin->PinFriendlyName = ObjectClassConfigs.SelfPinFriendlyName();
 	}
 
 	for (TFieldIterator<FProperty> PropertyIt(NodeContext.ObjectClass); PropertyIt; ++PropertyIt)
@@ -109,6 +109,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 				continue;
 			}
 
+			// Make a new pin for connecting this property to another object node.
 			ChildPinType.PinSubCategory = UObjectTreeGraphSchema::PSC_ObjectProperty;
 			UEdGraphPin* PropertyPin = CreatePin(PinDirection, ChildPinType, PropertyName);
 
@@ -122,6 +123,7 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 				continue;
 			}
 
+			// Make a new invisible pin that will be the parent pin to each array item's pin.
 			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
 
 			ChildPinType.PinSubCategory = UObjectTreeGraphSchema::PSC_ArrayProperty;
@@ -132,7 +134,10 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 			ArrayPin->PinToolTip = InnerProperty->PropertyClass->GetName();
 			ArrayPin->bHidden = true;  // Always hidden, we only ever show the sub-pins.
 
-			CreateNewItemPin(ArrayPin);
+			// Create pins for each array item.
+			FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(Object));
+			const int32 ArrayNum = ArrayHelper.Num();
+			CreateNewItemPins(ArrayPin, ArrayNum);
 		}
 	}
 }
@@ -162,10 +167,35 @@ void UObjectTreeGraphNode::NodeConnectionListChanged()
 void UObjectTreeGraphNode::OnPinRemoved(UEdGraphPin* InRemovedPin)
 {
 	Super::OnPinRemoved(InRemovedPin);
-	RefreshArrayPropertyPinNames();
+
+	if (InRemovedPin && 
+			InRemovedPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
+			InRemovedPin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayPropertyItem)
+	{
+		RefreshArrayPropertyPinNames();
+	}
 }
 
-void UObjectTreeGraphNode::CreateNewItemPin(FArrayProperty& InArrayProperty)
+void UObjectTreeGraphNode::GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties) const
+{
+	const FNodeContext NodeContext = GetNodeContext();
+
+	for (UEdGraphPin* Pin : Pins)
+	{
+		if (Pin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
+				Pin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayProperty &&
+				Pin->ParentPin == nullptr)
+		{
+			FProperty* Property = NodeContext.ObjectClass->FindPropertyByName(Pin->GetFName());
+			if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+			{
+				OutArrayProperties.Add(ArrayProperty);
+			}
+		}
+	}
+}
+
+void UObjectTreeGraphNode::CreateNewItemPins(FArrayProperty& InArrayProperty, int32 NumExtraPins)
 {
 	UEdGraphPin** ParentArrayPinPtr = Pins.FindByPredicate([&InArrayProperty](UEdGraphPin* Item)
 			{
@@ -173,16 +203,75 @@ void UObjectTreeGraphNode::CreateNewItemPin(FArrayProperty& InArrayProperty)
 			});
 	if (ensure(ParentArrayPinPtr))
 	{
-		CreateNewItemPin(*ParentArrayPinPtr);
+		CreateNewItemPins(*ParentArrayPinPtr, NumExtraPins);
 	}
 }
 
-void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
+void UObjectTreeGraphNode::CreateNewItemPins(UEdGraphPin* InParentArrayPin, int32 NumExtraPins)
 {
+	if (!ensure(InParentArrayPin && NumExtraPins >= 0))
+	{
+		return;
+	}
+
+	if (NumExtraPins == 0)
+	{
+		return;
+	}
+
 	const FNodeContext NodeContext = GetNodeContext();
 
 	const FName PropertyName = InParentArrayPin->GetFName();
-	const int32 NewIndex = InParentArrayPin->SubPins.Num();
+	const int32 StartIndex = InParentArrayPin->SubPins.Num();
+
+	const int32 ParentPinIndex = Pins.Find(InParentArrayPin);
+	ensure(ParentPinIndex >= 0);
+
+	FEdGraphPinType ChildPinType;
+	ChildPinType.PinCategory = UObjectTreeGraphSchema::PC_Property;
+	ChildPinType.PinSubCategory = UObjectTreeGraphSchema::PSC_ArrayPropertyItem;
+
+	const EEdGraphPinDirection PinDirection = NodeContext.GraphConfig.GetPropertyPinDirection(NodeContext.ObjectClass, PropertyName);
+
+	InParentArrayPin->Modify();
+
+	for (int32 Index = 0; Index < NumExtraPins; ++Index)
+	{
+		const int32 NewIndex = StartIndex + Index;
+
+		FName ChildPinName = PropertyName;
+		ChildPinName.SetNumber(NewIndex);
+		UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, ChildPinName);
+		ChildPin->PinFriendlyName = FText::Format(
+				LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
+
+		ChildPin->ParentPin = InParentArrayPin;
+		InParentArrayPin->SubPins.Add(ChildPin);
+
+		// Always re-insert the child pin so that all child pins are just after
+		// the parent array pin.
+		const int32 ChildPinIndex = ParentPinIndex + InParentArrayPin->SubPins.Num();
+		Pins.Pop(EAllowShrinking::No);
+		Pins.Insert(ChildPin, ChildPinIndex);
+	}
+}
+
+void UObjectTreeGraphNode::InsertNewItemPin(UEdGraphPin* InParentArrayPin, int32 Index)
+{
+	if (!ensure(InParentArrayPin))
+	{
+		return;
+	}
+	if (!ensure(Index >= 0 && Index < InParentArrayPin->SubPins.Num()))
+	{
+		return;
+	}
+
+	const FNodeContext NodeContext = GetNodeContext();
+
+	const FName PropertyName = InParentArrayPin->GetFName();
+	const int32 ParentPinIndex = Pins.Find(InParentArrayPin);
+	ensure(ParentPinIndex >= 0);
 
 	FEdGraphPinType ChildPinType;
 	ChildPinType.PinCategory = UObjectTreeGraphSchema::PC_Property;
@@ -193,22 +282,23 @@ void UObjectTreeGraphNode::CreateNewItemPin(UEdGraphPin* InParentArrayPin)
 	InParentArrayPin->Modify();
 
 	FName ChildPinName = PropertyName;
-	ChildPinName.SetNumber(NewIndex);
+	ChildPinName.SetNumber(Index);
 	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, ChildPinName);
-	ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
+	ChildPin->PinFriendlyName = FText::Format(
+			LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), Index);
 
 	ChildPin->ParentPin = InParentArrayPin;
-	InParentArrayPin->SubPins.Add(ChildPin);
+	InParentArrayPin->SubPins.Insert(ChildPin, Index);
 
 	// Always re-insert the child pin so that all child pins are just after
 	// the parent array pin.
-	const int32 ParentPinIndex = Pins.Find(InParentArrayPin);
-	if (ensure(ParentPinIndex >= 0))
-	{
-		const int32 ChildPinIndex = ParentPinIndex + InParentArrayPin->SubPins.Num();
-		Pins.Pop(EAllowShrinking::No);
-		Pins.Insert(ChildPin, ChildPinIndex);
-	}
+	const int32 ChildPinIndex = ParentPinIndex + Index + 1;
+	Pins.Pop(EAllowShrinking::No);
+	Pins.Insert(ChildPin, ChildPinIndex);
+
+	// Rename all subsequent pins so they display the correct index.
+	// NOTE: this will actually rename *all* array property pins, which is a bit heavy handed.
+	RefreshArrayPropertyPinNames();
 }
 
 void UObjectTreeGraphNode::RemoveItemPin(UEdGraphPin* InItemPin)
@@ -317,23 +407,7 @@ UEdGraphPin* UObjectTreeGraphNode::GetPinForProperty(FObjectProperty* InProperty
 	return nullptr;
 }
 
-UEdGraphPin* UObjectTreeGraphNode::GetPinForProperty(FArrayProperty* InProperty, int32 Index) const
-{
-	UEdGraphPin* const* FoundItem = Pins.FindByPredicate(
-			[InProperty](UEdGraphPin* Item)
-			{ 
-				return Item->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
-					Item->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayProperty &&
-					Item->GetFName() == InProperty->GetFName(); 
-			});
-	if (FoundItem && ensure((*FoundItem)->SubPins.IsValidIndex(Index)))
-	{
-		return (*FoundItem)->SubPins[Index];
-	}
-	return nullptr;
-}
-
-UEdGraphPin* UObjectTreeGraphNode::GetPinForPropertyNewItem(FArrayProperty* InProperty, bool bCreateNew)
+UEdGraphPin* UObjectTreeGraphNode::GetPinForProperty(FArrayProperty* InProperty) const
 {
 	UEdGraphPin* const* FoundItem = Pins.FindByPredicate(
 			[InProperty](UEdGraphPin* Item)
@@ -344,13 +418,17 @@ UEdGraphPin* UObjectTreeGraphNode::GetPinForPropertyNewItem(FArrayProperty* InPr
 			});
 	if (FoundItem)
 	{
-		ensure((*FoundItem)->SubPins.Num() > 0 && (*FoundItem)->SubPins.Last()->LinkedTo.IsEmpty());
-		UEdGraphPin* NewItemPin = (*FoundItem)->SubPins.Last();
-		if (bCreateNew)
-		{
-			CreateNewItemPin(*FoundItem);
-		}
-		return NewItemPin;
+		return *FoundItem;
+	}
+	return nullptr;
+}
+
+UEdGraphPin* UObjectTreeGraphNode::GetPinForProperty(FArrayProperty* InProperty, int32 Index) const
+{
+	UEdGraphPin* ArrayPin = GetPinForProperty(InProperty);
+	if (ArrayPin && ensure(ArrayPin->SubPins.IsValidIndex(Index)))
+	{
+		return ArrayPin->SubPins[Index];
 	}
 	return nullptr;
 }
@@ -536,8 +614,8 @@ void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
 
 bool UObjectTreeGraphNode::CanDuplicateNode() const
 {
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
-	if (!ObjectClassConfig.CanCreateNew())  // If it can't be created, it shouldn't be worked around by copy/pasting
+	const FObjectTreeGraphClassConfigs ObjectClassConfigs = GetObjectClassConfigs();
+	if (!ObjectClassConfigs.CanCreateNew())  // If it can't be created, it shouldn't be worked around by copy/pasting
 	{
 		return false;
 	}
@@ -547,8 +625,8 @@ bool UObjectTreeGraphNode::CanDuplicateNode() const
 
 bool UObjectTreeGraphNode::CanUserDeleteNode() const
 {
-	const FObjectTreeGraphClassConfig& ObjectClassConfig = GetObjectClassConfig();
-	if (!ObjectClassConfig.CanDelete())
+	const FObjectTreeGraphClassConfigs ObjectClassConfigs = GetObjectClassConfigs();
+	if (!ObjectClassConfigs.CanDelete())
 	{
 		return false;
 	}
@@ -598,20 +676,20 @@ UObjectTreeGraphNode::FNodeContext UObjectTreeGraphNode::GetNodeContext() const
 	if (UObject* Object = WeakObject.Get())
 	{
 		UClass* ObjectClass = Object->GetClass();
-		const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(ObjectClass);
+		const FObjectTreeGraphClassConfigs ObjectClassConfigs = OuterGraphConfig.GetObjectClassConfigs(ObjectClass);
 
-		return FNodeContext{ ObjectClass, OuterGraph, OuterGraphConfig, ObjectClassConfig };
+		return FNodeContext{ ObjectClass, OuterGraph, OuterGraphConfig, ObjectClassConfigs };
 	}
 	else
 	{
-		const FObjectTreeGraphClassConfig& ObjectClassConfig = OuterGraphConfig.GetObjectClassConfig(nullptr);
-		return FNodeContext{ nullptr, OuterGraph, OuterGraphConfig, ObjectClassConfig };
+		const FObjectTreeGraphClassConfigs ObjectClassConfigs = OuterGraphConfig.GetObjectClassConfigs(nullptr);
+		return FNodeContext{ nullptr, OuterGraph, OuterGraphConfig, ObjectClassConfigs };
 	}
 }
 
-const FObjectTreeGraphClassConfig& UObjectTreeGraphNode::GetObjectClassConfig() const
+const FObjectTreeGraphClassConfigs UObjectTreeGraphNode::GetObjectClassConfigs() const
 {
-	return GetNodeContext().ObjectClassConfig;
+	return GetNodeContext().ObjectClassConfigs;
 }
 
 #undef LOCTEXT_NAMESPACE

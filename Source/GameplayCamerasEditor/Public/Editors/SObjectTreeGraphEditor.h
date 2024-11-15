@@ -100,6 +100,10 @@ protected:
 	void OnDistributeNodesHorizontally();
 	void OnDistributeNodesVertically();
 
+	void OnInsertArrayItemPinBefore();
+	void OnInsertArrayItemPinAfter();
+	void OnRemoveArrayItemPin();
+
 	TArray<UClass*> FilterPlaceableObjectClasses(TArrayView<UClass* const> InObjectClasses);
 
 protected:

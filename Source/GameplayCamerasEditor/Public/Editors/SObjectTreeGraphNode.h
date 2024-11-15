@@ -5,6 +5,7 @@
 #include "SGraphNode.h"
 #include "SGraphPin.h"
 
+class FArrayProperty;
 class UObjectTreeGraphNode;
 
 /**
@@ -26,11 +27,22 @@ public:
 
 public:
 
+	// SGraphNode interface.
+	virtual void CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox) override;
+
 	// SNodePanel::SNode interface.
 	virtual void MoveTo(const FVector2D& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
 
 protected:
 
+	TSharedRef<SWidget> MakeAddArrayPropertyPinButton(FArrayProperty* ArrayProperty);
+
+	FReply OnAddArrayPropertyPin(FArrayProperty* ArrayProperty);
+
+protected:
+
 	UObjectTreeGraphNode* ObjectGraphNode;
+
+	bool bHasAddPinButtons = false;
 };
 

@@ -12,7 +12,7 @@ class IObjectTreeGraphRootObject;
 class UEdGraph;
 class UObjectTreeGraph;
 class UObjectTreeGraphNode;
-struct FObjectTreeGraphClassConfig;
+struct FObjectTreeGraphClassConfigs;
 
 /**
  * Schema class for an object tree graph.
@@ -59,6 +59,18 @@ public:
 	/** Checks if the given text is suitable for importing. */
 	bool CanImportNodesFromText(UObjectTreeGraph* InGraph, const FString& TextToImport) const;
 
+	/** Inserts a new array property item pin. */
+	void InsertArrayItemPin(UEdGraphPin* ArrayPin, int32 Index = INDEX_NONE) const;
+
+	/** Inserts a new array property item pin before the given pin. */
+	void InsertArrayItemPinBefore(UEdGraphPin* ArrayItemPin) const;
+
+	/** Inserts a new array property item pin after the given pin. */
+	void InsertArrayItemPinAfter(UEdGraphPin* ArrayItemPin) const;
+
+	/** Removes an array property item pin. */
+	void RemoveArrayItemPin(UEdGraphPin* ArrayItemPin) const;
+
 public:
 
 	// UEdGraphSchema interface.
@@ -85,19 +97,6 @@ protected:
 		TMap<UObject*, UObjectTreeGraphNode*> CreatedNodes;
 	};
 
-	struct FDelayedPinActions
-	{
-		void CreateNewItemPin(UObjectTreeGraphNode* Node, FArrayProperty* ArrayProperty);
-		void RemoveItemPin(UEdGraphPin* Pin);
-
-		bool IsEmpty() const;
-		void Apply();
-
-	private:
-		TArray<TTuple<UObjectTreeGraphNode*, FArrayProperty*>> ItemPinsToCreate;
-		TArray<UEdGraphPin*> ItemPinsToRemove;
-	};
-
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const;
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
@@ -105,9 +104,9 @@ protected:
 	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
 	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
 	virtual void CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const;
-	virtual bool OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const;
-	virtual bool OnApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const;
-	virtual bool OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const;
+	virtual bool OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const;
+	virtual bool OnApplyDisconnection(UEdGraphPin* TargetPin) const;
+	virtual bool OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
 	virtual void OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const;
 	virtual void FilterGraphContextPlaceableClasses(TArray<UClass*>& InOutClasses) const;
 
@@ -116,12 +115,12 @@ protected:
 	static void CollectAllReferencedObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects);
 	static bool CollectAllConnectableObjectsFromRootInterface(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects, bool bAllowNoRootInterface);
 
-	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraphNode* InNode) const;
-	const FObjectTreeGraphClassConfig& GetObjectClassConfig(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const;
+	const FObjectTreeGraphClassConfigs GetObjectClassConfigs(const UObjectTreeGraphNode* InNode) const;
+	const FObjectTreeGraphClassConfigs GetObjectClassConfigs(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const;
 
-	void ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const;
-	void ApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const;
-	void ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const;
+	void ApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const;
+	void ApplyDisconnection(UEdGraphPin* TargetPin) const;
+	void ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
 
 private:
 

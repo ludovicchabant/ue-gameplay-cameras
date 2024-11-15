@@ -2,6 +2,7 @@
 
 #include "Editors/ObjectTreeGraphSchema.h"
 
+#include "Commands/ObjectTreeGraphEditorCommands.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "Editors/ObjectTreeConnectionDrawingPolicy.h"
 #include "Editors/ObjectTreeGraph.h"
@@ -11,6 +12,7 @@
 #include "IGameplayCamerasEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Serialization/ArchiveUObject.h"
+#include "ToolMenu.h"
 #include "UObject/UObjectIterator.h"
 #include "UObject/UnrealType.h"
 #include "UnrealExporter.h"
@@ -259,6 +261,8 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 	{
 		if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(ConnectableProperty))
 		{
+			// Object reference property... if the property value is not null, find the node that corresponds
+			// to the referenced object. If we find it, create a graph connection between the two.
 			UEdGraphPin* Pin = InGraphNode->GetPinForProperty(ObjectProperty);
 			if (!ensure(Pin))
 			{
@@ -285,13 +289,15 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 		}
 		else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(ConnectableProperty))
 		{
+			// Array of object references... add all the pins needed for the array's size, and connect each
+			// of those pins to a matching object node, similarly to above with object references.
 			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
 			FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(Object));
 
 			const int32 ArrayNum = ArrayHelper.Num();
 			for (int32 Index = 0; Index < ArrayNum; ++Index)
 			{
-				UEdGraphPin* Pin = InGraphNode->GetPinForPropertyNewItem(ArrayProperty, true);
+				UEdGraphPin* Pin = InGraphNode->GetPinForProperty(ArrayProperty, Index);
 				if (!ensure(Pin))
 				{
 					continue;
@@ -340,9 +346,9 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNode(UObjectTreeGraph*
 UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
 {
 	const FObjectTreeGraphConfig& Config = InGraph->GetConfig();
-	const FObjectTreeGraphClassConfig& ClassConfig = Config.GetObjectClassConfig(InObject->GetClass());
+	const FObjectTreeGraphClassConfigs ClassConfigs = Config.GetObjectClassConfigs(InObject->GetClass());
 
-	TSubclassOf<UObjectTreeGraphNode> GraphNodeClass = ClassConfig.GraphNodeClass();
+	TSubclassOf<UObjectTreeGraphNode> GraphNodeClass = ClassConfigs.GraphNodeClass();
 	if (!GraphNodeClass.Get())
 	{
 		GraphNodeClass = Config.DefaultGraphNodeClass;
@@ -448,8 +454,8 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 			continue;
 		}
 
-		const FObjectTreeGraphClassConfig& ClassConfig = GraphConfig.GetObjectClassConfig(*ClassIt);
-		if (!ClassConfig.CanCreateNew())
+		const FObjectTreeGraphClassConfigs ClassConfigs = GraphConfig.GetObjectClassConfigs(*ClassIt);
+		if (!ClassConfigs.CanCreateNew())
 		{
 			continue;
 		}
@@ -476,7 +482,7 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 		const FText DisplayName = GraphConfig.GetDisplayNameText(PossibleObjectClass);
 
 		TArray<FString> CategoryNames;
-		const FName CreateCategoryMetaData = GraphConfig.GetObjectClassConfig(PossibleObjectClass).CreateCategoryMetaData();
+		const FName CreateCategoryMetaData = GraphConfig.GetObjectClassConfigs(PossibleObjectClass).CreateCategoryMetaData();
 		for (UClass* CurClass = PossibleObjectClass; CurClass; CurClass = CurClass->GetSuperClass())
 		{
 			const FString* CategoryNamesMetaData = CurClass->FindMetaData(CreateCategoryMetaData);
@@ -524,7 +530,32 @@ void UObjectTreeGraphSchema::FilterGraphContextPlaceableClasses(TArray<UClass*>&
 
 void UObjectTreeGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
 {
+	using namespace UE::Cameras;
+
 	Super::GetContextMenuActions(Menu, Context);
+
+	const UEdGraph* CurrentGraph = Context->Graph;
+	const UEdGraphNode* CurrentNode = Context->Node;
+	const UEdGraphPin* CurrentPin = Context->Pin;
+
+	const FObjectTreeGraphEditorCommands& Commands = FObjectTreeGraphEditorCommands::Get();
+
+	if (CurrentPin)
+	{
+		FToolMenuSection& Section = Menu->FindOrAddSection("ObjectTreeGraphSchemaPinActions");
+		Section.InitSection(
+				"ObjectTreeGraphSchemaPinActions", 
+				LOCTEXT("ObjectPinActionsMenuHeader", "Object Pin Actions"), 
+				FToolMenuInsert());
+
+		if (CurrentPin->PinType.PinCategory == PC_Property &&
+				CurrentPin->PinType.PinSubCategory == PSC_ArrayPropertyItem)
+		{
+			Section.AddMenuEntry(Commands.InsertArrayItemPinBefore);
+			Section.AddMenuEntry(Commands.InsertArrayItemPinAfter);
+			Section.AddMenuEntry(Commands.RemoveArrayItemPin);
+		}
+	}
 }
 
 FName UObjectTreeGraphSchema::GetParentContextMenuName() const
@@ -627,95 +658,22 @@ const FPinConnectionResponse UObjectTreeGraphSchema::CanCreateConnection(const U
 
 bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
-	const FPinConnectionResponse Response = CanCreateConnection(A, B);
-
-	if (A->LinkedTo.Contains(B) && B->LinkedTo.Contains(A))
-	{
-		return false;
-	}
-
 	FScopedTransaction Transaction(LOCTEXT("CreateConnection", "Create Connection"));
 
-	bool bModified = true;
-	FDelayedPinActions Actions;
-
-	// We need to reimplement this completely and skip the up-call to the base class.
-	// Yes, it makes me sad too. But this is because we need to interleave graph manipulation (like
-	// making and breaking pin links) with underlying model manipulation (setting and unsetting
-	// references between objects).
-	//
-	// Note that we do a few delicate things here:
-	//
-	// 1. We pass `true` to ApplyDisconnection` to indicate that disconnected pins should not be
-	//    removed (which happens when disconnecting an array property pin). We want those pins kept
-	//    around because they're only disconnected to be immediately reconnected.
-	//
-	// 2. However, in at least one situation we want the pin removed immediately. It's when there's
-	//    an object currently at index X in an array, and the user reconnects it to index Y. In that
-	//    case, we want to get rid of pin X, removing that item in the array, so that pin Y is at
-	//    the correct index. This is why we apply delayed pin actions as usual after graph 
-	//    manipulation is done.
-	//
-	switch (Response.Response)
-	{
-	case CONNECT_RESPONSE_MAKE:
-		A->MakeLinkTo(B);
-		ApplyConnection(A, B, Actions);
-		break;
-
-	case CONNECT_RESPONSE_BREAK_OTHERS_A:
-		ApplyDisconnection(A, Actions, true);
-		A->BreakAllPinLinks(true);
-		A->MakeLinkTo(B);
-		Actions.Apply();
-		ApplyConnection(A, B, Actions);
-		break;
-
-	case CONNECT_RESPONSE_BREAK_OTHERS_B:
-		ApplyDisconnection(B, Actions, true);
-		B->BreakAllPinLinks(true);
-		A->MakeLinkTo(B);
-		Actions.Apply();
-		ApplyConnection(A, B, Actions);
-		break;
-
-	case CONNECT_RESPONSE_BREAK_OTHERS_AB:
-		ApplyDisconnection(A, Actions, true);
-		ApplyDisconnection(B, Actions, true);
-		A->BreakAllPinLinks(true);
-		B->BreakAllPinLinks(true);
-		A->MakeLinkTo(B);
-		Actions.Apply();
-		ApplyConnection(A, B, Actions);
-		break;
-
-	case CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE:
-		bModified = CreateAutomaticConversionNodeAndConnections(A, B);
-		break;
-
-	case CONNECT_RESPONSE_MAKE_WITH_PROMOTION:
-		bModified = CreatePromotedConnection(A, B);
-		break;
-
-	case CONNECT_RESPONSE_DISALLOW:
-	default:
-		bModified = false;
-		break;
-	}
+	const bool bModified = Super::TryCreateConnection(A, B);
 
 	if (!bModified)
 	{
-		ensure(Actions.IsEmpty());
 		Transaction.Cancel();
 		return false;
 	}
 
-#if WITH_EDITOR
-	A->GetOwningNode()->PinConnectionListChanged(A);
-	B->GetOwningNode()->PinConnectionListChanged(B);
-#endif
-
-	Actions.Apply();
+	UObjectTreeGraphNode* NodeA = Cast<UObjectTreeGraphNode>(A->GetOwningNode());
+	UObjectTreeGraphNode* NodeB = Cast<UObjectTreeGraphNode>(B->GetOwningNode());
+	if (NodeA && NodeA->GetObject() && NodeB && NodeB->GetObject())
+	{
+		ApplyConnection(A, B);
+	}
 
 	return true;
 }
@@ -724,7 +682,6 @@ void UObjectTreeGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
 {
 	const FScopedTransaction Transaction(LOCTEXT("BreakNodeLinks", "Break Node Links"));
 
-	FDelayedPinActions Actions;
 	TArray<UEdGraphPin*> CachedPins = TargetNode.Pins;
 
 #if WITH_EDITOR
@@ -762,80 +719,32 @@ void UObjectTreeGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
 
 void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
 {
-	if (TargetPin.LinkedTo.IsEmpty())
+	FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
+
+	UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin.GetOwningNode());
+	if (TargetNode && TargetNode->GetObject())
 	{
-		Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
-		return;
+		ApplyDisconnection(&TargetPin);
 	}
 
-	const FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
-
-	FDelayedPinActions Actions;
-	ApplyDisconnection(&TargetPin, Actions, false);
-
 	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
-
-	Actions.Apply();
 }
 
 void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
-	const FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
+	FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
 
-	FDelayedPinActions Actions;
-	ApplyDisconnection(SourcePin, TargetPin, Actions);
+	UObjectTreeGraphNode* SourceNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
+	UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
+	if (SourceNode && SourceNode->GetObject() && TargetNode && TargetNode->GetObject())
+	{
+		ApplyDisconnection(SourcePin, TargetPin);
+	}
 
 	Super::BreakSinglePinLink(SourcePin, TargetPin);
-
-	Actions.Apply();
 }
 
-void UObjectTreeGraphSchema::FDelayedPinActions::CreateNewItemPin(UObjectTreeGraphNode* Node, FArrayProperty* ArrayProperty)
-{
-	if (ensure(Node && ArrayProperty))
-	{
-		ItemPinsToCreate.Add({ Node, ArrayProperty });
-	}
-}
-
-void UObjectTreeGraphSchema::FDelayedPinActions::RemoveItemPin(UEdGraphPin* Pin)
-{
-	if (ensure(Pin))
-	{
-		ItemPinsToRemove.Add(Pin);
-	}
-}
-
-bool UObjectTreeGraphSchema::FDelayedPinActions::IsEmpty() const
-{
-	return ItemPinsToCreate.IsEmpty() && ItemPinsToRemove.IsEmpty();
-}
-
-void UObjectTreeGraphSchema::FDelayedPinActions::Apply()
-{
-	TSet<UEdGraphNode*> NodesToNotify;
-	for (UEdGraphPin* Pin : ItemPinsToRemove)
-	{
-		UObjectTreeGraphNode* OwningNode = Cast<UObjectTreeGraphNode>(Pin->GetOwningNode());
-		check(OwningNode);
-		OwningNode->RemoveItemPin(Pin);
-
-		NodesToNotify.Add(OwningNode);
-	}
-	for (TTuple<UObjectTreeGraphNode*, FArrayProperty*>& Pair : ItemPinsToCreate)
-	{
-		Pair.Key->CreateNewItemPin(*Pair.Value);
-
-		NodesToNotify.Add(Pair.Key);
-	}
-	for (UEdGraphNode* Node : NodesToNotify)
-	{
-		Node->GetGraph()->NotifyNodeChanged(Node);
-	}
-	ItemPinsToRemove.Reset();
-}
-
-void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
+void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
 	// Input must have been validated prior to calling this method:
 	//
@@ -851,7 +760,7 @@ void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDe
 	check(A && B);
 
 	// See if a sub-class is handling this situation.
-	if (OnApplyConnection(A, B, Actions))
+	if (OnApplyConnection(A, B))
 	{
 		return;
 	}
@@ -882,7 +791,7 @@ void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDe
 	check(PropertyObject && ValueObject);
 
 	// If it is a property pin, set the value of the underlying property.
-	// If it is an array property pin, add a new item at the pin's index, and optionally add a new pin.
+	// If it is an array property pin, set the array item value at the pin's index.
 	FProperty* Property = PropertyNode->GetPropertyForPin(PropertyPin);
 
 	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
@@ -906,38 +815,29 @@ void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDe
 		ensure(Index != INDEX_NONE);
 
 		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(PropertyObject));
-		const int32 PreviousNum = ArrayHelper.Num();
-		const bool bExpandedArray = ArrayHelper.ExpandForIndex(Index);
+		ensure(Index < ArrayHelper.Num());
 
 		FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
 		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), ValueObject);
 
-		if (bExpandedArray)
-		{
-			ensure(Index == PreviousNum);  // We only support adding a single new element at the end, not "inserting"
-										   // into arbitrary indices requiring expanding the array by more than one
-										   // element.
-			Actions.CreateNewItemPin(PropertyNode, ArrayProperty);
-		}
-
 		FPropertyChangedEvent PropertyChangedEvent(Property);
-		PropertyChangedEvent.ChangeType = bExpandedArray ? EPropertyChangeType::ArrayAdd : EPropertyChangeType::ValueSet;
+		PropertyChangedEvent.ChangeType = EPropertyChangeType::ValueSet;
 		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
 	}
 }
 
-bool UObjectTreeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B, FDelayedPinActions& Actions) const
+bool UObjectTreeGraphSchema::OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const
 {
 	return false;
 }
 
-void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
+void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin) const
 {
 	// Input must have been validated prior to calling this method:
 	//
 	// - no null objects
-	// - the pin is the property pin to reset, or the self pin connected to a propert pin
-	// - the pin belongs to a ObjectTreeGraph node
+	// - the pin is the property pin to reset, or the self pin connected to a property pin
+	// - the pin belongs to an ObjectTreeGraph node
 	// - this node has a valid object
 	// - we should have a transaction active
 	//
@@ -954,21 +854,16 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin, FDelayed
 	}
 
 	// See if a sub-class is handling this situation.
-	if (OnApplyDisconnection(TargetPin, Actions, bIsReconnecting))
+	if (OnApplyDisconnection(TargetPin))
 	{
 		return;
 	}
 
 	// We may either disconnect a self pin, or a property or array property pin. Let's see
 	// what sort of pin we were given: we want the property side of things.
-	bool bRemoveArrayItem = !bIsReconnecting;
 	if (TargetPin->PinType.PinCategory == PC_Self)
 	{
 		TargetPin = TargetPin->LinkedTo[0];
-		// If `bIsReconnecting` is true, it means we need to leave `TargetPin` alone because
-		// we want to reconnect it right away. However, if the property pin is on the other
-		// side the of the link, we are free to remove it if it's an array property pin.
-		bRemoveArrayItem = true;
 	}
 	check(TargetPin->PinType.PinCategory == PC_Property);
 
@@ -979,8 +874,7 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin, FDelayed
 	check(PropertyObject);
 
 	// If it is a property pin, clear the value of the underlying property.
-	// If it is an array property pin, remove the value at the given index in the underlying array,
-	// or just clear it if we want to reconnect that pin immediately.
+	// If it is an array property pin, clear the value at the given index in the underlying array.
 	FProperty* Property = PropertyNode->GetPropertyForPin(TargetPin);
 
 	if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
@@ -1000,32 +894,24 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin, FDelayed
 
 		PropertyObject->Modify();
 
-		int32 Index = PropertyNode->GetIndexOfArrayPin(TargetPin);
-		ensure(Index != INDEX_NONE);
-
+		const int32 Index = PropertyNode->GetIndexOfArrayPin(TargetPin);
 		FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(PropertyObject));
-		if (bRemoveArrayItem)
-		{
-			ArrayHelper.RemoveValues(Index);
-			Actions.RemoveItemPin(TargetPin);
-		}
-		else
-		{
-			FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
-			InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), nullptr);
-		}
+		ensure(Index >= 0 && Index < ArrayHelper.Num());
 
-		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ArrayRemove);
+		FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
+		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), nullptr);
+
+		FPropertyChangedEvent PropertyChangedEvent(Property, EPropertyChangeType::ValueSet);
 		PropertyObject->PostEditChangeProperty(PropertyChangedEvent);
 	}
 }
 
-bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin, FDelayedPinActions& Actions, bool bIsReconnecting) const
+bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* TargetPin) const
 {
 	return false;
 }
 
-void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
+void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
 	// Input must have been validated prior to calling this method:
 	//
@@ -1035,18 +921,18 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraph
 	check(SourcePin && TargetPin);
 
 	// See if a sub-class is handling this situation.
-	if (OnApplyDisconnection(SourcePin, TargetPin, Actions))
+	if (OnApplyDisconnection(SourcePin, TargetPin))
 	{
 		return;
 	}
 
 	if (SourcePin->PinType.PinCategory == PC_Self && TargetPin->PinType.PinCategory == PC_Property)
 	{
-		return ApplyDisconnection(TargetPin, Actions, false);
+		return ApplyDisconnection(TargetPin);
 	}
 	else if (SourcePin->PinType.PinCategory == PC_Property && TargetPin->PinType.PinCategory == PC_Self)
 	{
-		return ApplyDisconnection(SourcePin, Actions, false);
+		return ApplyDisconnection(SourcePin);
 	}
 	else
 	{
@@ -1054,9 +940,164 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* SourcePin, UEdGraph
 	}
 }
 
-bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin, FDelayedPinActions& Actions) const
+bool UObjectTreeGraphSchema::OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
 	return false;
+}
+
+void UObjectTreeGraphSchema::InsertArrayItemPin(UEdGraphPin* ArrayPin, int32 Index) const
+{
+	if (!ensure(ArrayPin))
+	{
+		return;
+	}
+
+	UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(ArrayPin->GetOwningNode());
+	if (!ensure(ObjectNode && ObjectNode->GetObject()))
+	{
+		return;
+	}
+
+	FArrayProperty* ArrayProperty = CastField<FArrayProperty>(ObjectNode->GetPropertyForPin(ArrayPin));
+	if (!ensure(ArrayProperty))
+	{
+		return;
+	}
+
+	FScopedTransaction Transaction(FText::Format(
+				LOCTEXT("InsertArrayItem", "Add {0} Pin"), FText::FromName(ArrayProperty->GetFName())));
+
+	UObject* Object = ObjectNode->GetObject();
+
+	Object->PreEditChange(ArrayProperty);
+
+	Object->Modify();
+
+	FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(Object));
+	FObjectProperty* InnerProperty = CastFieldChecked<FObjectProperty>(ArrayProperty->Inner);
+
+	const bool bIsActualInsert = (Index >= 0 && Index <= ArrayHelper.Num());
+	if (bIsActualInsert)
+	{
+		ArrayHelper.InsertValues(Index, 1);
+		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(Index), nullptr);
+		ObjectNode->InsertNewItemPin(ArrayPin, Index);
+	}
+	else
+	{
+		const int32 NewIndex = ArrayHelper.AddValues(1);
+		InnerProperty->SetObjectPropertyValue(ArrayHelper.GetRawPtr(NewIndex), nullptr);
+		ObjectNode->CreateNewItemPins(ArrayPin, 1);
+	}
+
+	FPropertyChangedEvent PropertyChangedEvent(ArrayProperty, EPropertyChangeType::ArrayAdd);
+	Object->PostEditChangeProperty(PropertyChangedEvent);
+
+	UEdGraph* Graph = ObjectNode->GetGraph();
+	Graph->NotifyNodeChanged(ObjectNode);
+}
+
+void UObjectTreeGraphSchema::InsertArrayItemPinBefore(UEdGraphPin* ArrayItemPin) const
+{
+	if (!ensure(ArrayItemPin))
+	{
+		return;
+	}
+
+	UEdGraphPin* ArrayPin = ArrayItemPin->ParentPin;
+	if (!ensure(ArrayPin))
+	{
+		return;
+	}
+
+	const int32 Index = ArrayPin->SubPins.Find(ArrayItemPin);
+	if (ensure(Index >= 0))
+	{
+		InsertArrayItemPin(ArrayPin, Index);
+	}
+}
+
+void UObjectTreeGraphSchema::InsertArrayItemPinAfter(UEdGraphPin* ArrayItemPin) const
+{
+	if (!ensure(ArrayItemPin))
+	{
+		return;
+	}
+
+	UEdGraphPin* ArrayPin = ArrayItemPin->ParentPin;
+	if (!ensure(ArrayPin))
+	{
+		return;
+	}
+
+	const int32 Index = ArrayPin->SubPins.Find(ArrayItemPin);
+	if (ensure(Index >= 0))
+	{
+		InsertArrayItemPin(ArrayPin, Index + 1);
+	}
+}
+
+void UObjectTreeGraphSchema::RemoveArrayItemPin(UEdGraphPin* ArrayItemPin) const
+{
+	if (!ensure(ArrayItemPin))
+	{
+		return;
+	}
+
+	if (!ensure(ArrayItemPin->PinType.PinCategory == PC_Property && 
+				ArrayItemPin->PinType.PinSubCategory == PSC_ArrayPropertyItem))
+	{
+		return;
+	}
+
+	UEdGraphPin* ArrayPin = ArrayItemPin->ParentPin;
+	if (!ensure(ArrayPin))
+	{
+		return;
+	}
+
+	if (!ensure(ArrayPin->PinType.PinCategory == PC_Property && 
+				ArrayPin->PinType.PinSubCategory == PSC_ArrayProperty))
+	{
+		return;
+	}
+
+	const int32 Index = ArrayItemPin->ParentPin->SubPins.Find(ArrayItemPin);
+	if (!ensure(Index >= 0))
+	{
+		return;
+	}
+
+	UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(ArrayPin->GetOwningNode());
+	if (!ensure(ObjectNode && ObjectNode->GetObject()))
+	{
+		return;
+	}
+
+	FArrayProperty* ArrayProperty = CastField<FArrayProperty>(ObjectNode->GetPropertyForPin(ArrayPin));
+	if (!ensure(ArrayProperty))
+	{
+		return;
+	}
+
+	FScopedTransaction Transaction(FText::Format(
+				LOCTEXT("RemoveArrayItem", "Remove {0} Pin"), FText::FromName(ArrayProperty->GetFName())));
+
+	UObject* Object = ObjectNode->GetObject();
+
+	Object->PreEditChange(ArrayProperty);
+
+	Object->Modify();
+
+	FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(Object));
+	ArrayHelper.RemoveValues(Index, 1);
+	ObjectNode->RemoveItemPin(ArrayItemPin);
+
+	FPropertyChangedEvent PropertyChangedEvent(ArrayProperty, EPropertyChangeType::ArrayRemove);
+	Object->PostEditChangeProperty(PropertyChangedEvent);
+
+	UEdGraph* Graph = ObjectNode->GetGraph();
+	Graph->NotifyNodeChanged(ObjectNode);
 }
 
 bool UObjectTreeGraphSchema::SupportsDropPinOnNode(UEdGraphNode* InTargetNode, const FEdGraphPinType& InSourcePinType, EEdGraphPinDirection InSourcePinDirection, FText& OutErrorMessage) const
@@ -1296,15 +1337,15 @@ bool UObjectTreeGraphSchema::CanImportNodesFromText(UObjectTreeGraph* InGraph, c
 	return Factory.CanCreateObjectsFromText(TextToImport);
 }
 
-const FObjectTreeGraphClassConfig& UObjectTreeGraphSchema::GetObjectClassConfig(const UObjectTreeGraphNode* InNode) const
+const FObjectTreeGraphClassConfigs UObjectTreeGraphSchema::GetObjectClassConfigs(const UObjectTreeGraphNode* InNode) const
 {
 	const UObjectTreeGraph* Graph = CastChecked<UObjectTreeGraph>(InNode->GetGraph());
-	return GetObjectClassConfig(Graph, InNode->GetObject()->GetClass());
+	return GetObjectClassConfigs(Graph, InNode->GetObject()->GetClass());
 }
 
-const FObjectTreeGraphClassConfig& UObjectTreeGraphSchema::GetObjectClassConfig(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const
+const FObjectTreeGraphClassConfigs UObjectTreeGraphSchema::GetObjectClassConfigs(const UObjectTreeGraph* InGraph, UClass* InObjectClass) const
 {
-	return InGraph->GetConfig().GetObjectClassConfig(InObjectClass);
+	return InGraph->GetConfig().GetObjectClassConfigs(InObjectClass);
 }
 
 FObjectGraphSchemaAction_NewNode::FObjectGraphSchemaAction_NewNode()
@@ -1350,6 +1391,10 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 	if (NewObject)
 	{
+		const FObjectTreeGraphConfig& GraphConfig = ObjectTreeGraph->GetConfig();
+		const FObjectTreeGraphClassConfigs ObjectClassConfigs = GraphConfig.GetObjectClassConfigs(ObjectClass);
+		ObjectClassConfigs.OnSetupNewObject().ExecuteIfBound(NewObject);
+
 		ObjectTreeGraph->Modify();
 
 		UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
