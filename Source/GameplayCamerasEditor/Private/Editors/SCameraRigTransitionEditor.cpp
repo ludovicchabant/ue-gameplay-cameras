@@ -123,7 +123,7 @@ void SCameraRigTransitionEditor::RemoveOnGraphChanged(FDelegateHandle InDelegate
 	OnTransitionGraphChanged.Remove(InDelegateHandle);
 }
 
-void SCameraRigTransitionEditor::RemoveOnGraphChanged(const void* InUserObject)
+void SCameraRigTransitionEditor::RemoveOnGraphChanged(FDelegateUserObjectConst InUserObject)
 {
 	OnTransitionGraphChanged.RemoveAll(InUserObject);
 }

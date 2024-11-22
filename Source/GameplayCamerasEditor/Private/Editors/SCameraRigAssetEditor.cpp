@@ -291,7 +291,7 @@ void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(FDelegateHandle InDelegateHa
 	}
 }
 
-void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(const void* InUserObject)
+void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(FDelegateUserObjectConst InUserObject)
 {
 	OnAnyGraphChanged.RemoveAll(InUserObject);
 }

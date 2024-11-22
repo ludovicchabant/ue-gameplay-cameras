@@ -81,7 +81,7 @@ public:
 	/** Removes a previous added callback. */
 	void RemoveOnAnyGraphChanged(FDelegateHandle InDelegateHandle);
 	/** Removes a previous added callback. */
-	void RemoveOnAnyGraphChanged(const void* InUserObject);
+	void RemoveOnAnyGraphChanged(FDelegateUserObjectConst InUserObject);
 
 protected:
 
