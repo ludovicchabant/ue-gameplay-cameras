@@ -12,6 +12,7 @@
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "GraphEditAction.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
@@ -22,6 +23,7 @@
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
+#include "Toolkits/CurveEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
 
@@ -34,6 +36,7 @@ namespace UE::Cameras
 
 const FName FCameraRigAssetEditorToolkit::SearchTabId(TEXT("CameraRigAssetEditor_Search"));
 const FName FCameraRigAssetEditorToolkit::MessagesTabId(TEXT("CameraRigAssetEditor_Messages"));
+const FName FCameraRigAssetEditorToolkit::CurvesTabId(TEXT("CameraRigAssetEditor_Curves"));
 
 FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
@@ -41,12 +44,14 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 	Impl = MakeShared<FCameraRigAssetEditorToolkitBase>(TEXT("CameraRigAssetEditor_Layout_v6"));
 	BuildButtonToolkit = MakeShared<FBuildButtonToolkit>();
 	BuildLogToolkit = MakeShared<FCameraBuildLogToolkit>();
+	CurveEditorToolkit = MakeShared<FCurveEditorToolkit>();
 
 	// Override base class default layout.
 	TSharedPtr<FStandardToolkitLayout> StandardLayout = Impl->GetStandardLayout();
 	{
 		StandardLayout->AddBottomTab(SearchTabId);
 		StandardLayout->AddBottomTab(MessagesTabId);
+		StandardLayout->AddBottomTab(CurvesTabId);
 	}
 	StandaloneDefaultLayout = StandardLayout->GetLayout();
 
@@ -61,8 +66,15 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 
 void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRig)
 {
+	EventHandler.Unlink();
+
 	Impl->SetCameraRigAsset(InCameraRig);
 	BuildButtonToolkit->SetTarget(InCameraRig);
+
+	if (InCameraRig)
+	{
+		InCameraRig->EventHandlers.Register(EventHandler, this);
+	}
 }
 
 void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
@@ -83,6 +95,11 @@ void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<class FT
 		.SetDisplayName(LOCTEXT("Messages", "Messages"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Messages"));
+
+	InTabManager->RegisterTabSpawner(CurvesTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_Curves))
+		.SetDisplayName(LOCTEXT("Curves", "Curves"))
+		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
+		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Curves"));
 }
 
 TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Search(const FSpawnTabArgs& Args)
@@ -107,6 +124,37 @@ TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Messages(const FSpaw
 	return MessagesTab.ToSharedRef();
 }
 
+TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Curves(const FSpawnTabArgs& Args)
+{
+	if (!CurveEditorToolkit->IsInitialized())
+	{
+		TArray<UObject*> CameraRigObjects;
+		UPackage* CameraRigPackage = Impl->GetCameraRigAsset()->GetPackage();
+		GetObjectsWithPackage(CameraRigPackage, CameraRigObjects);
+		CurveEditorToolkit->Initialize(CameraRigObjects);
+	}
+
+	TSharedPtr<SDockTab> CurvesTab = SNew(SDockTab)
+		.Label(LOCTEXT("CurvesTabTitle", "Curves"))
+		.OnTabClosed(this, &FCameraRigAssetEditorToolkit::OnCurvesTabClosed)
+		[
+			CurveEditorToolkit->GetCurveEditorWidget().ToSharedRef()
+		];
+
+	return CurvesTab.ToSharedRef();
+}
+
+void FCameraRigAssetEditorToolkit::OnCurvesTabClosed(TSharedRef<SDockTab> InTab)
+{
+	if (CurveEditorToolkit->IsInitialized())
+	{
+		InTab->ClearContent();
+
+		// Clear the curve editor when the tab is closed.
+		CurveEditorToolkit->Shutdown();
+	}
+}
+
 void FCameraRigAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
@@ -116,6 +164,7 @@ void FCameraRigAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabMa
 
 	InTabManager->UnregisterTabSpawner(SearchTabId);
 	InTabManager->UnregisterTabSpawner(MessagesTabId);
+	InTabManager->UnregisterTabSpawner(CurvesTabId);
 }
 
 void FCameraRigAssetEditorToolkit::CreateWidgets()
@@ -280,6 +329,37 @@ void FCameraRigAssetEditorToolkit::OnJumpToObject(UObject* Object, FName Propert
 {
 	TSharedPtr<SCameraRigAssetEditor> CameraRigEditor = Impl->GetCameraRigAssetEditor();
 	CameraRigEditor->FindAndJumpToObjectNode(Object);
+}
+
+void FCameraRigAssetEditorToolkit::OnInvokeCurveEditor(UObject* Object, FName PropertyName)
+{
+	UPackage* Package = Impl->GetCameraRigAsset()->GetPackage();
+	if (Object->IsIn(Package))
+	{
+		TabManager->TryInvokeTab(CurvesTabId);
+
+		CurveEditorToolkit->SelectCurves(Object, PropertyName);
+	}
+}
+
+void FCameraRigAssetEditorToolkit::OnObjectAddedToGraph(const FName GraphName, UObject* Object)
+{
+	ECameraRigAssetEditorMode CurrentMode = Impl->GetCameraRigEditorMode();
+	if ((GraphName == UCameraRigAsset::NodeTreeGraphName && CurrentMode == ECameraRigAssetEditorMode::NodeGraph) ||
+			(GraphName == UCameraRigAsset::TransitionsGraphName && CurrentMode == ECameraRigAssetEditorMode::TransitionGraph))
+	{
+		CurveEditorToolkit->AddCurveOwner(Object);
+	}
+}
+
+void FCameraRigAssetEditorToolkit::OnObjectRemovedFromGraph(const FName GraphName, UObject* Object)
+{
+	ECameraRigAssetEditorMode CurrentMode = Impl->GetCameraRigEditorMode();
+	if ((GraphName == UCameraRigAsset::NodeTreeGraphName && CurrentMode == ECameraRigAssetEditorMode::NodeGraph) ||
+			(GraphName == UCameraRigAsset::TransitionsGraphName && CurrentMode == ECameraRigAssetEditorMode::TransitionGraph))
+	{
+		CurveEditorToolkit->RemoveCurveOwner(Object);
+	}
 }
 
 FText FCameraRigAssetEditorToolkit::GetBaseToolkitName() const

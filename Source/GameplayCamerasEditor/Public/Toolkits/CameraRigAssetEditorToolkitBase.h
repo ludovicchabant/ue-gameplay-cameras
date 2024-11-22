@@ -52,6 +52,9 @@ public:
 
 	void SetLiveEditManager(TSharedPtr<IGameplayCamerasLiveEditManager> InLiveEditManager);
 
+	ECameraRigAssetEditorMode GetCameraRigEditorMode() const;
+	bool IsCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode) const;
+
 protected:
 
 	// FGCObject interface
@@ -64,7 +67,6 @@ protected:
 protected:
 
 	void SetCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode);
-	bool IsCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode) const;
 
 private:
 

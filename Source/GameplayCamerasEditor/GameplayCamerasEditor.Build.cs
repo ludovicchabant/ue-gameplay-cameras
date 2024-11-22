@@ -26,6 +26,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"CinematicCamera",
 				"Core",
 				"CoreUObject",
+				"CurveEditor",
 				"DeveloperSettings",
 				"EditorFramework",
 				"EditorSubsystem",

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraRigAsset.h"
 #include "CoreTypes.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Tools/BaseAssetToolkit.h"
@@ -10,6 +11,7 @@
 
 class SFindInObjectTreeGraph;
 class UCameraRigAsset;
+struct FEdGraphEditAction;
 struct FFindInObjectTreeGraphSource;
 
 namespace UE::Cameras
@@ -18,14 +20,17 @@ namespace UE::Cameras
 class FBuildButtonToolkit;
 class FCameraBuildLogToolkit;
 class FCameraRigAssetEditorToolkitBase;
+class FCurveEditorToolkit;
 class IGameplayCamerasLiveEditManager;
 
 class FCameraRigAssetEditorToolkit
 	: public FBaseAssetToolkit
+	, public ICameraRigAssetEventHandler
 {
 public:
 
 	FCameraRigAssetEditorToolkit(UAssetEditor* InOwningAssetEditor);
+	~FCameraRigAssetEditorToolkit();
 
 	void SetCameraRigAsset(UCameraRigAsset* InCameraRig);
 
@@ -46,10 +51,17 @@ protected:
 	virtual FString GetWorldCentricTabPrefix() const override;
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
 
+	// ICameraRigAssetEventHandler interface
+	virtual void OnObjectAddedToGraph(const FName GraphName, UObject* Object) override;
+	virtual void OnObjectRemovedFromGraph(const FName GraphName, UObject* Object) override;
+
 private:
 
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_Curves(const FSpawnTabArgs& Args);
+
+	void OnCurvesTabClosed(TSharedRef<SDockTab> InTab);
 
 	void OnBuild();
 	void OnFindInCameraRig();
@@ -57,10 +69,13 @@ private:
 	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
 	void OnJumpToObject(UObject* Object, FName PropertyName);
 
+	void OnInvokeCurveEditor(UObject* Object, FName PropertyName);
+
 private:
 
 	static const FName SearchTabId;
 	static const FName MessagesTabId;
+	static const FName CurvesTabId;
 
 	/** Base implementation */
 	TSharedPtr<FCameraRigAssetEditorToolkitBase> Impl;
@@ -74,12 +89,17 @@ private:
 	TSharedPtr<FBuildButtonToolkit> BuildButtonToolkit;
 	/** The output log */
 	TSharedPtr<FCameraBuildLogToolkit> BuildLogToolkit;
+	/** The curve editor */
+	TSharedPtr<FCurveEditorToolkit> CurveEditorToolkit;
 
 	/** Search widget */
 	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;
 
 	/** Live edit manager for updating the assets in the runtime */
 	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;
+
+	/** Event handler */
+	TCameraEventHandler<ICameraRigAssetEventHandler> EventHandler;
 };
 
 }  // namespace UE::Cameras

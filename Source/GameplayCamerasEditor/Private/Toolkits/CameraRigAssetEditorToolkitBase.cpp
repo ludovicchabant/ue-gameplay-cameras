@@ -207,6 +207,11 @@ bool FCameraRigAssetEditorToolkitBase::IsCameraRigEditorMode(ECameraRigAssetEdit
 	return CameraRigEditorWidget->IsEditorMode(InEditorMode);
 }
 
+ECameraRigAssetEditorMode FCameraRigAssetEditorToolkitBase::GetCameraRigEditorMode() const
+{
+	return CameraRigEditorWidget->GetEditorMode();
+}
+
 void FCameraRigAssetEditorToolkitBase::OnAnyGraphChanged(const FEdGraphEditAction& InEditAction)
 {
 	// Called when something is modified in the node graph or transition graph.
