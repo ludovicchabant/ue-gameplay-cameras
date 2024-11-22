@@ -6,6 +6,7 @@
 #include "CanvasItem.h"
 #include "CanvasTypes.h"
 #include "Components/LineBatchComponent.h"
+#include "Core/CameraPose.h"
 #include "Debug/CameraDebugClock.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/DebugTextRenderer.h"
@@ -81,6 +82,12 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugMaxCardColumns(
 	TEXT("GameplayCameras.Debug.MaxCardColumns"),
 	GGameplayCamerasDebugMaxCardColumns,
 	TEXT("Default: 2. The number of columns to layout the debug cards (e.g. graphs, clocks, etc.)"));
+
+float GGameplayCamerasDebugDefaultCameraSize = 50.f;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugDefaultCameraSize(
+	TEXT("GameplayCameras.Debug.DefaultCameraSize"),
+	GGameplayCamerasDebugDefaultCameraSize,
+	TEXT("Default: 50. The default size of debug cameras."));
 
 float GGameplayCamerasDebugDefaultCoordinateSystemAxesLength = 100.f;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugDefaultCoordinateSystemAxesLength(
@@ -272,6 +279,15 @@ void FCameraDebugRenderer::DrawClock(FCameraDebugClock& InClock, const FText& In
 	InClock.Draw(GetCanvas(), DrawParams);
 }
 
+void FCameraDebugRenderer::DrawCameraPose(const FCameraPose& InCameraPose, const FLinearColor& LineColor, float CameraSize)
+{
+	const FTransform3d Transform = InCameraPose.GetTransform();
+	const float EffectiveFieldOfView = InCameraPose.GetEffectiveFieldOfView();
+	const float AspectRatio = InCameraPose.GetSensorAspectRatio();
+	const double TargetDistance = InCameraPose.GetTargetDistance();
+	DrawCamera(Transform, EffectiveFieldOfView, AspectRatio, TargetDistance, LineColor, CameraSize, 1.f);
+}
+
 FVector2f FCameraDebugRenderer::GetNextCardPosition()
 {
 	const FVector2f Result(NextCardPosition);
@@ -299,6 +315,24 @@ void FCameraDebugRenderer::GetNextDrawGraphParams(FCameraDebugGraphDrawParams& O
 	OutDrawParams.GraphName = InGraphName;
 	OutDrawParams.GraphPosition = GetNextCardPosition();
 	OutDrawParams.GraphSize = FVector2f(GGameplayCamerasDebugCardWidth, GGameplayCamerasDebugCardHeight);
+}
+
+void FCameraDebugRenderer::Draw2DPointCross(const FVector2D& Location, float CrossSize, const FLinearColor& LineColor, float LineThickness)
+{
+	if (FCanvas* Canvas = GetCanvas())
+	{
+		const float HalfCrossSize = CrossSize / 2.f;
+
+		FCanvasLineItem Horizontal(Location - FVector2D(HalfCrossSize, 0), Location + FVector2D(HalfCrossSize, 0));
+		Horizontal.SetColor(LineColor);
+		Horizontal.LineThickness = LineThickness;
+		Canvas->DrawItem(Horizontal);
+
+		FCanvasLineItem Vertical(Location - FVector2D(0, HalfCrossSize), Location + FVector2D(0, HalfCrossSize));
+		Vertical.SetColor(LineColor);
+		Vertical.LineThickness = LineThickness;
+		Canvas->DrawItem(Vertical);
+	}
 }
 
 void FCameraDebugRenderer::Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness)
@@ -355,6 +389,14 @@ void FCameraDebugRenderer::Draw2DCircle(const FVector2D& Center, float Radius, c
 	}
 }
 
+void FCameraDebugRenderer::DrawPoint(const FVector3d& Location, float PointSize, const FLinearColor& LineColor, float LineThickness)
+{
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		LineBatcher->DrawPoint(Location, LineColor, PointSize, SDPG_Foreground);
+	}
+}
+
 void FCameraDebugRenderer::DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness)
 {
 	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
@@ -376,6 +418,70 @@ void FCameraDebugRenderer::DrawDirectionalArrow(const FVector3d& Start, const FV
 	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
 	{
 		LineBatcher->DrawDirectionalArrow(Start, End, ArrowSize, LineColor, 0.f, SDPG_Foreground, LineThickness);
+	}
+}
+
+void FCameraDebugRenderer::DrawCamera(const FTransform3d& Transform, float HorizontalFieldOfView, float AspectRatio, float TargetDistance, const FLinearColor& LineColor, float CameraSize, float LineThickness)
+{
+	if (AspectRatio <= 0.f)
+	{
+		AspectRatio = 1.f;
+	}
+	if (CameraSize <= 0.f)
+	{
+		CameraSize = GGameplayCamerasDebugDefaultCameraSize;
+	}
+
+	if (ULineBatchComponent* LineBatcher = GetDebugLineBatcher())
+	{
+		// We draw a pyramid representing the camera's FOV and aspect ratio. So we only need the origin
+		// point and the four corner points of the base.
+		const float TanHalfHFOV = FMath::Tan(FMath::DegreesToRadians(HorizontalFieldOfView / 2.f));
+		const float BaseHalfWidth = TanHalfHFOV * CameraSize;
+		const float BaseHalfHeight = BaseHalfWidth / AspectRatio;
+
+		const FVector3d ForwardDir(FVector3d::ForwardVector);
+		const FVector3d UpDir(FVector3d::UpVector);
+		const FVector3d RightDir(FVector3d::RightVector);
+
+		// Upper right, bottom right, bottom left, upper left.
+		FVector3d BaseCorners[4];
+		BaseCorners[0] = (ForwardDir * CameraSize) + (UpDir * BaseHalfHeight) + (RightDir * BaseHalfWidth);
+		BaseCorners[1] = (ForwardDir * CameraSize) - (UpDir * BaseHalfHeight) + (RightDir * BaseHalfWidth);
+		BaseCorners[2] = (ForwardDir * CameraSize) - (UpDir * BaseHalfHeight) - (RightDir * BaseHalfWidth);
+		BaseCorners[3] = (ForwardDir * CameraSize) + (UpDir * BaseHalfHeight) - (RightDir * BaseHalfWidth);
+
+		const FVector3d Location = Transform.GetLocation();
+		for (FVector3d& BaseCorner : BaseCorners)
+		{
+			BaseCorner = Location + Transform.TransformVectorNoScale(BaseCorner);
+		}
+
+		TArray<FBatchedLine> BatchedLines;
+		// Pyramid corners.
+		BatchedLines.Emplace(Location, BaseCorners[0], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(Location, BaseCorners[1], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(Location, BaseCorners[2], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(Location, BaseCorners[3], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		// Base edges.
+		BatchedLines.Emplace(BaseCorners[0], BaseCorners[1], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(BaseCorners[1], BaseCorners[2], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(BaseCorners[2], BaseCorners[3], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(BaseCorners[3], BaseCorners[0], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		// Base cross.
+		BatchedLines.Emplace(BaseCorners[0], BaseCorners[2], LineColor, 0.f, LineThickness, SDPG_Foreground);
+		BatchedLines.Emplace(BaseCorners[1], BaseCorners[3], LineColor, 0.f, LineThickness, SDPG_Foreground);
+
+		// Optional target distance line.
+		if (TargetDistance > 0.f)
+		{
+			const FVector3d AimDir = Transform.GetRotation().GetForwardVector();
+			BatchedLines.Emplace(
+					Location + AimDir * CameraSize, Location + AimDir * TargetDistance, 
+					LineColor, 0.f, LineThickness, SDPG_Foreground);
+		}
+
+		LineBatcher->DrawLines(BatchedLines);
 	}
 }
 

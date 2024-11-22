@@ -29,44 +29,54 @@ void DebugDrawCameraPoseField(FCameraDebugRenderer& Renderer, const TCHAR* Field
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FCameraPoseDebugBlock)
 
 FCameraPoseDebugBlock::FCameraPoseDebugBlock()
+	: CameraPoseLineColor(FColorList::SlateBlue)
 {
 }
 
 FCameraPoseDebugBlock::FCameraPoseDebugBlock(const FCameraPose& InCameraPose)
 	: CameraPose(InCameraPose)
+	, CameraPoseLineColor(FColorList::SlateBlue)
 {
 }
 
 void FCameraPoseDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
-	bool bShowUnchanged = false;
-	if (!ShowUnchangedCVarName.IsEmpty())
+	if (bDrawText)
 	{
-		IConsoleVariable* ShowUnchangedCVar = IConsoleManager::Get().FindConsoleVariable(*ShowUnchangedCVarName, false);
-		if (ensureMsgf(ShowUnchangedCVar, TEXT("No such console variable: %s"), *ShowUnchangedCVarName))
+		bool bShowUnchanged = false;
+		if (!ShowUnchangedCVarName.IsEmpty())
 		{
-			bShowUnchanged = ShowUnchangedCVar->GetBool();
+			IConsoleVariable* ShowUnchangedCVar = IConsoleManager::Get().FindConsoleVariable(*ShowUnchangedCVarName, false);
+			if (ensureMsgf(ShowUnchangedCVar, TEXT("No such console variable: %s"), *ShowUnchangedCVarName))
+			{
+				bShowUnchanged = ShowUnchangedCVar->GetBool();
+			}
 		}
-	}
 
-	const FCameraDebugColors& Colors = FCameraDebugColors::Get();
-	const FColor ChangedColor = Colors.Default;
-	const FColor UnchangedColor = Colors.Passive;
+		const FCameraDebugColors& Colors = FCameraDebugColors::Get();
+		const FColor ChangedColor = Colors.Default;
+		const FColor UnchangedColor = Colors.Passive;
 
-	const FCameraPoseFlags& ChangedFlags = CameraPose.GetChangedFlags();
+		const FCameraPoseFlags& ChangedFlags = CameraPose.GetChangedFlags();
 
 #define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
-	if (bShowUnchanged || ChangedFlags.PropName)\
-	{\
-		const FColor& PropColor = ChangedFlags.PropName ? ChangedColor : UnchangedColor;\
-		Private::DebugDrawCameraPoseField<PropType>(Renderer, TEXT(#PropName), CameraPose.Get##PropName(), PropColor);\
-	}
-	UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
+		if (bShowUnchanged || ChangedFlags.PropName)\
+		{\
+			const FColor& PropColor = ChangedFlags.PropName ? ChangedColor : UnchangedColor;\
+			Private::DebugDrawCameraPoseField<PropType>(Renderer, TEXT(#PropName), CameraPose.Get##PropName(), PropColor);\
+		}
+		UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 
-	Renderer.SetTextColor(Colors.Default);
-	Renderer.AddText(TEXT("Effective FOV  : %f\n"), CameraPose.GetEffectiveFieldOfView());
-	Renderer.AddText(TEXT("Effective Aspect Ratio  : %f\n"), CameraPose.GetSensorAspectRatio());
+			Renderer.SetTextColor(Colors.Default);
+		Renderer.AddText(TEXT("Effective FOV  : %f\n"), CameraPose.GetEffectiveFieldOfView());
+		Renderer.AddText(TEXT("Effective Aspect Ratio  : %f\n"), CameraPose.GetSensorAspectRatio());
+	}
+
+	if (bDrawInExternalRendering && Renderer.IsExternalRendering())
+	{
+		Renderer.DrawCameraPose(CameraPose, CameraPoseLineColor, CameraPoseSize);
+	}
 }
 
 void FCameraPoseDebugBlock::OnSerialize(FArchive& Ar)

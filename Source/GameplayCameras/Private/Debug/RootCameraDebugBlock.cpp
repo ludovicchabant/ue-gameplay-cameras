@@ -98,6 +98,11 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 		{
 			RootNodeEvaluator->BuildDebugBlocks(Params, Builder);
 		}
+
+		// Draw the final camera pose in external rendering, but don't draw text.
+		NodeTreeCategory.AddChild(
+				&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(CameraSystem.GetEvaluatedResult().CameraPose)
+					.ShouldDrawText(false));
 	}
 	Builder.EndChildDebugBlock();
 

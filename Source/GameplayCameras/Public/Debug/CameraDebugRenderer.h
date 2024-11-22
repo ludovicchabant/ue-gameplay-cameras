@@ -15,6 +15,7 @@ class UCanvas;
 class UFont;
 class ULineBatchComponent;
 class UWorld;
+struct FCameraPose;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -84,8 +85,15 @@ public:
 	template<uint8 NumValues>
 	void DrawGraph(TCameraDebugGraph<NumValues>& InGraph, const FText& InGraphName);
 
+	/**
+	 * Draws the given camera pose using the DrawCamera method.
+	 */
+	GAMEPLAYCAMERAS_API void DrawCameraPose(const FCameraPose& InCameraPose, const FLinearColor& LineColor, float CameraSize = 0.f);
+
 public:
 
+	/** Draws a 2D cross at a point. */
+	GAMEPLAYCAMERAS_API void Draw2DPointCross(const FVector2D& Location, float CrossSize, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 2D line. */
 	GAMEPLAYCAMERAS_API void Draw2DLine(const FVector2D& Start, const FVector2D& End, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 2D box. */
@@ -95,12 +103,16 @@ public:
 	/** Draws a 2D circle. */
 	GAMEPLAYCAMERAS_API void Draw2DCircle(const FVector2D& Center, float Radius, const FLinearColor& LineColor, float LineThickness = 1.f, int32 NumSides = 0);
 
+	/** Draws a 3D point. */
+	GAMEPLAYCAMERAS_API void DrawPoint(const FVector3d& Location, float PointSize, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D line. */
 	GAMEPLAYCAMERAS_API void DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D sphere. */
-	GAMEPLAYCAMERAS_API void DrawSphere(const FVector3d& Center, float Radius, int32 Segments, const FLinearColor& LineColor, float LineThickness);
+	GAMEPLAYCAMERAS_API void DrawSphere(const FVector3d& Center, float Radius, int32 Segments, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D arrow. */
-	GAMEPLAYCAMERAS_API void DrawDirectionalArrow(const FVector3d& Start, const FVector3d& End, float ArrowSize, const FLinearColor& LineColor, float LineThickness);
+	GAMEPLAYCAMERAS_API void DrawDirectionalArrow(const FVector3d& Start, const FVector3d& End, float ArrowSize, const FLinearColor& LineColor, float LineThickness = 1.f);
+	/** Draws a camera. */
+	GAMEPLAYCAMERAS_API void DrawCamera(const FTransform3d& Transform, float HorizontalFieldOfView, float AspectRatio, float TargetDistance, const FLinearColor& LineColor, float CameraSize = 0.f, float LineThickness = 1.f);
 	/** Draws a 3D coordinate system. */
 	GAMEPLAYCAMERAS_API void DrawCoordinateSystem(const FVector3d& Location, const FRotator3d& Rotation, float AxesLength = 0.f);
 	/** Draws a 3D coordinate system. */
