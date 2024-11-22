@@ -6,6 +6,7 @@
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetBuilder.h"
+#include "Customizations/RichCurveDetailsCustomizations.h"
 #include "Editors/CameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/SCameraRigAssetEditor.h"
@@ -62,6 +63,11 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 	UClass* TransitionSchemaClass = UCameraRigTransitionGraphSchema::StaticClass();
 	UCameraRigTransitionGraphSchema* DefaultTransitionGraphSchema = Cast<UCameraRigTransitionGraphSchema>(TransitionSchemaClass->GetDefaultObject());
 	TransitionGraphConfig = DefaultTransitionGraphSchema->BuildGraphConfig();
+}
+
+FCameraRigAssetEditorToolkit::~FCameraRigAssetEditorToolkit()
+{
+	FRichCurveDetailsCustomization::OnInvokeCurveEditor().RemoveAll(this);
 }
 
 void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRig)
@@ -267,6 +273,8 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 	Impl->SetLiveEditManager(LiveEditManager);
 
 	RegenerateMenusAndToolbars();
+
+	FRichCurveDetailsCustomization::OnInvokeCurveEditor().AddSP(this, &FCameraRigAssetEditorToolkit::OnInvokeCurveEditor);
 }
 
 void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()

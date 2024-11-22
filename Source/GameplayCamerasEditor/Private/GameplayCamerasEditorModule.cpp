@@ -17,6 +17,7 @@
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraVariableReferenceDetailsCustomizations.h"
 #include "Customizations/FilmbackCameraNodeDetailsCustomization.h"
+#include "Customizations/RichCurveDetailsCustomizations.h"
 #include "Debug/CameraDebugCategories.h"
 #include "Debugger/SBlendStacksDebugPanel.h"
 #include "Debugger/SCameraNodeTreeDebugPanel.h"
@@ -470,6 +471,7 @@ private:
 
 		FCameraParameterDetailsCustomization::Register(PropertyEditorModule);
 		FCameraVariableReferenceDetailsCustomization::Register(PropertyEditorModule);
+		FRichCurveDetailsCustomization::Register(PropertyEditorModule);
 
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigProxyTableEntry", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraProxyTableEntryDetailsCustomization::MakeInstance));
@@ -490,6 +492,7 @@ private:
 		{
 			FCameraParameterDetailsCustomization::Unregister(*PropertyEditorModule);
 			FCameraVariableReferenceDetailsCustomization::Unregister(*PropertyEditorModule);
+			FRichCurveDetailsCustomization::Unregister(*PropertyEditorModule);
 
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigProxyTableEntry");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
