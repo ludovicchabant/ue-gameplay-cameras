@@ -257,8 +257,14 @@ void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerControlle
 	TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator(false);
 	if (Evaluator.IsValid())
 	{
+		// We're looking from the outside if we are not the view target, or if we don't have a player
+		// anymore (which happens in spectator mode like with the debug camera).
+		APlayerController* ActualPlayerController = WeakPlayerController.Get();
+		const bool bIsDebugCameraEnabled = (ActualPlayerController && (ActualPlayerController->GetViewTarget() != GetOwner() || !ActualPlayerController->Player));
+
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
 		DebugUpdateParams.CanvasObject = Canvas;
+		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
 		Evaluator->DebugUpdate(DebugUpdateParams);
 	}
 }

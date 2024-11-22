@@ -41,9 +41,12 @@ class FCameraDebugRenderer
 public:
 
 	/** Creates a new debug renderer. */
-	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject);
+	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject, bool bInIsExternalRendering = false);
 	/** Destroys the debug renderer. */
 	GAMEPLAYCAMERAS_API ~FCameraDebugRenderer();
+
+	/** Whether we are looking at the camera system from the "outside". */
+	bool IsExternalRendering() const { return bIsExternalRendering; }
 
 	/** Adds text to the text wall. */
 	GAMEPLAYCAMERAS_API void AddText(const FString& InString);
@@ -155,6 +158,9 @@ private:
 	UWorld* World;
 	/** The canvas used to draw the text wall. */
 	UCanvas* CanvasObject;
+	/** Whether we are looking from the "outside" of the camera system. */
+	bool bIsExternalRendering = false;
+
 	/** The draw color of the canvas. */
 	FColor DrawColor;
 

@@ -395,7 +395,7 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	}
 #endif
 	
-	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject);
+	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject, Params.bIsDebugCameraEnabled);
 	RootDebugBlock->RootDebugDraw(Renderer);
 }
 

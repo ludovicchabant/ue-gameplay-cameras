@@ -87,6 +87,7 @@ public:
 struct FCameraSystemDebugUpdateParams
 {
 	UCanvas* CanvasObject = nullptr;
+	bool bIsDebugCameraEnabled = false;
 };
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 

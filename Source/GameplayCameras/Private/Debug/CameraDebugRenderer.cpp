@@ -88,9 +88,10 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugDefaultCoordinateSystemAx
 	GGameplayCamerasDebugDefaultCoordinateSystemAxesLength,
 	TEXT("Default: 100. The default length of coordinate system axes."));
 
-FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject)
+FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject, bool bInIsExternalRendering)
 	: World(InWorld)
 	, CanvasObject(InCanvasObject)
+	, bIsExternalRendering(bInIsExternalRendering)
 	, DrawColor(FColor::White)
 {
 	RenderFont = GEngine->GetSmallFont();
