@@ -6,7 +6,9 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/UnrealType.h"
 
+class UCameraNode;
 class UPackage;
+struct FPropertyChangedEvent;
 
 namespace UE::Cameras
 {
@@ -29,8 +31,19 @@ public:
 
 	/** Add a listener for the given package. */
 	virtual void AddListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) = 0;
-	/** Removes a listener for the given package. */
+	/** Remove a listener for the given package. */
 	virtual void RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) = 0;
+
+	/** Notify all listeners that a property was changed on the given camera node. */
+	virtual void NotifyPostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) const = 0;
+
+	/** Add a listener for the given node. */
+	virtual void AddListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener) = 0;
+	/** Remove a listener for the given node. */
+	virtual void RemoveListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener) = 0;
+
+	/** Remove the given listener from all notifications. */
+	virtual void RemoveListener(IGameplayCamerasLiveEditListener* Listener) = 0;
 };
 
 #endif  // WITH_EDITOR

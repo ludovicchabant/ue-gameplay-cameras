@@ -215,6 +215,8 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 
+	Impl->SetLiveEditManager(LiveEditManager);
+
 	RegenerateMenusAndToolbars();
 }
 

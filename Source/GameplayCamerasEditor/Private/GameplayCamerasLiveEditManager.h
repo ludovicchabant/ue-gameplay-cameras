@@ -4,10 +4,10 @@
 
 #include "IGameplayCamerasLiveEditManager.h"
 
+#include "Core/CameraNode.h"
 #include "CoreTypes.h"
+#include "UObject/Package.h"
 #include "UObject/WeakObjectPtr.h"
-
-class UPackage;
 
 namespace UE::Cameras
 {
@@ -25,6 +25,10 @@ public:
 	virtual void NotifyPostBuildAsset(const UPackage* InAssetPackage) const override;
 	virtual void AddListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
 	virtual void RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
+	virtual void NotifyPostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) const override;
+	virtual void AddListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener) override;
+	virtual void RemoveListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener) override;
+	virtual void RemoveListener(IGameplayCamerasLiveEditListener* Listener) override;
 
 private:
 
@@ -34,9 +38,13 @@ private:
 
 private:
 
-	using FListenerArray = TArray<IGameplayCamerasLiveEditListener*>;
-	using FListenerMap = TMap<TWeakObjectPtr<const UPackage>, FListenerArray>;
-	FListenerMap ListenerMap;
+	using FListenerArray = TArray<IGameplayCamerasLiveEditListener*, TInlineAllocator<4>>;
+
+	using FPackageListenerMap = TMap<TWeakObjectPtr<const UPackage>, FListenerArray>;
+	FPackageListenerMap PackageListenerMap;
+
+	using FNodeListenerMap = TMap<TWeakObjectPtr<const UCameraNode>, FListenerArray>;
+	FNodeListenerMap NodeListenerMap;
 };
 
 }  // namespace UE::Cameras

@@ -10,6 +10,47 @@
 namespace UE::Cameras
 {
 
+namespace Internal
+{
+
+using FListenerArray = TArray<IGameplayCamerasLiveEditListener*, TInlineAllocator<4>>;
+
+template<typename ObjectType>
+void AddListenerImpl(
+		TMap<TWeakObjectPtr<const ObjectType>, FListenerArray>& ListenerMap,
+		const ObjectType* Object,
+		IGameplayCamerasLiveEditListener* Listener)
+{
+	if (ensure(Object && Listener))
+	{
+		FListenerArray& Listeners = ListenerMap.FindOrAdd(Object);
+		Listeners.Add(Listener);
+	}
+}
+
+template<typename ObjectType>
+void RemoveListenerImpl(
+		TMap<TWeakObjectPtr<const ObjectType>, FListenerArray>& ListenerMap,
+		const ObjectType* Object,
+		IGameplayCamerasLiveEditListener* Listener)
+{
+	if (ensure(Object && Listener))
+	{
+		FListenerArray* Listeners = ListenerMap.Find(Object);
+		if (ensure(Listeners))
+		{
+			const int32 NumRemoved = Listeners->RemoveSwap(Listener);
+			ensure(NumRemoved == 1);
+			if (Listeners->IsEmpty())
+			{
+				ListenerMap.Remove(Object);
+			}
+		}
+	}
+}
+
+}  // namespace Internal
+
 FGameplayCamerasLiveEditManager::FGameplayCamerasLiveEditManager()
 {
 	FCoreUObjectDelegates::GetPostGarbageCollect().AddRaw(this, &FGameplayCamerasLiveEditManager::OnPostGarbageCollection);
@@ -22,7 +63,7 @@ FGameplayCamerasLiveEditManager::~FGameplayCamerasLiveEditManager()
 
 void FGameplayCamerasLiveEditManager::NotifyPostBuildAsset(const UPackage* InAssetPackage) const
 {
-	if (const FListenerArray* Listeners = ListenerMap.Find(InAssetPackage))
+	if (const FListenerArray* Listeners = PackageListenerMap.Find(InAssetPackage))
 	{
 		FGameplayCameraAssetBuildEvent BuildEvent;
 		BuildEvent.AssetPackage = InAssetPackage;
@@ -36,25 +77,53 @@ void FGameplayCamerasLiveEditManager::NotifyPostBuildAsset(const UPackage* InAss
 
 void FGameplayCamerasLiveEditManager::AddListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener)
 {
-	if (ensure(InAssetPackage && Listener))
-	{
-		FListenerArray& Listeners = ListenerMap.FindOrAdd(InAssetPackage);
-		Listeners.Add(Listener);
-	}
+	Internal::AddListenerImpl(PackageListenerMap, InAssetPackage, Listener);
 }
 
 void FGameplayCamerasLiveEditManager::RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener)
 {
-	if (ensure(InAssetPackage && Listener))
+	Internal::RemoveListenerImpl(PackageListenerMap, InAssetPackage, Listener);
+}
+
+void FGameplayCamerasLiveEditManager::NotifyPostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) const
+{
+	if (const FListenerArray* Listeners = NodeListenerMap.Find(InCameraNode))
 	{
-		FListenerArray* Listeners = ListenerMap.Find(InAssetPackage);
-		if (ensure(Listeners))
+		for (IGameplayCamerasLiveEditListener* Listener : *Listeners)
 		{
-			const int32 NumRemoved = Listeners->RemoveSwap(Listener);
-			ensure(NumRemoved == 1);
-			if (Listeners->IsEmpty())
+			Listener->PostEditChangeProperty(InCameraNode, PropertyChangedEvent);
+		}
+	}
+}
+
+void FGameplayCamerasLiveEditManager::AddListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener)
+{
+	Internal::AddListenerImpl(NodeListenerMap, InCameraNode, Listener);
+}
+
+void FGameplayCamerasLiveEditManager::RemoveListener(const UCameraNode* InCameraNode, IGameplayCamerasLiveEditListener* Listener)
+{
+	Internal::RemoveListenerImpl(NodeListenerMap, InCameraNode, Listener);
+}
+
+void FGameplayCamerasLiveEditManager::RemoveListener(IGameplayCamerasLiveEditListener* Listener)
+{
+	if (ensure(Listener))
+	{
+		for (auto It = PackageListenerMap.CreateIterator(); It; ++It)
+		{
+			It.Value().Remove(Listener);
+			if (It.Value().IsEmpty())
 			{
-				ListenerMap.Remove(InAssetPackage);
+				It.RemoveCurrent();
+			}
+		}
+		for (auto It = NodeListenerMap.CreateIterator(); It; ++It)
+		{
+			It.Value().Remove(Listener);
+			if (It.Value().IsEmpty())
+			{
+				It.RemoveCurrent();
 			}
 		}
 	}
@@ -67,7 +136,7 @@ void FGameplayCamerasLiveEditManager::OnPostGarbageCollection()
 
 void FGameplayCamerasLiveEditManager::RemoveGarbage()
 {
-	for (auto It = ListenerMap.CreateIterator(); It; ++It)
+	for (auto It = PackageListenerMap.CreateIterator(); It; ++It)
 	{
 		if (!It.Key().IsValid())
 		{

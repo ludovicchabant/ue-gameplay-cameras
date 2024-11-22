@@ -3,11 +3,13 @@
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
 
 #include "Commands/CameraRigAssetEditorCommands.h"
+#include "Core/CameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "Editors/SCameraRigAssetEditor.h"
 #include "Editors/SObjectTreeGraphToolbox.h"
 #include "Framework/Commands/UICommandList.h"
 #include "Framework/Docking/TabManager.h"
+#include "IGameplayCamerasLiveEditManager.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -183,6 +185,15 @@ void FCameraRigAssetEditorToolkitBase::NotifyPostChange(const FPropertyChangedEv
 	{
 		CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
 	}
+
+	if (LiveEditManager && PropertyChangedEvent.GetNumObjectsBeingEdited() > 0)
+	{
+		const UCameraNode* EditedCameraNode = Cast<UCameraNode>(PropertyChangedEvent.GetObjectBeingEdited(0));
+		if (EditedCameraNode)
+		{
+			LiveEditManager->NotifyPostEditChangeProperty(EditedCameraNode, PropertyChangedEvent);
+		}
+	}
 }
 
 void FCameraRigAssetEditorToolkitBase::SetCameraRigEditorMode(ECameraRigAssetEditorMode InEditorMode)
@@ -202,9 +213,12 @@ void FCameraRigAssetEditorToolkitBase::OnAnyGraphChanged(const FEdGraphEditActio
 	if (CameraRigAsset)
 	{
 		CameraRigAsset->BuildStatus = ECameraBuildStatus::Dirty;
-
-		CameraRigBuildStatusDirtied.Broadcast();
 	}
+}
+
+void FCameraRigAssetEditorToolkitBase::SetLiveEditManager(TSharedPtr<IGameplayCamerasLiveEditManager> InLiveEditManager)
+{
+	LiveEditManager = InLiveEditManager;
 }
 
 }  // namespace UE::Cameras

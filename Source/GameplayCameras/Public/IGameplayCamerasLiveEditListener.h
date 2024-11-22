@@ -6,7 +6,9 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/UnrealType.h"
 
+class UCameraNode;
 class UPackage;
+struct FPropertyChangedEvent;
 
 namespace UE::Cameras
 {
@@ -27,11 +29,17 @@ public:
 
 	virtual ~IGameplayCamerasLiveEditListener() {}
 
+	/** Called when a camera asset has been (re)built. */
 	void PostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent) { OnPostBuildAsset(BuildEvent); }
+	/** Called when a camera node's property has been changed. */
+	void PostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) { OnPostEditChangeProperty(InCameraNode, PropertyChangedEvent); }
 
 protected:
 
-	virtual void OnPostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent) = 0;
+	/** Called when a camera asset has been (re)built. */
+	virtual void OnPostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent) {}
+	/** Called when a camera node's property has been changed. */
+	virtual void OnPostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) {}
 };
 
 #endif  // WITH_EDITOR
