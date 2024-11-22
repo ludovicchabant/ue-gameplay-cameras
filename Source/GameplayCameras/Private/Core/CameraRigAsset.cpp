@@ -334,33 +334,41 @@ void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& O
 
 void UCameraRigAsset::AddConnectableObject(FName InGraphName, UObject* InObject)
 {
+	using namespace UE::Cameras;
+
 	Modify();
 
 	if (InGraphName == NodeTreeGraphName)
 	{
 		const int32 Index = AllNodeTreeObjects.AddUnique(InObject);
 		ensure(Index == AllNodeTreeObjects.Num() - 1);
+		EventHandlers.Notify(&ICameraRigAssetEventHandler::OnObjectAddedToGraph, NodeTreeGraphName, InObject);
 	}
 	else if (InGraphName == TransitionsGraphName)
 	{
 		const int32 Index = AllTransitionsObjects.AddUnique(InObject);
 		ensure(Index == AllTransitionsObjects.Num() - 1);
+		EventHandlers.Notify(&ICameraRigAssetEventHandler::OnObjectAddedToGraph, TransitionsGraphName, InObject);
 	}
 }
 
 void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObject)
 {
+	using namespace UE::Cameras;
+
 	Modify();
 
 	if (InGraphName == NodeTreeGraphName)
 	{
 		const int32 NumRemoved = AllNodeTreeObjects.Remove(InObject);
 		ensure(NumRemoved == 1);
+		EventHandlers.Notify(&ICameraRigAssetEventHandler::OnObjectRemovedFromGraph, NodeTreeGraphName, InObject);
 	}
 	else if (InGraphName == TransitionsGraphName)
 	{
 		const int32 NumRemoved = AllTransitionsObjects.Remove(InObject);
 		ensure(NumRemoved == 1);
+		EventHandlers.Notify(&ICameraRigAssetEventHandler::OnObjectRemovedFromGraph, TransitionsGraphName, InObject);
 	}
 }
 

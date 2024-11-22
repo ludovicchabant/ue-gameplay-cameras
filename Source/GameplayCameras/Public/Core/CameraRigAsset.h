@@ -35,6 +35,11 @@ namespace UE::Cameras
 
 		/** Called when the camera rig asset has been built. */
 		virtual void OnCameraRigBuilt(const UCameraRigAsset* CameraRigAsset) {}
+
+#if WITH_EDITOR
+		virtual void OnObjectAddedToGraph(const FName GraphName, UObject* Object) {}
+		virtual void OnObjectRemovedFromGraph(const FName GraphName, UObject* Object) {}
+#endif  // WITH_EDITOR
 	};
 }
 
