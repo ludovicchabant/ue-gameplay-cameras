@@ -11,3 +11,8 @@ FVector FCameraVectorCurve::GetValue(float InTime) const
 	return Result;
 }
 
+bool FCameraVectorCurve::HasAnyData() const
+{
+	return Curves[0].HasAnyData() || Curves[1].HasAnyData() || Curves[2].HasAnyData();
+}
+

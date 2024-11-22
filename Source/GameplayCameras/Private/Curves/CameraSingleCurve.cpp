@@ -7,3 +7,8 @@ float FCameraSingleCurve::GetValue(float InTime) const
 	return Curve.Eval(InTime);
 }
 
+bool FCameraSingleCurve::HasAnyData() const
+{
+	return Curve.HasAnyData();
+}
+

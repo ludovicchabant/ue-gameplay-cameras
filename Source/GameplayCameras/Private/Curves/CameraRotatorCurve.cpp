@@ -13,3 +13,8 @@ FRotator FCameraRotatorCurve::GetValue(float InTime) const
 	return Result;
 }
 
+bool FCameraRotatorCurve::HasAnyData() const
+{
+	return Curves[0].HasAnyData() || Curves[1].HasAnyData() || Curves[2].HasAnyData();
+}
+

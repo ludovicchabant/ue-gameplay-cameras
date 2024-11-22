@@ -8,7 +8,7 @@
 #include "CameraVectorCurve.generated.h"
 
 USTRUCT()
-struct FCameraVectorCurve
+struct GAMEPLAYCAMERAS_API FCameraVectorCurve
 {
 	GENERATED_BODY()
 
@@ -16,5 +16,6 @@ struct FCameraVectorCurve
 	FRichCurve Curves[3];
 
 	FVector GetValue(float InTime) const;
+	bool HasAnyData() const;
 };
 

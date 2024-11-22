@@ -8,7 +8,7 @@
 #include "CameraRotatorCurve.generated.h"
 
 USTRUCT()
-struct FCameraRotatorCurve
+struct GAMEPLAYCAMERAS_API FCameraRotatorCurve
 {
 	GENERATED_BODY()
 
@@ -16,5 +16,6 @@ struct FCameraRotatorCurve
 	FRichCurve Curves[3];
 
 	FRotator GetValue(float InTime) const;
+	bool HasAnyData() const;
 };
 
