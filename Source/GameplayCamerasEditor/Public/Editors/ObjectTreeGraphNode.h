@@ -63,6 +63,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	virtual FLinearColor GetNodeTitleColor() const override;
+	virtual FLinearColor GetNodeTitleTextColor() const override;
 	virtual FLinearColor GetNodeBodyTintColor() const override;
 	virtual FText GetTooltipText() const override;
 	virtual void AllocateDefaultPins() override;
@@ -86,7 +87,7 @@ public:
 public:
 
 	// Internal API.
-	void GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties) const;
+	void GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties, EEdGraphPinDirection Direction) const;
 	void CreateNewItemPins(FArrayProperty& InArrayProperty, int32 NumExtraPins);
 	void CreateNewItemPins(UEdGraphPin* InParentArrayPin, int32 NumExtraPins);
 	void InsertNewItemPin(UEdGraphPin* InParentArrayPin, int32 Index);

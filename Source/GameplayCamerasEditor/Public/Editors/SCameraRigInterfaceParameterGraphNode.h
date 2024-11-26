@@ -24,7 +24,7 @@ protected:
 	// SGraphNode interface.
 	virtual void UpdateGraphNode() override;
 	virtual const FSlateBrush* GetShadowBrush(bool bSelected) const override;
-	virtual void GetDiffHighlightBrushes(const FSlateBrush*& BackgroundOut, const FSlateBrush*& ForegroundOut) const override;
+	virtual TSharedPtr<SGraphPin> CreatePinWidget(UEdGraphPin* InPin) const override;
 
 private:
 	

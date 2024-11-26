@@ -5,6 +5,7 @@
 #include "Core/CameraParameters.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/SCameraNodeGraphNode.h"
 #include "ToolMenus.h"
 
 UCameraNodeGraphNode::UCameraNodeGraphNode(const FObjectInitializer& ObjInit)
@@ -41,6 +42,11 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 	}
+}
+
+TSharedPtr<SGraphNode> UCameraNodeGraphNode::CreateVisualWidget()
+{
+	return SNew(SCameraNodeGraphNode).GraphNode(this);
 }
 
 UEdGraphPin* UCameraNodeGraphNode::GetPinForCameraParameterProperty(const FName& InPropertyName) const

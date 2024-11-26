@@ -136,6 +136,9 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("Graph.CameraRigParameterNode.DiffHighlight", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlight", FMargin(18.0f/64.0f)));
 	Set("Graph.CameraRigParameterNode.DiffHighlightShading", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlightShading", FMargin(18.0f/64.0f)));
 
+	Set("Graph.CameraRigParameterPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Connected", Icon16x16));
+	Set("Graph.CameraRigParameterPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Disconnected", Icon16x16));
+
 	FSlateStyleRegistry::RegisterSlateStyle(*this);
 }
 

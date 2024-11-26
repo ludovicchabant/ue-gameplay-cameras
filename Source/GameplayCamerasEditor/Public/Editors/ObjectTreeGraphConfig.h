@@ -65,8 +65,10 @@ public:
 	/** Default direction of property pins. */
 	OTGCC_FIELD(TOptional<EEdGraphPinDirection>, DefaultPropertyPinDirectionOverride)
 
-	/** Color of the graph node's title. */
+	/** Color of the graph node's title background. */
 	OTGCC_FIELD(TOptional<FLinearColor>, NodeTitleColor)
+	/** Color of the graph node's title text. */
+	OTGCC_FIELD(TOptional<FLinearColor>, NodeTitleTextColor)
 	/** Color of the graph node's body. */
 	OTGCC_FIELD(TOptional<FLinearColor>, NodeBodyTintColor)
 
@@ -96,6 +98,7 @@ private:
 	OTGCC_FIELD_FLAG(HasSelfPin)
 	OTGCC_FIELD_FLAG(DefaultPropertyPinDirectionOverride)
 	OTGCC_FIELD_FLAG(NodeTitleColor)
+	OTGCC_FIELD_FLAG(NodeTitleTextColor)
 	OTGCC_FIELD_FLAG(NodeBodyTintColor)
 	OTGCC_FIELD_FLAG(OnSetupNewObject)
 	OTGCC_FIELD_FLAG(NodeTitleUsesObjectName)
@@ -161,7 +164,7 @@ private:
 
 #define OTGCCS_FIELD(FieldType, FieldName)\
 	public:\
-		typename TCallTraits<FieldType>::ConstReference FieldName() const\
+		typename TCallTraits<FieldType>::ConstReference FieldName(typename TCallTraits<FieldType>::ConstReference DefaultValue) const\
 		{\
 			for (const FObjectTreeGraphClassConfig* InnerConfig : InnerConfigs)\
 			{\
@@ -170,7 +173,11 @@ private:
 					return InnerConfig->FieldName();\
 				}\
 			}\
-			return DefaultConfig.FieldName();\
+			return DefaultValue;\
+		}\
+		typename TCallTraits<FieldType>::ConstReference FieldName() const\
+		{\
+			return FieldName(DefaultConfig.FieldName());\
 		}
 
 /**
@@ -196,8 +203,10 @@ public:
 	/** Default direction of property pins. */
 	OTGCCS_FIELD(TOptional<EEdGraphPinDirection>, DefaultPropertyPinDirectionOverride)
 
-	/** Color of the graph node's title. */
+	/** Color of the graph node's title background. */
 	OTGCCS_FIELD(TOptional<FLinearColor>, NodeTitleColor)
+	/** Color of the graph node's title text. */
+	OTGCCS_FIELD(TOptional<FLinearColor>, NodeTitleTextColor)
 	/** Color of the graph node's body. */
 	OTGCCS_FIELD(TOptional<FLinearColor>, NodeBodyTintColor)
 
@@ -273,8 +282,15 @@ public:
 	 */
 	TSubclassOf<UObjectTreeGraphNode> DefaultGraphNodeClass;
 
-	/** The default title color for an object's graph node. */
+	/** The default name for a node's self pin. */
+	FName DefaultSelfPinName;
+	/** The default friendly name for a node's self pin. */
+	FText DefaultSelfPinFriendlyName;
+
+	/** The default title background color for an object's graph node. */
 	FLinearColor DefaultGraphNodeTitleColor;
+	/** The default title text color for an object's graph node. */
+	FLinearColor DefaultGraphNodeTitleTextColor;
 	/** The default body color for an object's graph node. */
 	FLinearColor DefaultGraphNodeBodyTintColor;
 

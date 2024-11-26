@@ -83,6 +83,7 @@ FObjectTreeGraphConfig UCameraRigTransitionGraphSchemaBase::BuildGraphConfig() c
 	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransition::StaticClass());
 	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransitionCondition::StaticClass());
 	GraphConfig.ConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
+	GraphConfig.DefaultSelfPinName = NAME_None;
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransition::StaticClass())
 		.NodeTitleColor(Settings->CameraRigTransitionTitleColor);
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
@@ -90,7 +91,8 @@ FObjectTreeGraphConfig UCameraRigTransitionGraphSchemaBase::BuildGraphConfig() c
 		.NodeTitleColor(Settings->CameraRigTransitionConditionTitleColor);
 	GraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())
 		.StripDisplayNameSuffix(TEXT("Camera Node"))
-		.CreateCategoryMetaData(TEXT("CameraNodeCategories"));
+		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
+		.NodeTitleColor(Settings->CameraBlendNodeTitleColor);
 
 	OnBuildGraphConfig(GraphConfig);
 

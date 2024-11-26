@@ -17,6 +17,8 @@ TSharedPtr<FObjectTreeGraphEditorStyle> FObjectTreeGraphEditorStyle::Singleton;
 FObjectTreeGraphEditorStyle::FObjectTreeGraphEditorStyle()
 	: FSlateStyleSet("ObjectTreeGraphEditorStyle")
 {
+	const FVector2D Icon12x16(12.0f, 16.0f);
+	const FVector2D Icon15x11(15.0f, 11.0f);
 	const FVector2D Icon16x16(16.0f, 16.0f);
 	const FVector2D Icon20x20(20.0f, 20.0f);
 	const FVector2D Icon24x24(24.0f, 24.0f);
@@ -30,6 +32,22 @@ FObjectTreeGraphEditorStyle::FObjectTreeGraphEditorStyle()
 
 	const FButtonStyle& DefaultButton = FAppStyle::Get().GetWidgetStyle<FButtonStyle>("Button");
 	const FTextBlockStyle& NormalText = FAppStyle::Get().GetWidgetStyle<FTextBlockStyle>("NormalText");
+
+	// Object tree graph node styles.
+	Set("ObjectTreeGraphNode.Body", new BOX_BRUSH("Graph/ObjectTreeGraphNode_Body", FMargin(16.f/64.f, 25.f/64.f, 16.f/64.f, 16.f/64.f)));
+	Set("ObjectTreeGraphNode.Shadow", new BOX_BRUSH("Graph/ObjectTreeGraphNode_Shadow", FMargin(18.0f/64.0f)));
+	Set("ObjectTreeGraphNode.ShadowSelected", new BOX_BRUSH("Graph/ObjectTreeGraphNode_Shadow_Selected", FMargin(18.0f/64.0f)));
+	Set("ObjectTreeGraphNode.TitleHighlight", new BOX_BRUSH("Graph/ObjectTreeGraphNode_TitleHighlight", FMargin(16.f/64.f, 1.f, 16.f/64.f, 0.f)));
+	Set("ObjectTreeGraphNode.TitleBackground", new BOX_BRUSH("Graph/ObjectTreeGraphNode_TitleBackground", FMargin(16.f/64.f, 25.f/64.f, 16.f/64.f, 16.f/64.f)));
+	Set("ObjectTreeGraphNode.DiffHighlight", new BOX_BRUSH("Graph/ObjectTreeGraphNode_DiffHighlight", FMargin(18.0f/64.0f)));
+	Set("ObjectTreeGraphNode.DiffHighlightShading", new BOX_BRUSH("Graph/ObjectTreeGraphNode_DiffHighlightShading", FMargin(18.0f/64.0f)));
+
+	// Object tree graph pin styles.
+	Set("ObjectTreeGraphNode.SelfPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_SelfPin_Connected", Icon12x16));
+	Set("ObjectTreeGraphNode.SelfPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_SelfPin_Disconnected", Icon12x16));
+
+	Set("ObjectTreeGraphNode.ObjectPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_ArrowPin_Connected", Icon15x11));
+	Set("ObjectTreeGraphNode.ObjectPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_ArrowPin_Disconnected", Icon15x11));
 
 	// Object tree graph toolbox styles.
 	Set("ObjectTreeGraphToolbox.Entry", FButtonStyle(DefaultButton)

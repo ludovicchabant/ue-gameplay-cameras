@@ -4,17 +4,12 @@
 
 #include "Core/CameraRigAsset.h"
 #include "Editors/ObjectTreeGraphNode.h"
-#include "SCommentBubble.h"
 #include "SGraphNode.h"
 #include "SNodePanel.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
-#include "TutorialMetaData.h"
 #include "Widgets/Images/SImage.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SSpacer.h"
 #include "Widgets/Notifications/SErrorText.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -124,12 +119,15 @@ const FSlateBrush* SCameraRigInterfaceParameterGraphNode::GetShadowBrush(bool bS
 		CamerasEditorStyle->GetBrush(TEXT("Graph.CameraRigParameterNode.Shadow"));
 }
 
-void SCameraRigInterfaceParameterGraphNode::GetDiffHighlightBrushes(const FSlateBrush*& BackgroundOut, const FSlateBrush*& ForegroundOut) const
+TSharedPtr<SGraphPin> SCameraRigInterfaceParameterGraphNode::CreatePinWidget(UEdGraphPin* InPin) const
 {
 	using namespace UE::Cameras;
+	TSharedPtr<SGraphPin> PinWidget = SObjectTreeGraphNode::CreatePinWidget(InPin);
 	TSharedRef<FGameplayCamerasEditorStyle> CamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
-	BackgroundOut = CamerasEditorStyle->GetBrush(TEXT("Graph.CameraRigParameterNode.DiffHighlight"));
-	ForegroundOut = CamerasEditorStyle->GetBrush(TEXT("Graph.CameraRigParameterNode.DiffHighlightShading"));
+	const FSlateBrush* ConnectedBrush = CamerasEditorStyle->GetBrush("Graph.CameraRigParameterPin.Connected");
+	const FSlateBrush* DisconnectedBrush = CamerasEditorStyle->GetBrush("Graph.CameraRigParameterPin.Disconnected");
+	PinWidget->SetCustomPinIcon(ConnectedBrush, DisconnectedBrush);
+	return PinWidget;
 }
 
 FText SCameraRigInterfaceParameterGraphNode::GetInterfaceParameterName() const

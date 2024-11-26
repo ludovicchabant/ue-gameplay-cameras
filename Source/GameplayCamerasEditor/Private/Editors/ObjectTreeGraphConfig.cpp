@@ -11,8 +11,7 @@
 #define LOCTEXT_NAMESPACE "ObjectTreeGraphConfig"
 
 FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
-	: _SelfPinName(NAME_Self)
-	, _SelfPinFriendlyName(FText::GetEmpty())
+	: _SelfPinName(NAME_None)
 	, _HasSelfPin(true)
 	, _NodeTitleUsesObjectName(false)
 	, _CanCreateNew(true)
@@ -61,7 +60,9 @@ TOptional<EEdGraphPinDirection> FObjectTreeGraphClassConfigs::GetPropertyPinDire
 }
 
 FObjectTreeGraphConfig::FObjectTreeGraphConfig()
-	: DefaultGraphNodeTitleColor(FLinearColor(0.549f, 0.745f, 0.698f))
+	: DefaultSelfPinName(NAME_Self)
+	, DefaultGraphNodeTitleColor(FLinearColor(0.549f, 0.745f, 0.698f))
+	, DefaultGraphNodeTitleTextColor(FLinearColor::White)
 	, DefaultGraphNodeBodyTintColor(FLinearColor::White)
 {
 }

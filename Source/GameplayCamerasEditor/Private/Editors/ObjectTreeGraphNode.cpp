@@ -56,6 +56,12 @@ FLinearColor UObjectTreeGraphNode::GetNodeTitleColor() const
 	return NodeContext.ObjectClassConfigs.NodeTitleColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleColor);
 }
 
+FLinearColor UObjectTreeGraphNode::GetNodeTitleTextColor() const
+{
+	const FNodeContext NodeContext = GetNodeContext();
+	return NodeContext.ObjectClassConfigs.NodeTitleTextColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleTextColor);
+}
+
 FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 {
 	const FNodeContext NodeContext = GetNodeContext();
@@ -88,9 +94,9 @@ void UObjectTreeGraphNode::AllocateDefaultPins()
 	{
 		FEdGraphPinType SelfPinType;
 		SelfPinType.PinCategory = UObjectTreeGraphSchema::PC_Self;
-		const FName& SelfPinName = ObjectClassConfigs.SelfPinName();
+		const FName& SelfPinName = ObjectClassConfigs.SelfPinName(OuterGraphConfig.DefaultSelfPinName);
 		UEdGraphPin* SelfPin = CreatePin(OuterGraphConfig.GetSelfPinDirection(NodeContext.ObjectClass), SelfPinType, SelfPinName);
-		SelfPin->PinFriendlyName = ObjectClassConfigs.SelfPinFriendlyName();
+		SelfPin->PinFriendlyName = ObjectClassConfigs.SelfPinFriendlyName(OuterGraphConfig.DefaultSelfPinFriendlyName);
 	}
 
 	for (TFieldIterator<FProperty> PropertyIt(NodeContext.ObjectClass); PropertyIt; ++PropertyIt)
@@ -176,13 +182,14 @@ void UObjectTreeGraphNode::OnPinRemoved(UEdGraphPin* InRemovedPin)
 	}
 }
 
-void UObjectTreeGraphNode::GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties) const
+void UObjectTreeGraphNode::GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties, EEdGraphPinDirection Direction) const
 {
 	const FNodeContext NodeContext = GetNodeContext();
 
 	for (UEdGraphPin* Pin : Pins)
 	{
-		if (Pin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
+		if (Pin->Direction == Direction &&
+				Pin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property &&
 				Pin->PinType.PinSubCategory == UObjectTreeGraphSchema::PSC_ArrayProperty &&
 				Pin->ParentPin == nullptr)
 		{
@@ -242,8 +249,15 @@ void UObjectTreeGraphNode::CreateNewItemPins(UEdGraphPin* InParentArrayPin, int3
 		FName ChildPinName = PropertyName;
 		ChildPinName.SetNumber(NewIndex);
 		UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, ChildPinName);
-		ChildPin->PinFriendlyName = FText::Format(
-				LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
+		if (NewIndex == 0)
+		{
+			ChildPin->PinFriendlyName = FText::Format(
+					LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), NewIndex);
+		}
+		else
+		{
+			ChildPin->PinFriendlyName = FText::AsNumber(NewIndex);
+		}
 
 		ChildPin->ParentPin = InParentArrayPin;
 		InParentArrayPin->SubPins.Add(ChildPin);
@@ -284,8 +298,15 @@ void UObjectTreeGraphNode::InsertNewItemPin(UEdGraphPin* InParentArrayPin, int32
 	FName ChildPinName = PropertyName;
 	ChildPinName.SetNumber(Index);
 	UEdGraphPin* ChildPin = CreatePin(PinDirection, ChildPinType, ChildPinName);
-	ChildPin->PinFriendlyName = FText::Format(
-			LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), Index);
+	if (Index == 0)
+	{
+		ChildPin->PinFriendlyName = FText::Format(
+				LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), Index);
+	}
+	else
+	{
+		ChildPin->PinFriendlyName = FText::AsNumber(Index);
+	}
 
 	ChildPin->ParentPin = InParentArrayPin;
 	InParentArrayPin->SubPins.Insert(ChildPin, Index);
@@ -336,7 +357,16 @@ void UObjectTreeGraphNode::RefreshArrayPropertyPinNames()
 			{
 				UEdGraphPin* ChildPin = Pin->SubPins[PinIndex];
 				ChildPin->PinName.SetNumber(PinIndex);
-				ChildPin->PinFriendlyName = FText::Format(LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), PinIndex);
+
+				if (PinIndex == 0)
+				{
+					ChildPin->PinFriendlyName = FText::Format(
+							LOCTEXT("ArrayPinFriendlyNameFmt", "{0} {1}"), FText::FromName(PropertyName), PinIndex);
+				}
+				else
+				{
+					ChildPin->PinFriendlyName = FText::AsNumber(PinIndex);
+				}
 			}
 		}
 	}
