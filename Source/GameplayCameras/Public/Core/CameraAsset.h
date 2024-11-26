@@ -137,11 +137,11 @@ private:
 	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs_DEPRECATED;
 
 	/** A list of default enter transitions for all the camera rigs in this asset. */
-	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Input))
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
 
 	/** A list of default exit transitions for all the camera rigs in this asset. */
-	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Output))
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
 
 	/** The current build state of this camera asset. */

@@ -18,6 +18,5 @@ protected:
 
 	// UCameraRigTransitionGraphSchemaBase interface.
 	virtual void OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const override;
-	virtual ETransitionGraphContextActions GetTransitionGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 };
 

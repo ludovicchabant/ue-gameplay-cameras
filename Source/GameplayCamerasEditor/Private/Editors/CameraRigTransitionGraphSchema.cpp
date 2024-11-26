@@ -26,34 +26,5 @@ void UCameraRigTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig&
 		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
 }
 
-ETransitionGraphContextActions UCameraRigTransitionGraphSchema::GetTransitionGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
-{
-	ETransitionGraphContextActions PossibleActions = ETransitionGraphContextActions::None;
-
-	if (const UEdGraphPin* DraggedPin = ContextMenuBuilder.FromPin)
-	{
-		// If we are creating a node from dragging a pin into an empty space, figure out which transition
-		// we can create based on the direction of the dragged pin.
-		UObjectTreeGraphNode* OwningNode = Cast<UObjectTreeGraphNode>(DraggedPin->GetOwningNode());
-		if (OwningNode)
-		{
-			FProperty* DraggedPinProperty = OwningNode->GetPropertyForPin(DraggedPin);
-			if (DraggedPinProperty && DraggedPinProperty->GetOwnerClass()->IsChildOf<UCameraRigAsset>())
-			{
-				if (DraggedPinProperty->GetFName() == GET_MEMBER_NAME_CHECKED(UCameraRigAsset, EnterTransitions))
-				{
-					PossibleActions |= ETransitionGraphContextActions::CreateEnterTransition;
-				}
-				if (DraggedPinProperty->GetFName() == GET_MEMBER_NAME_CHECKED(UCameraRigAsset, ExitTransitions))
-				{
-					PossibleActions |= ETransitionGraphContextActions::CreateExitTransition;
-				}
-			}
-		}
-	}
-
-	return PossibleActions;
-}
-
 #undef LOCTEXT_NAMESPACE
 

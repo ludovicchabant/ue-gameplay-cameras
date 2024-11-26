@@ -208,11 +208,11 @@ public:
 	FCameraRigInterface Interface;
 
 	/** List of enter transitions for this camera rig. */
-	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Input))
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
 
 	/** List of exist transitions for this camera rig. */
-	UPROPERTY(Instanced, meta=(ObjectTreeGraphPinDirection=Output))
+	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> ExitTransitions;
 	
 	/** Default orientation initialization when this camera rig is activated. */
