@@ -99,11 +99,19 @@ void FCurveEditorToolkit::Shutdown()
 
 void FCurveEditorToolkit::AddCurveOwner(UObject* InCurveOwner)
 {
-	AddCurves(InCurveOwner);
+	if (IsInitialized())
+	{
+		AddCurves(InCurveOwner);
+	}
 }
 
 void FCurveEditorToolkit::RemoveCurveOwner(UObject* InCurveOwner)
 {
+	if (!IsInitialized())
+	{
+		return;
+	}
+
 	TArray<FCurveEditorTreeItemID> RootTreeItemIDs = CurveEditor->GetRootTreeItems();
 	for (FCurveEditorTreeItemID RootTreeItemID : RootTreeItemIDs)
 	{
