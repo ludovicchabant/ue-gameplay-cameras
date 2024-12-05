@@ -34,6 +34,14 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category="Evaluation")
 	void TickCameraNode(float DeltaTime);
 
+	/**
+	 * A utility function that tries to find if an actor owns the evaluation context.
+	 * Handles the situation where the evaluation context is an actor component (like a
+	 * UGameplayCameraComponent) or an actor itself.
+	 */
+	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
+	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+
 public:
 
 	using FCameraNodeEvaluationParams = UE::Cameras::FCameraNodeEvaluationParams;
@@ -44,13 +52,11 @@ public:
 
 public:
 
-	/**
-	 * A utility function that tries to find if an actor owns the evaluation context.
-	 * Handles the situation where the evaluation context is an actor component (like a
-	 * UGameplayCameraComponent) or an actor itself.
-	 */
-	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
-	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+	// UObject interface.
+	virtual UWorld* GetWorld() const override;
+#if WITH_EDITOR
+	virtual bool ImplementsGetWorld() const override { return true; }
+#endif  // WITH_EDITOR
 
 protected:
 
@@ -75,6 +81,8 @@ private:
 	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> CurrentContext;
 
 	FCameraNodeEvaluationResult* CurrentResult = nullptr;
+
+	mutable TWeakObjectPtr<UWorld> WeakCachedWorld;
 };
 
 /**

@@ -8,6 +8,7 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigBuildContext.h"
 #include "Core/CameraVariableTable.h"
+#include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
 #include "Templates/UnrealTemplate.h"
@@ -114,6 +115,34 @@ AActor* UBlueprintCameraNodeEvaluator::FindEvaluationContextOwnerActor(TSubclass
 				ELogVerbosity::Error);
 		return nullptr;
 	}
+}
+
+UWorld* UBlueprintCameraNodeEvaluator::GetWorld() const
+{
+	if (UWorld* CachedWorld = WeakCachedWorld.Get())
+	{
+		return CachedWorld;
+	}
+
+	if (HasAllFlags(RF_ClassDefaultObject))
+	{
+		return nullptr;
+	}
+
+	UObject* Outer = GetOuter();
+	while (Outer)
+	{
+		UWorld* World = Outer->GetWorld();
+		if (World)
+		{
+			WeakCachedWorld = World;
+			return World;
+		}
+
+		Outer = Outer->GetOuter();
+	}
+
+	return nullptr;
 }
 
 void UBlueprintCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
