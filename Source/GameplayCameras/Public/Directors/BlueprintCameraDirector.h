@@ -44,6 +44,9 @@ struct FBlueprintCameraDirectorEvaluationResult
 	/** The list of persistent camera rigs to deactivate. */
 	TArray<FBlueprintPersistentCameraRigInfo> InactivePersistentCameraRigs;
 
+	/** Whether to force a new instance of the main layer camera rigs. */
+	bool bForceActivateCameraRigs = false;
+
 	/** Reset this result for a new evaluation. */
 	void Reset();
 };
@@ -154,7 +157,7 @@ public:
 
 	/** Specifies a camera rig to be active this frame. */
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	void ActivateCameraRig(UCameraRigAsset* CameraRig);
+	void ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance = false);
 
 	/**
 	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved

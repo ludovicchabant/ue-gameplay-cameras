@@ -85,6 +85,10 @@ struct FCameraDirectorEvaluationResult
 	/** The camera rig(s) that the director says should be active this frame in the main layer. */
 	FActiveCameraRigInfos ActiveCameraRigs;
 
+	/** Whether to force creating a new instance of the camera rigs, even if they are already active in the main layer. */
+	bool bForceActivateCameraRigs = false;
+
+	/** Adds a given camera rig with the given evaluation context to the activation list. */
 	void Add(TSharedPtr<const FCameraEvaluationContext> InContext, TObjectPtr<const UCameraRigAsset> InCameraRig)
 	{
 		ActiveCameraRigs.Add(FActiveCameraRigInfo{ InContext, InCameraRig });

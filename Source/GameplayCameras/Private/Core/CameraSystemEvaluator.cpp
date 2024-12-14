@@ -239,6 +239,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			FActivateCameraRigParams CameraRigParams;
 			CameraRigParams.EvaluationContext = ActiveCameraRig.EvaluationContext;
 			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
+			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
 		else if (DirectorResult.ActiveCameraRigs.Num() > 1)
@@ -270,6 +271,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			FActivateCameraRigParams CameraRigParams;
 			CameraRigParams.EvaluationContext = CommonContext;
 			CameraRigParams.CameraRig = CombinedCameraRig;
+			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
 	}

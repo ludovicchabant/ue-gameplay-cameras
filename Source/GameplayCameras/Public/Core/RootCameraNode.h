@@ -53,6 +53,9 @@ struct FActivateCameraRigParams
 
 	/** The evaluation layer on which to instantiate the camera rig. */
 	ECameraRigLayer Layer = ECameraRigLayer::Main;
+
+	/** Whether a new instance of the camera rig should be created, even if it is already active in the given layer. */
+	bool bForceActivate = false;
 };
 
 /**

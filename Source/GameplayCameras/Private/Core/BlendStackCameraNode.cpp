@@ -462,9 +462,9 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 		if (!TopEntry.bIsFrozen 
 				&& TopEntry.EvaluationContext == Params.EvaluationContext)
 		{
-			// Don't push anything is what is being requested is already the active 
+			// Don't push anything if what is being requested is already the active 
 			// camera rig.
-			if (TopEntry.CameraRig == Params.CameraRig)
+			if (!Params.bForcePush && TopEntry.CameraRig == Params.CameraRig)
 			{
 				return;
 			}
@@ -472,7 +472,7 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 			// See if we can merge the new camera rig onto the active camera rig.
 			const EBlendStackEntryComparison Comparison = TopEntry.RootEvaluator->Compare(Params.CameraRig);
 
-			if (Comparison == EBlendStackEntryComparison::Active)
+			if (!Params.bForcePush && Comparison == EBlendStackEntryComparison::Active)
 			{
 				// This camera rig is already the active one on the merged stack.
 				return;
@@ -947,13 +947,16 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 void FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraInsertParams& Params)
 {
 	// See if we already have this camera rig and evaluation context in the stack.
-	for (const FCameraRigEntry& Entry : Entries)
+	if (!Params.bForceInsert)
 	{
-		if (!Entry.bIsFrozen &&
-				Entry.CameraRig == Params.CameraRig &&
-				Entry.EvaluationContext == Params.EvaluationContext)
+		for (const FCameraRigEntry& Entry : Entries)
 		{
-			return;
+			if (!Entry.bIsFrozen &&
+					Entry.CameraRig == Params.CameraRig &&
+					Entry.EvaluationContext == Params.EvaluationContext)
+			{
+				return;
+			}
 		}
 	}
 

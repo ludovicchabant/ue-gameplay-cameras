@@ -32,6 +32,7 @@ void FBlueprintCameraDirectorEvaluationResult::Reset()
 	ActiveCameraRigs.Reset();
 	ActivePersistentCameraRigs.Reset();
 	InactivePersistentCameraRigs.Reset();
+	bForceActivateCameraRigs = false;
 }
 
 class FBlueprintCameraDirectorEvaluator : public FCameraDirectorEvaluator
@@ -183,6 +184,8 @@ void FBlueprintCameraDirectorEvaluator::ActivateTransientCameraRigs(
 	{
 		OutResult.Add(Params.OwnerContext, ActiveCameraRig);
 	}
+
+	OutResult.bForceActivateCameraRigs = BlueprintResult.bForceActivateCameraRigs;
 }
 
 void FBlueprintCameraDirectorEvaluator::ActivateDeactivePersistentCameraRigs(
@@ -283,9 +286,10 @@ void UBlueprintCameraDirectorEvaluator::DeactivatePersistentVisualCameraRig(UCam
 	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
 }
 
-void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig)
+void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance)
 {
 	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
+	EvaluationResult.bForceActivateCameraRigs |= bForceNewInstance;
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy)
