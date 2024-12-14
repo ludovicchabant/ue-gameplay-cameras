@@ -431,6 +431,12 @@ void FSplineOrbitCameraDebugBlock::RenderLocationOffsetOrbits(const USplineOrbit
 
 }  // namespace UE::Cameras
 
+USplineOrbitCameraNode::USplineOrbitCameraNode(const FObjectInitializer& ObjInit)
+	: Super(ObjInit)
+{
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+}
+
 FCameraNodeChildrenView USplineOrbitCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView({ InputSlot });

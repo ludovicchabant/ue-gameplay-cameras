@@ -60,6 +60,10 @@ class USplineOrbitCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	USplineOrbitCameraNode(const FObjectInitializer& ObjInit);
+
 protected:
 
 	// UCameraNode interface.

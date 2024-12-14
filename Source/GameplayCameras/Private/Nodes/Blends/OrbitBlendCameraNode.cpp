@@ -339,6 +339,12 @@ bool FOrbitBlendCameraNodeEvaluator::ClosestPoints(const FRay3d& A, const FRay3d
 
 }  // namespace UE::Cameras
 
+UOrbitBlendCameraNode::UOrbitBlendCameraNode(const FObjectInitializer& ObjInit)
+	: Super(ObjInit)
+{
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+}
+
 FCameraNodeChildrenView UOrbitBlendCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView({ DrivingBlend });

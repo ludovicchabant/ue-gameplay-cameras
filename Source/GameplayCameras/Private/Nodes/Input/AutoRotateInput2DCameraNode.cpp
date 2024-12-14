@@ -314,6 +314,7 @@ void FAutoRotateInput2DCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDraw
 UAutoRotateInput2DCameraNode::UAutoRotateInput2DCameraNode(const FObjectInitializer& ObjInit)
 	: Super(ObjInit)
 {
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
 }
 
 FCameraNodeChildrenView UAutoRotateInput2DCameraNode::OnGetChildren()

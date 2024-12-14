@@ -57,6 +57,12 @@ void FArrayCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params,
 
 }  // namespace UE::Cameras
 
+UArrayCameraNode::UArrayCameraNode(const FObjectInitializer& ObjInit)
+	: Super(ObjInit)
+{
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+}
+
 FCameraNodeChildrenView UArrayCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView(Children);

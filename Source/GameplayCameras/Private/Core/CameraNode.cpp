@@ -3,6 +3,7 @@
 #include "Core/CameraNode.h"
 
 #include "Core/CameraNodeEvaluator.h"
+#include "UObject/Object.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNode)
 
@@ -25,7 +26,38 @@ void UCameraNode::PostLoad()
 
 FCameraNodeChildrenView UCameraNode::GetChildren()
 {
-	return OnGetChildren();
+	if (EnumHasAnyFlags(PrivateFlags, ECameraNodeFlags::CustomGetChildren))
+	{
+		return OnGetChildren();
+	}
+
+	const UClass* ThisClass = GetClass();
+	FCameraNodeChildrenView ChildrenView;
+	for (TFieldIterator<FProperty> PropertyIt(ThisClass); PropertyIt; ++PropertyIt)
+	{
+		if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(*PropertyIt))
+		{
+			if (ObjectProperty->PropertyClass->IsChildOf<UCameraNode>())
+			{
+				UObject* Child = ObjectProperty->GetObjectPropertyValue_InContainer(this);
+				ChildrenView.Add(CastChecked<UCameraNode>(Child, ECastCheckedType::NullAllowed));
+			}
+		}
+		else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(*PropertyIt))
+		{
+			FObjectProperty* InnerObjectProperty = CastField<FObjectProperty>(ArrayProperty->Inner);
+			if (InnerObjectProperty && InnerObjectProperty->PropertyClass->IsChildOf<UCameraNode>())
+			{
+				FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(this));
+				for (int32 Index = 0; Index < ArrayHelper.Num(); ++Index)
+				{
+					UObject* Child = InnerObjectProperty->GetObjectPropertyValue(ArrayHelper.GetRawPtr(Index));
+					ChildrenView.Add(CastChecked<UCameraNode>(Child, ECastCheckedType::NullAllowed));
+				}
+			}
+		}
+	}
+	return ChildrenView;
 }
 
 void UCameraNode::PreBuild(FCameraBuildLog& BuildLog)

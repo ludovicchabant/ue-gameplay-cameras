@@ -15,6 +15,10 @@ class UArrayCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	UArrayCameraNode(const FObjectInitializer& ObjInit);
+
 protected:
 
 	// UCameraNode interface.

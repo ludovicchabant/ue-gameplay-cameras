@@ -20,6 +20,16 @@ namespace UE::Cameras
 using FCameraNodeChildrenView = UE::Cameras::TObjectChildrenView<TObjectPtr<UCameraNode>>;
 
 /**
+ * Flags describing the needs of a camera node.
+ */
+enum class ECameraNodeFlags
+{
+	None = 0,
+	CustomGetChildren = 1 << 0
+};
+ENUM_CLASS_FLAGS(ECameraNodeFlags)
+
+/**
  * The base class for a camera node.
  */
 UCLASS(Abstract, DefaultToInstanced, EditInlineNew, meta=(CameraNodeCategories="Miscellaneous"))
@@ -46,6 +56,14 @@ public:
 
 	/** Builds the evaluator for this node. */
 	FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
+
+protected:
+
+	/** Adds the given flags to this node. */
+	void AddNodeFlags(ECameraNodeFlags InFlags) { PrivateFlags |= InFlags; }
+
+	/** Sets the flags for this node. */
+	void SetNodeFlags(ECameraNodeFlags InFlags) { PrivateFlags = InFlags; }
 
 protected:
 
@@ -83,6 +101,8 @@ public:
 
 #if WITH_EDITORONLY_DATA
 
+public:
+
 	/** Position of the camera node in the node graph editor. */
 	UPROPERTY()
 	FIntVector2 GraphNodePos = FIntVector2::ZeroValue;
@@ -91,6 +111,7 @@ public:
 	UPROPERTY()
 	FString GraphNodeComment;
 
+private:
 
 	// Deprecated properties.
 
@@ -100,5 +121,10 @@ public:
 	int32 GraphNodePosY_DEPRECATED = 0;
 
 #endif  // WITH_EDITORONLY_DATA
+
+private:
+
+	/** Flags on this camera node. */
+	ECameraNodeFlags PrivateFlags = ECameraNodeFlags::None;
 };
 

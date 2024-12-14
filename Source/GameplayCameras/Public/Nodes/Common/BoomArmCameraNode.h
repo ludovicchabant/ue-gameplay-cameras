@@ -18,6 +18,10 @@ class UBoomArmCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	UBoomArmCameraNode(const FObjectInitializer& ObjInit);
+
 protected:
 
 	// UCameraNode interface.

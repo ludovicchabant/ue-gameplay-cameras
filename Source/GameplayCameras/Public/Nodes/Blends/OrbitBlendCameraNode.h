@@ -17,6 +17,10 @@ class UOrbitBlendCameraNode : public UBlendCameraNode
 
 public:
 
+	UOrbitBlendCameraNode(const FObjectInitializer& ObjInit);
+
+public:
+
 	UPROPERTY()
 	TObjectPtr<USimpleBlendCameraNode> DrivingBlend;
 

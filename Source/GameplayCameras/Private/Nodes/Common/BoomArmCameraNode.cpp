@@ -266,6 +266,12 @@ void FBoomArmCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 
 }  // namespace UE::Cameras
 
+UBoomArmCameraNode::UBoomArmCameraNode(const FObjectInitializer& ObjInit)
+	: Super(ObjInit)
+{
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+}
+
 FCameraNodeChildrenView UBoomArmCameraNode::OnGetChildren()
 {
 	return FCameraNodeChildrenView({ InputSlot });
