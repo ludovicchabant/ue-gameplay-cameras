@@ -104,8 +104,6 @@ protected:
 	void OnInsertArrayItemPinAfter();
 	void OnRemoveArrayItemPin();
 
-	TArray<UClass*> FilterPlaceableObjectClasses(TArrayView<UClass* const> InObjectClasses);
-
 protected:
 
 	TSharedPtr<SGraphEditor> GraphEditor;

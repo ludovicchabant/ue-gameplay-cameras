@@ -7,6 +7,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "Editor.h"
+#include "Editors/ObjectTreeDragDropOp.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
 #include "Editors/ObjectTreeGraphSchema.h"
@@ -189,34 +190,7 @@ FReply SObjectTreeGraphEditor::OnDragOver(const FGeometry& MyGeometry, const FDr
 	TSharedPtr<FObjectTreeClassDragDropOp> ObjectClassOp = DragDropEvent.GetOperationAs<FObjectTreeClassDragDropOp>();
 	if (ObjectClassOp)
 	{
-		TArray<UClass*> PlaceableClasses = FilterPlaceableObjectClasses(ObjectClassOp->GetObjectClasses());
-		if (PlaceableClasses.Num() == ObjectClassOp->GetObjectClasses().Num())
-		{
-			const FSlateBrush* OKIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.OK"));
-			ObjectClassOp->SetToolTip(
-					FText::Format(
-						LOCTEXT("OnDragOver_Success", "Create {0} node(s) from the dragged object classes"),
-						ObjectClassOp->GetObjectClasses().Num()),
-					OKIcon);
-		}
-		else if (PlaceableClasses.Num() > 0)
-		{
-			const FSlateBrush* WarnIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.OKWarn"));
-			ObjectClassOp->SetToolTip(
-					FText::Format(
-						LOCTEXT("OnDragOver_Warning", "Create {0} node(s) from the dragged object classes, ignoring {1} that can't be created in this graph"),
-						PlaceableClasses.Num(), (ObjectClassOp->GetObjectClasses().Num() - PlaceableClasses.Num())),
-					WarnIcon);
-		}
-		else
-		{
-			const FSlateBrush* ErrorIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.Error"));
-			ObjectClassOp->SetToolTip(
-					LOCTEXT("OnDragOver_Error", "The dragged object classes can't be created in this graph"),
-					ErrorIcon);
-		}
-
-		return FReply::Handled();
+		return ObjectClassOp->ExecuteDragOver(GraphEditor);
 	}
 
 	return SCompoundWidget::OnDragOver(MyGeometry, DragDropEvent);
@@ -227,40 +201,13 @@ FReply SObjectTreeGraphEditor::OnDrop(const FGeometry& MyGeometry, const FDragDr
 	TSharedPtr<FObjectTreeClassDragDropOp> ObjectClassOp = DragDropEvent.GetOperationAs<FObjectTreeClassDragDropOp>();
 	if (ObjectClassOp)
 	{
-		const FScopedTransaction Transaction(LOCTEXT("DropObjectClasses", "Drop New Nodes"));
-
-		TArray<UClass*> PlaceableClasses = FilterPlaceableObjectClasses(ObjectClassOp->GetObjectClasses());
-		UEdGraph* Graph = GraphEditor->GetCurrentGraph();
-
-		GraphEditor->ClearSelectionSet();
-
 		SGraphPanel* GraphPanel = GraphEditor->GetGraphPanel();
 		FVector2D NewLocation = GraphPanel->PanelCoordToGraphCoord(MyGeometry.AbsoluteToLocal(DragDropEvent.GetScreenSpacePosition()));
 
-		for (UClass* PlaceableClass : PlaceableClasses)
-		{
-			FObjectGraphSchemaAction_NewNode Action;
-			Action.ObjectClass = PlaceableClass;
-			UEdGraphNode* NewNode = Action.PerformAction(Graph, nullptr, NewLocation, false);
-			GraphEditor->SetNodeSelection(NewNode, true);
-
-			NewLocation += FVector2D(20, 20);
-		}
+		return ObjectClassOp->ExecuteDrop(GraphEditor, NewLocation);
 	}
 
 	return SCompoundWidget::OnDrop(MyGeometry, DragDropEvent);
-}
-
-TArray<UClass*> SObjectTreeGraphEditor::FilterPlaceableObjectClasses(TArrayView<UClass* const> InObjectClasses)
-{
-	UObjectTreeGraph* Graph = CastChecked<UObjectTreeGraph>(GraphEditor->GetCurrentGraph());
-	const FObjectTreeGraphConfig& GraphConfig = Graph->GetConfig();
-	TArray<UClass*> PlaceableClasses = InObjectClasses.FilterByPredicate(
-			[&GraphConfig](UClass* ObjectClass)
-			{
-				return GraphConfig.IsConnectable(ObjectClass);
-			});
-	return PlaceableClasses;
 }
 
 void SObjectTreeGraphEditor::PostUndo(bool bSuccess)

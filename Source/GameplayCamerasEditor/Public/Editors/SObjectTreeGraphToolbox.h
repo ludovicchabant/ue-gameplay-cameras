@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "DragAndDrop/DecoratedDragDropOp.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Misc/TextFilter.h"
 #include "Widgets/SCompoundWidget.h"
@@ -113,25 +112,5 @@ private:
 
 	bool bUpdateItemSource = false;
 	bool bUpdateFilteredItemSource = false;
-};
-
-/**
- * Drag-drop operation for creating a new object (and corresponding graph node) in an object tree graph
- * by dragging one of the entries from the toolbox widget.
- */
-class FObjectTreeClassDragDropOp : public FDecoratedDragDropOp
-{
-public:
-	
-	DRAG_DROP_OPERATOR_TYPE(FObjectTreeClassDragDropOp, FDecoratedDragDropOp)
-
-	static TSharedRef<FObjectTreeClassDragDropOp> New(UClass* InObjectClass);
-	static TSharedRef<FObjectTreeClassDragDropOp> New(TArrayView<UClass*> InObjectClasses);
-
-	TArrayView<UClass* const> GetObjectClasses() const { return ObjectClasses; }
-
-private:
-
-	TArray<UClass*> ObjectClasses;
 };
 

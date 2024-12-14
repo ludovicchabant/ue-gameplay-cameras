@@ -3,8 +3,8 @@
 #include "Editors/SObjectTreeGraphToolbox.h"
 
 #include "Algo/AnyOf.h"
-#include "DragAndDrop/AssetDragDropOp.h"
 #include "EditorClassUtils.h"
+#include "Editors/ObjectTreeDragDropOp.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Styles/ObjectTreeGraphEditorStyle.h"
 #include "UObject/UObjectIterator.h"
@@ -271,21 +271,6 @@ void SObjectTreeGraphToolbox::OnSearchTextCommitted(const FText& InFilterText, E
 FText SObjectTreeGraphToolbox::GetHighlightText() const
 {
 	return SearchTextFilter->GetRawFilterText();
-}
-
-TSharedRef<FObjectTreeClassDragDropOp> FObjectTreeClassDragDropOp::New(UClass* ObjectClass)
-{
-	TArray<UClass*> ObjectClasses;
-	ObjectClasses.Add(ObjectClass);
-	return New(ObjectClasses);
-}
-
-TSharedRef<FObjectTreeClassDragDropOp> FObjectTreeClassDragDropOp::New(TArrayView<UClass*> ObjectClasses)
-{
-	TSharedRef<FObjectTreeClassDragDropOp> Operation = MakeShared<FObjectTreeClassDragDropOp>();
-	Operation->ObjectClasses = ObjectClasses;
-	Operation->Construct();
-	return Operation;
 }
 
 #undef LOCTEXT_NAMESPACE
