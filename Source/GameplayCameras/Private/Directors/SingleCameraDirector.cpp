@@ -50,8 +50,6 @@ void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& 
 	}
 }
 
-#if WITH_EDITOR
-
 void USingleCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
 {
 	if (CameraRig)
@@ -59,8 +57,6 @@ void USingleCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& Us
 		UsageInfo.CameraRigs.Add(CameraRig);
 	}
 }
-
-#endif
 
 #undef LOCTEXT_NAMESPACE
 

@@ -265,16 +265,6 @@ void UStateTreeCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLo
 	}
 }
 
-#if WITH_EDITOR
-
-void UStateTreeCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
-{
-	if (!CameraRigProxyTable)
-	{
-		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
-	}
-}
-
 void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
 {
 	using namespace UE::Cameras;
@@ -290,7 +280,17 @@ void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 }
 
-#endif
+#if WITH_EDITOR
+
+void UStateTreeCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
+{
+	if (!CameraRigProxyTable)
+	{
+		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
+	}
+}
+
+#endif  // WITH_EDITOR
 
 #undef LOCTEXT_NAMESPACE
 

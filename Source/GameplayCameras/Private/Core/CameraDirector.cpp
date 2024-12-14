@@ -17,6 +17,11 @@ void UCameraDirector::BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog
 	OnBuildCameraDirector(BuildLog);
 }
 
+void UCameraDirector::GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+{
+	OnGatherRigUsageInfo(UsageInfo);
+}
+
 #if WITH_EDITOR
 
 void UCameraDirector::FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
@@ -24,10 +29,5 @@ void UCameraDirector::FactoryCreateAsset(const FCameraDirectorFactoryCreateParam
 	OnFactoryCreateAsset(InParams);
 }
 
-void UCameraDirector::GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
-{
-	OnGatherRigUsageInfo(UsageInfo);
-}
-
-#endif
+#endif  // WITH_EDITOR
 

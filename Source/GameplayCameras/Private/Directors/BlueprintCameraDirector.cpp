@@ -436,16 +436,6 @@ void UBlueprintCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLo
 	}
 }
 
-#if WITH_EDITOR
-
-void UBlueprintCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
-{
-	if (!CameraRigProxyTable)
-	{
-		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
-	}
-}
-
 void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
 {
 	using namespace UE::Cameras;
@@ -454,6 +444,8 @@ void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 	{
 		return;
 	}
+
+#if WITH_EDITORONLY_DATA
 
 	UBlueprint* EvaluatorBlueprint = Cast<UBlueprint>(CameraDirectorEvaluatorClass->ClassGeneratedBy);
 	if (!ensure(EvaluatorBlueprint))
@@ -464,9 +456,21 @@ void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 	FOutgoingReferenceFinder ReferenceFinder(EvaluatorBlueprint, UCameraRigAsset::StaticClass());
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
+
+#endif  // WITH_EDITORONLY_DATA
 }
 
-#endif
+#if WITH_EDITOR
+
+void UBlueprintCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
+{
+	if (!CameraRigProxyTable)
+	{
+		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
+	}
+}
+
+#endif  // WITH_EDITOR
 
 #undef LOCTEXT_NAMESPACE
 
