@@ -365,12 +365,24 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGrap
 
 void UObjectTreeGraphSchema::AddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
 {
+	UObject* Object = InNewNode->GetObject();
+	if (!ensure(Object))
+	{
+		return;
+	}
+
+	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
+	if (!GraphConfig.IsConnectable(Object->GetClass()))
+	{
+		return;
+	}
+
 	UObjectTreeGraphNode* RootObjectNode = InGraph->GetRootObjectNode();
 	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObjectNode->GetObject());
 	if (RootObjectInterface)
 	{
-		const FName GraphName = InGraph->GetConfig().GraphName;
-		RootObjectInterface->AddConnectableObject(GraphName, InNewNode->GetObject());
+		const FName GraphName = GraphConfig.GraphName;
+		RootObjectInterface->AddConnectableObject(GraphName, Object);
 	}
 
 	OnAddConnectableObject(InGraph, InNewNode);
@@ -382,11 +394,23 @@ void UObjectTreeGraphSchema::OnAddConnectableObject(UObjectTreeGraph* InGraph, U
 
 void UObjectTreeGraphSchema::RemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
 {
-	const FName GraphName = InGraph->GetConfig().GraphName;
+	UObject* Object = InRemovedNode->GetObject();
+	if (!ensure(Object))
+	{
+		return;
+	}
+
+	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
+	if (!GraphConfig.IsConnectable(Object->GetClass()))
+	{
+		return;
+	}
+
 	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(InGraph->GetRootObject());
 	if (RootObjectInterface)
 	{
-		RootObjectInterface->RemoveConnectableObject(GraphName, InRemovedNode->GetObject());
+		const FName GraphName = GraphConfig.GraphName;
+		RootObjectInterface->RemoveConnectableObject(GraphName, Object);
 	}
 
 	OnRemoveConnectableObject(InGraph, InRemovedNode);
@@ -668,6 +692,11 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 		return false;
 	}
 
+	if (OnTryCreateCustomConnection(A, B))
+	{
+		return true;
+	}
+
 	UObjectTreeGraphNode* NodeA = Cast<UObjectTreeGraphNode>(A->GetOwningNode());
 	UObjectTreeGraphNode* NodeB = Cast<UObjectTreeGraphNode>(B->GetOwningNode());
 	if (NodeA && NodeA->GetObject() && NodeB && NodeB->GetObject())
@@ -676,6 +705,11 @@ bool UObjectTreeGraphSchema::TryCreateConnection(UEdGraphPin* A, UEdGraphPin* B)
 	}
 
 	return true;
+}
+
+bool UObjectTreeGraphSchema::OnTryCreateCustomConnection(UEdGraphPin* A, UEdGraphPin* B) const
+{
+	return false;
 }
 
 void UObjectTreeGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
@@ -721,27 +755,43 @@ void UObjectTreeGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNo
 {
 	FScopedTransaction Transaction(LOCTEXT("BreakPinLinks", "Break Pin Links"));
 
-	UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin.GetOwningNode());
-	if (TargetNode && TargetNode->GetObject())
+	if (!OnBreakCustomPinLinks(TargetPin))
 	{
-		ApplyDisconnection(&TargetPin);
+		UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin.GetOwningNode());
+		if (TargetNode && TargetNode->GetObject())
+		{
+			ApplyDisconnection(&TargetPin);
+		}
 	}
 
 	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
+}
+
+bool UObjectTreeGraphSchema::OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const
+{
+	return false;
 }
 
 void UObjectTreeGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
 {
 	FScopedTransaction Transaction(LOCTEXT("BreakSinglePinLink", "Break Pin Link"));
 
-	UObjectTreeGraphNode* SourceNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
-	UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
-	if (SourceNode && SourceNode->GetObject() && TargetNode && TargetNode->GetObject())
+	if (!OnBreakSingleCustomPinLink(SourcePin, TargetPin))
 	{
-		ApplyDisconnection(SourcePin, TargetPin);
+		UObjectTreeGraphNode* SourceNode = Cast<UObjectTreeGraphNode>(SourcePin->GetOwningNode());
+		UObjectTreeGraphNode* TargetNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
+		if (SourceNode && SourceNode->GetObject() && TargetNode && TargetNode->GetObject())
+		{
+			ApplyDisconnection(SourcePin, TargetPin);
+		}
 	}
 
 	Super::BreakSinglePinLink(SourcePin, TargetPin);
+}
+
+bool UObjectTreeGraphSchema::OnBreakSingleCustomPinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+{
+	return false;
 }
 
 void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const

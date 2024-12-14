@@ -104,6 +104,9 @@ protected:
 	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
 	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
 	virtual void CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const;
+	virtual bool OnTryCreateCustomConnection(UEdGraphPin* A, UEdGraphPin* B) const;
+	virtual bool OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const;
+	virtual bool OnBreakSingleCustomPinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
 	virtual bool OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const;
 	virtual bool OnApplyDisconnection(UEdGraphPin* TargetPin) const;
 	virtual bool OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
