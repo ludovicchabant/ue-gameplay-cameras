@@ -10,6 +10,7 @@ namespace UE::Cameras
 {
 
 class FCameraPoseDebugBlock;
+class FContextDataTableDebugBlock;
 class FVariableTableDebugBlock;
 struct FCameraDebugBlockBuilder;
 struct FCameraNodeEvaluationResult;
@@ -49,6 +50,8 @@ public:
 	FCameraPoseDebugBlock* GetCameraPoseDebugBlock();
 	/** Gets the variable table debug block. */
 	FVariableTableDebugBlock* GetVariableTableDebugBlock();
+	/** Gets the context data table debug block. */
+	FContextDataTableDebugBlock* GetContextDataTableDebugBlock();
 
 protected:
 

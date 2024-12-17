@@ -3,6 +3,8 @@
 #include "Editors/CameraNodeGraphNode.h"
 
 #include "Core/CameraParameters.h"
+#include "Core/CameraVariableReferences.h"
+#include "Core/ICustomCameraNodeParameterProvider.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphSchema.h"
 #include "Editors/SCameraNodeGraphNode.h"
@@ -17,8 +19,10 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
 
-	// Add extra input pins for any camera parameter.
-	UClass* CameraNodeClass = GetObject()->GetClass();
+	// Add extra input pins for any camera parameter, variable reference, and context data.
+	UObject* Object = GetObject();
+	UClass* CameraNodeClass = Object->GetClass();
+	const FName ContextDataMetaData = TEXT("CameraContextData");
 	for (TFieldIterator<FProperty> PropertyIt(CameraNodeClass); PropertyIt; ++PropertyIt)
 	{
 		FStructProperty* StructProperty = CastField<FStructProperty>(*PropertyIt);
@@ -30,46 +34,104 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 		const FName PropertyName = PropertyIt->GetFName();
 		
 		FEdGraphPinType PinType;
-		PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraParameter;
+		const FText PinFriendlyName = FText::FromName(PropertyName);
+		const FString PinToolTip = StructProperty->Struct->GetDisplayNameText().ToString();
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 		{\
+			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraParameter;\
+			PinType.PinSubCategory = UEnum::GetValueAsName(ECameraVariableType::ValueName);\
+			PinType.PinSubCategoryObject = F##ValueName##CameraParameter::StaticStruct();\
 			UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, PropertyName);\
-			ParameterPin->PinFriendlyName = FText::FromName(PropertyName);\
+			ParameterPin->PinFriendlyName = PinFriendlyName;\
+			ParameterPin->PinToolTip = PinToolTip;\
+			continue;\
+		}\
+		if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
+		{\
+			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraVariableReference;\
+			PinType.PinSubCategory = UEnum::GetValueAsName(ECameraVariableType::ValueName);\
+			PinType.PinSubCategoryObject = F##ValueName##CameraVariableReference::StaticStruct();\
+			UEdGraphPin* VariableReferencePin = CreatePin(EGPD_Input, PinType, PropertyName);\
+			VariableReferencePin->PinFriendlyName = PinFriendlyName;\
+			VariableReferencePin->PinToolTip = PinToolTip;\
 			continue;\
 		}
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+		if (StructProperty->HasMetaData(ContextDataMetaData))
+		{
+			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraContextData;
+			PinType.PinSubCategory = UEnum::GetValueAsName(ECameraContextDataType::Struct);
+			PinType.PinSubCategoryObject = StructProperty->Struct;
+			UEdGraphPin* ContextDataPin = CreatePin(EGPD_Input, PinType, PropertyName);
+			ContextDataPin->PinFriendlyName = PinFriendlyName;
+			ContextDataPin->PinToolTip = PinToolTip;
+			continue;
+		}
+	}
+
+	ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(Object);
+	if (CustomParameterProvider)
+	{
+		FCustomCameraNodeParameterInfos CustomParameters;
+		CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
+
+		// Add pins for blendable parameters.
+		TArray<FCustomCameraNodeBlendableParameter> CustomBlendableParameters;
+		CustomParameters.GetBlendableParameters(CustomBlendableParameters);
+
+		const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
+		for (const FCustomCameraNodeBlendableParameter& BlendableParameter : CustomBlendableParameters)
+		{
+			FEdGraphPinType PinType;
+			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraParameter;
+			PinType.PinSubCategory = VariableTypeEnum->GetValueAsName(BlendableParameter.ParameterType);
+
+			switch (BlendableParameter.ParameterType)
+			{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+				case ECameraVariableType::ValueName:\
+					PinType.PinSubCategoryObject = F##ValueName##CameraVariableReference::StaticStruct();\
+					break;
+				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+			}
+
+			UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, BlendableParameter.ParameterName);
+			ParameterPin->PinFriendlyName = FText::FromName(BlendableParameter.ParameterName);
+			ParameterPin->PinToolTip = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter.ParameterType);
+		}
+
+		// Add pins for data parameters.
+		TArray<FCustomCameraNodeDataParameter> CustomDataParameters;
+		CustomParameters.GetDataParameters(CustomDataParameters);
+		const UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
+
+		for (const FCustomCameraNodeDataParameter& DataParameter : CustomDataParameters)
+		{
+			FEdGraphPinType PinType;
+			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraContextData;
+			PinType.PinSubCategory = DataTypeEnum->GetNameByValue((int64)DataParameter.ParameterType);
+			PinType.PinSubCategoryObject = const_cast<UObject*>(DataParameter.ParameterTypeObject.Get());
+
+			UEdGraphPin* ContextDataPin = CreatePin(EGPD_Input, PinType, DataParameter.ParameterName);
+			ContextDataPin->PinFriendlyName = FText::FromName(DataParameter.ParameterName);
+
+			FString PinToolTip = DataTypeEnum->GetNameStringByValue((int64)DataParameter.ParameterType);
+			if (DataParameter.ParameterTypeObject)
+			{
+				PinToolTip = DataParameter.ParameterTypeObject->GetName();
+			}
+			ContextDataPin->PinToolTip = PinToolTip;
+		}
 	}
 }
 
 TSharedPtr<SGraphNode> UCameraNodeGraphNode::CreateVisualWidget()
 {
 	return SNew(SCameraNodeGraphNode).GraphNode(this);
-}
-
-UEdGraphPin* UCameraNodeGraphNode::GetPinForCameraParameterProperty(const FName& InPropertyName) const
-{
-	UEdGraphPin* const* FoundItem = Pins.FindByPredicate(
-			[InPropertyName](UEdGraphPin* Item)
-			{ 
-				return Item->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraParameter &&
-					Item->GetFName() == InPropertyName;
-			});
-	if (FoundItem)
-	{
-		return *FoundItem;
-	}
-	return nullptr;
-}
-
-FName UCameraNodeGraphNode::GetCameraParameterPropertyForPin(const UEdGraphPin* InPin) const
-{
-	if (InPin->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraParameter)
-	{
-		return InPin->GetFName();
-	}
-	return NAME_None;
 }
 

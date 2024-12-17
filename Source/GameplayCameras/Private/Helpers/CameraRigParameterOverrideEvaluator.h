@@ -7,6 +7,7 @@ struct FCameraRigAssetReference;
 namespace UE::Cameras
 {
 
+class FCameraContextDataTable;
 class FCameraVariableTable;
 
 /**
@@ -23,10 +24,23 @@ public:
 	/** 
 	 * Applies override values to the given variable table.
 	 *
-	 * @param OutVariableTable  The variable table in which to set the override values.
+	 * @param OutVariableTable      The variable table in which to set the override values.
 	 * @param bDrivenOverridesOnly  Whether only overrides driven by variables should be applied.
 	 */
 	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOverridesOnly = false);
+
+	/** 
+	 * Applies override values to the given variable and context data tables.
+	 *
+	 * @param OutVariableTable      The variable table in which to set the override values.
+	 * @param OutContextDataTable   The context data table in which to set the override values.
+	 * @param bDrivenOverridesOnly  Whether only overrides driven by variables should be applied.
+	 */
+	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOverridesOnly = false);
+
+private:
+
+	void ApplyParameterOverrides(FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable, bool bDrivenOverridesOnly);
 
 private:
 

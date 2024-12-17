@@ -2,15 +2,13 @@
 
 #include "Core/CameraRigAssetReference.h"
 
+#include "Core/CameraRigAsset.h"
+#include "Core/CameraNodeEvaluator.h"
+#include "Helpers/CameraRigParameterOverrideEvaluator.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAssetReference)
 
-void FCameraRigParameterOverrides::Reset()
-{
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	ValueName##Overrides.Reset();
-UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-}
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 FCameraRigAssetReference::FCameraRigAssetReference()
 {
@@ -21,53 +19,84 @@ FCameraRigAssetReference::FCameraRigAssetReference(UCameraRigAsset* InCameraRig)
 {
 }
 
-bool FCameraRigAssetReference::UpdateParameterOverrides()
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly)
 {
-	if (!CameraRig)
+	using namespace UE::Cameras;
+	FCameraRigParameterOverrideEvaluator OverrideEvaluator(*this);
+	OverrideEvaluator.ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, bDrivenOverridesOnly);
+}
+
+bool FCameraRigAssetReference::IsParameterOverriden(const FGuid PropertyID) const
+{
+	return ParameterOverrideGuids.Contains(PropertyID);
+}
+
+void FCameraRigAssetReference::SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden)
+{
+	if (bIsOverridden)
 	{
-		bool bHasAnyOverride = false;
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides.ValueName##Overrides)\
-		{\
-			ParameterOverride.bInvalid = true;\
-			bHasAnyOverride = true;\
-		}
-		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-		return bHasAnyOverride;
+		ParameterOverrideGuids.AddUnique(PropertyID);
+	}
+	else
+	{
+		ParameterOverrideGuids.Remove(PropertyID);
+	}
+}
+
+bool FCameraRigAssetReference::NeedsRebuildParameters() const
+{
+	if ((!CameraRig && Parameters.IsValid()) || (CameraRig && !Parameters.IsValid()))
+	{
+		return true;
 	}
 
-	bool bAnyModified = false;
-	FCameraRigInterface& CameraRigInterface = CameraRig->Interface;
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides.ValueName##Overrides)\
-	{\
-		UCameraRigInterfaceParameter* InterfaceParameter = CameraRigInterface.FindInterfaceParameterByGuid(\
-				ParameterOverride.InterfaceParameterGuid);\
-		\
-		const bool bWasInvalid = ParameterOverride.bInvalid;\
-		ParameterOverride.bInvalid = (InterfaceParameter == nullptr);\
-		bAnyModified |= (bWasInvalid != ParameterOverride.bInvalid);\
-		\
-		if (InterfaceParameter)\
-		{\
-			if (ParameterOverride.InterfaceParameterName != InterfaceParameter->InterfaceParameterName)\
-			{\
-				ParameterOverride.InterfaceParameterName = InterfaceParameter->InterfaceParameterName;\
-				bAnyModified = true;\
-			}\
-			UCameraVariableAsset* InterfaceParameterVariable = InterfaceParameter->PrivateVariable;\
-			const FGuid NewPrivateVariableGuid = InterfaceParameterVariable ? InterfaceParameterVariable->GetGuid() : FGuid();\
-			if (ParameterOverride.PrivateVariableGuid != NewPrivateVariableGuid)\
-			{\
-				ParameterOverride.PrivateVariableGuid = NewPrivateVariableGuid;\
-				bAnyModified = true;\
-			}\
-		}\
+	if (CameraRig)
+	{
+		const UPropertyBag* AssetParametersType = CameraRig->GetDefaultParameters().GetPropertyBagStruct();
+		const UPropertyBag* ReferenceParametersType = Parameters.GetPropertyBagStruct();
+		if (AssetParametersType != ReferenceParametersType)
+		{
+			return true;
+		}
 	}
-	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-	return bAnyModified;
+
+	return false;
+}
+
+bool FCameraRigAssetReference::RebuildParametersIfNeeded()
+{
+	if (NeedsRebuildParameters())
+	{
+		RebuildParameters();
+		return true;
+	}
+	return false;
+}
+
+void FCameraRigAssetReference::RebuildParameters()
+{
+	if (CameraRig)
+	{
+		Parameters.MigrateToNewBagInstanceWithOverrides(CameraRig->GetDefaultParameters(), ParameterOverrideGuids);
+		
+		// Remove overrides for parameters that don't exist anymore.
+		if (const UPropertyBag* ParametersType = Parameters.GetPropertyBagStruct())
+		{
+			for (TArray<FGuid>::TIterator It = ParameterOverrideGuids.CreateIterator(); It; ++It)
+			{
+				if (!ParametersType->FindPropertyDescByID(*It))
+				{
+					It.RemoveCurrentSwap();
+				}
+			}
+		}
+	}
+	else
+	{
+		Parameters.Reset();
+	}
 }
 
 bool FCameraRigAssetReference::SerializeFromMismatchedTag(struct FPropertyTag const& Tag, FStructuredArchive::FSlot Slot)
@@ -80,5 +109,51 @@ bool FCameraRigAssetReference::SerializeFromMismatchedTag(struct FPropertyTag co
 		return true;
 	}
 	return false;
+}
+
+void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
+{
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+	// Make a property bag with the legacy overrides, and then set the values in it.
+	bool bHasAnyLegacyOverride = false;
+	TArray<FPropertyBagPropertyDesc> LegacyParameterProperties;
+	TArray<FGuid> LegacyParameterOverrides;
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+	for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
+	{\
+		FName PropertyName(ParameterOverride.InterfaceParameterName);\
+		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;\
+		const UObject* PropertyTypeObject = F##ValueName##CameraParameter::StaticStruct();\
+		FPropertyBagPropertyDesc LegacyParameterProperty(PropertyName, PropertyType, PropertyTypeObject);\
+		LegacyParameterProperty.ID = ParameterOverride.InterfaceParameterGuid;\
+		LegacyParameterProperties.Add(LegacyParameterProperty);\
+		LegacyParameterOverrides.Add(LegacyParameterProperty.ID);\
+		bHasAnyLegacyOverride = true;\
+	}
+	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+	if (bHasAnyLegacyOverride)
+	{
+		Parameters = FInstancedPropertyBag();
+		Parameters.AddProperties(LegacyParameterProperties);
+
+		ParameterOverrideGuids = LegacyParameterOverrides;
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
+		{\
+			FName PropertyName(ParameterOverride.InterfaceParameterName);\
+			Parameters.SetValueStruct<F##ValueName##CameraParameter>(PropertyName, ParameterOverride.Value);\
+		}
+		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+		ParameterOverrides_DEPRECATED = FCameraRigParameterOverrides();
+	}
+
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 

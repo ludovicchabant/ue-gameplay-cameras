@@ -3,7 +3,7 @@
 #include "Editors/SCameraRigInterfaceParameterGraphNode.h"
 
 #include "Core/CameraRigAsset.h"
-#include "Editors/ObjectTreeGraphNode.h"
+#include "Editors/CameraRigInterfaceParameterGraphNode.h"
 #include "SGraphNode.h"
 #include "SNodePanel.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -132,9 +132,9 @@ TSharedPtr<SGraphPin> SCameraRigInterfaceParameterGraphNode::CreatePinWidget(UEd
 
 FText SCameraRigInterfaceParameterGraphNode::GetInterfaceParameterName() const
 {
-	if (UCameraRigInterfaceParameter* RigParameterObject = GetObjectGraphNode()->CastObject<UCameraRigInterfaceParameter>())
+	if (UCameraRigInterfaceParameterBase* InterfaceParameter = GetObjectGraphNode()->CastObject<UCameraRigInterfaceParameterBase>())
 	{
-		return FText::FromString(RigParameterObject->InterfaceParameterName);
+		return FText::FromString(InterfaceParameter->InterfaceParameterName);
 	}
 	return LOCTEXT("InvalidParameterName", "Invalid");
 }

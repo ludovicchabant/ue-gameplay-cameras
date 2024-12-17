@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
+#include "Core/CameraContextDataAllocationInfo.h"
+#include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraEventHandler.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraRigTransition.h"
@@ -12,6 +14,7 @@
 #include "CoreTypes.h"
 #include "GameplayTagAssetInterface.h"
 #include "GameplayTagContainer.h"
+#include "StructUtils/PropertyBag.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraRigAsset.generated.h"
@@ -36,6 +39,9 @@ namespace UE::Cameras
 		/** Called when the camera rig asset has been built. */
 		virtual void OnCameraRigBuilt(const UCameraRigAsset* CameraRigAsset) {}
 
+		/** Called when the camera rig's interface has changed. */
+		virtual void OnCameraRigInterfaceChanged() {}
+
 #if WITH_EDITOR
 		virtual void OnObjectAddedToGraph(const FName GraphName, UObject* Object) {}
 		virtual void OnObjectRemovedFromGraph(const FName GraphName, UObject* Object) {}
@@ -44,7 +50,7 @@ namespace UE::Cameras
 }
 
 /**
- * Structure describing various allocations needed by a camera node.
+ * Structure describing various allocations needed by a camera rig.
  */
 USTRUCT()
 struct FCameraRigAllocationInfo
@@ -55,9 +61,13 @@ struct FCameraRigAllocationInfo
 	UPROPERTY()
 	FCameraNodeEvaluatorAllocationInfo EvaluatorInfo;
 
-	/** Allocation info for the camera variable. */
+	/** Allocation info for the variable table. */
 	UPROPERTY()
 	FCameraVariableTableAllocationInfo VariableTableInfo;
+
+	/** Allocation info for the context data table. */
+	UPROPERTY()
+	FCameraContextDataAllocationInfo ContextDataTableInfo;
 
 public:
 
@@ -77,12 +87,11 @@ struct TStructOpsTypeTraits<FCameraRigAllocationInfo> : public TStructOpsTypeTra
 };
 
 /**
- * An exposed camera rig parameter that drives a specific parameter on one of
- * its camera nodes.
+ * Base class for interface parameters on a camera rig asset.
  */
 UCLASS(MinimalAPI, meta=(
 			ObjectTreeGraphSelfPinDirection="Output"))
-class UCameraRigInterfaceParameter
+class UCameraRigInterfaceParameterBase 
 	: public UObject
 	, public IObjectTreeGraphObject
 {
@@ -90,30 +99,41 @@ class UCameraRigInterfaceParameter
 
 public:
 
-	/** The camera node that this parameter drives. */
-	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
-	TObjectPtr<UCameraNode> Target;
-
-	/** The camera parameter on the target camera node that this parameter drives. */
-	UPROPERTY()
-	FName TargetPropertyName;
-
 	/** The exposed name for this parameter. */
 	UPROPERTY(EditAnywhere, Category=Camera)
 	FString InterfaceParameterName;
 
-	UPROPERTY()
-	FGuid Guid;
-
-	// Built on save/cook.
+	/** The camera node this parameter is connected. */
+	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
+	TObjectPtr<UCameraNode> Target;
 
 	/**
-	 * The private camera variable created to drive the target camera parameter on
-	 * the target camera node. This variable is created by the build method on the
-	 * camera rig.
+	 * The name of the property this parameter is connected to on the target camera node.
+	 * This may be an actual UObject property, but it may be something else, like the name
+	 * of an interface parameter on a nested camera rig, or the name of a Blueprint property
+	 * on the evaluator class of a Blueprint camera node.
 	 */
 	UPROPERTY()
-	TObjectPtr<UCameraVariableAsset> PrivateVariable;
+	FName TargetPropertyName;
+
+#if WITH_EDITORONLY_DATA
+
+	/** Whether this parameter has been added to the node graph in the editor. */
+	UPROPERTY()
+	bool bHasGraphNode = false;
+
+#endif  // WITH_EDITORONLY_DATA
+
+public:
+
+	/** Gets this parameter's unique ID. */
+	const FGuid& GetGuid() const { return Guid; }
+
+protected:
+
+	/** The Guid of this parameter. */
+	UPROPERTY()
+	FGuid Guid;
 
 protected:
 
@@ -139,6 +159,54 @@ private:
 };
 
 /**
+ * An exposed camera rig parameter that drives a specific parameter on one of
+ * its camera nodes.
+ */
+UCLASS(MinimalAPI)
+class UCameraRigBlendableParameter : public UCameraRigInterfaceParameterBase
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The type of this parameter. */
+	UPROPERTY()
+	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
+
+	// Built on save/cook.
+
+	/**
+	 * The private camera variable created to drive the target camera parameter on
+	 * the target camera node. This variable is created by the build method on the
+	 * camera rig.
+	 */
+	UPROPERTY()
+	TObjectPtr<UCameraVariableAsset> PrivateVariable;
+};
+
+UCLASS(MinimalAPI)
+class UCameraRigDataParameter : public UCameraRigInterfaceParameterBase
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The type of this parameter. */
+	UPROPERTY()
+	ECameraContextDataType DataType;
+
+	/** An additional type object for this parameter. */
+	UPROPERTY()
+	TObjectPtr<const UObject> DataTypeObject;
+
+	// Built on save/cook.
+
+	/** The reference to use to access the underlying data in the context data table. */
+	UPROPERTY()
+	FCameraContextDataID PrivateDataID;
+};
+
+/**
  * Structure defining the public data interface of a camera rig asset.
  */
 USTRUCT()
@@ -150,18 +218,22 @@ public:
 
 	/** The list of exposed parameters on the camera rig. */
 	UPROPERTY(Instanced)
-	TArray<TObjectPtr<UCameraRigInterfaceParameter>> InterfaceParameters;
+	TArray<TObjectPtr<UCameraRigBlendableParameter>> BlendableParameters;
+
+	UPROPERTY(Instanced)
+	TArray<TObjectPtr<UCameraRigDataParameter>> DataParameters;
 
 public:
 	
 	/** Finds an exposed parameter by name. */
-	GAMEPLAYCAMERAS_API UCameraRigInterfaceParameter* FindInterfaceParameterByName(const FString& ParameterName) const;
+	GAMEPLAYCAMERAS_API UCameraRigBlendableParameter* FindBlendableParameterByName(const FString& ParameterName) const;
 
 	/** Finds an exposed parameter by Guid. */
-	GAMEPLAYCAMERAS_API UCameraRigInterfaceParameter* FindInterfaceParameterByGuid(const FGuid& ParameterGuid) const;
+	GAMEPLAYCAMERAS_API UCameraRigBlendableParameter* FindBlendableParameterByGuid(const FGuid& ParameterGuid) const;
+	GAMEPLAYCAMERAS_API UCameraRigDataParameter* FindDataParameterByGuid(const FGuid& ParameterGuid) const;
 
 	/** Returns whether an exposed parameter with the given name exists. */
-	GAMEPLAYCAMERAS_API bool HasInterfaceParameter(const FString& ParameterName) const;
+	GAMEPLAYCAMERAS_API bool HasBlendableParameter(const FString& ParameterName) const;
 };
 
 /**
@@ -223,6 +295,11 @@ public:
 	/** Gets the camera rig's unique ID. */
 	const FGuid& GetGuid() const { return Guid; }
 
+	/** Gets the default values for the parameters exposed on this camera rig. */
+	const FInstancedPropertyBag& GetDefaultParameters() const { return DefaultParameters; }
+
+	/** Gets the default values for the parameters exposed on this camera rig. */
+	FInstancedPropertyBag& GetDefaultParameters() { return DefaultParameters; }
 
 public:
 
@@ -287,8 +364,13 @@ protected:
 
 private:
 
+	/** The camera rig's unique ID. */
 	UPROPERTY()
 	FGuid Guid;
+
+	/** The default interface parameter values, generated during build. */
+	UPROPERTY()
+	FInstancedPropertyBag DefaultParameters;
 
 #if WITH_EDITORONLY_DATA
 

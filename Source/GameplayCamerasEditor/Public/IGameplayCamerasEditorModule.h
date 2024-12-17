@@ -36,8 +36,6 @@ struct FCameraDebugCategoryInfo
 }  // namespace UE::Cameras
 
 DECLARE_DELEGATE_RetVal_OneParam(TSharedPtr<UE::Cameras::FCameraDirectorAssetEditorMode>, FOnCreateCameraDirectorAssetEditorMode, UCameraAsset*);
-DECLARE_DELEGATE_TwoParams(FOnBuildCameraAsset, UCameraAsset*, UE::Cameras::FCameraBuildLog&);
-DECLARE_DELEGATE_TwoParams(FOnBuildCameraRigAsset, UCameraRigAsset*, UE::Cameras::FCameraBuildLog&);
 DECLARE_DELEGATE_RetVal_OneParam(TSharedRef<SWidget>, FOnCreateDebugCategoryPanel, const FString&);
 
 /**
@@ -81,20 +79,6 @@ public:
 	virtual TArrayView<const FOnCreateCameraDirectorAssetEditorMode> GetCameraDirectorEditorCreators() const = 0;
 	/** Unregisters a camera director editor creator. */
 	virtual void UnregisterCameraDirectorEditor(FDelegateHandle InHandle) = 0;
-
-	/** Registers a custom camera asset builder. */
-	virtual FDelegateHandle RegisterCameraAssetBuilder(FOnBuildCameraAsset InOnBuildCameraAsset) = 0;
-	/** Gets the registered custom camera asset builders. */
-	virtual TArrayView<const FOnBuildCameraAsset> GetCameraAssetBuilders() const = 0;
-	/** Unregisters a custom camera asset builder. */
-	virtual void UnregisterCameraAssetBuilder(FDelegateHandle InHandle) = 0;
-
-	/** Registers a custom camera rig builder. */
-	virtual FDelegateHandle RegisterCameraRigAssetBuilder(FOnBuildCameraRigAsset InOnBuildCameraRigAsset) = 0;
-	/** Gets the registered custom camera rig builders. */
-	virtual TArrayView<const FOnBuildCameraRigAsset> GetCameraRigAssetBuilders() const = 0;
-	/** Unregisters a custom camera rig builder. */
-	virtual void UnregisterCameraRigAssetBuilder(FDelegateHandle InHandle) = 0;
 
 public:
 

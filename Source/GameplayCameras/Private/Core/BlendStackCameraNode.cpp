@@ -89,6 +89,9 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	// Allocate variables in the variable table.
 	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
 
+	// Allocate context data in the data table.
+	NewEntry.Result.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
+
 	// Initialize the node evaluators.
 	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
 	InitParams.Evaluator = OwningEvaluator;
@@ -220,6 +223,7 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 			FCameraNodeEvaluationResult& CurResult = Entry.Result;
 			CurResult.CameraPose.ClearAllChangedFlags();
 			CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
+			CurResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
 		}
 		// else: frozen entries may have null contexts or invalid initial results
 		//       because we're not going to update them anyway. We will however blend
@@ -384,6 +388,7 @@ void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector&
 	{
 		Collector.AddReferencedObject(Entry.CameraRig);
 		Collector.AddReferencedObject(Entry.RootNode);
+		Entry.Result.AddReferencedObjects(Collector);
 	}
 }
 
@@ -655,6 +660,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		// overrides have been set on them.
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 		CurResult.VariableTable.Override(ContextResult.VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
+		CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 		// Gather input parameters if needed (and remember if it was indeed needed).
 		if (!Entry.bInputRunThisFrame)
@@ -1044,6 +1050,7 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 				const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 				CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
 				CurResult.VariableTable.Override(ContextResult.VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
+				CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 				// Setup flags.
 				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;

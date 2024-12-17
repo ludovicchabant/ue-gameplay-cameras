@@ -619,6 +619,37 @@ bool operator==(const FCameraVariableDefinition& A, const FCameraVariableDefinit
 		;
 }
 
+void FCameraVariableTableAllocationInfo::Combine(const FCameraVariableTableAllocationInfo& OtherInfo)
+{
+	TMap<FCameraVariableID, int32> KnownIDs;
+	for (auto It = VariableDefinitions.CreateConstIterator(); It; ++It)
+	{
+		const FCameraVariableDefinition& VariableDefinition(*It);
+		KnownIDs.Add(VariableDefinition.VariableID, It.GetIndex());
+	}
+
+	for (const FCameraVariableDefinition& OtherVariableDefinition : OtherInfo.VariableDefinitions)
+	{
+		const int32 KnownIndex = KnownIDs.FindRef(OtherVariableDefinition.VariableID, INDEX_NONE);
+		if (KnownIndex == INDEX_NONE)
+		{
+			VariableDefinitions.Add(OtherVariableDefinition);
+		}
+		else
+		{
+			const FCameraVariableDefinition& KnownVariableDefinition(VariableDefinitions[KnownIndex]);
+			ensure(KnownVariableDefinition == OtherVariableDefinition);
+		}
+	}
+
+	TSet<TObjectPtr<UCameraVariableAsset>> KnownAutoResetVariables(AutoResetVariables);
+	for (UCameraVariableAsset* OtherAutoResetVariable : OtherInfo.AutoResetVariables)
+	{
+		KnownAutoResetVariables.Add(OtherAutoResetVariable);
+	}
+	AutoResetVariables = KnownAutoResetVariables.Array();
+}
+
 bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B)
 {
 	return A.VariableDefinitions == B.VariableDefinitions

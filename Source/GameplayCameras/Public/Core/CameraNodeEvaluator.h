@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraContextDataTable.h"
 #include "Core/CameraObjectRtti.h"
 #include "Core/CameraPose.h"
 #include "Core/CameraRigEvaluationInfo.h"
@@ -164,6 +165,9 @@ struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
 	/** The variable table. */
 	FCameraVariableTable VariableTable;
 
+	/** The context data table. */
+	FCameraContextDataTable ContextDataTable;
+
 	/** The list of joints in the current camera rig. */
 	FCameraRigJoints CameraRigJoints;
 
@@ -189,6 +193,11 @@ public:
 
 	/** Serializes this result to the given archive. */
 	void Serialize(FArchive& Ar);
+
+public:
+
+	/** Collects objects from the context data table. */
+	void AddReferencedObjects(FReferenceCollector& Collector);
 };
 
 /**

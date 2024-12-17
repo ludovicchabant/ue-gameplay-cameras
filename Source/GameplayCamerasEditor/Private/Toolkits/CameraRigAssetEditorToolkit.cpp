@@ -24,6 +24,7 @@
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
+#include "Toolkits/CameraRigInterfaceParametersToolkit.h"
 #include "Toolkits/CurveEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -38,6 +39,7 @@ namespace UE::Cameras
 const FName FCameraRigAssetEditorToolkit::SearchTabId(TEXT("CameraRigAssetEditor_Search"));
 const FName FCameraRigAssetEditorToolkit::MessagesTabId(TEXT("CameraRigAssetEditor_Messages"));
 const FName FCameraRigAssetEditorToolkit::CurvesTabId(TEXT("CameraRigAssetEditor_Curves"));
+const FName FCameraRigAssetEditorToolkit::InterfaceParametersTabId(TEXT("CameraRigAssetEditor_InterfaceParameters"));
 
 FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwningAssetEditor)
 	: FBaseAssetToolkit(InOwningAssetEditor)
@@ -46,6 +48,7 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 	BuildButtonToolkit = MakeShared<FBuildButtonToolkit>();
 	BuildLogToolkit = MakeShared<FCameraBuildLogToolkit>();
 	CurveEditorToolkit = MakeShared<FCurveEditorToolkit>();
+	InterfaceParametersToolkit = MakeShared<FCameraRigInterfaceParametersToolkit>();
 
 	// Override base class default layout.
 	TSharedPtr<FStandardToolkitLayout> StandardLayout = Impl->GetStandardLayout();
@@ -53,6 +56,7 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 		StandardLayout->AddBottomTab(SearchTabId);
 		StandardLayout->AddBottomTab(MessagesTabId);
 		StandardLayout->AddBottomTab(CurvesTabId);
+		StandardLayout->AddLeftTab(InterfaceParametersTabId, ETabState::OpenedTab);
 	}
 	StandaloneDefaultLayout = StandardLayout->GetLayout();
 
@@ -76,6 +80,7 @@ void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRi
 
 	Impl->SetCameraRigAsset(InCameraRig);
 	BuildButtonToolkit->SetTarget(InCameraRig);
+	InterfaceParametersToolkit->SetCameraRigAsset(InCameraRig);
 
 	if (InCameraRig)
 	{
@@ -106,6 +111,11 @@ void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<class FT
 		.SetDisplayName(LOCTEXT("Curves", "Curves"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Curves"));
+
+	InTabManager->RegisterTabSpawner(InterfaceParametersTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_InterfaceParameters))
+		.SetDisplayName(LOCTEXT("InterfaceParameters", "InterfaceParameters"))
+		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
+		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.InterfaceParameters"));
 }
 
 TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Search(const FSpawnTabArgs& Args)
@@ -150,6 +160,17 @@ TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Curves(const FSpawnT
 	return CurvesTab.ToSharedRef();
 }
 
+TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_InterfaceParameters(const FSpawnTabArgs& Args)
+{
+	TSharedPtr<SDockTab> InterfaceParametersTab = SNew(SDockTab)
+		.Label(LOCTEXT("InterfaceParametersTabTitle", "Parameters"))
+		[
+			InterfaceParametersToolkit->GetInterfaceParametersPanel().ToSharedRef()
+		];
+
+	return InterfaceParametersTab.ToSharedRef();
+}
+
 void FCameraRigAssetEditorToolkit::OnCurvesTabClosed(TSharedRef<SDockTab> InTab)
 {
 	if (CurveEditorToolkit->IsInitialized())
@@ -171,6 +192,7 @@ void FCameraRigAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabMa
 	InTabManager->UnregisterTabSpawner(SearchTabId);
 	InTabManager->UnregisterTabSpawner(MessagesTabId);
 	InTabManager->UnregisterTabSpawner(CurvesTabId);
+	InTabManager->UnregisterTabSpawner(InterfaceParametersTabId);
 }
 
 void FCameraRigAssetEditorToolkit::CreateWidgets()
@@ -201,6 +223,9 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
+
+	// Hook-up the selection of interface parameters.
+	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraRigAssetEditorToolkit::OnCameraRigInterfaceParameterSelected);
 }
 
 void FCameraRigAssetEditorToolkit::RegisterToolbar()
@@ -282,6 +307,11 @@ void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()
 	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraRigAsset::StaticClass()));
 }
 
+void FCameraRigAssetEditorToolkit::OnCameraRigInterfaceParameterSelected(UCameraRigInterfaceParameterBase* Object)
+{
+	OnJumpToObject(Object, NAME_None);
+}
+
 void FCameraRigAssetEditorToolkit::OnBuild()
 {
 	UCameraRigAsset* CameraRigAsset = Impl->GetCameraRigAsset();
@@ -292,17 +322,7 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 
 	FCameraBuildLog BuildLog;
 	FCameraRigAssetBuilder Builder(BuildLog);
-	Builder.BuildCameraRig(
-			CameraRigAsset,
-			FCameraRigAssetBuilder::FCustomBuildStep::CreateLambda(
-				[](UCameraRigAsset* InCameraRigAsset, FCameraBuildLog& BuildLog)
-				{
-					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
-					for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
-					{
-						Builder.ExecuteIfBound(InCameraRigAsset, BuildLog);
-					}
-				}));
+	Builder.BuildCameraRig(CameraRigAsset);
 
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
 

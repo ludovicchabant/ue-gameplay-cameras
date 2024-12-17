@@ -6,6 +6,8 @@
 
 #include "CameraRigInterfaceParameterGraphNode.generated.h"
 
+class UCameraRigInterfaceParameterBase;
+
 /**
  * Custom graph editor node for a camera rig parameter.
  */
@@ -18,6 +20,9 @@ public:
 
 	/** Creates a new graph node. */
 	UCameraRigInterfaceParameterGraphNode(const FObjectInitializer& ObjInit);
+
+	/** Gets the underlying object as a camera rig interface parameter. */
+	UCameraRigInterfaceParameterBase* GetInterfaceParameter() const;
 
 public:
 

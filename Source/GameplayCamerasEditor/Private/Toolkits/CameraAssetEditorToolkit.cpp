@@ -283,29 +283,7 @@ void FCameraAssetEditorToolkit::OnBuild()
 
 	FCameraBuildLog BuildLog;
 	FCameraAssetBuilder Builder(BuildLog);
-	Builder.BuildCamera(
-			CameraAsset,
-			FCameraAssetBuilder::FCustomBuildStep::CreateLambda(
-				[&UsageInfo](UCameraAsset* InCameraAsset, FCameraBuildLog& BuildLog)
-				{
-					IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
-					for (const FOnBuildCameraAsset& Builder : GameplayCamerasEditorModule.GetCameraAssetBuilders())
-					{
-						Builder.ExecuteIfBound(InCameraAsset, BuildLog);
-					}
-
-					if (UCameraDirector* CameraDirector = InCameraAsset->GetCameraDirector())
-					{
-						CameraDirector->GatherRigUsageInfo(UsageInfo);
-						for (UCameraRigAsset* CameraRig : UsageInfo.CameraRigs)
-						{
-							for (const FOnBuildCameraRigAsset& Builder : GameplayCamerasEditorModule.GetCameraRigAssetBuilders())
-							{
-								Builder.ExecuteIfBound(CameraRig, BuildLog);
-							}
-						}
-					}
-				}));
+	Builder.BuildCamera(CameraAsset);
 	
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
 

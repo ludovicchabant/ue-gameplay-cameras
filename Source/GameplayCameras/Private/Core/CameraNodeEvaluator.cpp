@@ -71,6 +71,11 @@ void FCameraNodeEvaluationResult::Serialize(FArchive& Ar)
 	Ar << bIsValid;
 }
 
+void FCameraNodeEvaluationResult::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	ContextDataTable.AddReferencedObjects(Collector);
+}
+
 FCameraNodeEvaluator* FCameraNodeEvaluatorBuildParams::BuildEvaluator(const UCameraNode* InNode) const
 {
 	if (InNode)

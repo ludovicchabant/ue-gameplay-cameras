@@ -22,7 +22,8 @@ TSharedPtr<SGraphPin> SCameraNodeGraphNode::CreatePinWidget(UEdGraphPin* InPin) 
 	{
 		TSharedRef<FGameplayCamerasEditorStyle> GraphStyle = FGameplayCamerasEditorStyle::Get();
 
-		if (InPin->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraParameter)
+		if (InPin->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraParameter ||
+				InPin->PinType.PinCategory == UCameraNodeGraphSchema::PC_CameraVariableReference)
 		{
 			const FSlateBrush* ConnectedBrush = GraphStyle->GetBrush("Graph.CameraRigParameterPin.Connected");
 			const FSlateBrush* DisconnectedBrush = GraphStyle->GetBrush("Graph.CameraRigParameterPin.Disconnected");

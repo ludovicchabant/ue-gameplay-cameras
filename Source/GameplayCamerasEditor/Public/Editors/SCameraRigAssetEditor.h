@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraRigAsset.h"
 #include "CoreTypes.h"
 #include "GraphEditor.h"
 #include "Templates/SharedPointerFwd.h"
@@ -12,7 +13,6 @@ class FAssetEditorToolkit;
 class IDetailsView;
 class SBox;
 class SObjectTreeGraphEditor;
-class UCameraRigAsset;
 class UEdGraphNode;
 class UObjectTreeGraph;
 struct FObjectTreeGraphConfig;
@@ -35,7 +35,9 @@ enum class ECameraRigAssetEditorMode
  * This implements only the dual-graph editor, for the node hierarchy and transitions.
  * The rest of the UI such as the details view or the toolbox aren't included here.
  */
-class SCameraRigAssetEditor : public SCompoundWidget
+class SCameraRigAssetEditor 
+	: public SCompoundWidget
+	, public ICameraRigAssetEventHandler
 {
 public:
 
@@ -85,6 +87,11 @@ public:
 
 protected:
 
+	// ICameraRigAssetEventHandler interface.
+	virtual void OnCameraRigInterfaceChanged() override;
+
+protected:
+
 	void CreateGraphEditors();
 	void CreateNodeGraphEditor();
 	void CreateTransitionGraphEditor();
@@ -102,8 +109,13 @@ private:
 	/** The asset being edited */
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 
+	/** Event handler */
+	TCameraEventHandler<ICameraRigAssetEventHandler> EventHandler;
+
+	/** Reference to the details view */
 	TSharedPtr<IDetailsView> DetailsView;
 
+	/** Reference to the owning asset editor */
 	TWeakPtr<FAssetEditorToolkit> AssetEditorToolkit;
 
 	/** The node hierarchy graph */

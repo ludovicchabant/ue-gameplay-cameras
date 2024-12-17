@@ -84,7 +84,7 @@ protected:
 private:
 
 	void InitializeBlendedParameterOverridesStack();
-	void SetDefaultInterfaceParameterValues(FCameraVariableTable& OutVariableTable);
+	void SetDefaultBlendableParameterValues(FCameraVariableTable& OutVariableTable);
 	void RunBlendedParameterOverridesStack(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
 
 private:

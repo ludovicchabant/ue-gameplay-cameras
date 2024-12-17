@@ -38,12 +38,12 @@ UCameraRigParameterInterop::UCameraRigParameterInterop(const FObjectInitializer&
 {
 }
 
-void UCameraRigParameterInterop::SetBooleanParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, bool bParameterValue)
+void UCameraRigParameterInterop::SetBooleanParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, bool ParameterValue)
 {
 	UE::Cameras::Private::SetCameraRigParameter(
 			VariableTable, 
 			Cast<UBooleanCameraVariable>(GetParameterPrivateVariable(CameraRig, ParameterName)), 
-			bParameterValue);
+			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetIntegerParameter(FBlueprintCameraVariableTable& VariableTable, UCameraRigAsset* CameraRig, const FString& ParameterName, int32 ParameterValue)
@@ -112,22 +112,22 @@ void UCameraRigParameterInterop::SetTransformParameter(FBlueprintCameraVariableT
 
 UCameraVariableAsset* UCameraRigParameterInterop::GetParameterPrivateVariable(UCameraRigAsset* CameraRig, const FString& ParameterName)
 {
-	UCameraRigInterfaceParameter* InterfaceParameter = CameraRig->Interface.FindInterfaceParameterByName(ParameterName);
-	if (!InterfaceParameter)
+	UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(ParameterName);
+	if (!BlendableParameter)
 	{
 		const FText Text = LOCTEXT("NoSuchParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this camera variable table value will most probably accomplish nothing.");
 		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
 		return nullptr;
 	}
 
-	if (!InterfaceParameter->PrivateVariable)
+	if (!BlendableParameter->PrivateVariable)
 	{
 		const FText Text = LOCTEXT("CameraRigNeedsBuilding", "Parameter '{0}' isn't built. Please build camera rig '{1}'.");
 		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
 		return nullptr;
 	}
 
-	return InterfaceParameter->PrivateVariable;
+	return BlendableParameter->PrivateVariable;
 }
 
 #undef LOCTEXT_NAMESPACE

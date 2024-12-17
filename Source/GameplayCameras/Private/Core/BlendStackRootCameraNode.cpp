@@ -6,10 +6,10 @@
 #include "Core/BlendCameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
-#include "Core/CameraRigParameterOverrideEvaluator.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "Helpers/CameraRigParameterOverrideEvaluator.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
@@ -181,19 +181,19 @@ void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStac
 	}
 
 	// Build the allocation info for the variable tables we keep with each set of parameter overrides.
-	for (const UCameraRigInterfaceParameter* InterfaceParameter : BlendablePrefabCameraRig->Interface.InterfaceParameters)
+	for (const UCameraRigBlendableParameter* BlendableParameter : BlendablePrefabCameraRig->Interface.BlendableParameters)
 	{
-		if (!ensure(InterfaceParameter))
+		if (!ensure(BlendableParameter))
 		{
 			continue;
 		}
-		if (!InterfaceParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariable)
 		{
 			continue;
 		}
 
 		BlendedParameterOverridesTableAllocationInfo.VariableDefinitions.Add(
-				InterfaceParameter->PrivateVariable->GetVariableDefinition());;
+				BlendableParameter->PrivateVariable->GetVariableDefinition());
 	}
 
 	FCameraRigCameraNodeEvaluator* RootPrefabNodeEvaluator = RootEvaluator->CastThisChecked<FCameraRigCameraNodeEvaluator>();
@@ -223,16 +223,16 @@ void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	}
 }
 
-void FBlendStackRootCameraNodeEvaluator::SetDefaultInterfaceParameterValues(FCameraVariableTable& OutVariableTable)
+void FBlendStackRootCameraNodeEvaluator::SetDefaultBlendableParameterValues(FCameraVariableTable& OutVariableTable)
 {
-	for (const UCameraRigInterfaceParameter* InterfaceParameter : BlendablePrefabCameraRig->Interface.InterfaceParameters)
+	for (const UCameraRigBlendableParameter* BlendableParameter : BlendablePrefabCameraRig->Interface.BlendableParameters)
 	{
-		if (!ensure(InterfaceParameter))
+		if (!ensure(BlendableParameter))
 		{
 			continue;
 		}
 
-		const UCameraVariableAsset* PrivateVariable = InterfaceParameter->PrivateVariable;
+		const UCameraVariableAsset* PrivateVariable = BlendableParameter->PrivateVariable;
 		if (!PrivateVariable)
 		{
 			continue;
@@ -265,7 +265,7 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 
 		// Start by setting the default values of all parameters. If we don't do this, parameter overrides
 		// wouldn't have a base value to blend from.
-		SetDefaultInterfaceParameterValues(CurResult.VariableTable);
+		SetDefaultBlendableParameterValues(CurResult.VariableTable);
 
 		// Next, override the defaults with the specific values of this entry.
 		FCameraRigParameterOverrideEvaluator OverrideEvaluator(BlendedParameterOverrides.PrefabNode->CameraRigReference);

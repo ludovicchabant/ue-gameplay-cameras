@@ -3,62 +3,66 @@
 #pragma once
 
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigAsset.h"
+#include "StructUtils/PropertyBag.h"
+#include "UObject/ObjectPtr.h"
 
 #include "CameraRigAssetReference.generated.h"
 
+class UCameraRigAsset;
 struct FCameraRigAssetReference;
+struct FPropertyTag;
 
 namespace UE::Cameras
 {
 	class FCameraRigAssetBuilder;
 	class FCameraRigAssetReferenceDetailsCustomization;
+	struct FCameraNodeEvaluationResult;
 }
 
-/** Base struct for camera rig parameter overrides. */
+
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FCameraRigParameterOverrideBase;
+
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FBooleanCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FInteger32CameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FFloatCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FDoubleCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector2fCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector2dCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector3fCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector3dCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector4fCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FVector4dCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FRotator3fCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FRotator3dCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FTransform3fCameraRigParameterOverride;
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FTransform3dCameraRigParameterOverride;
+
+struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FCameraRigParameterOverrides;
+
 USTRUCT()
 struct FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
 
-	/**
-	 * The Guid of the overriden interface parameter in the inner camera rig.
-	 */
 	UPROPERTY()
 	FGuid InterfaceParameterGuid;
 
-	/**
-	 * The Guid of the overriden interface parameter's private variable in the
-	 * inner camera rig.
-	 *
-	 * This can be derived from InterfaceParameterGuid, but we cache this during
-	 * the build process to avoid searching for interface parameters.
-	 */
 	UPROPERTY()
 	FGuid PrivateVariableGuid;
 
-	/**
-	 * The name of the overriden interface parameter in the inner camera rig.
-	 *
-	 * This can be derived from InterfaceParameterGuid, but we cache this during
-	 * the build process to avoid searching for interface parameters.
-	 */
 	UPROPERTY()
 	FString InterfaceParameterName;
 
-	/**
-	 *
-	 */
 	UPROPERTY()
 	bool bInvalid = false;
 };
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 USTRUCT()
 struct FBooleanCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FBooleanCameraParameter;
 
 	UPROPERTY()
 	FBooleanCameraParameter Value;
@@ -69,8 +73,6 @@ struct FInteger32CameraRigParameterOverride : public FCameraRigParameterOverride
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FInteger32CameraParameter;
-
 	UPROPERTY()
 	FInteger32CameraParameter Value;
 };
@@ -79,8 +81,6 @@ USTRUCT()
 struct FFloatCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FFloatCameraParameter;
 
 	UPROPERTY()
 	FFloatCameraParameter Value;
@@ -91,8 +91,6 @@ struct FDoubleCameraRigParameterOverride : public FCameraRigParameterOverrideBas
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FDoubleCameraParameter;
-
 	UPROPERTY()
 	FDoubleCameraParameter Value;
 };
@@ -101,8 +99,6 @@ USTRUCT()
 struct FVector2fCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FVector2fCameraParameter;
 
 	UPROPERTY()
 	FVector2fCameraParameter Value;
@@ -113,8 +109,6 @@ struct FVector2dCameraRigParameterOverride : public FCameraRigParameterOverrideB
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FVector2dCameraParameter;
-
 	UPROPERTY()
 	FVector2dCameraParameter Value;
 };
@@ -123,8 +117,6 @@ USTRUCT()
 struct FVector3fCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FVector3fCameraParameter;
 
 	UPROPERTY()
 	FVector3fCameraParameter Value;
@@ -135,8 +127,6 @@ struct FVector3dCameraRigParameterOverride : public FCameraRigParameterOverrideB
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FVector3dCameraParameter;
-
 	UPROPERTY()
 	FVector3dCameraParameter Value;
 };
@@ -145,8 +135,6 @@ USTRUCT()
 struct FVector4fCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FVector4fCameraParameter;
 
 	UPROPERTY()
 	FVector4fCameraParameter Value;
@@ -157,8 +145,6 @@ struct FVector4dCameraRigParameterOverride : public FCameraRigParameterOverrideB
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FVector4dCameraParameter;
-
 	UPROPERTY()
 	FVector4dCameraParameter Value;
 };
@@ -167,8 +153,6 @@ USTRUCT()
 struct FRotator3fCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FRotator3fCameraParameter;
 
 	UPROPERTY()
 	FRotator3fCameraParameter Value;
@@ -179,8 +163,6 @@ struct FRotator3dCameraRigParameterOverride : public FCameraRigParameterOverride
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FRotator3dCameraParameter;
-
 	UPROPERTY()
 	FRotator3dCameraParameter Value;
 };
@@ -189,8 +171,6 @@ USTRUCT()
 struct FTransform3fCameraRigParameterOverride : public FCameraRigParameterOverrideBase
 {
 	GENERATED_BODY()
-
-	using CameraParameterType = FTransform3fCameraParameter;
 
 	UPROPERTY()
 	FTransform3fCameraParameter Value;
@@ -201,11 +181,11 @@ struct FTransform3dCameraRigParameterOverride : public FCameraRigParameterOverri
 {
 	GENERATED_BODY()
 
-	using CameraParameterType = FTransform3dCameraParameter;
-
 	UPROPERTY()
 	FTransform3dCameraParameter Value;
 };
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 /**
  * A structure that holds lists of camera rig interface parameter overrides, one list
@@ -216,67 +196,9 @@ struct GAMEPLAYCAMERAS_API FCameraRigParameterOverrides
 {
 	GENERATED_BODY()
 
-public:
-
-	/** Whether the given camera rig interface parameter is currently overriden. */
-	template<typename ParameterOverrideType>
-	bool IsParameterOverriden(const FGuid& CameraRigParameterGuid) const;
-
-	/** Find a parameter override for the given inner camera rig interface parameter. */
-	template<typename ParameterOverrideType>
-	ParameterOverrideType* FindParameterOverride(const FGuid& CameraRigParameterGuid);
-
-	/** Find or create a parameter override for the given inner camera rig interface parameter. */
-	template<typename ParameterOverrideType>
-	ParameterOverrideType& FindOrAddParameterOverride(const UCameraRigInterfaceParameter* CameraRigParameter);
-
-	/** Remove any parameter override for the given inner camera rig interface parameter. */
-	template<typename ParameterOverrideType>
-	void RemoveParameterOverride(const FGuid& CameraRigParameterGuid);
-
-	/** Remove all parameter overrides. */
-	void Reset();
-
-public:
-
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	inline TArrayView<const F##ValueName##CameraRigParameterOverride> Get##ValueName##Overrides() const\
-	{\
-		return ValueName##Overrides;\
-	}\
-	inline TArrayView<F##ValueName##CameraRigParameterOverride> Get##ValueName##Overrides()\
-	{\
-		return ValueName##Overrides;\
-	}
-UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-
-
 private:
 
-	template<typename ParameterOverrideType>
-	bool IsParameterOverriden(const TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid) const;
-
-	template<typename ParameterOverrideType>
-	ParameterOverrideType* FindParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid);
-
-	template<typename ParameterOverrideType>
-	ParameterOverrideType& FindOrAddParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const UCameraRigInterfaceParameter* CameraRigParameter);
-
-	template<typename ParameterOverrideType>
-	void RemoveParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid);
-
-
-public:
-
-	// Internal API.
-
-	template<typename ParameterOverrideType>
-	inline void AppendParameterOverrides(TArrayView<ParameterOverrideType> NewOverrides);
-
-private:
-
-	// Interface parameter overrides
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY()
 	TArray<FBooleanCameraRigParameterOverride> BooleanOverrides;
@@ -307,94 +229,17 @@ private:
 	UPROPERTY()
 	TArray<FTransform3dCameraRigParameterOverride> Transform3dOverrides;
 
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
 	friend struct FCameraRigAssetReference;
-
-	friend class UE::Cameras::FCameraRigAssetBuilder;
 };
-
-template<typename ParameterOverrideType>
-bool FCameraRigParameterOverrides::IsParameterOverriden(const TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid) const
-{
-	return OverridesArray.ContainsByPredicate(
-			[CameraRigParameterGuid](ParameterOverrideType& Item)
-			{
-				return (Item.InterfaceParameterGuid == CameraRigParameterGuid);
-			});
-}
-
-template<typename ParameterOverrideType>
-ParameterOverrideType* FCameraRigParameterOverrides::FindParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid)
-{
-	ParameterOverrideType* FoundItem = OverridesArray.FindByPredicate(
-			[CameraRigParameterGuid](ParameterOverrideType& Item)
-			{
-				return (Item.InterfaceParameterGuid == CameraRigParameterGuid);
-			});
-	return FoundItem;
-}
-
-template<typename ParameterOverrideType>
-ParameterOverrideType& FCameraRigParameterOverrides::FindOrAddParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const UCameraRigInterfaceParameter* CameraRigParameter)
-{
-	ParameterOverrideType* Existing = FindParameterOverride<ParameterOverrideType>(OverridesArray, CameraRigParameter->Guid);
-	if (Existing)
-	{
-		return *Existing;
-	}
-	else
-	{
-		ParameterOverrideType& NewOverride = OverridesArray.Emplace_GetRef();
-		NewOverride.InterfaceParameterGuid = CameraRigParameter->Guid;
-		NewOverride.InterfaceParameterName = CameraRigParameter->InterfaceParameterName;
-		return NewOverride;
-	}
-}
-
-template<typename ParameterOverrideType>
-void FCameraRigParameterOverrides::RemoveParameterOverride(TArray<ParameterOverrideType>& OverridesArray, const FGuid& CameraRigParameterGuid)
-{
-	OverridesArray.RemoveAll(
-			[CameraRigParameterGuid](ParameterOverrideType& Item)
-			{
-				return (Item.InterfaceParameterGuid == CameraRigParameterGuid);
-			});
-}
-
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-template<>\
-inline bool FCameraRigParameterOverrides::IsParameterOverriden<F##ValueName##CameraRigParameterOverride>(const FGuid& CameraRigParameterGuid) const\
-{\
-	return this->IsParameterOverriden<F##ValueName##CameraRigParameterOverride>(this->ValueName##Overrides, CameraRigParameterGuid);\
-}\
-template<>\
-inline F##ValueName##CameraRigParameterOverride* FCameraRigParameterOverrides::FindParameterOverride<F##ValueName##CameraRigParameterOverride>(const FGuid& CameraRigParameterGuid)\
-{\
-	return this->FindParameterOverride<F##ValueName##CameraRigParameterOverride>(this->ValueName##Overrides, CameraRigParameterGuid);\
-}\
-template<>\
-inline F##ValueName##CameraRigParameterOverride& FCameraRigParameterOverrides::FindOrAddParameterOverride<F##ValueName##CameraRigParameterOverride>(const UCameraRigInterfaceParameter* CameraRigParameter)\
-{\
-	return this->FindOrAddParameterOverride<F##ValueName##CameraRigParameterOverride>(this->ValueName##Overrides, CameraRigParameter);\
-}\
-template<>\
-inline void FCameraRigParameterOverrides::RemoveParameterOverride<F##ValueName##CameraRigParameterOverride>(const FGuid& CameraRigParameterGuid)\
-{\
-	this->RemoveParameterOverride<F##ValueName##CameraRigParameterOverride>(this->ValueName##Overrides, CameraRigParameterGuid);\
-}\
-template<>\
-inline void FCameraRigParameterOverrides::AppendParameterOverrides<F##ValueName##CameraRigParameterOverride>(TArrayView<F##ValueName##CameraRigParameterOverride> NewOverrides)\
-{\
-	this->ValueName##Overrides.Append(NewOverrides);\
-}
-UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
 
 /**
  * A structure holding a reference to a camera rig asset, along with the interface parameter
  * override values.
  */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FCameraRigAssetReference
+struct FCameraRigAssetReference
 {
 	GENERATED_BODY()
 
@@ -421,37 +266,50 @@ public:
 		return CameraRig;
 	}
 
-	/**
-	 * Sets the referenced camerar rig.
-	 * This will check any existing parameter overrides, tagging them as invalid as needed.
-	 */
+	/** Sets the referenced camera rig. */
 	void SetCameraRig(UCameraRigAsset* InCameraRig)
 	{
 		if (CameraRig != InCameraRig)
 		{
 			CameraRig = InCameraRig;
-			UpdateParameterOverrides();
+			RebuildParameters();
 		}
 	}
 
-	/** Gets the parameter overrides. */
-	const FCameraRigParameterOverrides& GetParameterOverrides() const
+	/** Gets the parameters for this camera rig, some of which containing overrides. */
+	const FInstancedPropertyBag& GetParameters() const
 	{
-		return ParameterOverrides;
+		return Parameters;
 	}
 
-	/** Gets the parameter overrides. */
-	FCameraRigParameterOverrides& GetParameterOverrides()
+	/** Gets the parameters for this camera rig, some of which containing overrides. */
+	FInstancedPropertyBag& GetParameters()
 	{
-		return ParameterOverrides;
+		return Parameters;
 	}
+
+	/** Gets the IDs of the parameters with override values. */
+	TConstArrayView<FGuid> GetOverridenParameterGuids() const
+	{
+		return ParameterOverrideGuids;
+	}
+
+	/** Applies the parameter override values to the given evaluation result. */
+	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly);
 
 public:
 
 	// Internal API.
 
-	bool SerializeFromMismatchedTag(struct FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
-	bool UpdateParameterOverrides();
+	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
+	void PostSerialize(const FArchive& Ar);
+
+	GAMEPLAYCAMERAS_API bool IsParameterOverriden(const FGuid PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden);
+
+	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
+	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
+	GAMEPLAYCAMERAS_API void RebuildParameters();
 
 private:
 
@@ -459,9 +317,23 @@ private:
 	UPROPERTY(EditAnywhere, Category="")
 	TObjectPtr<UCameraRigAsset> CameraRig;
 
-	/** The parameter overrides. */
+	/** The camera rig's parameters. */
 	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout))
-	FCameraRigParameterOverrides ParameterOverrides;
+	FInstancedPropertyBag Parameters;
+
+	/** The list of camera rig parameters with override values. */
+	UPROPERTY(EditAnywhere, Category="")
+	TArray<FGuid> ParameterOverrideGuids;
+
+
+	// Deprecated
+
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
+	UPROPERTY()
+	FCameraRigParameterOverrides ParameterOverrides_DEPRECATED;
+
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	friend class UE::Cameras::FCameraRigAssetReferenceDetailsCustomization;
 };
@@ -471,7 +343,8 @@ struct TStructOpsTypeTraits<FCameraRigAssetReference> : public TStructOpsTypeTra
 {
 	enum
 	{
-		WithStructuredSerializeFromMismatchedTag = true
+		WithStructuredSerializeFromMismatchedTag = true,
+		WithPostSerialize = true
 	};
 };
 

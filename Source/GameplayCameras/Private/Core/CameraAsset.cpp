@@ -11,6 +11,12 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
 
+bool operator==(const FCameraAssetAllocationInfo& A, const FCameraAssetAllocationInfo& B)
+{
+	return A.VariableTableInfo == B.VariableTableInfo &&
+		A.ContextDataTableInfo == B.ContextDataTableInfo;
+}
+
 const FName UCameraAsset::SharedTransitionsGraphName("SharedTransitions");
 
 void UCameraAsset::SetCameraDirector(UCameraDirector* InCameraDirector)

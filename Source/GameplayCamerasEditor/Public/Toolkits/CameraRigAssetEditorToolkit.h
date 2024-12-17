@@ -20,6 +20,7 @@ namespace UE::Cameras
 class FBuildButtonToolkit;
 class FCameraBuildLogToolkit;
 class FCameraRigAssetEditorToolkitBase;
+class FCameraRigInterfaceParametersToolkit;
 class FCurveEditorToolkit;
 class IGameplayCamerasLiveEditManager;
 
@@ -60,8 +61,11 @@ private:
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Curves(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_InterfaceParameters(const FSpawnTabArgs& Args);
 
 	void OnCurvesTabClosed(TSharedRef<SDockTab> InTab);
+
+	void OnCameraRigInterfaceParameterSelected(UCameraRigInterfaceParameterBase* Object);
 
 	void OnBuild();
 	void OnFindInCameraRig();
@@ -76,6 +80,7 @@ private:
 	static const FName SearchTabId;
 	static const FName MessagesTabId;
 	static const FName CurvesTabId;
+	static const FName InterfaceParametersTabId;
 
 	/** Base implementation */
 	TSharedPtr<FCameraRigAssetEditorToolkitBase> Impl;
@@ -91,6 +96,8 @@ private:
 	TSharedPtr<FCameraBuildLogToolkit> BuildLogToolkit;
 	/** The curve editor */
 	TSharedPtr<FCurveEditorToolkit> CurveEditorToolkit;
+	/** The interface parameters panel */
+	TSharedPtr<FCameraRigInterfaceParametersToolkit> InterfaceParametersToolkit;
 
 	/** Search widget */
 	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;

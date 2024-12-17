@@ -3,6 +3,7 @@
 #include "GameFramework/GameplayCameraComponent.h"
 
 #include "Components/StaticMeshComponent.h"
+#include "Core/CameraAsset.h"
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraSystemEvaluator.h"
@@ -34,6 +35,17 @@ UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& Obj
 		PreviewMesh = EditorCameraMesh.Object;
 	}
 #endif  // WITH_EDITORONLY_DATA
+}
+
+void UGameplayCameraComponent::PostLoad()
+{
+	Super::PostLoad();
+
+	if (Camera_DEPRECATED)
+	{
+		CameraReference.SetCameraAsset(Camera_DEPRECATED);
+		Camera_DEPRECATED = nullptr;
+	}
 }
 
 TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetEvaluationContext()
@@ -112,7 +124,7 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 		return;
 	}
 
-	if (!Camera)
+	if (!CameraReference.IsValid())
 	{
 		FFrame::KismetExecutionMessage(
 				TEXT("Can't activate gameplay camera component: no camera asset was set!"),
@@ -137,9 +149,16 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 		FCameraEvaluationContextInitializeParams InitParams;
 		InitParams.Owner = this;
-		InitParams.CameraAsset = Camera;
+		InitParams.CameraAsset = CameraReference.GetCameraAsset();
 		InitParams.PlayerController = PlayerController;
 		EvaluationContext->Initialize(InitParams);
+
+		FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
+		const FCameraAssetAllocationInfo& AllocationInfo = CameraReference.GetCameraAsset()->GetAllocationInfo();
+		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+
+		UpdateCameraEvaluationContext(true);
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
@@ -233,13 +252,15 @@ void UGameplayCameraComponent::BeginPlay()
 	Super::BeginPlay();
 
 #if WITH_EDITOR
-	if (Camera)
+	if (CameraReference.IsValid())
 	{
 		// Auto-build the camera asset on begin play to make sure we've got the latest user edits.
 		using namespace UE::Cameras;
 		FCameraBuildLog BuildLog;
 		FCameraAssetBuilder Builder(BuildLog);
-		Builder.BuildCamera(Camera);
+		Builder.BuildCamera(CameraReference.GetCameraAsset());
+
+		CameraReference.RebuildParametersIfNeeded();
 	}
 #endif
 
@@ -263,13 +284,30 @@ void UGameplayCameraComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 	if (EvaluationContext)
 	{
-		EvaluationContext->Update(this);
+		UpdateCameraEvaluationContext(false);
+	}
+}
 
-		if (bIsCameraCutNextFrame)
-		{
-			EvaluationContext->GetInitialResult().bIsCameraCut = true;
-			bIsCameraCutNextFrame = false;
-		}
+void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bApplyParameterOverrides)
+{
+	using namespace UE::Cameras;
+
+	FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
+
+	const FTransform& OwnerTransform = GetComponentTransform();
+	InitialResult.CameraPose.SetTransform(OwnerTransform);
+	InitialResult.bIsCameraCut = false;
+	InitialResult.bIsValid = true;
+
+	if (bIsCameraCutNextFrame)
+	{
+		InitialResult.bIsCameraCut = true;
+		bIsCameraCutNextFrame = false;
+	}
+
+	if (bApplyParameterOverrides)
+	{
+		CameraReference.ApplyParameterOverrides(InitialResult, false);
 	}
 }
 
@@ -328,14 +366,6 @@ namespace UE::Cameras
 {
 
 UE_DEFINE_CAMERA_EVALUATION_CONTEXT(FGameplayCameraComponentEvaluationContext)
-
-void FGameplayCameraComponentEvaluationContext::Update(UGameplayCameraComponent* Owner)
-{
-	const FTransform& OwnerTransform = Owner->GetComponentTransform();
-	InitialResult.CameraPose.SetTransform(OwnerTransform);
-	InitialResult.bIsCameraCut = false;
-	InitialResult.bIsValid = true;
-}
 
 }  // namespace UE::Cameras
 

@@ -3,11 +3,14 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
+#include "Core/CameraContextDataAllocationInfo.h"
 #include "Core/CameraEventHandler.h"
 #include "Core/CameraRigTransition.h"
+#include "Core/CameraVariableTableFwd.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "CoreTypes.h"
+#include "StructUtils/PropertyBag.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraAsset.generated.h"
@@ -18,6 +21,8 @@ class UCameraRigAsset;
 
 namespace UE::Cameras
 {
+	class FCameraAssetBuilder;
+	class FCameraAssetParameterOverrideEvaluator;
 	class FCameraBuildLog;
 
 	/**
@@ -36,6 +41,25 @@ namespace UE::Cameras
 		virtual void OnExitTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
 	};
 }
+
+/**
+ * Structure describing various allocations needed by a camera asset.
+ */
+USTRUCT()
+struct FCameraAssetAllocationInfo
+{
+	GENERATED_BODY()
+
+	/** Combined variable table allocation info for all the camera rigs. */
+	UPROPERTY()
+	FCameraVariableTableAllocationInfo VariableTableInfo;
+
+	/** Combined context data table allocation info for all the camera rigs. */
+	UPROPERTY()
+	FCameraContextDataAllocationInfo ContextDataTableInfo;
+
+	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraAssetAllocationInfo& A, const FCameraAssetAllocationInfo& B);
+};
 
 /**
  * A complete camera asset.
@@ -70,6 +94,11 @@ public:
 	/** Removes an exit transition. */
 	GAMEPLAYCAMERAS_API int32 RemoveExitTransition(UCameraRigTransition* InTransition);
 
+	/** Gets the default parameter values for all camera rigs. */
+	const FInstancedPropertyBag& GetDefaultParameters() const { return DefaultParameters; }
+	/** Gets the default parameter values for all camera rigs. */
+	FInstancedPropertyBag& GetDefaultParameters() { return DefaultParameters; }
+
 public:
 
 	/**
@@ -95,6 +124,9 @@ public:
 
 	/** Sets the build status. */
 	void SetBuildStatus(ECameraBuildStatus InBuildStatus) { BuildStatus = InBuildStatus; }
+
+	/** Gets the allocation info for this camera asset. */
+	const FCameraAssetAllocationInfo& GetAllocationInfo() const { return AllocationInfo; }
 
 protected:
 
@@ -132,10 +164,6 @@ private:
 	UPROPERTY(Instanced)
 	TObjectPtr<UCameraDirector> CameraDirector;
 
-	/** The list of camera rigs used by this camera (deprecated). */
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs_DEPRECATED;
-
 	/** A list of default enter transitions for all the camera rigs in this asset. */
 	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigTransition>> EnterTransitions;
@@ -147,6 +175,24 @@ private:
 	/** The current build state of this camera asset. */
 	UPROPERTY(Transient)
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Dirty;
+
+	/** Generated values for all camera rig parameters. */
+	UPROPERTY()
+	FInstancedPropertyBag DefaultParameters;
+
+	/** Generated list of camera rigs owning each of the parameters. */
+	UPROPERTY()
+	TArray<TWeakObjectPtr<const UCameraRigAsset>> ParameterOwners;
+
+	/** Allocation info for the camera asset. */
+	UPROPERTY()
+	FCameraAssetAllocationInfo AllocationInfo;
+
+
+	// Deprecated.
+
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs_DEPRECATED;
 
 #if WITH_EDITORONLY_DATA
 
@@ -166,5 +212,8 @@ private:
 	friend class UCameraSharedTransitionGraphSchema;
 
 #endif  // WITH_EDITORONLY_DATA
+	
+	friend class UE::Cameras::FCameraAssetBuilder;
+	friend class UE::Cameras::FCameraAssetParameterOverrideEvaluator;
 };
 

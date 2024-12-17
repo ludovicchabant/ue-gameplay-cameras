@@ -12,6 +12,7 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Commands/ObjectTreeGraphEditorCommands.h"
+#include "Customizations/CameraAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
@@ -87,7 +88,6 @@ public:
 
 		RegisterSettings();
 		RegisterCameraDirectorEditors();
-		RegisterBuilders();
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
 		RegisterDetailsCustomizations();
@@ -114,7 +114,6 @@ public:
 
 		UnregisterSettings();
 		UnregisterCameraDirectorEditors();
-		UnregisterBuilders();
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
 		UnregisterDetailsCustomizations();
@@ -183,46 +182,6 @@ public:
 				[=](const FOnCreateCameraDirectorAssetEditorMode& Delegate) 
 				{
 					return Delegate.GetHandle() == InHandle; 
-				});
-	}
-
-	virtual FDelegateHandle RegisterCameraAssetBuilder(FOnBuildCameraAsset InOnBuildCameraAsset) override
-	{
-		CameraAssetBuilders.Add(InOnBuildCameraAsset);
-		return CameraAssetBuilders.Last().GetHandle();
-	}
-
-	virtual TArrayView<const FOnBuildCameraAsset> GetCameraAssetBuilders() const override
-	{
-		return CameraAssetBuilders;
-	}
-
-	virtual void UnregisterCameraAssetBuilder(FDelegateHandle InHandle) override
-	{
-		CameraAssetBuilders.RemoveAll(
-				[=](const FOnBuildCameraAsset& Delegate)
-				{
-					return Delegate.GetHandle() == InHandle;
-				});
-	}
-
-	virtual FDelegateHandle RegisterCameraRigAssetBuilder(FOnBuildCameraRigAsset InOnBuildCameraRigAsset) override
-	{
-		CameraRigAssetBuilders.Add(InOnBuildCameraRigAsset);
-		return CameraRigAssetBuilders.Last().GetHandle();
-	}
-	
-	virtual TArrayView<const FOnBuildCameraRigAsset> GetCameraRigAssetBuilders() const override
-	{
-		return CameraRigAssetBuilders;
-	}
-
-	virtual void UnregisterCameraRigAssetBuilder(FDelegateHandle InHandle) override
-	{
-		CameraRigAssetBuilders.RemoveAll(
-				[=](const FOnBuildCameraRigAsset& Delegate)
-				{
-					return Delegate.GetHandle() == InHandle;
 				});
 	}
 
@@ -333,26 +292,6 @@ private:
 			UnregisterCameraDirectorEditor(Handle);
 		}
 		BuiltInDirectorCreatorHandles.Reset();
-	}
-
-	void RegisterBuilders()
-	{
-		// No default builders yet.
-	}
-
-	void UnregisterBuilders()
-	{
-		for (FDelegateHandle Handle : BuiltInCameraAssetBuilders)
-		{
-			UnregisterCameraAssetBuilder(Handle);
-		}
-		BuiltInCameraAssetBuilders.Reset();
-
-		for (FDelegateHandle Handle : BuiltInCameraRigAssetBuilders)
-		{
-			UnregisterCameraRigAssetBuilder(Handle);
-		}
-		BuiltInCameraRigAssetBuilders.Reset();
 	}
 
 	void RegisterCoreDebugCategories()
@@ -473,12 +412,22 @@ private:
 		FCameraVariableReferenceDetailsCustomization::Register(PropertyEditorModule);
 		FRichCurveDetailsCustomization::Register(PropertyEditorModule);
 
-		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigProxyTableEntry", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
+				"CameraAssetReference",
+				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+					&FCameraAssetReferenceDetailsCustomization::MakeInstance));
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
+				"CameraRigProxyTableEntry", 
+				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraProxyTableEntryDetailsCustomization::MakeInstance));
-		PropertyEditorModule.RegisterCustomPropertyTypeLayout("CameraRigAssetReference", FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
+				"CameraRigAssetReference", 
+				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
 
-		PropertyEditorModule.RegisterCustomClassLayout("FilmbackCameraNode", FOnGetDetailCustomizationInstance::CreateStatic(
+		PropertyEditorModule.RegisterCustomClassLayout(
+				"FilmbackCameraNode", 
+				FOnGetDetailCustomizationInstance::CreateStatic(
 					&FFilmbackCameraNodeDetailsCustomization::MakeInstance));
 	}
 
@@ -600,12 +549,6 @@ private:
 
 	TArray<FOnCreateCameraDirectorAssetEditorMode> CameraDirectorEditorCreators;
 	TArray<FDelegateHandle> BuiltInDirectorCreatorHandles;
-
-	TArray<FOnBuildCameraAsset> CameraAssetBuilders;
-	TArray<FDelegateHandle> BuiltInCameraAssetBuilders;
-
-	TArray<FOnBuildCameraRigAsset> CameraRigAssetBuilders;
-	TArray<FDelegateHandle> BuiltInCameraRigAssetBuilders;
 
 	TSharedPtr<UE::Cameras::FGameplayCamerasGraphPanelPinFactory> GraphPanelPinFactory;
 

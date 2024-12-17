@@ -116,6 +116,7 @@ void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector
 {
 	Collector.AddReferencedObject(RootNode);
 	ContextStack.AddReferencedObjects(Collector);
+	RootNodeResult.AddReferencedObjects(Collector);
 	if (RootEvaluator)
 	{
 		RootEvaluator->AddReferencedObjects(Collector);

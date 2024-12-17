@@ -4,17 +4,12 @@
 
 #include "IPropertyTypeCustomization.h"
 
-class FStructOnScope;
-class IStructureDataProvider;
+class IPropertyHandle;
+class IPropertyUtilities;
 class UCameraRigAsset;
-class UCameraRigInterfaceParameter;
-struct FCameraRigAssetReference;
 
 namespace UE::Cameras
 {
-
-class FCameraBuildLog;
-class FCameraRigParameterOverrideDetailRow;
 
 class FCameraRigAssetReferenceDetailsCustomization : public IPropertyTypeCustomization
 {
@@ -24,25 +19,24 @@ public:
 
 public:
 
+	~FCameraRigAssetReferenceDetailsCustomization();
+
 	// IPropertyTypeCustomization interface.
-	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> StructPropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& StructCustomizationUtils) override;
-	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> StructPropertyHandle, IDetailChildrenBuilder& StructBuilder, IPropertyTypeCustomizationUtils& StructCustomizationUtils) override;
+	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> InStructPropertyHandle, FDetailWidgetRow& InHeaderRow, IPropertyTypeCustomizationUtils& InCustomizationUtils) override;
+	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> InStructPropertyHandle, IDetailChildrenBuilder& InChildrenBuilder, IPropertyTypeCustomizationUtils& InCustomizationUtils) override;
 
 private:
 
-	void OnCameraRigChanged();
-	void OnCameraRigBuilt(UCameraRigAsset* CameraRig, FCameraBuildLog& BuildLog);
-
-	void UpdateParameterOverrides(const UCameraRigAsset* CameraRigToUpdate, bool bRequestRefresh);
-
-	void BuildParameterOverrideRows(IDetailChildrenBuilder& StructBuilder);
+	void OnCameraRigAssetBuilt(const UCameraRigAsset* CameraRig);
+	void RebuildParametersIfNeeded();
 
 private:
 
-	TSharedPtr<IPropertyHandle> CameraRigReferenceProperty;
+	TSharedPtr<IPropertyHandle> StructPropertyHandle;
+	TSharedPtr<IPropertyHandle> CameraRigAssetPropertyHandle;
+	TSharedPtr<IPropertyHandle> ParametersPropertyHandle;
 	TSharedPtr<IPropertyUtilities> PropertyUtilities;
-
-	TArray<TSharedPtr<FCameraRigParameterOverrideDetailRow>> ParameterOverrideRows;
 };
 
 }  // namespace UE::Cameras
+

@@ -67,83 +67,16 @@ bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameter
 				.Pin(OffsetNode)
 				.Done()
 			.Done()
-		.ExposeParameter(TEXT("Test"), OffsetNode, GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
+		.AddBlendableParameter(TEXT("Test"), ECameraVariableType::Vector3d, OffsetNode, GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
 		.Get();
 
 	CameraRig->BuildCameraRig();
 
-	UCameraRigInterfaceParameter* Parameter = CameraRig->Interface.InterfaceParameters[0];
+	UCameraRigBlendableParameter* Parameter = CameraRig->Interface.BlendableParameters[0];
 	UTEST_EQUAL("Test parameter", Parameter->InterfaceParameterName, TEXT("Test"));
 	UTEST_NOT_NULL("Test parameter variable", Parameter->PrivateVariable.Get());
 	UTEST_EQUAL("Test parameter variable name", Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test");
 	UTEST_EQUAL("Test node parameter", (UCameraVariableAsset*)OffsetNode->TranslationOffset.Variable, Parameter->PrivateVariable.Get());
-
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderReassignParameterTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.ReassignParameter", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-bool FCameraRigAssetBuilderReassignParameterTest::RunTest(const FString& Parameters)
-{
-	using namespace UE::Cameras::Test;
-
-	UOffsetCameraNode* OffsetNode = nullptr;
-	ULensParametersCameraNode* LensParametersNode = nullptr;
-	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("SimpleTest"))
-		.MakeRootNode<UArrayCameraNode>()
-			.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children)
-				.Pin(OffsetNode)
-				.Done()
-			.AddChild<ULensParametersCameraNode>(&UArrayCameraNode::Children)
-				.Pin(LensParametersNode)
-				.Done()
-			.Done()
-		.ExposeParameter(TEXT("Test1"), OffsetNode, GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
-		.ExposeParameter(TEXT("Test2"), LensParametersNode, GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
-		.ExposeParameter(TEXT("Test3"), LensParametersNode, GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, Aperture))
-		.Get();
-
-	UCameraRigInterfaceParameter* Test1Parameter = CameraRig->Interface.InterfaceParameters[0];
-	UCameraRigInterfaceParameter* Test2Parameter = CameraRig->Interface.InterfaceParameters[1];
-	UCameraRigInterfaceParameter* Test3Parameter = CameraRig->Interface.InterfaceParameters[2];
-
-	CameraRig->BuildCameraRig();
-
-	{
-		UTEST_EQUAL_EXPR(Test1Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test1");
-		UTEST_TRUE_EXPR(Test1Parameter->PrivateVariable->IsA<UVector3dCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetNode->TranslationOffset.Variable, Test1Parameter->PrivateVariable.Get());
-
-		UTEST_EQUAL_EXPR(Test2Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test2");
-		UTEST_TRUE_EXPR(Test2Parameter->PrivateVariable->IsA<UFloatCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)LensParametersNode->FocalLength.Variable, Test2Parameter->PrivateVariable.Get());
-
-		UTEST_EQUAL_EXPR(Test3Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test3");
-		UTEST_TRUE_EXPR(Test3Parameter->PrivateVariable->IsA<UFloatCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)LensParametersNode->Aperture.Variable, Test3Parameter->PrivateVariable.Get());
-	}
-
-	Test1Parameter->Target = LensParametersNode;
-	Test1Parameter->TargetPropertyName = GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength);
-	Test2Parameter->Target = LensParametersNode;
-	Test2Parameter->TargetPropertyName = GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, Aperture);
-	Test3Parameter->Target = OffsetNode;
-	Test3Parameter->TargetPropertyName = GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset);
-
-	CameraRig->BuildCameraRig();
-
-	{
-		UTEST_EQUAL_EXPR(Test1Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test1");
-		UTEST_TRUE_EXPR(Test1Parameter->PrivateVariable->IsA<UFloatCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)LensParametersNode->FocalLength.Variable, Test1Parameter->PrivateVariable.Get());
-
-		UTEST_EQUAL_EXPR(Test2Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test2");
-		UTEST_TRUE_EXPR(Test2Parameter->PrivateVariable->IsA<UFloatCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)LensParametersNode->Aperture.Variable, Test2Parameter->PrivateVariable.Get());
-
-		UTEST_EQUAL_EXPR(Test3Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test3");
-		UTEST_TRUE_EXPR(Test3Parameter->PrivateVariable->IsA<UVector3dCameraVariable>());
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetNode->TranslationOffset.Variable, Test3Parameter->PrivateVariable.Get());
-	}
 
 	return true;
 }
@@ -166,9 +99,11 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 				.SetParameter(&ULensParametersCameraNode::FocalLength, 20.f)
 				.Done()
 			.Done()
-		.ExposeParameter(TEXT("OffsetParam"), TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
-		.ExposeParameter(TEXT("FocalLengthParam"), TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
+		.AddBlendableParameter(TEXT("OffsetParam"), ECameraVariableType::Vector3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
+		.AddBlendableParameter(TEXT("FocalLengthParam"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
 		.Get();
+
+	InnerCameraRig->BuildCameraRig();
 
 	// Make a camera rig that uses the previous one, with overrides on both the offset (now 15, 25, 35)
 	// and the focal length (now 25). Expose the offset further up as an interface parameter.
@@ -181,19 +116,25 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 					{
 						Node->CameraRigReference.SetCameraRig(InnerCameraRig);
 
-						FCameraRigParameterOverrides& ParameterOverrides = Node->CameraRigReference.GetParameterOverrides();
+						FInstancedPropertyBag& ParameterOverrides = Node->CameraRigReference.GetParameters();
 
-						auto* OffsetParam = Registry->Get<UCameraRigInterfaceParameter>(TEXT("OffsetParam"));
-						auto& OffsetParamOverride = ParameterOverrides.FindOrAddParameterOverride<FVector3dCameraRigParameterOverride>(OffsetParam);
-						OffsetParamOverride.Value = FVector3d(15, 25, 35);
+						auto OffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("OffsetParam");
+						if (ensure(OffsetParamOverride.HasValue()))
+						{
+							OffsetParamOverride.GetValue()->Value = FVector3d(15, 25, 35);
+						}
 
-						auto* FocalLengthParam = Registry->Get<UCameraRigInterfaceParameter>(TEXT("FocalLengthParam"));
-						auto& FocalLengthParamOverride = ParameterOverrides.FindOrAddParameterOverride<FFloatCameraRigParameterOverride>(FocalLengthParam);
-						FocalLengthParamOverride.Value = 25.f;
+						auto FocalLengthParamOverride = ParameterOverrides.GetValueStruct<FFloatCameraParameter>("FocalLengthParam");
+						if (ensure(FocalLengthParamOverride.HasValue()))
+						{
+							FocalLengthParamOverride.GetValue()->Value = 25.f;
+						}
 					})
 			.Done()
-			.ExposeParameter(TEXT("MiddleOffsetParam"), MiddlePrefabNode, TEXT("OffsetParam"))
+			.AddBlendableParameter(TEXT("MiddleOffsetParam"), ECameraVariableType::Vector3d, MiddlePrefabNode, TEXT("OffsetParam"))
 		.Get();
+
+	MiddleCameraRig->BuildCameraRig();
 
 	// Make another camera rig that uses the previous one, which makes a total of 3 nesting levels of camera rigs.
 	// This level overrides the offset parameter some more (now 20, 50, 70).
@@ -206,18 +147,21 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 					{
 						Node->CameraRigReference.SetCameraRig(MiddleCameraRig);
 
-						FCameraRigParameterOverrides& ParameterOverrides = Node->CameraRigReference.GetParameterOverrides();
-						auto* MiddleOffsetParam = Registry->Get<UCameraRigInterfaceParameter>(TEXT("MiddleOffsetParam"));
-						auto& MiddleOffsetParamOverride = ParameterOverrides.FindOrAddParameterOverride<FVector3dCameraRigParameterOverride>(MiddleOffsetParam);
-						MiddleOffsetParamOverride.Value = FVector3d(20, 50, 70);
+						FInstancedPropertyBag& ParameterOverrides = Node->CameraRigReference.GetParameters();
+
+						auto MiddleOffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("MiddleOffsetParam");
+						if (ensure(MiddleOffsetParamOverride.HasValue()))
+						{
+							MiddleOffsetParamOverride.GetValue()->Value = FVector3d(20, 50, 70);
+						}
 					})
 			.Done()
 		.Get();
 
 	OuterCameraRig->BuildCameraRig();
 
-	UCameraRigInterfaceParameter* OffsetParam = InnerCameraRig->Interface.InterfaceParameters[0];
-	UCameraRigInterfaceParameter* FocalLengthParam = InnerCameraRig->Interface.InterfaceParameters[1];
+	UCameraRigBlendableParameter* OffsetParam = InnerCameraRig->Interface.BlendableParameters[0];
+	UCameraRigBlendableParameter* FocalLengthParam = InnerCameraRig->Interface.BlendableParameters[1];
 
 	UTEST_EQUAL_EXPR(OffsetParam->PrivateVariable->GetName(), "Override_InnerCameraRig_OffsetParam");
 	UTEST_EQUAL_EXPR(FocalLengthParam->PrivateVariable->GetName(), "Override_InnerCameraRig_FocalLengthParam");
@@ -238,46 +182,46 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 	// Test that the middle prefab node is driving the inner interface parameters, and that one of those
 	// overrides is in turn driven by the middle camera rig's interface parameter.
 	{
-		FCameraRigParameterOverrides& ParameterOverrides = MiddlePrefabNode->CameraRigReference.GetParameterOverrides();
+		FInstancedPropertyBag& ParameterOverrides = MiddlePrefabNode->CameraRigReference.GetParameters();
 
-		FVector3dCameraRigParameterOverride* OffsetParamOverride = 
-			ParameterOverrides.FindParameterOverride<FVector3dCameraRigParameterOverride>(OffsetParam->Guid);
+		const FPropertyBagPropertyDesc* OffsetParamDesc = ParameterOverrides.FindPropertyDescByName("OffsetParam");
+		FVector3dCameraParameter* OffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("OffsetParam").GetValue();
+		UTEST_NOT_NULL("OffsetParamDesc", OffsetParamDesc);
 		UTEST_NOT_NULL("OffsetParamOverride", OffsetParamOverride);
 
-		UTEST_EQUAL_EXPR(OffsetParamOverride->InterfaceParameterName, "OffsetParam");
-		UTEST_EQUAL_EXPR(OffsetParamOverride->PrivateVariableGuid, OffsetParam->PrivateVariable->GetGuid());
-		UTEST_EQUAL_EXPR(OffsetParamOverride->Value.Value, FVector3d(15, 25, 35));
+		UTEST_EQUAL_EXPR(OffsetParamDesc->ID, OffsetParam->GetGuid());
+		UTEST_EQUAL_EXPR(OffsetParamOverride->Value, FVector3d(15, 25, 35));
 
-		FFloatCameraRigParameterOverride* FocalLengthParamOverride =
-			ParameterOverrides.FindParameterOverride<FFloatCameraRigParameterOverride>(FocalLengthParam->Guid);
+		const FPropertyBagPropertyDesc* FocalLengthParamDesc = ParameterOverrides.FindPropertyDescByName("FocalLengthParam");
+		FFloatCameraParameter* FocalLengthParamOverride = ParameterOverrides.GetValueStruct<FFloatCameraParameter>("FocalLengthParam").GetValue();
+		UTEST_NOT_NULL("FocalLengthParamDesc", FocalLengthParamDesc);
 		UTEST_NOT_NULL("FocalLengthParamOverride", FocalLengthParamOverride);
 
-		UTEST_EQUAL_EXPR(FocalLengthParamOverride->InterfaceParameterName, "FocalLengthParam");
-		UTEST_EQUAL_EXPR(FocalLengthParamOverride->PrivateVariableGuid, FocalLengthParam->PrivateVariable->GetGuid());
-		UTEST_EQUAL_EXPR(FocalLengthParamOverride->Value.Value, 25.f);
+		UTEST_EQUAL_EXPR(FocalLengthParamDesc->ID, FocalLengthParam->GetGuid());
+		UTEST_EQUAL_EXPR(FocalLengthParamOverride->Value, 25.f);
 	}
 
-	UCameraRigInterfaceParameter* MiddleOffsetParam = MiddleCameraRig->Interface.InterfaceParameters[0];
+	UCameraRigBlendableParameter* MiddleOffsetParam = MiddleCameraRig->Interface.BlendableParameters[0];
 	{
-		FCameraRigParameterOverrides& ParameterOverrides = MiddlePrefabNode->CameraRigReference.GetParameterOverrides();
+		FInstancedPropertyBag& ParameterOverrides = MiddlePrefabNode->CameraRigReference.GetParameters();
 
-		FVector3dCameraRigParameterOverride* OffsetParamOverride = 
-			ParameterOverrides.FindParameterOverride<FVector3dCameraRigParameterOverride>(OffsetParam->Guid);
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetParamOverride->Value.Variable.Get(), MiddleOffsetParam->PrivateVariable.Get());
-		UTEST_EQUAL_EXPR(OffsetParamOverride->Value.Variable->DefaultValue, FVector3d(15, 25, 35));
+		const FPropertyBagPropertyDesc* OffsetParamDesc = ParameterOverrides.FindPropertyDescByName("OffsetParam");
+		FVector3dCameraParameter* OffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("OffsetParam").GetValue();
+		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetParamOverride->Variable.Get(), MiddleOffsetParam->PrivateVariable.Get());
+		UTEST_EQUAL_EXPR(OffsetParamOverride->Variable->DefaultValue, FVector3d(15, 25, 35));
 	}
 
 	// Test that the outer prefab node is driving the middle interface parameters.
 	{
-		FCameraRigParameterOverrides& ParameterOverrides = OuterPrefabNode->CameraRigReference.GetParameterOverrides();
+		FInstancedPropertyBag& ParameterOverrides = OuterPrefabNode->CameraRigReference.GetParameters();
 
-		FVector3dCameraRigParameterOverride* OffsetParamOverride =
-			ParameterOverrides.FindParameterOverride<FVector3dCameraRigParameterOverride>(MiddleOffsetParam->Guid);
+		const FPropertyBagPropertyDesc* OffsetParamDesc = ParameterOverrides.FindPropertyDescByName("MiddleOffsetParam");
+		FVector3dCameraParameter* OffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("MiddleOffsetParam").GetValue();
+		UTEST_NOT_NULL("OffsetParamDesc", OffsetParamDesc);
 		UTEST_NOT_NULL("OffsetParamOverride", OffsetParamOverride);
 
-		UTEST_EQUAL_EXPR(OffsetParamOverride->InterfaceParameterName, "MiddleOffsetParam");
-		UTEST_EQUAL_EXPR(OffsetParamOverride->PrivateVariableGuid, MiddleOffsetParam->PrivateVariable->GetGuid());
-		UTEST_EQUAL_EXPR(OffsetParamOverride->Value.Value, FVector3d(20, 50, 70));
+		UTEST_EQUAL_EXPR(OffsetParamDesc->ID, MiddleOffsetParam->GetGuid());
+		UTEST_EQUAL_EXPR(OffsetParamOverride->Value, FVector3d(20, 50, 70));
 	}
 
 	return true;

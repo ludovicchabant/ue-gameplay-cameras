@@ -9,6 +9,7 @@
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/CameraRigJointsDebugBlock.h"
+#include "Debug/ContextDataTableDebugBlock.h"
 #include "Debug/DebugTextRenderer.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "Math/ColorList.h"
@@ -32,6 +33,7 @@ void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraNodeEvaluati
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
+	AddChild(&Builder.BuildDebugBlock<FContextDataTableDebugBlock>(InResult.ContextDataTable));
 	AddChild(&Builder.BuildDebugBlock<FCameraRigJointsDebugBlock>(InResult.CameraRigJoints, InResult.VariableTable));
 }
 
@@ -42,7 +44,7 @@ void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraSystemEvalua
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
-	// No rig joints exposed on the camera system result.
+	// No context data or rig joints exposed on the camera system result.
 }
 
 FCameraPoseDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetCameraPoseDebugBlock()
@@ -61,6 +63,16 @@ FVariableTableDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetVariableTabl
 	if (ChildrenView.IsValidIndex(1))
 	{
 		return ChildrenView[1]->CastThis<FVariableTableDebugBlock>();
+	}
+	return nullptr;
+}
+
+FContextDataTableDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetContextDataTableDebugBlock()
+{
+	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
+	if (ChildrenView.IsValidIndex(2))
+	{
+		return ChildrenView[2]->CastThis<FContextDataTableDebugBlock>();
 	}
 	return nullptr;
 }
@@ -110,10 +122,18 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 	}
 	if (ChildrenView.IsValidIndex(2))
 	{
-		Renderer.AddText(TEXT("{cam_title}Camera Rig Joints:"));
+		Renderer.AddText(TEXT("{cam_title}Context Data Table:"));
 		Renderer.AddIndent();
 		Renderer.SetTextColor(Colors.Default);
 		ChildrenView[2]->DebugDraw(Params, Renderer);
+		Renderer.RemoveIndent();
+	}
+	if (ChildrenView.IsValidIndex(3))
+	{
+		Renderer.AddText(TEXT("{cam_title}Camera Rig Joints:"));
+		Renderer.AddIndent();
+		Renderer.SetTextColor(Colors.Default);
+		ChildrenView[3]->DebugDraw(Params, Renderer);
 		Renderer.RemoveIndent();
 	}
 

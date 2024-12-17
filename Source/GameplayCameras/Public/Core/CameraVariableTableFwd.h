@@ -207,6 +207,9 @@ struct FCameraVariableTableAllocationInfo
 	UPROPERTY()
 	TArray<TObjectPtr<UCameraVariableAsset>> AutoResetVariables;
 
+	/**Combines the given allocation info with this one. */
+	GAMEPLAYCAMERAS_API void Combine(const FCameraVariableTableAllocationInfo& OtherInfo);
+
 	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B);
 };
 

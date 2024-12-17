@@ -5,6 +5,7 @@
 namespace UE::Cameras
 {
 
+FOnCameraAssetBuilt FGameplayCamerasDelegates::OnCameraAssetBuiltDelegates;
 FOnCameraRigAssetBuilt FGameplayCamerasDelegates::OnCameraRigAssetBuiltDelegates;
 
 }  // namespace UE::Cameras

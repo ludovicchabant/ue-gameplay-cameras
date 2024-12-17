@@ -80,6 +80,7 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("CameraRigAssetEditor.Tabs.NodeHierarchy", new IMAGE_BRUSH_SVG("Icons/CameraRig-NodeHierarchy", Icon16x16));
 	Set("CameraRigAssetEditor.Tabs.Transitions", new IMAGE_BRUSH_SVG("Icons/CameraRig-Transitions", Icon16x16));
 	Set("CameraRigAssetEditor.Tabs.Curves", new IMAGE_BRUSH_SVG("Icons/CurveEditor", Icon16x16));
+	Set("CameraRigAssetEditor.Tabs.InterfaceParameters", new IMAGE_BRUSH_SVG("Icons/CameraRig-InterfaceParameters", Icon16x16));
 
 	Set("CameraRigAssetEditor.Build", new IMAGE_BRUSH_SVG("Icons/CameraRig-BuildStatus_Background", Icon20x20));
 	Set("CameraRigAssetEditor.BuildStatus.Background", new IMAGE_BRUSH_SVG("Icons/CameraRig-BuildStatus_Background", Icon20x20));
@@ -96,8 +97,11 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("CameraRigAssetEditor.Apply", new IMAGE_BRUSH_SVG("CameraEditor-Apply", Icon20x20));
 	Set("CameraRigAssetEditor.FindInCameraRig", new CORE_IMAGE_BRUSH_SVG("Starship/Common/Search", Icon20x20));
 
+	Set("CameraRigAssetEditor.InterfaceParameter.Message", FTextBlockStyle(NormalText).SetFont(DEFAULT_FONT("Italic", 10)));
+
 	// Camera parameters icons.
 	Set("CameraParameter.VariableBrowser", new IMAGE_BRUSH_SVG("Icons/CameraParameter-Variable", Icon16x16));
+	Set("CameraParameter.TypeIcon", new IMAGE_BRUSH_SVG("Icons/CameraParameter-Pill", Icon16x16));
 
 	// Camera variable collection icons.
 	Set("CameraVariableCollectionEditor.CreateVariable", new CORE_IMAGE_BRUSH_SVG("Starship/Common/plus", Icon16x16));

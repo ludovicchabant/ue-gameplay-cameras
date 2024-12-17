@@ -7,8 +7,11 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
+#include "Core/CameraVariableReferences.h"
+#include "Core/CameraVariableTableFwd.h"
 #include "Directors/SingleCameraDirector.h"
 #include "Nodes/Common/ArrayCameraNode.h"
 #include "Templates/PointerIsConvertibleFromTo.h"
@@ -482,14 +485,16 @@ public:
 	 *
 	 * The created parameter is automatically stored in the named object registry under its name.
 	 */
-	ThisType& ExposeParameter(const FString& ParameterName, UCameraNode* Target, FName TargetPropertyName)
+	ThisType& AddBlendableParameter(const FString& ParameterName, ECameraVariableType ParameterType, UCameraNode* Target, FName TargetPropertyName)
 	{
-		UCameraRigInterfaceParameter* InterfaceParameter = NewObject<UCameraRigInterfaceParameter>(CameraRig);
-		InterfaceParameter->InterfaceParameterName = ParameterName;
-		InterfaceParameter->Target = Target;
-		InterfaceParameter->TargetPropertyName = TargetPropertyName;
-		NamedObjectRegistry->Register(InterfaceParameter, ParameterName);
-		CameraRig->Interface.InterfaceParameters.Add(InterfaceParameter);
+		UCameraRigBlendableParameter* BlendableParameter = NewObject<UCameraRigBlendableParameter>(CameraRig);
+		BlendableParameter->InterfaceParameterName = ParameterName;
+		BlendableParameter->ParameterType = ParameterType;
+		BlendableParameter->Target = Target;
+		BlendableParameter->TargetPropertyName = TargetPropertyName;
+
+		NamedObjectRegistry->Register(BlendableParameter, ParameterName);
+		CameraRig->Interface.BlendableParameters.Add(BlendableParameter);
 		return *static_cast<ThisType*>(this);
 	}
 
@@ -498,11 +503,11 @@ public:
 	 *
 	 * The created parameter is automatically stored in the named object registry under its name.
 	 */
-	ThisType& ExposeParameter(const FString& ParameterName, const FString& TargetName, FName TargetPropertyName)
+	ThisType& AddBlendableParameter(const FString& ParameterName, ECameraVariableType ParameterType, const FString& TargetName, FName TargetPropertyName)
 	{
 		UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
 		ensure(Target);
-		return ExposeParameter(ParameterName, Target, TargetPropertyName);
+		return AddBlendableParameter(ParameterName, ParameterType, Target, TargetPropertyName);
 	}
 
 	/** Gets the named object registry. */

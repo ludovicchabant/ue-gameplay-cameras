@@ -17,11 +17,12 @@ class UCameraRigAsset;
 class UCameraRigCameraNode;
 class UCameraVariableAsset;
 struct FCameraVariableTableAllocationInfo;
+struct FInstancedPropertyBag;
 
 namespace UE::Cameras
 {
 
-namespace Internal { struct FPrivateVariableBuilder; }
+namespace Internal { struct FInterfaceParameterBindingBuilder; }
 
 /**
  * A class that can prepare a camera rig for runtime use.
@@ -56,18 +57,31 @@ private:
 	void CallPreBuild();
 
 	void GatherOldDrivenParameters();
-	void BuildNewDrivenParameters();
-	void DiscardUnusedPrivateVariables();
+	void BuildInterfaceParameters();
+	void BuildInterfaceParameterBindings();
+	void DiscardUnusedParameters();
 
-	void BuildAllocationInfo();
-	void BuildAllocationInfo(UCameraNode* CameraNode);
+	void CallBuild();
+	void CallBuild(FCameraRigBuildContext& BuildContext, UCameraNode* CameraNode);
+
+	void BuildDefaultParameters();
 
 	void UpdateBuildStatus();
 
 private:
 
-	bool SetupCameraParameterOverride(UCameraRigInterfaceParameter* InterfaceParameter);
-	bool SetupInnerCameraRigParameterOverride(UCameraRigInterfaceParameter* InterfaceParameter);
+	bool SetupCameraParameterOrVariableReferenceOverride(const UCameraRigBlendableParameter* BlendableParameter);
+	bool SetupCustomBlendableParameterOverride(const UCameraRigBlendableParameter* BlendableParameter);
+
+	bool SetupDataContextPropertyOverride(const UCameraRigDataParameter* DataParameter);
+	bool SetupCustomDataParameterOverride(const UCameraRigDataParameter* DataParameter);
+
+public:
+
+	// Internal API.
+
+	static void BuildDefaultParameters(UCameraRigAsset* CameraRigAsset, FInstancedPropertyBag& OutPropertyBag);
+	static void AppendDefaultParameters(const FCameraRigInterface& CameraRigInterface, TArray<FPropertyBagPropertyDesc>& OutProperties);
 
 private:
 
@@ -77,17 +91,11 @@ private:
 
 	FCameraNodeHierarchy CameraNodeHierarchy;
 
-	using FDrivenParameterKey = TTuple<FStructProperty*, UCameraNode*>;
-	TMap<FDrivenParameterKey, UCameraVariableAsset*> OldDrivenParameters;
-	using FDrivenOverrideKey = TTuple<FGuid, UCameraRigCameraNode*>;
-	TMap<FDrivenOverrideKey, UCameraVariableAsset*> OldDrivenOverrides;
+	using FDrivenParameterKey = TTuple<FName, UCameraNode*>;
+	TMap<FDrivenParameterKey, TObjectPtr<UCameraVariableAsset>> OldDrivenBlendableParameters;
+	TMap<FDrivenParameterKey, FCameraContextDataID> OldDrivenDataParameters;
 
-	using FReusableInterfaceParameterInfo = TTuple<UCameraVariableAsset*, bool>;
-	TMap<UCameraRigInterfaceParameter*, FReusableInterfaceParameterInfo> OldInterfaceParameters;
-
-	FCameraRigAllocationInfo AllocationInfo;
-
-	friend struct Internal::FPrivateVariableBuilder;
+	friend struct Internal::FInterfaceParameterBindingBuilder;
 };
 
 }  // namespace UE::Cameras

@@ -2,11 +2,17 @@
 
 #pragma once
 
+#include "Core/CameraContextDataTableFwd.h"
+#include "Core/CameraVariableTableFwd.h"
+#include "EdGraph/EdGraphPin.h"
+#include "Editors/CameraNodeGraphPinColors.h"
 #include "Editors/ObjectTreeGraphSchema.h"
 
 #include "CameraNodeGraphSchema.generated.h"
 
 class UCameraNode;
+class UCameraRigInterfaceParameterBase;
+class UCameraRigInterfaceParameterGraphNode;
 struct FObjectTreeGraphConfig;
 
 /**
@@ -20,23 +26,42 @@ class UCameraNodeGraphSchema : public UObjectTreeGraphSchema
 public:
 
 	static const FName PC_CameraParameter;			// A camera parameter pin.
+	static const FName PC_CameraVariableReference;	// A variable reference pin.
+	static const FName PC_CameraContextData;		// A context data pin.
+
+	UCameraNodeGraphSchema(const FObjectInitializer& ObjInit);
 
 	FObjectTreeGraphConfig BuildGraphConfig() const;
+
+	UCameraRigInterfaceParameterGraphNode* CreateInterfaceParameterNode(UEdGraph* InGraph, UCameraRigInterfaceParameterBase* InterfaceParameter) const;
 
 protected:
 
 	// UEdGraphSchema interface.
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 	virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* A, const UEdGraphPin* B) const override;
+	virtual bool OnTryCreateCustomConnection(UEdGraphPin* A, UEdGraphPin* B) const;
+	virtual bool OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const;
+	virtual bool OnBreakSingleCustomPinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const;
+	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override;
+	virtual bool SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNode* Node) const override;
 
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const override;
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const override;
-	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const override;
-	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const override;
-	virtual bool OnApplyConnection(UEdGraphPin* A, UEdGraphPin* B) const override;
-	virtual bool OnApplyDisconnection(UEdGraphPin* TargetPin) const override;
-	virtual bool OnApplyDisconnection(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const override;
+
+private:
+
+	UEdGraphPin* FindPin(UEdGraphNode* InNode, const FName& InPinName, const FName& InPinCategoryName) const;
+
+	UE::Cameras::FCameraNodeGraphPinColors PinColors;
+};
+
+UENUM()
+enum class EInterfaceParameterCreateNodeType
+{
+	BlendableParameter,
+	DataParameter
 };
 
 /**
@@ -57,6 +82,18 @@ public:
 	UPROPERTY()
 	FName TargetPropertyName;
 
+	UPROPERTY()
+	EInterfaceParameterCreateNodeType NewNodeType = EInterfaceParameterCreateNodeType::BlendableParameter;
+
+	UPROPERTY()
+	ECameraVariableType BlendableParameterType;
+
+	UPROPERTY()
+	ECameraContextDataType DataParameterType;
+
+	UPROPERTY()
+	TObjectPtr<const UObject> DataParameterTypeObject;
+
 public:
 
 	FCameraNodeGraphSchemaAction_NewInterfaceParameterNode();
@@ -66,6 +103,27 @@ public:
 
 	// FEdGraphSchemaAction interface.
 	static FName StaticGetTypeId() { static FName Type("FCameraNodeGraphSchemaAction_NewInterfaceParameterNode"); return Type; }
+	virtual FName GetTypeId() const override { return StaticGetTypeId(); } 
+	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
+};
+
+USTRUCT()
+struct FCameraNodeGraphSchemaAction_AddInterfaceParameterNode : public FEdGraphSchemaAction
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	TObjectPtr<UCameraRigInterfaceParameterBase> InterfaceParameter;
+
+public:
+	
+	FCameraNodeGraphSchemaAction_AddInterfaceParameterNode();
+	FCameraNodeGraphSchemaAction_AddInterfaceParameterNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping = 0, FText InKeywords = FText());
+
+public:
+
+	// FEdGraphSchemaAction interface.
+	static FName StaticGetTypeId() { static FName Type("FCameraNodeGraphSchemaAction_AddInterfaceParameterNode"); return Type; }
 	virtual FName GetTypeId() const override { return StaticGetTypeId(); } 
 	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 };

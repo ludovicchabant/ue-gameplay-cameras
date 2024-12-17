@@ -50,12 +50,12 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 	{
 		// The camera rig might not be loaded yet.
 		PreloadObject(CameraRig);
-		for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
+		for (UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
 		{
-			PreloadObject(InterfaceParameter);
-			if (InterfaceParameter)
+			PreloadObject(BlendableParameter);
+			if (BlendableParameter)
 			{
-				PreloadObject(InterfaceParameter->PrivateVariable);
+				PreloadObject(BlendableParameter->PrivateVariable);
 			}
 		}
 
@@ -145,14 +145,14 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 
 	for (UEdGraphPin* RigParameterPin : RigParameterPins)
 	{
-		UCameraRigInterfaceParameter* InterfaceParameter = CameraRig->Interface.FindInterfaceParameterByName(RigParameterPin->GetName());
-		if (!InterfaceParameter)
+		UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(RigParameterPin->GetName());
+		if (!BlendableParameter)
 		{
 			CompilerContext.MessageLog.Error(*LOCTEXT("ErrorMissingParameter", "SetCameraRigParameters node @@ is trying to set parameter @@ but camera rig @@ has no such parameter.").ToString(), this, *RigParameterPin->GetName(), CameraRig);
 			continue;
 		}
 
-		if (!InterfaceParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariable)
 		{
 			CompilerContext.MessageLog.Error(*LOCTEXT("ErrorMissingParameterVariable", "SetCameraRigParameters node @@ needs camera rig @@ to be built.").ToString(), this, CameraRig);
 			continue;
@@ -160,7 +160,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 
 		// Figure out the sort of SetXxxParameter function we want to call for this parameter.
 		FName CallSetParameterFuncName;
-		switch (InterfaceParameter->PrivateVariable->GetVariableType())
+		switch (BlendableParameter->PrivateVariable->GetVariableType())
 		{
 			case ECameraVariableType::Boolean:
 				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetBooleanParameter);
@@ -211,7 +211,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(class FKismetCompilerContext& Co
 
 		// Set the parameter name argument.
 		UEdGraphPin* CallSetParameterNamePin = CallSetParameter->FindPinChecked(TEXT("ParameterName"));
-		CallSetParameterNamePin->DefaultValue = InterfaceParameter->InterfaceParameterName;
+		CallSetParameterNamePin->DefaultValue = BlendableParameter->InterfaceParameterName;
 
 		// Set or connect the parameter value argument.
 		UEdGraphPin* CallSetParameterValuePin = CallSetParameter->FindPinChecked(TEXT("ParameterValue"));
@@ -311,14 +311,14 @@ void UK2Node_SetCameraRigParameters::CreatePinsForCameraRig(UCameraRigAsset* Cam
 
 	const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
 
-	for (UCameraRigInterfaceParameter* InterfaceParameter : CameraRig->Interface.InterfaceParameters)
+	for (UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
 	{
-		if (!ensure(InterfaceParameter))
+		if (!ensure(BlendableParameter))
 		{
 			continue;
 		}
 
-		if (!InterfaceParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariable)
 		{
 			// Camera rig isn't fully built.
 			continue;
@@ -327,7 +327,7 @@ void UK2Node_SetCameraRigParameters::CreatePinsForCameraRig(UCameraRigAsset* Cam
 		FName NewPinCategory;
 		FName NewPinSubCategory;
 		UObject* NewPinSubCategoryObject = nullptr;
-		switch (InterfaceParameter->PrivateVariable->GetVariableType())
+		switch (BlendableParameter->PrivateVariable->GetVariableType())
 		{
 			case ECameraVariableType::Boolean:
 				NewPinCategory = UEdGraphSchema_K2::PC_Boolean;
@@ -374,7 +374,7 @@ void UK2Node_SetCameraRigParameters::CreatePinsForCameraRig(UCameraRigAsset* Cam
 		UEdGraphPin* NewPin = CreatePin(
 				EGPD_Input, 
 				NewPinCategory, NewPinSubCategory, NewPinSubCategoryObject, 
-				FName(InterfaceParameter->InterfaceParameterName));
+				FName(BlendableParameter->InterfaceParameterName));
 		if (CreatedPins)
 		{
 			CreatedPins->Add(NewPin);

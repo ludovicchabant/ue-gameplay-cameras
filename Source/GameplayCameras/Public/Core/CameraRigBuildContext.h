@@ -2,10 +2,8 @@
 
 #pragma once
 
-#include "UObject/ObjectPtr.h"
-
-class UCameraRigAsset;
-struct FCameraRigAllocationInfo;
+#include "Containers/Set.h"
+#include "Core/CameraRigAsset.h"
 
 namespace UE::Cameras
 {
@@ -17,16 +15,15 @@ class FCameraBuildLog;
  */
 struct FCameraRigBuildContext
 {
-	FCameraRigBuildContext(
-			FCameraRigAllocationInfo& InAllocationInfo, FCameraBuildLog& InBuildLog)
-		: AllocationInfo(InAllocationInfo)
-		, BuildLog(InBuildLog)
+	FCameraRigBuildContext(FCameraBuildLog& InBuildLog)
+		: BuildLog(InBuildLog)
 	{}
 
-	/** The allocation information to be determined. */
-	FCameraRigAllocationInfo& AllocationInfo;
 	/** The build log for emitting messages. */
 	FCameraBuildLog& BuildLog;
+
+	/** The allocation information for the camera rig. */
+	FCameraRigAllocationInfo AllocationInfo;
 };
 
 }  // namespace UE::Cameras

@@ -3,7 +3,7 @@
 #include "Core/CameraRigCombinationRegistry.h"
 
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigParameterOverrideEvaluator.h"
+#include "Helpers/CameraRigParameterOverrideEvaluator.h"
 
 namespace UE::Cameras
 {

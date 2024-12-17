@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Components/SceneComponent.h"
+#include "Core/CameraAssetReference.h"
 #include "Core/CameraEvaluationContext.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
@@ -82,10 +83,14 @@ public:
 	// USceneComponent interface.
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
+	// UObject interface.
+	void PostLoad() override;
+
 private:
 
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
+	void UpdateCameraEvaluationContext(bool bApplyParameterOverrides);
 	void DeactivateCameraEvaluationContext();
 
 #if WITH_EDITORONLY_DATA
@@ -98,7 +103,7 @@ public:
 
 	/** The camera asset to run. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
-	TObjectPtr<UCameraAsset> Camera;
+	FCameraAssetReference CameraReference;
 
 	/**
 	 * If AutoActivate is set, auto-activates this component's camera for the given player.
@@ -127,6 +132,11 @@ protected:
 	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
 
 #endif	// WITH_EDITORONLY_DATA
+
+private:
+
+	UPROPERTY()
+	TObjectPtr<UCameraAsset> Camera_DEPRECATED;
 };
 
 namespace UE::Cameras
@@ -138,10 +148,6 @@ namespace UE::Cameras
 class FGameplayCameraComponentEvaluationContext : public FCameraEvaluationContext
 {
 	UE_DECLARE_CAMERA_EVALUATION_CONTEXT(GAMEPLAYCAMERAS_API, FGameplayCameraComponentEvaluationContext)
-
-public:
-
-	void Update(UGameplayCameraComponent* Owner);
 };
 
 }  // namespace UE::Cameras
