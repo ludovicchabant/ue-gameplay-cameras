@@ -156,7 +156,9 @@ void UCameraAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 {
 #if WITH_EDITOR
 
-	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	const bool bIsUserObject = !HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+	const bool bIsEditorAutoSave = !(ObjectSaveContext.GetSaveFlags() & SAVE_FromAutosave);
+	if (bIsUserObject && !bIsEditorAutoSave)
 	{
 		// Build when saving/cooking.
 		BuildCamera();

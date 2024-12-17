@@ -199,11 +199,11 @@ void UCameraRigAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 {
 #if WITH_EDITOR
 
-	if (GetOutermostObject() == this &&
-			!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	const bool bIsUserObject = !HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+	const bool bIsEditorAutoSave = !(ObjectSaveContext.GetSaveFlags() & SAVE_FromAutosave);
+	if (bIsUserObject && !bIsEditorAutoSave)
 	{
-		// Build when saving/cooking, if we are a standalone camera rig (i.e. not a camera rig inside a 
-		// camera asset, since those are built along with the camera asset).
+		// Build when saving/cooking.
 		BuildCameraRig();
 	}
 
