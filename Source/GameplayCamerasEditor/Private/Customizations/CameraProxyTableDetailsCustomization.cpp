@@ -93,7 +93,7 @@ FText FCameraProxyTableEntryDetailsCustomization::OnGetComboButtonText() const
 		TObjectPtr<UCameraRigAsset>* CameraRigPtr = (TObjectPtr<UCameraRigAsset>*)RawData[0];
 		if (*CameraRigPtr)
 		{
-			DisplayText = FText::FromString((*CameraRigPtr)->GetDisplayName());
+			DisplayText = FText::FromString((*CameraRigPtr)->GetName());
 		}
 		return DisplayText;
 	}

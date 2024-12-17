@@ -164,15 +164,6 @@ void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) 
 	TagContainer.AppendTags(GameplayTags);
 }
 
-FString UCameraRigAsset::GetDisplayName() const
-{
-	if (!Interface.DisplayName.IsEmpty())
-	{
-		return Interface.DisplayName;
-	}
-	return GetName();
-}
-
 void UCameraRigAsset::BuildCameraRig()
 {
 	using namespace UE::Cameras;
@@ -312,12 +303,7 @@ void UCameraRigAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FStr
 
 void UCameraRigAsset::GetGraphNodeName(FName InGraphName, FText& OutName) const
 {
-	OutName = FText::FromString(GetDisplayName());
-}
-
-void UCameraRigAsset::OnRenameGraphNode(FName InGraphName, const FString& NewName)
-{
-	Interface.DisplayName = NewName;
+	OutName = FText::FromString(GetName());
 }
 
 void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const

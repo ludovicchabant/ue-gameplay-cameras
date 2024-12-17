@@ -91,7 +91,7 @@ void FBlendStackRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		const UCameraRigAsset* CameraRig = RootNode->RootNode->GetTypedOuter<UCameraRigAsset>();
-		CameraRigAssetName = CameraRig ? CameraRig->GetDisplayName() : TEXT("<None>");
+		CameraRigAssetName = GetNameSafe(CameraRig);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 }
@@ -327,7 +327,7 @@ void FBlendStackRootCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBl
 					const UCameraRigAsset* OuterCameraRig = Item.PrefabNode->GetTypedOuter<const UCameraRigAsset>();
 					if (OuterCameraRig)
 					{
-						return OuterCameraRig->GetDisplayName();
+						return GetNameSafe(OuterCameraRig);
 					}
 				}
 				return FString(TEXT("<invalid camera rig>"));

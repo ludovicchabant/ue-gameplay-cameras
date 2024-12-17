@@ -148,9 +148,6 @@ struct FCameraRigInterface
 
 public:
 
-	UPROPERTY()
-	FString DisplayName;
-
 	/** The list of exposed parameters on the camera rig. */
 	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigInterfaceParameter>> InterfaceParameters;
@@ -226,11 +223,6 @@ public:
 	/** Gets the camera rig's unique ID. */
 	const FGuid& GetGuid() const { return Guid; }
 
-	/**
-	 * Gets the display name of this camera rig.
-	 * This is either the display name set on the interface object, or its internal name.
-	 */
-	GAMEPLAYCAMERAS_API FString GetDisplayName() const;
 
 public:
 
@@ -278,7 +270,6 @@ protected:
 	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
 	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
 	virtual void GetGraphNodeName(FName InGraphName, FText& OutName) const override;
-	virtual void OnRenameGraphNode(FName InGraphName, const FString& NewName) override;
 #endif
 
 	// IObjectTreeGraphRootObject interface.

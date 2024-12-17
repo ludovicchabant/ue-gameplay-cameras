@@ -1191,7 +1191,7 @@ FBlendStackCameraDebugBlock::FBlendStackCameraDebugBlock(const FBlendStackCamera
 	for (const FBlendStackCameraNodeEvaluator::FCameraRigEntry& Entry : InEvaluator.Entries)
 	{
 		FEntryDebugInfo EntryDebugInfo;
-		EntryDebugInfo.CameraRigName = Entry.CameraRig ? Entry.CameraRig->GetDisplayName() : FString("<None>");
+		EntryDebugInfo.CameraRigName = Entry.CameraRig ? Entry.CameraRig->GetName() : FString("<None>");
 		Entries.Add(EntryDebugInfo);
 	}
 }

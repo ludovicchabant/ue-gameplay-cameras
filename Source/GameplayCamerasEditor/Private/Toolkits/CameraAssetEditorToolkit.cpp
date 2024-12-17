@@ -515,7 +515,7 @@ void FCameraAssetEditorToolkit::UpgradeLegacyCameraAssets()
 		SlowTask.EnterProgressFrame();
 
 		// Name the new camera rigs like this: "<CameraAsset>_<CameraRig>"
-		const FString CameraRigPackageName = FString::Printf(TEXT("%s_%s"), *CameraRigsBaseName, *CameraRig->GetDisplayName());
+		const FString CameraRigPackageName = FString::Printf(TEXT("%s_%s"), *CameraRigsBaseName, *CameraRig->GetName());
 
 		FString CameraRigPackagePath;
 		FString CameraRigAssetName;
