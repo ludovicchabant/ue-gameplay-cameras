@@ -152,6 +152,14 @@ public:
 
 	// Lower level API.
 
+	const uint8* GetValue(
+			FCameraVariableID VariableID,
+			ECameraVariableType ExpectedVariableType) const;
+
+	const uint8* TryGetValue(
+			FCameraVariableID VariableID,
+			ECameraVariableType ExpectedVariableType) const;
+
 	void SetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 

@@ -227,6 +227,25 @@ bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 	return EntryLookup.Contains(VariableID);
 }
 
+const uint8* FCameraVariableTable::GetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType) const
+{
+	const uint8* Value = TryGetValue(VariableID, ExpectedVariableType);
+	ensureMsgf(Value, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue());
+	return Value;
+}
+
+const uint8* FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType) const
+{
+	const FEntry* Entry = FindEntry(VariableID);
+	if (Entry)
+	{
+		ensure(Entry->Type == ExpectedVariableType);
+		return Memory + Entry->Offset;
+	}
+
+	return nullptr;
+}
+
 void FCameraVariableTable::SetValue(
 		FCameraVariableID VariableID, 
 		ECameraVariableType ExpectedVariableType, 
