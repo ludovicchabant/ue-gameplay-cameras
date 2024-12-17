@@ -2,19 +2,21 @@
 
 #pragma once
 
+#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraRigJoints.h"
-#include "Core/CameraVariableAssets.h"
+#include "Core/CameraVariableTableFwd.h"
+#include "Core/ICustomCameraNodeParameterProvider.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
-#include "Templates/SubclassOf.h"
 
 #include "BlueprintCameraNode.generated.h"
 
-struct FBlueprintCameraPose;
+class UCameraVariableAsset;
+class UPropertyBag;
 
 namespace UE::Cameras
 {
+	class FBlueprintCameraNodeEvaluator;
 	class FCameraVariableTable;
 	struct FCameraNodeEvaluationParams;
 	struct FCameraNodeEvaluationResult;
@@ -23,12 +25,15 @@ namespace UE::Cameras
 /**
  * The base class for Blueprint camera node evaluators.
  */
-UCLASS(MinimalAPI, Blueprintable, Abstract)
+UCLASS(MinimalAPI, Blueprintable, Abstract, EditInlineNew, CollapseCategories)
 class UBlueprintCameraNodeEvaluator : public UObject
 {
 	GENERATED_BODY()
 
 public:
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Evaluation")
+	void InitializeCameraNode();
 
 	/** The main execution callback for the camera node. Call SetCameraPose to affect the result. */
 	UFUNCTION(BlueprintImplementableEvent, Category="Evaluation")
@@ -44,8 +49,13 @@ public:
 
 public:
 
+	using FCameraNodeEvaluatorInitializeParams = UE::Cameras::FCameraNodeEvaluatorInitializeParams;
 	using FCameraNodeEvaluationParams = UE::Cameras::FCameraNodeEvaluationParams;
 	using FCameraNodeEvaluationResult = UE::Cameras::FCameraNodeEvaluationResult;
+	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
+
+	/** Initialize this camera node. */
+	void NativeInitializeCameraNode(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	/** Runs this camera node. */
 	void NativeRunCameraNode(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
@@ -57,6 +67,11 @@ public:
 #if WITH_EDITOR
 	virtual bool ImplementsGetWorld() const override { return true; }
 #endif  // WITH_EDITOR
+
+private:
+
+	void SetupExecution(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, FCameraNodeEvaluationResult& OutResult);
+	void TeardownExecution();
 
 protected:
 
@@ -89,20 +104,60 @@ private:
  * A camera node that runs arbitrary Blueprint logic.
  */
 UCLASS(MinimalAPI, meta=(CameraNodeCategories="Common,Transform"))
-class UBlueprintCameraNode : public UCameraNode
+class UBlueprintCameraNode
+	: public UCameraNode
+	, public ICustomCameraNodeParameterProvider
 {
 	GENERATED_BODY()
+
+public:
+
+	UBlueprintCameraNode(const FObjectInitializer& ObjInit);
 
 protected:
 
 	// UCameraNode interface.
+	virtual void OnPreBuild(FCameraBuildLog& BuildLog) override;
 	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
+	// ICustomCameraNodeParameterProvider interface.
+	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
+
+	// UObject interface.
+	virtual void PostLoad() override;
+	virtual void BeginDestroy() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 public:
 
-	/** The camera node evaluator class to instantiate and run. */
-	UPROPERTY(EditAnywhere, Category=Common)
-	TSubclassOf<UBlueprintCameraNodeEvaluator> CameraNodeEvaluatorClass;
+	const UBlueprintCameraNodeEvaluator* GetCameraNodeEvaluatorTemplate() const { return CameraNodeEvaluatorTemplate; }
+
+private:
+
+	void RebuildOverrides();
+
+#if WITH_EDITOR
+	void OnObjectsReplaced(const TMap<UObject*, UObject*>& ReplacementMap);
+#endif
+
+private:
+
+	/** The camera node evaluator to instantiate and run. */
+	UPROPERTY(Instanced, EditAnywhere, Category=Common)
+	TObjectPtr<UBlueprintCameraNodeEvaluator> CameraNodeEvaluatorTemplate;
+
+	/** Overrides for the evaluator instance. */
+	UPROPERTY()
+	FCustomCameraNodeParameters CameraNodeEvaluatorOverrides;
+
+	// Deprecated.
+	
+	UPROPERTY()
+	TSubclassOf<UBlueprintCameraNodeEvaluator> CameraNodeEvaluatorClass_DEPRECATED;
+
+	friend class UE::Cameras::FBlueprintCameraNodeEvaluator;
 };
 
