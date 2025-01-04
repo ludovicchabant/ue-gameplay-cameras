@@ -2,6 +2,8 @@
 
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
+#include "GameplayCamerasDelegates.h"
+
 bool operator==(const FCustomCameraNodeBlendableParameter& A, const FCustomCameraNodeBlendableParameter& B)
 {
 	return A.ParameterName == B.ParameterName &&
@@ -106,5 +108,12 @@ bool FCustomCameraNodeParameterInfos::FindDataParameter(FName ParameterName, FCu
 		}
 	}
 	return false;
+}
+
+void ICustomCameraNodeParameterProvider::OnCustomCameraNodeParametersChanged(const UCameraNode* ThisAsCameraNode) const
+{
+	using namespace UE::Cameras;
+
+	FGameplayCamerasDelegates::OnCustomCameraNodeParametersChanged().Broadcast(ThisAsCameraNode);
 }
 

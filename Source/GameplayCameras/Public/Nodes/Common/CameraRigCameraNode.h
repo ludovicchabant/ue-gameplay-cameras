@@ -29,6 +29,11 @@ protected:
 	// ICustomCameraNodeParameterProvider interface.
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
 
+	// UObject interface.
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif  // WITH_EDITOR
+
 public:
 
 	/** The camera rig to run. */

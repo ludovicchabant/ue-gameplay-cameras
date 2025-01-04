@@ -9,6 +9,7 @@
 
 #include "ICustomCameraNodeParameterProvider.generated.h"
 
+class UCameraNode;
 class UCameraVariableAsset;
 
 namespace UE::Cameras
@@ -177,5 +178,8 @@ public:
 
 	/** Gathers the custom parameters on this node. */
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) {}
+
+	/** Utility function for sub-classes to broadcast when the custom parameters have changed. */
+	GAMEPLAYCAMERAS_API void OnCustomCameraNodeParametersChanged(const UCameraNode* ThisAsCameraNode) const;
 };
 

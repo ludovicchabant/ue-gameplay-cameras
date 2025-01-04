@@ -5,8 +5,9 @@
 namespace UE::Cameras
 {
 
-FOnCameraAssetBuilt FGameplayCamerasDelegates::OnCameraAssetBuiltDelegates;
-FOnCameraRigAssetBuilt FGameplayCamerasDelegates::OnCameraRigAssetBuiltDelegates;
+FOnCameraAssetBuilt FGameplayCamerasDelegates::OnCameraAssetBuiltDelegate;
+FOnCameraRigAssetBuilt FGameplayCamerasDelegates::OnCameraRigAssetBuiltDelegate;
+FOnCameraNodeChanged FGameplayCamerasDelegates::OnCustomCameraNodeParametersChangedDelegate;
 
 }  // namespace UE::Cameras
 

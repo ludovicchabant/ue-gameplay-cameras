@@ -6,6 +6,8 @@
 
 #include "CameraNodeGraphNode.generated.h"
 
+class UCameraNode;
+
 /**
  * Custom graph node for camera nodes. They mostly differ by showing input pins for any 
  * camera parameter property.
@@ -20,10 +22,19 @@ public:
 	/** Creates a new graph node. */
 	UCameraNodeGraphNode(const FObjectInitializer& ObjInit);
 
+	virtual void BeginDestroy() override;
+
 public:
 
-	// UEdGraphNode interface
+	// UEdGraphNode interface.
 	virtual void AllocateDefaultPins() override;
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
+
+	// UObjectTreeGraphNode interface.
+	virtual void OnInitialize() override;
+
+private:
+
+	void OnCustomCameraNodeParametersChanged(const UCameraNode* CameraNode);
 };
 

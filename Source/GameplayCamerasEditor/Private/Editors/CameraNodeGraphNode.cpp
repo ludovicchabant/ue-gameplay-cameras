@@ -2,17 +2,48 @@
 
 #include "Editors/CameraNodeGraphNode.h"
 
+#include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphSchema.h"
 #include "Editors/SCameraNodeGraphNode.h"
+#include "GameplayCamerasDelegates.h"
 #include "ToolMenus.h"
 
 UCameraNodeGraphNode::UCameraNodeGraphNode(const FObjectInitializer& ObjInit)
 	: UObjectTreeGraphNode(ObjInit)
 {
+}
+
+void UCameraNodeGraphNode::OnInitialize()
+{
+	using namespace UE::Cameras;
+
+	const bool bIsCustomParameterProvider = GetObject()->Implements<UCustomCameraNodeParameterProvider>();
+	if (bIsCustomParameterProvider)
+	{
+		FGameplayCamerasDelegates::OnCustomCameraNodeParametersChanged().AddUObject(
+				this, &UCameraNodeGraphNode::OnCustomCameraNodeParametersChanged);
+	}
+}
+
+void UCameraNodeGraphNode::BeginDestroy()
+{
+	using namespace UE::Cameras;
+
+	FGameplayCamerasDelegates::OnCustomCameraNodeParametersChanged().RemoveAll(this);
+
+	Super::BeginDestroy();
+}
+
+void UCameraNodeGraphNode::OnCustomCameraNodeParametersChanged(const UCameraNode* CameraNode)
+{
+	if (CameraNode == GetObject())
+	{
+		ReconstructNode();
+	}
 }
 
 void UCameraNodeGraphNode::AllocateDefaultPins()

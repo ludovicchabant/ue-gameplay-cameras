@@ -32,6 +32,8 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 	{
 		NodeComment = GraphObject->GetGraphNodeCommentText(NodeContext.GraphConfig.GraphName);
 	}
+
+	OnInitialize();
 }
 
 FText UObjectTreeGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
@@ -180,6 +182,43 @@ void UObjectTreeGraphNode::OnPinRemoved(UEdGraphPin* InRemovedPin)
 	{
 		RefreshArrayPropertyPinNames();
 	}
+}
+
+void UObjectTreeGraphNode::ReconstructNode()
+{
+	Modify(false);
+
+	ErrorMsg.Reset();
+
+	// Save old pins.
+	TMap<FName, UEdGraphPin*> OldPins;
+	for (auto NodeIt = Pins.CreateIterator(); NodeIt; ++NodeIt)
+	{
+		UEdGraphPin* Pin(*NodeIt);
+		OldPins.Add(Pin->PinName, Pin);
+	}
+
+	// Reconstruct all pins from scratch.
+	Pins.Reset();
+	AllocateDefaultPins();
+
+	// Rewire existing connections to new pins, matched by name, direction, and type.
+	for (UEdGraphPin* NewPin : Pins)
+	{
+		UEdGraphPin* OldPin = OldPins.FindRef(NewPin->PinName);
+		if (!OldPin || 
+				OldPin->Direction != NewPin->Direction ||
+				OldPin->PinType != NewPin->PinType)
+		{
+			continue;
+		}
+
+		NewPin->MovePersistentDataFromOldPin(*OldPin);
+	}
+
+	GetGraph()->NotifyNodeChanged(this);
+
+	Super::ReconstructNode();
 }
 
 void UObjectTreeGraphNode::GetArrayProperties(TArray<FArrayProperty*>& OutArrayProperties, EEdGraphPinDirection Direction) const

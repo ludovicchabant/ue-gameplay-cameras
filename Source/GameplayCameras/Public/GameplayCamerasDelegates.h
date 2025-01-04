@@ -6,6 +6,7 @@
 #include "Delegates/Delegate.h"
 
 class UCameraAsset;
+class UCameraNode;
 class UCameraRigAsset;
 
 namespace UE::Cameras
@@ -15,6 +16,7 @@ class FCameraBuildLog;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraAssetBuilt, const UCameraAsset*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraRigAssetBuilt, const UCameraRigAsset*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraNodeChanged, const UCameraNode*);
 
 /**
  * Global delegates for the GameplayCameras module.
@@ -26,19 +28,26 @@ public:
 	/** Broadcast when a camera asset has been built. */
 	static inline FOnCameraAssetBuilt& OnCameraAssetBuilt()
 	{
-		return OnCameraAssetBuiltDelegates;
+		return OnCameraAssetBuiltDelegate;
 	}
 
 	/** Broadcast when a camera rig has been built. */
 	static inline FOnCameraRigAssetBuilt& OnCameraRigAssetBuilt()
 	{
-		return OnCameraRigAssetBuiltDelegates;
+		return OnCameraRigAssetBuiltDelegate;
+	}
+
+	/** Broadcast when a custom camera parameter provider node changes it parameters. */
+	static inline FOnCameraNodeChanged& OnCustomCameraNodeParametersChanged()
+	{
+		return OnCustomCameraNodeParametersChangedDelegate;
 	}
 
 private:
 
-	static FOnCameraAssetBuilt OnCameraAssetBuiltDelegates;
-	static FOnCameraRigAssetBuilt OnCameraRigAssetBuiltDelegates;
+	static FOnCameraAssetBuilt OnCameraAssetBuiltDelegate;
+	static FOnCameraRigAssetBuilt OnCameraRigAssetBuiltDelegate;
+	static FOnCameraNodeChanged OnCustomCameraNodeParametersChangedDelegate;
 };
 
 }  // namespace UE::Cameras

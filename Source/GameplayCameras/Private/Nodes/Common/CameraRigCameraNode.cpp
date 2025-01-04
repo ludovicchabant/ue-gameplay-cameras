@@ -191,5 +191,19 @@ FCameraNodeEvaluatorPtr UCameraRigCameraNode::OnBuildEvaluator(FCameraNodeEvalua
 	return Builder.BuildEvaluator<FCameraRigCameraNodeEvaluator>();
 }
 
+#if WITH_EDITOR
+
+void UCameraRigCameraNode::PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UCameraRigCameraNode, CameraRigReference))
+	{
+		OnCustomCameraNodeParametersChanged(this);
+	}
+}
+
+#endif
+
 #undef LOCTEXT_NAMESPACE
 

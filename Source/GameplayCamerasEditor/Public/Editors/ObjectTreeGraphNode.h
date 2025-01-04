@@ -72,6 +72,7 @@ public:
 	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override;
 	virtual void NodeConnectionListChanged() override;
 	virtual void OnPinRemoved(UEdGraphPin* InRemovedPin) override;
+	virtual void ReconstructNode() override;
 	virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
 	virtual bool GetCanRenameNode() const override;
 	virtual void OnRenameNode(const FString& NewName) override;
@@ -81,6 +82,7 @@ public:
 	virtual void OnUpdateCommentText(const FString& NewComment) override;
 
 	// UObjectTreeGraphNode interface.
+	virtual void OnInitialize() {}
 	virtual void OnGraphNodeMoved(bool bMarkDirty);
 	virtual void OnDoubleClicked() {}
 
