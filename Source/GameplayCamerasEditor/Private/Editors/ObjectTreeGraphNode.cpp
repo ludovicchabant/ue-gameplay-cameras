@@ -164,6 +164,23 @@ void UObjectTreeGraphNode::AutowireNewNode(UEdGraphPin* FromPin)
 
 void UObjectTreeGraphNode::PinConnectionListChanged(UEdGraphPin* Pin)
 {
+	// Auto-remove orphaned pins when they are disconnected.
+	if (Pin->bOrphanedPin && Pin->LinkedTo.IsEmpty())
+	{
+		if (Pin->ParentPin)
+		{
+			Pin->ParentPin->SubPins.Remove(Pin);
+		}
+
+		RemovePin(Pin);
+
+		UEdGraph* OuterGraph = GetGraph();
+		if (OuterGraph)
+		{
+			OuterGraph->NotifyNodeChanged(this);
+		}
+	}
+
 	Super::PinConnectionListChanged(Pin);
 }
 
@@ -203,17 +220,39 @@ void UObjectTreeGraphNode::ReconstructNode()
 	AllocateDefaultPins();
 
 	// Rewire existing connections to new pins, matched by name, direction, and type.
+	TArray<UEdGraphPin*> ErrorPins;
 	for (UEdGraphPin* NewPin : Pins)
 	{
-		UEdGraphPin* OldPin = OldPins.FindRef(NewPin->PinName);
-		if (!OldPin || 
-				OldPin->Direction != NewPin->Direction ||
-				OldPin->PinType != NewPin->PinType)
+		UEdGraphPin* OldPin = nullptr;
+		OldPins.RemoveAndCopyValue(NewPin->PinName, OldPin);
+		if (OldPin)
 		{
-			continue;
+			const bool bOldMatchesNew = (
+				OldPin->Direction == NewPin->Direction &&
+				OldPin->PinType == NewPin->PinType);
+			if (bOldMatchesNew)
+			{
+				NewPin->MovePersistentDataFromOldPin(*OldPin);
+			}
+			else if (OldPin->LinkedTo.Num() > 0)
+			{
+				ErrorPins.Add(OldPin);
+			}
 		}
+	}
 
-		NewPin->MovePersistentDataFromOldPin(*OldPin);
+	// Old pins that had connections must be preserved, but made into orphans.
+	for (TPair<FName, UEdGraphPin*> Pair : OldPins)
+	{
+		if (Pair.Value->LinkedTo.Num() > 0)
+		{
+			ErrorPins.Add(Pair.Value);
+		}
+	}
+	for (UEdGraphPin* ErrorPin : ErrorPins)
+	{
+		Pins.Add(ErrorPin);
+		ErrorPin->bOrphanedPin = true;
 	}
 
 	GetGraph()->NotifyNodeChanged(this);

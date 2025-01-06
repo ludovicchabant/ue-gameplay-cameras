@@ -141,16 +141,35 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 		}
 		
 		UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = CreateInterfaceParameterNode(InGraph, InterfaceParameter);
-		UObjectTreeGraphNode* const* CameraNodeNode = InCreatedNodes.CreatedNodes.Find(InterfaceParameter->Target);
+		UObjectTreeGraphNode* CameraNodeNode = InCreatedNodes.CreatedNodes.FindRef(InterfaceParameter->Target);
 		if (CameraNodeNode)
 		{
 			UEdGraphPin* InterfaceParameterSelfPin = InterfaceParameterNode->GetSelfPin();
-			UEdGraphPin* NodePin = FindPin(*CameraNodeNode, InterfaceParameter->TargetPropertyName, NAME_None);
-			ensure(NodePin &&
+			UEdGraphPin* NodePin = FindPin(CameraNodeNode, InterfaceParameter->TargetPropertyName, NAME_None);
+			if (NodePin &&
 					(NodePin->PinType.PinCategory == PC_CameraParameter ||
 					 NodePin->PinType.PinCategory == PC_CameraVariableReference ||
-					 NodePin->PinType.PinCategory == PC_CameraContextData));
-			InterfaceParameterSelfPin->MakeLinkTo(NodePin);
+					 NodePin->PinType.PinCategory == PC_CameraContextData))
+			{
+				InterfaceParameterSelfPin->MakeLinkTo(NodePin);
+			}
+			else
+			{
+				FName ErrorPinCategory = NAME_None;
+				if (InterfaceParameter->IsA<UCameraRigBlendableParameter>())
+				{
+					ErrorPinCategory = PC_CameraParameter;
+				}
+				else if (InterfaceParameter->IsA<UCameraRigDataParameter>())
+				{
+					ErrorPinCategory = PC_CameraContextData;
+				}
+
+				UEdGraphPin* ErrorPin = CameraNodeNode->CreatePin(
+						EGPD_Input, ErrorPinCategory, InterfaceParameter->TargetPropertyName);
+				InterfaceParameterSelfPin->MakeLinkTo(ErrorPin);
+				ErrorPin->bOrphanedPin = true;
+			}
 		}
 	}
 }
@@ -176,6 +195,12 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 				DraggedPin->PinType.PinCategory == PC_CameraContextData)
 		{
 			ensure(DraggedPin->PinName != NAME_None);
+
+			// If this is an invalid parameter/data pin, don't show any actions.
+			if (DraggedPin->bOrphanedPin)
+			{
+				return;
+			}
 
 			// Find the property being dragged, so we know what kind of parameter to create.
 			const UClass* CameraNodeClass = CameraNodeNode->GetObject()->GetClass();
@@ -316,7 +341,8 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 	if ((A->PinType.PinCategory == PC_CameraParameter || 
 				A->PinType.PinCategory == PC_CameraVariableReference ||
 				A->PinType.PinCategory == PC_CameraContextData) && 
-			B->PinType.PinCategory == PC_Self)
+			B->PinType.PinCategory == PC_Self &&
+			!A->bOrphanedPin)
 	{
 		UCameraRigInterfaceParameterGraphNode* NodeB = Cast<UCameraRigInterfaceParameterGraphNode>(B->GetOwningNode());
 		if (NodeB)
@@ -339,7 +365,8 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 	else if (A->PinType.PinCategory == PC_Self && 
 			(B->PinType.PinCategory == PC_CameraParameter || 
 			 B->PinType.PinCategory == PC_CameraVariableReference ||
-			 B->PinType.PinCategory == PC_CameraContextData))
+			 B->PinType.PinCategory == PC_CameraContextData) &&
+			!B->bOrphanedPin)
 	{
 		UCameraRigInterfaceParameterGraphNode* NodeA = Cast<UCameraRigInterfaceParameterGraphNode>(A->GetOwningNode());
 		if (NodeA)
@@ -412,6 +439,7 @@ bool UCameraNodeGraphSchema::OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const
 	// See if we are in the situation of an interface parameter node being disconnected from 
 	// a camera node property pin.
 	UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
+
 	if (TargetPin.PinType.PinCategory == PC_CameraParameter ||
 			TargetPin.PinType.PinCategory == PC_CameraVariableReference ||
 			TargetPin.PinType.PinCategory == PC_CameraContextData)

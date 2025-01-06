@@ -616,6 +616,11 @@ const FPinConnectionResponse UObjectTreeGraphSchema::CanCreateConnection(const U
 	{
 		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Unsupported node types"));
 	}
+	
+	if (A->bOrphanedPin || B->bOrphanedPin)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Can't connect an orphaned pin"));
+	}
 
 	if (A->Direction == B->Direction)
 	{
