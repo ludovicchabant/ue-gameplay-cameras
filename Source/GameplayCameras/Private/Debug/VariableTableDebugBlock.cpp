@@ -49,6 +49,8 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
 		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryValueStr};
+		EntryDebugInfo.bIsInput = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Input);
+		EntryDebugInfo.bIsPrivate = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Private);
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written);
 		EntryDebugInfo.bWrittenThisFrame = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::WrittenThisFrame);
 		Entries.Add(EntryDebugInfo);
@@ -87,6 +89,7 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 		{
 			Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Entry.ID);
 		}
+
 		if (!Entry.Name.IsEmpty())
 		{
 			Renderer.AddText(TEXT("%s : "), *Entry.Name);
@@ -102,14 +105,25 @@ void FVariableTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Pa
 		if (Entry.bWritten)
 		{
 			Renderer.AddText(Entry.Value);
+			Renderer.AddText(TEXT(" "));
 			if (Entry.bWrittenThisFrame)
 			{
-				Renderer.AddText(TEXT(" {cam_passive}[WrittenThisFrame]"));
+				Renderer.AddText(TEXT("{cam_passive}[WrittenThisFrame]"));
 			}
 		}
 		else
 		{
 			Renderer.AddText("{cam_warning}[Uninitialized]");
+		}
+
+		if (Entry.bIsInput)
+		{
+			Renderer.AddText("{cam_notice2}[Input]");
+		}
+
+		if (Entry.bIsPrivate)
+		{
+			Renderer.AddText("{cam_notice2}[Private]");
 		}
 
 		Renderer.NewLine();
@@ -128,6 +142,8 @@ FArchive& operator<< (FArchive& Ar, FVariableTableDebugBlock::FEntryDebugInfo& E
 	Ar << EntryDebugInfo.ID;
 	Ar << EntryDebugInfo.Name;
 	Ar << EntryDebugInfo.Value;
+	Ar << EntryDebugInfo.bIsInput;
+	Ar << EntryDebugInfo.bIsPrivate;
 	Ar << EntryDebugInfo.bWritten;
 	Ar << EntryDebugInfo.bWrittenThisFrame;
 	return Ar;

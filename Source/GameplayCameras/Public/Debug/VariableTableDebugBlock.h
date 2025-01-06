@@ -46,6 +46,8 @@ private:
 		uint32 ID;
 		FString Name;
 		FString Value;
+		bool bIsInput;
+		bool bIsPrivate;
 		bool bWritten;
 		bool bWrittenThisFrame;
 	};

@@ -173,6 +173,16 @@ public:
 	UPROPERTY()
 	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
 
+	/**
+	 * Whether this parameter's value should be pre-blended.
+	 *
+	 * Pre-blending means that if two blending camera rigs share this parameter, 
+	 * each of their values will be blended in a first evaluation pass, and then
+	 * both camera rigs will evaluate with the same blended value.
+	 */
+	UPROPERTY()
+	bool bIsPreBlended = true;
+
 	// Built on save/cook.
 
 	/**

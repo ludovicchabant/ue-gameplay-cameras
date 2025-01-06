@@ -65,17 +65,17 @@ void SetPrivateVariableDefaultValue<UBooleanCameraVariable, bool>(UBooleanCamera
 	}
 }
 
-UCameraVariableAsset* CreatePrivateVariable(
-		UCameraRigAsset* CameraRig,
-		const FString& InterfaceParameterName,
-		ECameraVariableType ParameterType)
+FString MakePrivateVariableName(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter)
 {
-	const FString VariableName = FString::Format(
+	return FString::Format(
 			TEXT("Override_{0}_{1}"), 
-			{ CameraRig->GetName(), InterfaceParameterName });
+			{ CameraRig->GetName(), BlendableParameter->InterfaceParameterName });
+}
 
+UCameraVariableAsset* CreatePrivateVariable(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter)
+{
 	TSubclassOf<UCameraVariableAsset> VariableClass;
-	switch (ParameterType)
+	switch (BlendableParameter->ParameterType)
 	{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(VariableType, VariableName)\
 		case ECameraVariableType::VariableName:\
@@ -89,15 +89,39 @@ UCameraVariableAsset* CreatePrivateVariable(
 		return nullptr;
 	}
 
+	const FString VariableName = MakePrivateVariableName(CameraRig, BlendableParameter);
 	UCameraVariableAsset* PrivateVariable = NewObject<UCameraVariableAsset>(
 			CameraRig, VariableClass, FName(*VariableName), RF_Transactional);
 
-	// Make sure it's a private input variable.
-	PrivateVariable->bIsInput = true;
+	// Make sure it's a private variable.
 	PrivateVariable->bIsPrivate = true;
 	PrivateVariable->bAutoReset = false;
 
+	// Make it an input variable if the parameter is pre-blended.
+	PrivateVariable->bIsInput = BlendableParameter->bIsPreBlended;
+
 	return PrivateVariable;
+}
+
+void UpdatePrivateVariable(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter, UCameraVariableAsset* PrivateVariable)
+{
+	check(PrivateVariable);
+
+	ensure(PrivateVariable->bIsPrivate);
+	ensure(!PrivateVariable->bAutoReset);
+
+	const FString VariableName = MakePrivateVariableName(CameraRig, BlendableParameter);
+	if (PrivateVariable->GetName() != VariableName)
+	{
+		ensure(!PrivateVariable->HasAnyFlags(RF_Public));
+		PrivateVariable->Rename(*VariableName, nullptr);
+	}
+
+	if (PrivateVariable->bIsInput != BlendableParameter->bIsPreBlended)
+	{
+		PrivateVariable->Modify();
+		PrivateVariable->bIsInput = BlendableParameter->bIsPreBlended;
+	}
 }
 
 struct FInterfaceParameterBindingBuilder
@@ -671,6 +695,7 @@ void FCameraRigAssetBuilder::BuildInterfaceParameters()
 		UCameraVariableAsset* PrivateVariable = BlendableParameter->PrivateVariable;
 		if (PrivateVariable && PrivateVariable->GetVariableType() == BlendableParameter->ParameterType)
 		{
+			UpdatePrivateVariable(CameraRig, BlendableParameter, PrivateVariable);
 			continue;
 		}
 
@@ -686,8 +711,7 @@ void FCameraRigAssetBuilder::BuildInterfaceParameters()
 			BlendableParameter->PrivateVariable = nullptr;
 		}
 
-		BlendableParameter->PrivateVariable = CreatePrivateVariable(
-				CameraRig, BlendableParameter->InterfaceParameterName, BlendableParameter->ParameterType);
+		BlendableParameter->PrivateVariable = CreatePrivateVariable(CameraRig, BlendableParameter);
 	}
 
 	for (auto It = CameraRig->Interface.DataParameters.CreateIterator(); It; ++It)

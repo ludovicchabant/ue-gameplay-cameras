@@ -14,6 +14,7 @@
 #include "ToolMenus.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -32,6 +33,7 @@ namespace UE::Cameras
 static const FName ParameterTypeColumn(TEXT("ParameterType"));
 static const FName ParameterNameColumn(TEXT("ParameterName"));
 static const FName ParameterMessageColumn(TEXT("ParameterMessage"));
+static const FName ParameterIsPreBlendedColumn(TEXT("ParameterIsPreBlended"));
 
 /**
  * List entry for any interface parameter panel.
@@ -165,6 +167,12 @@ protected:
 					.Schema(K2Schema)
 					.bAllowArrays(false)
 				];
+		}
+		else if (InColumnName == ParameterIsPreBlendedColumn)
+		{
+			return SNew(SCheckBox)
+				.IsChecked(this, &SCameraRigBlendableParameterTableRow::IsBlendableParameterPreBlended)
+				.OnCheckStateChanged(this, &SCameraRigBlendableParameterTableRow::OnBlendableParameterPreBlendedChanged);
 		}
 
 		return SCameraRigInterfaceParameterTableRowBase<UCameraRigBlendableParameter>::GenerateWidgetForColumn(InColumnName);
@@ -342,6 +350,23 @@ protected:
 
 			Item->Modify();
 			Item->ParameterType = NewParameterType;
+		}
+	}
+
+	ECheckBoxState IsBlendableParameterPreBlended() const
+	{
+		return Item->bIsPreBlended ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+	}
+	
+	void OnBlendableParameterPreBlendedChanged(ECheckBoxState CheckState)
+	{
+		const bool bIsPreBlended = (CheckState == ECheckBoxState::Checked);
+		if (Item->bIsPreBlended != bIsPreBlended)
+		{
+			const FScopedTransaction Transaction(LOCTEXT("ChangeBlendableParameterIsPreBlended", "Change Blendable Parameter Pre-Blending"));
+
+			Item->Modify();
+			Item->bIsPreBlended = bIsPreBlended;
 		}
 	}
 
@@ -649,6 +674,10 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 					+SHeaderRow::Column(ParameterNameColumn)
 					.FillWidth(0.5f)
 					.DefaultLabel(LOCTEXT("ParameterNameColumnLabel", "Name"))
+
+					+SHeaderRow::Column(ParameterIsPreBlendedColumn)
+					.ManualWidth(60)
+					.DefaultLabel(LOCTEXT("ParameterIsPreBlendedColumnLabel", "Pre-Blend"))
 
 					+SHeaderRow::Column(ParameterMessageColumn)
 					.FillWidth(0.2f)
