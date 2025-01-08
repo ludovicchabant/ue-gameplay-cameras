@@ -86,7 +86,7 @@ void ApplyDataParameterOverride(
 
 	// Write the override value into the context data table.
 	FCameraContextDataID ParameterDataID = DataParameter->PrivateDataID;
-	ContextDataTable.SetData(ParameterDataID, ParameterValue);
+	ContextDataTable.SetStructViewData(ParameterDataID, ParameterValue);
 }
 
 }  // namespace Internal

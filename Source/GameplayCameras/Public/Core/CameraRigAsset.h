@@ -237,6 +237,7 @@ public:
 	
 	/** Finds an exposed parameter by name. */
 	GAMEPLAYCAMERAS_API UCameraRigBlendableParameter* FindBlendableParameterByName(const FString& ParameterName) const;
+	GAMEPLAYCAMERAS_API UCameraRigDataParameter* FindDataParameterByName(const FString& ParameterName) const;
 
 	/** Finds an exposed parameter by Guid. */
 	GAMEPLAYCAMERAS_API UCameraRigBlendableParameter* FindBlendableParameterByGuid(const FGuid& ParameterGuid) const;

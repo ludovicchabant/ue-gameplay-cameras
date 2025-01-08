@@ -50,16 +50,42 @@ public:
 
 	// Getter methods.
 
-	template<typename DataType>
-	const DataType* GetData(FCameraContextDataID InID) const;
+	const FName& GetNameData(FCameraContextDataID InID) const;
+	const FString& GetStringData(FCameraContextDataID InID) const;
+	uint8 GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const;
+	FConstStructView GetStructViewData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
+	FInstancedStruct GetInstancedStructData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
+	UObject* GetObjectData(FCameraContextDataID InID) const;
+	UClass* GetClassData(FCameraContextDataID InID) const;
+	
+	template<typename EnumType>
+	EnumType GetEnumData(FCameraContextDataID InID) const;
+
+	template<typename StructType>
+	const StructType& GetStructData(FCameraContextDataID InID) const;
+
+	template<typename ObjectClass>
+	ObjectClass* GetObjectData(FCameraContextDataID InID) const;
+
+	template<typename BaseClass>
+	TSubclassOf<BaseClass> GetClassData(FCameraContextDataID InID) const;
 
 	// Setter methods.
 
-	template<typename DataType>
-	void SetData(FCameraContextDataID InID, const DataType& InData);
+	void SetNameData(FCameraContextDataID InID, const FName& InData);
+	void SetStringData(FCameraContextDataID InID, const FString& InData);
+	void SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint8 InData);
+	void SetObjectData(FCameraContextDataID InID, UObject* InData);
+	void SetClassData(FCameraContextDataID InID, UClass* InData);
 
-	void SetData(FCameraContextDataID InID, const FStructView& InData);
-	void SetData(FCameraContextDataID InID, const FInstancedStruct& InData);
+	template<typename EnumType>
+	void SetEnumData(FCameraContextDataID InID, EnumType InData);
+
+	template<typename StructType>
+	void SetStructData(FCameraContextDataID InID, const StructType& InData);
+
+	void SetStructViewData(FCameraContextDataID InID, const FStructView& InData);
+	void SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData);
 
 public:
 
@@ -123,6 +149,12 @@ private:
 	void ReallocateBuffer(uint32 MinRequired = 0);
 	void DestroyBuffer();
 
+	template<typename StorageType>
+	const StorageType* GetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject) const;
+
+	template<typename StorageType>
+	bool SetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, const StorageType& InData);
+
 private:
 
 	TArray<FEntry> Entries;
@@ -139,29 +171,84 @@ private:
 
 ENUM_CLASS_FLAGS(FCameraContextDataTable::EEntryFlags)
 
-template<typename DataType>
-const DataType* FCameraContextDataTable::GetData(FCameraContextDataID InID) const
+template<typename EnumType>
+EnumType FCameraContextDataTable::GetEnumData(FCameraContextDataID InID) const
 {
-	const FEntry* Entry = FindEntry(InID);
-	if (Entry)
+	if (const uint8* Value = GetDataImpl<uint8>(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>()))
 	{
-		ensureMsgf(Entry->Type == DataType::StaticStruct(), TEXT("Data type mismatch!"));
-		const uint8* RawData = Memory + Entry->Offset;
-		return reinterpret_cast<const DataType*>(RawData);
+		return EnumType(*Value);
+	}
+	return EnumType();
+}
+
+template<typename StructType>
+const StructType& FCameraContextDataTable::GetStructData(FCameraContextDataID InID) const
+{
+	if (const StructType* Value = GetDataImpl<StructType>(InID, ECameraContextDataType::Struct, StructType::StaticStruct()))
+	{
+		return *Value;
+	}
+
+	static const StructType DefaultValue;
+	return DefaultValue;
+}
+
+template<typename ObjectClass>
+ObjectClass* FCameraContextDataTable::GetObjectData(FCameraContextDataID InID) const
+{
+	if (const TObjectPtr<UObject>* Value = GetDataImpl<TObjectPtr<UObject>>(InID, ECameraContextDataType::Object, nullptr))
+	{
+		return Cast<ObjectClass>(Value->Get());
 	}
 	return nullptr;
 }
 
-template<typename DataType>
-void FCameraContextDataTable::SetData(FCameraContextDataID InID, const DataType& InData)
+template<typename BaseClass>
+TSubclassOf<BaseClass> FCameraContextDataTable::GetClassData(FCameraContextDataID InID) const
+{
+	if (const TObjectPtr<UClass>* Value = GetDataImpl<TObjectPtr<UClass>>(InID, ECameraContextDataType::Class, nullptr))
+	{
+		return TSubclassOf<BaseClass>(Value->Get());
+	}
+	return nullptr;
+}
+
+template<typename EnumType>
+void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, EnumType InData)
+{
+	SetDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), InData);
+}
+
+template<typename StructType>
+void FCameraContextDataTable::SetStructData(FCameraContextDataID InID, const StructType& InData)
+{
+	SetDataImpl(InID, ECameraContextDataType::Struct, StructType::StaticStruct(), InData);
+}
+
+template<typename StorageType>
+const StorageType* FCameraContextDataTable::GetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject) const
 {
 	const FEntry* Entry = FindEntry(InID);
-	if (ensure(Entry))
+	if (Entry && Entry->Type == DataType && Entry->TypeObject == DataTypeObject)
 	{
-		ensureMsgf(Entry->Type == DataType::StaticStruct(), TEXT("Data type mismatch!"));
-		uint8* RawData = Memory + Entry->Offset;
-		*reinterpret_cast<DataType*>(RawData) = InData;
+		const uint8* RawData = Memory + Entry->Offset;
+		return reinterpret_cast<const StorageType*>(RawData);
 	}
+	return nullptr;
+}
+
+template<typename StorageType>
+bool FCameraContextDataTable::SetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, const StorageType& InData)
+{
+	FEntry* Entry = FindEntry(InID);
+	if (Entry && Entry->Type == DataType && Entry->TypeObject == DataTypeObject)
+	{
+		uint8* RawData = Memory + Entry->Offset;
+		*reinterpret_cast<StorageType*>(RawData) = InData;
+		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+		return true;
+	}
+	return false;
 }
 
 }  // namespace UE::Cameras

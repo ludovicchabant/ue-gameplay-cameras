@@ -46,15 +46,23 @@ public:
 protected:
 
 	static const FName CameraRigPinName;
-	static const FName CameraVariableTablePinName;
+	static const FName CameraNodeEvaluationResultPinName;
 
 	UEdGraphPin* GetCameraRigPin(TArrayView<UEdGraphPin* const>* InPinsToSearch = nullptr) const;
-	UEdGraphPin* GetCameraEvaluationResultPin() const;
-	void GetCameraRigParameterPins(TArray<UEdGraphPin*>& OutParameterPins) const;
-	bool IsCameraRigParameterPin(UEdGraphPin* Pin) const;
+	UEdGraphPin* GetCameraNodeEvaluationResultPin() const;
 	void CreatePinsForCameraRig(UCameraRigAsset* CameraRig, TArray<UEdGraphPin*>* CreatedPins = nullptr);
+	void FindBlendableParameterPins(TArray<UEdGraphPin*>& OutPins) const;
+	void FindDataParameterPins(TArray<UEdGraphPin*>& OutPins) const;
 
 	UCameraRigAsset* GetCameraRig(TArrayView<UEdGraphPin* const>* InPinsToSearch = nullptr) const;
 	void OnCameraRigChanged();
+
+private:
+
+	UPROPERTY()
+	TArray<FName> BlendableParameterPinNames;
+
+	UPROPERTY()
+	TArray<FName> DataParameterPinNames;
 };
 

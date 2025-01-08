@@ -322,6 +322,21 @@ AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubc
 	}
 }
 
+FBlueprintCameraNodeEvaluationResult UBlueprintCameraDirectorEvaluator::GetInitialContextResult() const
+{
+	if (EvaluationContext)
+	{
+		return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetInitialResult());
+	}
+	else
+	{
+		FFrame::KismetExecutionMessage(
+				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
+				ELogVerbosity::Error);
+		return FBlueprintCameraNodeEvaluationResult();
+	}
+}
+
 FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraPose() const
 {
 	if (EvaluationContext)

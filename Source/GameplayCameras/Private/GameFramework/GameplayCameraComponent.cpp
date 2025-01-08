@@ -179,6 +179,13 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 		return ErrorResult;\
 	}
 
+FBlueprintCameraNodeEvaluationResult UGameplayCameraComponent::GetInitialResult() const
+{
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial result", FBlueprintCameraNodeEvaluationResult());
+
+	return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetInitialResult());
+}
+
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
 {
 	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial camera pose", FBlueprintCameraPose());

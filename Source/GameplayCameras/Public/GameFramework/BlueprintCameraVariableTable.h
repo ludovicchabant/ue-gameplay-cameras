@@ -48,8 +48,6 @@ public:
 private:
 
 	FCameraVariableTable* PrivateVariableTable = nullptr;
-
-	friend class UBlueprintCameraVariableTableFunctionLibrary;
 };
 
 /**

@@ -89,6 +89,16 @@ UCameraRigBlendableParameter* FCameraRigInterface::FindBlendableParameterByName(
 	return FoundItem ? *FoundItem : nullptr;
 }
 
+UCameraRigDataParameter* FCameraRigInterface::FindDataParameterByName(const FString& ParameterName) const
+{
+	const TObjectPtr<UCameraRigDataParameter>* FoundItem = DataParameters.FindByPredicate(
+			[&ParameterName](UCameraRigDataParameter* Item)
+			{
+				return Item->InterfaceParameterName == ParameterName;
+			});
+	return FoundItem ? *FoundItem : nullptr;
+}
+
 UCameraRigBlendableParameter* FCameraRigInterface::FindBlendableParameterByGuid(const FGuid& ParameterGuid) const
 {
 	const TObjectPtr<UCameraRigBlendableParameter>* FoundItem = BlendableParameters.FindByPredicate(

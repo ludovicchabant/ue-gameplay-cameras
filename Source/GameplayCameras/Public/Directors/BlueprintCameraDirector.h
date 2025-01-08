@@ -4,6 +4,7 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
+#include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
 #include "Templates/SubclassOf.h"
@@ -108,14 +109,14 @@ public:
 	 * Override this method in Blueprint to execute custom logic when this
 	 * camera director gets activated.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Activation")
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
 	void ActivateCameraDirector(const FBlueprintCameraDirectorActivateParams& Params);
 
 	/**
 	 * Override this method in Blueprint to execute custom logic when this
 	 * camera director gets deactivated.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Activation")
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
 	void DeactivateCameraDirector(const FBlueprintCameraDirectorDeactivateParams& Params);
 	
 	/**
@@ -128,40 +129,40 @@ public:
 public:
 
 	/** Activates the given camera rig prefab in the base layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the global layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the visual layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the base layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the global layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the visual layer. */
-	UFUNCTION(BlueprintCallable, Category="Activation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
 	void DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 public:
 
 	/** Specifies a camera rig to be active this frame. */
-	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation")
 	void ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance = false);
 
 	/**
 	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved
 	 * via the proxy table of the Blueprint camera director.
 	 */
-	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation")
 	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
 
 public:
@@ -171,27 +172,23 @@ public:
 	 * Handles the situation where the evaluation context is an actor component (like a
 	 * UGameplayCameraComponent) or an actor itself.
 	 */
-	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DeterminesOutputType="ActorClass"))
 	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
 
-	/**
-	 * Gets the initial evaluation context camera pose.
-	 */
-	UFUNCTION(BlueprintPure, Category="Evaluation")
+	/** Gets the shared evaluation context data. */
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Shared Evaluation Data"))
+	FBlueprintCameraNodeEvaluationResult GetInitialContextResult() const;
+
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation",
+			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
 	FBlueprintCameraPose GetInitialContextCameraPose() const;
 
-	/**
-	 * Sets the initial evaluation context camera pose.
-	 * WARNING: this will change the initial pose of ALL running camera rigs!
-	 */
-	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation",
+			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
 	void SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose);
 
-	/**
-	 * Gets the initial evaluation context camera variable table.
-	 * WARNING: setting variables here will affect ALL running camera rigs!
-	 */
-	UFUNCTION(BlueprintPure, Category="Evaluation")
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", 
+			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
 	FBlueprintCameraVariableTable GetInitialContextVariableTable() const;
 
 public:

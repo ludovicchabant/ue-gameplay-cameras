@@ -269,7 +269,106 @@ void FCameraContextDataTable::DestroyBuffer()
 	Used = 0;
 }
 
-void FCameraContextDataTable::SetData(FCameraContextDataID InID, const FStructView& InData)
+const FName& FCameraContextDataTable::GetNameData(FCameraContextDataID InID) const
+{
+	if (const FName* Value = GetDataImpl<FName>(InID, ECameraContextDataType::Name, nullptr))
+	{
+		return *Value;
+	}
+
+	static FName DefaultValue(NAME_None);
+	return DefaultValue;
+}
+
+const FString& FCameraContextDataTable::GetStringData(FCameraContextDataID InID) const
+{
+	if (const FString* Value = GetDataImpl<FString>(InID, ECameraContextDataType::Name, nullptr))
+	{
+		return *Value;
+	}
+
+	static FString DefaultValue;
+	return DefaultValue;
+}
+
+uint8 FCameraContextDataTable::GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const
+{
+	if (const uint8* Value = GetDataImpl<uint8>(InID, ECameraContextDataType::Enum, EnumType))
+	{
+		return *Value;
+	}
+	return 0;
+}
+
+FConstStructView FCameraContextDataTable::GetStructViewData(FCameraContextDataID InID, const UScriptStruct* StructType) const
+{
+	const uint8* RawData = TryGetData(InID, ECameraContextDataType::Struct, StructType);
+	if (RawData)
+	{
+		FConstStructView ReturnValue(StructType, RawData);
+		return ReturnValue;
+	}
+	return FStructView();
+}
+
+FInstancedStruct FCameraContextDataTable::GetInstancedStructData(FCameraContextDataID InID, const UScriptStruct* StructType) const
+{
+	const uint8* RawData = TryGetData(InID, ECameraContextDataType::Struct, StructType);
+	if (RawData)
+	{
+		FInstancedStruct ReturnValue;
+		ReturnValue.InitializeAs(StructType, RawData);
+		return ReturnValue;
+	}
+	return FInstancedStruct();
+}
+
+UObject* FCameraContextDataTable::GetObjectData(FCameraContextDataID InID) const
+{
+	if (const TObjectPtr<UObject>* Value = GetDataImpl<TObjectPtr<UObject>>(InID, ECameraContextDataType::Name, nullptr))
+	{
+		return Value->Get();
+	}
+	return nullptr;
+}
+
+UClass* FCameraContextDataTable::GetClassData(FCameraContextDataID InID) const
+{
+	if (const TObjectPtr<UClass>* Value = GetDataImpl<TObjectPtr<UClass>>(InID, ECameraContextDataType::Name, nullptr))
+	{
+		return Value->Get();
+	}
+	return nullptr;
+}
+
+void FCameraContextDataTable::SetNameData(FCameraContextDataID InID, const FName& InData)
+{
+	SetDataImpl(InID, ECameraContextDataType::Name, nullptr, InData);
+}
+
+void FCameraContextDataTable::SetStringData(FCameraContextDataID InID, const FString& InData)
+{
+	SetDataImpl(InID, ECameraContextDataType::String, nullptr, InData);
+}
+
+void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint8 InData)
+{
+	SetDataImpl(InID, ECameraContextDataType::Enum, EnumType, InData);
+}
+
+void FCameraContextDataTable::SetObjectData(FCameraContextDataID InID, UObject* InData)
+{
+	TObjectPtr<UObject> ActualData(InData);
+	SetDataImpl(InID, ECameraContextDataType::Object, nullptr, ActualData);
+}
+
+void FCameraContextDataTable::SetClassData(FCameraContextDataID InID, UClass* InData)
+{
+	TObjectPtr<UClass> ActualData(InData);
+	SetDataImpl(InID, ECameraContextDataType::Class, nullptr, ActualData);
+}
+
+void FCameraContextDataTable::SetStructViewData(FCameraContextDataID InID, const FStructView& InData)
 {
 	FEntry* Entry = FindEntry(InID);
 	if (ensure(Entry && Entry->Type == ECameraContextDataType::Struct && InData.GetScriptStruct() == Entry->TypeObject))
@@ -281,7 +380,7 @@ void FCameraContextDataTable::SetData(FCameraContextDataID InID, const FStructVi
 	}
 }
 
-void FCameraContextDataTable::SetData(FCameraContextDataID InID, const FInstancedStruct& InData)
+void FCameraContextDataTable::SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData)
 {
 	FEntry* Entry = FindEntry(InID);
 	if (ensure(Entry && Entry->Type == ECameraContextDataType::Struct && InData.GetScriptStruct() == Entry->TypeObject))
@@ -318,7 +417,7 @@ const uint8* FCameraContextDataTable::GetData(FCameraContextDataID DataID, ECame
 	const uint8* Data = TryGetData(DataID, ExpectedDataType, ExpectedDataTypeObject);
 	ensureMsgf(
 			Data, 
-			TEXT("Can't get camera context data (ID '%s') because it doesn't exist in the table."), 
+			TEXT("Can't get camera context data (ID '%s') because it doesn't exist in the table, or isn't of the expected data type."), 
 			*DataID.DataName.ToString());
 	return Data;
 }
@@ -328,7 +427,7 @@ const uint8* FCameraContextDataTable::TryGetData(FCameraContextDataID DataID, EC
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
-		if (ensure(Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject))
+		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
 		{
 			return Memory + Entry->Offset;
 		}
