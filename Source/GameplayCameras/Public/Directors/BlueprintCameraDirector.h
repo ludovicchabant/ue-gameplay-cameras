@@ -18,8 +18,6 @@ enum class ECameraRigLayer : uint8;
 namespace UE::Cameras
 {
 
-class FAutoResetCameraVariableService;
-
 /** Information about a persitent camera rig to be activated or deactivated. */
 struct FBlueprintPersistentCameraRigInfo
 {
@@ -220,9 +218,6 @@ private:
 
 	/** The current evaluation context. */
 	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
-
-	/** The variable auto-reset service, for using when returning the variable table. */
-	TSharedPtr<UE::Cameras::FAutoResetCameraVariableService> VariableAutoResetService;
 };
 
 /**

@@ -419,10 +419,6 @@ void AddCameraVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVa
 	{
 		FCameraVariableDefinition VariableDefinition = Variable->GetVariableDefinition();
 		AllocationInfo.VariableDefinitions.Add(VariableDefinition);
-		if (Variable->bAutoReset)
-		{
-			AllocationInfo.AutoResetVariables.Add(Variable);
-		}
 	}
 }
 

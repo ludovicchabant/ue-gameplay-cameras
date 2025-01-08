@@ -5,7 +5,6 @@
 #include "Core/CameraEvaluationService.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
-#include "Services/AutoResetCameraVariableService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(RootCameraNode)
 
@@ -39,14 +38,11 @@ void FRootCameraNodeEvaluator::BuildSingleCameraRigHierarchy(const FSingleCamera
 
 void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Before we do the actual evaluation we need to ask the system to auto-reset
-	// any camera variable that needs auto-resetting. Otherwise, we might end up with
-	// an update result that isn't representative of what would happen normally.
-	if (FCameraSystemEvaluator* Evaluator = Params.EvaluationParams.Evaluator)
-	{
-		// TODO: we might have to reset variables on the context's initial result too?
-		Evaluator->VariableAutoResetService->PerformVariableResets(OutResult.VariableTable);
-	}
+	// Before we do the actual evaluation we need to auto-reset any camera variable 
+	// that needs auto-resetting. Otherwise, we might end up with an update result 
+	// that isn't representative of what would happen normally.
+	// TODO: we might have to reset variables on the context's initial result too?
+	OutResult.VariableTable.AutoResetValues();
 
 	OnRunSingleCameraRig(Params, OutResult);
 }

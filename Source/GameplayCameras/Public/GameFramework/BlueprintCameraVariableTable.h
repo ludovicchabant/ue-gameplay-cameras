@@ -23,7 +23,6 @@ namespace UE::Cameras
 {
 
 class FCameraVariableTable;
-class FAutoResetCameraVariableService;
 
 }  // namespace UE::Cameras
 
@@ -38,7 +37,7 @@ public:
 	using FCameraVariableTable = UE::Cameras::FCameraVariableTable;
 
 	FBlueprintCameraVariableTable();
-	FBlueprintCameraVariableTable(FCameraVariableTable* InVariableTable, TSharedPtr<UE::Cameras::FAutoResetCameraVariableService> InVariableAutoResetService);
+	FBlueprintCameraVariableTable(FCameraVariableTable* InVariableTable);
 
 	/** Gets the underlying variable table. */
 	FCameraVariableTable* GetVariableTable() const { return PrivateVariableTable; }
@@ -49,7 +48,6 @@ public:
 private:
 
 	FCameraVariableTable* PrivateVariableTable = nullptr;
-	TSharedPtr<UE::Cameras::FAutoResetCameraVariableService> VariableAutoResetService;
 
 	friend class UBlueprintCameraVariableTableFunctionLibrary;
 };

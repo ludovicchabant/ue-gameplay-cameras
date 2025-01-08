@@ -62,7 +62,7 @@ public:
 
 	/** Sets the initial camera pose for this component's camera evaluation context. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	GAMEPLAYCAMERAS_API void SetInitialPose(const FBlueprintCameraPose& CameraPose);
+	GAMEPLAYCAMERAS_API bool SetInitialPose(const FBlueprintCameraPose& CameraPose);
 
 	/** Gets the initial camera variable table for this component's camera evaluation context. */
 	UFUNCTION(BlueprintPure, Category=Camera)

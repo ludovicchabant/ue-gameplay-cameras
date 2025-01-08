@@ -15,7 +15,6 @@
 #include "Debug/CameraSystemTrace.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCamerasSettings.h"
-#include "Services/AutoResetCameraVariableService.h"
 #include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
@@ -90,8 +89,6 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 		RootEvaluator->Initialize(InitParams, RootNodeResult);
 	}
 
-	VariableAutoResetService = MakeShared<FAutoResetCameraVariableService>();
-	RegisterEvaluationService(VariableAutoResetService.ToSharedRef());
 	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
 
 	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
@@ -201,13 +198,10 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	// Reset our result' flags.
 	RootNodeResult.CameraPose.ClearAllChangedFlags();
 	RootNodeResult.VariableTable.ClearAllWrittenThisFrameFlags();
+	RootNodeResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
 
-	// Run the variable auto-reset service here, because the other (third party) services
-	// should get the reset variable values.
-	if (VariableAutoResetService)
-	{
-		VariableAutoResetService->PerformVariableResets(RootNodeResult.VariableTable, ContextStack);
-	}
+	// Reset variables and data.
+	RootNodeResult.VariableTable.AutoResetValues();
 
 	// Pre-update all services.
 	PreUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
@@ -297,6 +291,11 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	// Harvest the result.
 	Result.Reset(RootNodeResult);
 
+	// Generate debug information if needed.
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	BuildDebugBlocksIfNeeded();
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 	// End of update things...
 	ContextStack.OnEndCameraSystemUpdate();
 }
@@ -359,24 +358,27 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
-void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& Params)
+bool FCameraSystemEvaluator::IsDebugTraceEnabled()
 {
 #if UE_GAMEPLAY_CAMERAS_TRACE
-	const bool bTraceEnabled = FCameraSystemTrace::IsTraceEnabled();
+	return FCameraSystemTrace::IsTraceEnabled();
 #else
-	const bool bTraceEnabled = false;
+	return false;
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
-	if (!bTraceEnabled && !GGameplayCamerasDebugEnable)
-	{
-		return;
-	}
+}
 
-#if UE_GAMEPLAY_CAMERAS_TRACE
-	if (FCameraSystemTrace::IsTraceReplay())
+bool FCameraSystemEvaluator::ShouldBuildOrDrawDebugBlocks()
+{
+	const bool bTraceEnabled = IsDebugTraceEnabled();
+	return bTraceEnabled || GGameplayCamerasDebugEnable;
+}
+
+void FCameraSystemEvaluator::BuildDebugBlocksIfNeeded()
+{
+	if (!ShouldBuildOrDrawDebugBlocks())
 	{
 		return;
 	}
-#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
 	// Clear previous frame's debug info and make room for this frame's.
 	DebugBlockStorage.DestroyDebugBlocks();
@@ -387,12 +389,20 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	FCameraDebugBlockBuildParams BuildParams;
 	FCameraDebugBlockBuilder DebugBlockBuilder(DebugBlockStorage, *RootDebugBlock);
 	RootDebugBlock->BuildDebugBlocks(*this, BuildParams, DebugBlockBuilder);
+}
+
+void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& Params)
+{
+	if (!ShouldBuildOrDrawDebugBlocks() || !RootDebugBlock)
+	{
+		return;
+	}
 
 	UObject* Owner = WeakOwner.Get();
 	UWorld* OwnerWorld = Owner ? Owner->GetWorld() : nullptr;
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
-	if (bTraceEnabled)
+	if (IsDebugTraceEnabled())
 	{
 		FCameraSystemTrace::TraceEvaluation(OwnerWorld, Result, *RootDebugBlock);
 	}

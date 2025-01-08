@@ -179,6 +179,8 @@ public:
 	bool IsValueWrittenThisFrame(FCameraVariableID VariableID) const;
 	void ClearAllWrittenThisFrameFlags();
 
+	void AutoResetValues();
+
 	bool TryGetVariableDefinition(FCameraVariableID VariableID, FCameraVariableDefinition& OutVariableDefinition) const;
 
 	void Serialize(FArchive& Ar);
@@ -210,8 +212,9 @@ private:
 		None = 0,
 		Private = 1 << 0,
 		Input = 1 << 1,
-		Written = 1 << 2,
-		WrittenThisFrame = 1 << 3
+		AutoReset = 1 << 2,
+		Written = 1 << 3,
+		WrittenThisFrame = 1 << 4
 	};
 	FRIEND_ENUM_CLASS_FLAGS(EEntryFlags)
 

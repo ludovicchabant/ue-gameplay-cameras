@@ -23,7 +23,6 @@ struct FMinimalViewInfo;
 namespace UE::Cameras
 {
 
-class FAutoResetCameraVariableService;
 class FCameraEvaluationContext;
 class FCameraEvaluationService;
 class FCameraRigCombinationRegistry;
@@ -179,6 +178,12 @@ private:
 
 	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	static bool IsDebugTraceEnabled();
+	static bool ShouldBuildOrDrawDebugBlocks();
+	void BuildDebugBlocksIfNeeded();
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	/** The owner (if any) of this camera system evaluator. */
@@ -192,9 +197,6 @@ private:
 
 	/** The list of evaluation services. */
 	TArray<TSharedPtr<FCameraEvaluationService>> EvaluationServices;
-
-	/** Quick access to the variable auto-reset service. */
-	TSharedPtr<FAutoResetCameraVariableService> VariableAutoResetService;
 
 	/** Registry for programmatically building combinations of camera rigs. */
 	TSharedPtr<FCameraRigCombinationRegistry> CameraRigCombinationRegistry;

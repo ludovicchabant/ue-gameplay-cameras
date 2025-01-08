@@ -64,6 +64,13 @@ void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collect
 	}
 }
 
+void FCameraEvaluationContext::OnEndCameraSystemUpdate()
+{
+	InitialResult.VariableTable.AutoResetValues();
+	InitialResult.VariableTable.ClearAllWrittenThisFrameFlags();
+	InitialResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
+}
+
 void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 {
 	if (DirectorEvaluator == nullptr)

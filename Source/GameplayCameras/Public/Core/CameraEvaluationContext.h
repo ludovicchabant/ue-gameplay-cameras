@@ -119,6 +119,8 @@ public:
 	// Internal API.
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
+	void OnEndCameraSystemUpdate();
+
 	bool RegisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
 	bool UnregisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
 

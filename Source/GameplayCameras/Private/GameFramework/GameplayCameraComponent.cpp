@@ -14,7 +14,6 @@
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameplayCameras.h"
 #include "Kismet/GameplayStatics.h"
-#include "Services/AutoResetCameraVariableService.h"
 #include "UObject/ConstructorHelpers.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
@@ -168,62 +167,45 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 	Activate();
 }
 
+#define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT(ErrorMsg, ErrorResult)\
+	using namespace UE::Cameras;\
+	if (!EvaluationContext)\
+	{\
+		FFrame::KismetExecutionMessage(\
+				*FString::Format(\
+					TEXT(#ErrorResult " on Gameplay Camera component '{0}': it isn't active."),\
+					{ *GetNameSafe(this) }),\
+				ELogVerbosity::Error);\
+		return ErrorResult;\
+	}
+
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
 {
-	if (EvaluationContext)
-	{
-		return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				*FString::Format(
-					TEXT("Can't get initial camera pose on Gameplay Camera component '{0}': it isn't active."),
-					{ *GetNameSafe(this) }),
-				ELogVerbosity::Error);
-		return FBlueprintCameraPose();
-	}
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial camera pose", FBlueprintCameraPose());
+
+	return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
 }
 
-void UGameplayCameraComponent::SetInitialPose(const FBlueprintCameraPose& CameraPose)
+bool UGameplayCameraComponent::SetInitialPose(const FBlueprintCameraPose& CameraPose)
 {
-	if (EvaluationContext)
-	{
-		FCameraPose InitialPose = EvaluationContext->GetInitialResult().CameraPose;
-		CameraPose.ApplyTo(InitialPose);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				*FString::Format(
-					TEXT("Can't set initial camera pose on Gameplay Camera component '{0}': it isn't active."),
-					{ GetNameSafe(this) }),
-				ELogVerbosity::Error);
-	}
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't set initial camera pose", false);
+
+	FCameraPose InitialPose = EvaluationContext->GetInitialResult().CameraPose;
+	CameraPose.ApplyTo(InitialPose);
+	return true;
 }
 
 FBlueprintCameraVariableTable UGameplayCameraComponent::GetInitialVariableTable() const
 {
 	using namespace UE::Cameras;
 
-	if (EvaluationContext)
-	{
-		FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
-		FCameraSystemEvaluator* CameraSystemEvaluator = EvaluationContext->GetCameraSystemEvaluator();
-		TSharedPtr<FAutoResetCameraVariableService> VariableAutoResetService = 
-			CameraSystemEvaluator->FindEvaluationService<FAutoResetCameraVariableService>();
-		return FBlueprintCameraVariableTable(&VariableTable, VariableAutoResetService);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				*FString::Format(
-					TEXT("Can't get initial camera variable table on Gameplay Camera component '{0}': it isn't active."),
-					{ GetNameSafe(this) }),
-				ELogVerbosity::Error);
-		return FBlueprintCameraVariableTable();
-	}
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial camera variable table", FBlueprintCameraVariableTable());
+
+	FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
+	return FBlueprintCameraVariableTable(&VariableTable);
 }
+
+#undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
 
 void UGameplayCameraComponent::OnRegister()
 {

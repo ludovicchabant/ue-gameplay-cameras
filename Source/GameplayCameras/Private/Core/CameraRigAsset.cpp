@@ -17,7 +17,6 @@ void FCameraRigAllocationInfo::Append(const FCameraRigAllocationInfo& OtherAlloc
 	EvaluatorInfo.TotalSizeof = Align(EvaluatorInfo.TotalSizeof, OtherEvaluatorInfo.MaxAlignof) + OtherEvaluatorInfo.TotalSizeof;
 
 	const FCameraVariableTableAllocationInfo& OtherVariableTableInfo(OtherAllocationInfo.VariableTableInfo);
-	VariableTableInfo.AutoResetVariables.Append(OtherVariableTableInfo.AutoResetVariables);
 	VariableTableInfo.VariableDefinitions.Append(OtherVariableTableInfo.VariableDefinitions);
 
 	const FCameraContextDataAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);

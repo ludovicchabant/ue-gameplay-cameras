@@ -276,18 +276,6 @@ FString FCameraSystemTrace::ChannelName("CameraSystemChannel");
 FString FCameraSystemTrace::LoggerName("CameraSystem");
 FString FCameraSystemTrace::EvaluationEventName("CameraSystemEvaluation");
 
-bool FCameraSystemTrace::bIsReplaying(false);
-
-bool FCameraSystemTrace::IsTraceReplay()
-{
-	return bIsReplaying;
-}
-
-void FCameraSystemTrace::SetTraceReplay(bool bInIsReplaying)
-{
-	bIsReplaying = bInIsReplaying;
-}
-
 bool FCameraSystemTrace::IsTraceEnabled()
 {
 	return GGameplayCamerasDebugTrace || UE_TRACE_CHANNELEXPR_IS_ENABLED(CameraSystemChannel);

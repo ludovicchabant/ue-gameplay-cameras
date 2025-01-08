@@ -145,6 +145,14 @@ struct FCameraVariableDefinition
 	UPROPERTY()
 	bool bIsInput = false;
 
+	/**
+	 * Whether the variable should auto-reset to an "unset" state after every
+	 * evaluation. Doing so resets it to its default value if bound to a
+	 * camera variable or camera parameter, or to a non-existent state otherwise.
+	 */
+	UPROPERTY()
+	bool bAutoReset = false;
+
 #if WITH_EDITORONLY_DATA
 	/** The name of the variable, for debugging purposes. */
 	UPROPERTY()
@@ -202,10 +210,6 @@ struct FCameraVariableTableAllocationInfo
 	/** The list of variables that should be allocated in a table. */
 	UPROPERTY()
 	TArray<FCameraVariableDefinition> VariableDefinitions;
-
-	/** The list of variables that should be auto-reset to their default value every frame. */
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraVariableAsset>> AutoResetVariables;
 
 	/**Combines the given allocation info with this one. */
 	GAMEPLAYCAMERAS_API void Combine(const FCameraVariableTableAllocationInfo& OtherInfo);

@@ -160,7 +160,7 @@ void FCameraEvaluationContextStack::OnEndCameraSystemUpdate()
 	while (!ContextsToVisit.IsEmpty())
 	{
 		TSharedPtr<FCameraEvaluationContext> Context = ContextsToVisit.Pop();
-		Context->GetInitialResult().VariableTable.ClearAllWrittenThisFrameFlags();
+		Context->OnEndCameraSystemUpdate();
 
 		TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts(Context->GetChildrenContexts());
 		for (TSharedPtr<FCameraEvaluationContext> ChildContext : ReverseIterate(ChildrenContexts))

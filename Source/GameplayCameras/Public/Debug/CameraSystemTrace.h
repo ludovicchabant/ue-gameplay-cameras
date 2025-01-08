@@ -31,21 +31,12 @@ public:
 
 public:
 
-	/** Gets whether we are currently replaying traced information (such as with rewind debugger). */
-	GAMEPLAYCAMERAS_API static bool IsTraceReplay();
-	/** Sets whether we are currently replaying traced information (such as with rewind debugger). */
-	GAMEPLAYCAMERAS_API static void SetTraceReplay(bool bInIsReplaying);
-
 	/** Returns whether tracing of camera system evaluation is enabled. */
 	GAMEPLAYCAMERAS_API static bool IsTraceEnabled();
 	/** Records one frame of camera system evaluation. */
 	GAMEPLAYCAMERAS_API static void TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationResult& InResult, FCameraDebugBlock& InRootDebugBlock);
 	/** Reads back one frame of camera system evaluation. */
 	GAMEPLAYCAMERAS_API static FCameraDebugBlock* ReadEvaluationTrace(TArray<uint8> InSerializedBlocks, FCameraDebugBlockStorage& InStorage);
-
-private:
-
-	static bool bIsReplaying;
 };
 
 }  // namespace UE::Cameras

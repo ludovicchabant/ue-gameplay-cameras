@@ -101,6 +101,10 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 		{
 			NewEntry.Flags |= EEntryFlags::Input;
 		}
+		if (VariableDefinition.bAutoReset)
+		{
+			NewEntry.Flags |= EEntryFlags::AutoReset;
+		}
 #if WITH_EDITORONLY_DATA
 		NewEntry.DebugName = VariableDefinition.VariableName;
 #endif
@@ -162,6 +166,10 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	if (VariableDefinition.bIsInput)
 	{
 		NewEntry.Flags |= EEntryFlags::Input;
+	}
+	if (VariableDefinition.bAutoReset)
+	{
+		NewEntry.Flags |= EEntryFlags::AutoReset;
 	}
 #if WITH_EDITORONLY_DATA
 	NewEntry.DebugName = VariableDefinition.VariableName;
@@ -330,6 +338,17 @@ void FCameraVariableTable::ClearAllWrittenThisFrameFlags()
 	for (FEntry& Entry : Entries)
 	{
 		EnumRemoveFlags(Entry.Flags, EEntryFlags::WrittenThisFrame);
+	}
+}
+
+void FCameraVariableTable::AutoResetValues()
+{
+	for (FEntry& Entry : Entries)
+	{
+		if (EnumHasAnyFlags(Entry.Flags, EEntryFlags::AutoReset))
+		{
+			EnumRemoveFlags(Entry.Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+		}
 	}
 }
 
@@ -641,18 +660,10 @@ void FCameraVariableTableAllocationInfo::Combine(const FCameraVariableTableAlloc
 			ensure(KnownVariableDefinition == OtherVariableDefinition);
 		}
 	}
-
-	TSet<TObjectPtr<UCameraVariableAsset>> KnownAutoResetVariables(AutoResetVariables);
-	for (UCameraVariableAsset* OtherAutoResetVariable : OtherInfo.AutoResetVariables)
-	{
-		KnownAutoResetVariables.Add(OtherAutoResetVariable);
-	}
-	AutoResetVariables = KnownAutoResetVariables.Array();
 }
 
 bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B)
 {
-	return A.VariableDefinitions == B.VariableDefinitions
-		&& A.AutoResetVariables == B.AutoResetVariables;
+	return A.VariableDefinitions == B.VariableDefinitions;
 }
 

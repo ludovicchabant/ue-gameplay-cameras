@@ -22,6 +22,7 @@ FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
 	VariableDefinition.VariableType = GetVariableType();
 	VariableDefinition.bIsPrivate = bIsPrivate;
 	VariableDefinition.bIsInput = bIsInput;
+	VariableDefinition.bAutoReset = bAutoReset;
 #if WITH_EDITORONLY_DATA
 	VariableDefinition.VariableName = GetDisplayName();
 #endif
