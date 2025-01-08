@@ -28,11 +28,7 @@ public:
 	TSharedPtr<FUICommandInfo> ShowCameraRigs;
 	TSharedPtr<FUICommandInfo> ShowSharedTransitions;
 
-	TSharedPtr<FUICommandInfo> EditCameraRig;
-
-	TSharedPtr<FUICommandInfo> AddCameraRig;
-	TSharedPtr<FUICommandInfo> DeleteCameraRig;
-	TSharedPtr<FUICommandInfo> RenameCameraRig;
+	TSharedPtr<FUICommandInfo> ChangeCameraDirector;
 
 	TSharedPtr<FUICommandInfo> ShowMessages;
 	TSharedPtr<FUICommandInfo> FindInCamera;

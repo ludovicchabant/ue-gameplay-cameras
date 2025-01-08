@@ -17,12 +17,14 @@
 #include "Framework/Docking/TabManager.h"
 #include "GameplayCamerasEditorSettings.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
+#include "Helpers/CameraDirectorClassPicker.h"
 #include "Helpers/ObjectReferenceFinder.h"
 #include "IAssetTools.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "PropertyEditorModule.h"
+#include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
 #include "Toolkits/BuildButtonToolkit.h"
@@ -50,6 +52,8 @@ FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwnin
 	, BuildButtonToolkit(MakeShared<FBuildButtonToolkit>(CameraAsset))
 	, BuildLogToolkit(MakeShared<FCameraBuildLogToolkit>())
 {
+	CameraAsset->EventHandlers.Register(CameraAssetEventHandler, this);
+
 	StandardLayout->AddBottomTab(SearchTabId);
 	StandardLayout->AddBottomTab(MessagesTabId);
 
@@ -201,27 +205,20 @@ void FCameraAssetEditorToolkit::InitToolMenuContext(FToolMenuContext& MenuContex
 
 void FCameraAssetEditorToolkit::PostInitAssetEditor()
 {
+	TSharedPtr<FExtender> MenuExtender = MakeShared<FExtender>();
+	{
+		MenuExtender->AddMenuExtension(
+			"AssetEditorActions",
+			EExtensionHook::After,
+			GetToolkitCommands(),
+			FMenuExtensionDelegate::CreateSP(this, &FCameraAssetEditorToolkit::FillCameraMenu));
+	}
+	AddMenuExtender(MenuExtender);
+
 	Settings = GetMutableDefault<UGameplayCamerasEditorSettings>();
 
-	IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
-
 	const FName CameraDirectorModeName = FCameraDirectorAssetEditorMode::ModeName;
-	{
-		TSharedPtr<FCameraDirectorAssetEditorMode> CameraDirectorEditor;
-		for (const FOnCreateCameraDirectorAssetEditorMode& EditorCreator : GameplayCamerasEditorModule.GetCameraDirectorEditorCreators())
-		{
-			CameraDirectorEditor = EditorCreator.Execute(CameraAsset);
-			if (CameraDirectorEditor)
-			{
-				break;
-			}
-		}
-		if (!CameraDirectorEditor)
-		{
-			CameraDirectorEditor = MakeShared<FCameraDirectorAssetEditorMode>(CameraAsset);
-		}
-		AddEditorMode(CameraDirectorEditor.ToSharedRef());
-	}
+	AddEditorMode(CreateCameraDirectorAssetEditorMode().ToSharedRef());
 
 	const FName SharedTransitionsModeName = FCameraSharedTransitionsAssetEditorMode::ModeName;
 	AddEditorMode(MakeShared<FCameraSharedTransitionsAssetEditorMode>(CameraAsset));
@@ -238,6 +235,10 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 			FCanExecuteAction::CreateSP(this, &FCameraAssetEditorToolkit::CanSetEditorMode, Pair.Key),
 			FIsActionChecked::CreateSP(this, &FCameraAssetEditorToolkit::IsEditorMode, Pair.Key));
 	}
+
+	ToolkitCommands->MapAction(
+		Commands.ChangeCameraDirector,
+		FExecuteAction::CreateSP(this, &FCameraAssetEditorToolkit::OnChangeCameraDirector));
 
 	ToolkitCommands->MapAction(
 		Commands.Build,
@@ -259,6 +260,35 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 	UpgradeLegacyCameraAssets();
 }
 
+TSharedPtr<FAssetEditorMode> FCameraAssetEditorToolkit::CreateCameraDirectorAssetEditorMode()
+{
+	IGameplayCamerasEditorModule& GameplayCamerasEditorModule = IGameplayCamerasEditorModule::Get();
+
+	TSharedPtr<FCameraDirectorAssetEditorMode> CameraDirectorEditor;
+	for (const FOnCreateCameraDirectorAssetEditorMode& EditorCreator : GameplayCamerasEditorModule.GetCameraDirectorEditorCreators())
+	{
+		CameraDirectorEditor = EditorCreator.Execute(CameraAsset);
+		if (CameraDirectorEditor)
+		{
+			break;
+		}
+	}
+	if (!CameraDirectorEditor)
+	{
+		CameraDirectorEditor = MakeShared<FCameraDirectorAssetEditorMode>(CameraAsset);
+	}
+	return CameraDirectorEditor;
+}
+
+void FCameraAssetEditorToolkit::FillCameraMenu(FMenuBuilder& MenuBuilder)
+{
+	const FCameraAssetEditorCommands& Commands = FCameraAssetEditorCommands::Get();
+
+	MenuBuilder.BeginSection(TEXT("Camera"), LOCTEXT("CameraMenuTitle", "Camera"));
+	MenuBuilder.AddMenuEntry(Commands.ChangeCameraDirector);
+	MenuBuilder.EndSection();
+}
+
 void FCameraAssetEditorToolkit::PostRegenerateMenusAndToolbars()
 {
 	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraAsset::StaticClass()));
@@ -268,6 +298,34 @@ void FCameraAssetEditorToolkit::OnEditorToolkitModeActivated()
 {
 	Settings->LastCameraAssetToolkitModeName = GetCurrentEditorModeName();
 	Settings->SaveConfig();
+}
+
+void FCameraAssetEditorToolkit::OnCameraDirectorChanged(UCameraAsset* InCameraAsset, const TCameraPropertyChangedEvent<UCameraDirector*>& Event)
+{
+	const FName CameraDirectorModeName = FCameraDirectorAssetEditorMode::ModeName;
+
+	RemoveEditorMode(CameraDirectorModeName);
+
+	AddEditorMode(CreateCameraDirectorAssetEditorMode().ToSharedRef());
+
+	if (GetCurrentEditorModeName().IsNone())
+	{
+		SetEditorMode(CameraDirectorModeName);
+	}
+}
+
+void FCameraAssetEditorToolkit::OnChangeCameraDirector()
+{
+	FCameraDirectorClassPicker Picker;
+	TSubclassOf<UCameraDirector> ChosenClass;
+	const bool bPressedOk = Picker.PickCameraDirectorClass(ChosenClass);
+	if (bPressedOk && ChosenClass != CameraAsset->GetCameraDirector()->GetClass())
+	{
+		const FScopedTransaction Transaction(LOCTEXT("ChangeCameraDirector", "Change Camera Director"));
+
+		UCameraDirector* NewCameraDirector = NewObject<UCameraDirector>(CameraAsset, ChosenClass, NAME_None, RF_Transactional);
+		CameraAsset->SetCameraDirector(NewCameraDirector);
+	}
 }
 
 void FCameraAssetEditorToolkit::OnBuild()

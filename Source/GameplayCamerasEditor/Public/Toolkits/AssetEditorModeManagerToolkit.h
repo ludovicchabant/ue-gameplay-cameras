@@ -38,6 +38,8 @@ protected:
 protected:
 
 	void AddEditorMode(TSharedRef<FAssetEditorMode> InMode);
+	void RemoveEditorMode(TSharedRef<FAssetEditorMode> InMode);
+	void RemoveEditorMode(FName InModeName);
 
 	TSharedPtr<FAssetEditorMode> GetEditorMode(FName InModeName) const;
 	void GetEditorModes(TArray<TSharedPtr<FAssetEditorMode>>& OutModes) const;

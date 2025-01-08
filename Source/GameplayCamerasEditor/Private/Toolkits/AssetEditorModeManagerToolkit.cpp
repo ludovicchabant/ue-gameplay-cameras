@@ -41,6 +41,29 @@ void FAssetEditorModeManagerToolkit::AddEditorMode(TSharedRef<FAssetEditorMode> 
 	EditorModes.Add(InMode->GetModeName(), InMode);
 }
 
+void FAssetEditorModeManagerToolkit::RemoveEditorMode(TSharedRef<FAssetEditorMode> InMode)
+{
+	RemoveEditorMode(InMode->GetModeName());
+}
+
+void FAssetEditorModeManagerToolkit::RemoveEditorMode(FName InModeName)
+{
+	TSharedPtr<FAssetEditorMode> ModeToRemove = EditorModes.FindRef(InModeName);
+	if (!ensureMsgf(
+				ModeToRemove,
+				TEXT("No editor mode named '%s' was added!"), *InModeName.ToString()))
+	{
+		return;
+	}
+
+	if (CurrentEditorMode == ModeToRemove)
+	{
+		SetEditorMode(NAME_None);
+	}
+
+	EditorModes.Remove(InModeName);
+}
+
 void FAssetEditorModeManagerToolkit::GetEditorModes(TArray<TSharedPtr<FAssetEditorMode>>& OutModes) const
 {
 	for (const TPair<FName, TSharedPtr<FAssetEditorMode>>& Pair : EditorModes)

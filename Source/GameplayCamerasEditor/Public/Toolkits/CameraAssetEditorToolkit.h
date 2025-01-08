@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include "CoreTypes.h"
+#include "Core/CameraAsset.h"
+#include "Core/CameraEventHandler.h"
 #include "Toolkits/AssetEditorModeManagerToolkit.h"
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
@@ -10,7 +11,6 @@
 #include "CameraAssetEditorToolkit.generated.h"
 
 class SFindInObjectTreeGraph;
-class UCameraAsset;
 class UCameraAssetEditor;
 class UEdGraph;
 class UEdGraphNode;
@@ -31,6 +31,7 @@ class IGameplayCamerasLiveEditManager;
 class FCameraAssetEditorToolkit 
 	: public FAssetEditorModeManagerToolkit
 	, public FGCObject
+	, public UE::Cameras::ICameraAssetEventHandler
 {
 public:
 
@@ -61,11 +62,19 @@ protected:
 	// FAssetEditorModeManagerToolkit interface
 	virtual void OnEditorToolkitModeActivated() override;
 
+	// ICameraAssetEventHandler interface
+	virtual void OnCameraDirectorChanged(UCameraAsset* InCameraAsset, const TCameraPropertyChangedEvent<UCameraDirector*>& Event) override;
+
 private:
 
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
 
+	void FillCameraMenu(FMenuBuilder& MenuBuilder);
+
+	TSharedPtr<FAssetEditorMode> CreateCameraDirectorAssetEditorMode();
+
+	void OnChangeCameraDirector();
 	void OnBuild();
 	void OnFindInCamera();
 
@@ -82,6 +91,9 @@ private:
 
 	/** The asset being edited */
 	TObjectPtr<UCameraAsset> CameraAsset;
+
+	/** Event listener for the camera asset */
+	UE::Cameras::TCameraEventHandler<UE::Cameras::ICameraAssetEventHandler> CameraAssetEventHandler;
 
 	/** The layout for this toolkit */
 	TSharedPtr<FStandardToolkitLayout> StandardLayout;
