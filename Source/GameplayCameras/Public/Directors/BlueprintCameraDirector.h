@@ -4,6 +4,7 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
+#include "Core/CameraEvaluationContext.h"
 #include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
@@ -176,8 +177,12 @@ public:
 	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
 
 	/** Gets the shared evaluation context data. */
-	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Shared Evaluation Data"))
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Shared Camera Data"))
 	FBlueprintCameraNodeEvaluationResult GetInitialContextResult() const;
+
+	/** Gets the evaluation context data for a sub-set of camera rigs. */	
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Conditional Camera Data"))
+	FBlueprintCameraNodeEvaluationResult GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const;
 
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation",
 			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))

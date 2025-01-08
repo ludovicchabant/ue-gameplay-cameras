@@ -112,10 +112,10 @@ FTransform3d FCameraPose::GetTransform() const
 	return Transform;
 }
 
-void FCameraPose::SetTransform(FTransform3d Transform)
+void FCameraPose::SetTransform(FTransform3d Transform, bool bForceSet)
 {
-	SetLocation(Transform.GetLocation());
-	SetRotation(Transform.GetRotation().Rotator());
+	SetLocation(Transform.GetLocation(), bForceSet);
+	SetRotation(Transform.GetRotation().Rotator(), bForceSet);
 }
 
 double FCameraPose::GetEffectiveFieldOfView() const

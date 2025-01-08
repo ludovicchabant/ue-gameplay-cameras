@@ -9,9 +9,17 @@
 #include "Core/CameraObjectRtti.h"
 #include "Templates/SharedPointer.h"
 
+#include "CameraEvaluationContext.generated.h"
+
 class APlayerController;
 class UCameraAsset;
 class UCameraDirector;
+
+UENUM(BlueprintType)
+enum class ECameraEvaluationDataCondition : uint8
+{
+	ActiveCameraRig
+};
 
 namespace UE::Cameras
 {
@@ -103,6 +111,17 @@ public:
 
 public:
 
+	/** Gets an evaluation result that will be conditionally overlaid on some camera rigs in this context. */
+	const FCameraNodeEvaluationResult* GetConditionalResult(ECameraEvaluationDataCondition Condition) const { return ConditionalResults.Find(Condition); }
+
+	/** Gets an evaluation result that will be conditionally overlaid on some camera rigs in this context. */
+	FCameraNodeEvaluationResult* GetConditionalResult(ECameraEvaluationDataCondition Condition) { return ConditionalResults.Find(Condition); }
+
+	/** Gets or adds an evaluation result that will be conditionally overlaid on some camera rigs in this context. */
+	GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult& GetOrAddConditionalResult(ECameraEvaluationDataCondition Condition);
+
+public:
+
 	/**
 	 * Activates this evaluation context.
 	 * This will create the camera director evaluator if necessary.
@@ -159,6 +178,9 @@ private:
 
 	using FChildrenContexts = TArray<TSharedPtr<FCameraEvaluationContext>>;
 	FChildrenContexts ChildrenContexts;
+
+	using FConditionalResults = TMap<ECameraEvaluationDataCondition, FCameraNodeEvaluationResult>;
+	FConditionalResults ConditionalResults;
 
 	bool bInitialized = false;
 	bool bActivated = false;

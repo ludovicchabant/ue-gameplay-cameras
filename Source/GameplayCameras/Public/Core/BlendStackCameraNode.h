@@ -155,10 +155,15 @@ protected:
 
 	struct FResolvedEntry
 	{
+		FResolvedEntry(FCameraRigEntry& InEntry, TSharedPtr<const FCameraEvaluationContext> InContext)
+			: Entry(InEntry), Context(InContext)
+		{}
+
 		FCameraRigEntry& Entry;
 		TSharedPtr<const FCameraEvaluationContext> Context;
-		int32 EntryIndex;
-		bool bHasPreBlendedParameters;
+		int32 EntryIndex = INDEX_NONE;
+		bool bIsActiveEntry = false;
+		bool bHasPreBlendedParameters = false;
 	};
 
 	void ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries);

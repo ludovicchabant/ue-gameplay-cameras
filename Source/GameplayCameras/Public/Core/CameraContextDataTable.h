@@ -29,6 +29,19 @@ struct TCameraContextDataReader
 };
 
 /**
+ * Filter for context data table operations.
+ */
+enum class ECameraContextDataTableFilter
+{
+	None = 0,
+	/** Only include data that is common to both tables. */
+	KnownOnly = 1 << 0,
+	/** Only include data that was written this frame. */
+	ChangedOnly = 1 << 1,
+};
+ENUM_CLASS_FLAGS(ECameraContextDataTableFilter)
+
+/**
  * The camera context data table is a container for a collection of arbitrary values
  * of various types. It is the companion of the camera variable table (see FCameraVariableTable)
  * but for non-blendable values.
@@ -93,6 +106,7 @@ public:
 
 	void OverrideAll(const FCameraContextDataTable& OtherTable);
 	void OverrideKnown(const FCameraContextDataTable& OtherTable);
+	void Override(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter);
 
 public:
 
@@ -144,7 +158,7 @@ private:
 	const FEntry* FindEntry(FCameraContextDataID InID) const;
 	FEntry* FindEntry(FCameraContextDataID InID);
 
-	void Override(const FCameraContextDataTable& OtherTable, bool bKnownOnly);
+	void InternalOverride(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter);
 
 	void ReallocateBuffer(uint32 MinRequired = 0);
 	void DestroyBuffer();

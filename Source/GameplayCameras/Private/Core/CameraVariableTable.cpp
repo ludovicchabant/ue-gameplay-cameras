@@ -420,7 +420,7 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 
 void FCameraVariableTable::OverrideAll(const FCameraVariableTable& OtherTable)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::AllPublic;
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::InputOutput;
 	InternalOverride(OtherTable, Filter, nullptr, false, nullptr);
 }
 
@@ -513,7 +513,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 
 void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::AllPublic;
+	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::InputOutput;
 	InternalLerp(ToTable, Filter, Factor, nullptr, false, nullptr);
 }
 

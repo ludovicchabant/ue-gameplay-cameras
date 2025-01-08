@@ -152,11 +152,6 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 		InitParams.PlayerController = PlayerController;
 		EvaluationContext->Initialize(InitParams);
 
-		FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
-		const FCameraAssetAllocationInfo& AllocationInfo = CameraReference.GetCameraAsset()->GetAllocationInfo();
-		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
-
 		UpdateCameraEvaluationContext(true);
 	}
 
@@ -181,9 +176,16 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 FBlueprintCameraNodeEvaluationResult UGameplayCameraComponent::GetInitialResult() const
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial result", FBlueprintCameraNodeEvaluationResult());
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get shared camera data", FBlueprintCameraNodeEvaluationResult());
 
 	return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetInitialResult());
+}
+
+FBlueprintCameraNodeEvaluationResult UGameplayCameraComponent::GetConditionalResult(ECameraEvaluationDataCondition Condition) const
+{
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get conditional camera data", FBlueprintCameraNodeEvaluationResult());
+
+	return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetOrAddConditionalResult(Condition));
 }
 
 FBlueprintCameraPose UGameplayCameraComponent::GetInitialPose() const
@@ -284,7 +286,7 @@ void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bApplyParamete
 	FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
 
 	const FTransform& OwnerTransform = GetComponentTransform();
-	InitialResult.CameraPose.SetTransform(OwnerTransform);
+	InitialResult.CameraPose.SetTransform(OwnerTransform, true);
 	InitialResult.bIsCameraCut = false;
 	InitialResult.bIsValid = true;
 

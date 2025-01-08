@@ -31,6 +31,14 @@ void FCameraEvaluationContext::Initialize(const FCameraEvaluationContextInitiali
 	CameraAsset = Params.CameraAsset;
 	WeakPlayerController = Params.PlayerController;
 
+	if (CameraAsset)
+	{
+		const FCameraAssetAllocationInfo& AllocationInfo = CameraAsset->GetAllocationInfo();
+
+		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+	}
+
 	bInitialized = true;
 }
 
@@ -66,9 +74,19 @@ void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collect
 
 void FCameraEvaluationContext::OnEndCameraSystemUpdate()
 {
+	InitialResult.CameraPose.ClearAllChangedFlags();
 	InitialResult.VariableTable.AutoResetValues();
 	InitialResult.VariableTable.ClearAllWrittenThisFrameFlags();
 	InitialResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
+
+	for (FConditionalResults::ElementType& Pair : ConditionalResults)
+	{
+		FCameraNodeEvaluationResult& Result = Pair.Value;
+		Result.CameraPose.ClearAllChangedFlags();
+		Result.VariableTable.AutoResetValues();
+		Result.VariableTable.ClearAllWrittenThisFrameFlags();
+		Result.ContextDataTable.ClearAllWrittenThisFrameFlags();
+	}
 }
 
 void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
@@ -94,6 +112,26 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 		InitParams.OwnerContext = SharedThis(this);
 		DirectorEvaluator->Initialize(InitParams);
 	}
+}
+
+FCameraNodeEvaluationResult& FCameraEvaluationContext::GetOrAddConditionalResult(ECameraEvaluationDataCondition Condition)
+{
+	if (FCameraNodeEvaluationResult* ExistingResult = ConditionalResults.Find(Condition))
+	{
+		return *ExistingResult;
+	}
+
+	FCameraNodeEvaluationResult& NewResult = ConditionalResults.Add(Condition);
+
+	if (CameraAsset)
+	{
+		const FCameraAssetAllocationInfo& AllocationInfo = CameraAsset->GetAllocationInfo();
+
+		NewResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+		NewResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+	}
+
+	return NewResult;
 }
 
 void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivateParams& Params)

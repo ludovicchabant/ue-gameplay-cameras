@@ -164,7 +164,7 @@ void FCameraIKAim::RunRootCameraNode(const FCameraIKAimParams& Params, const FCa
 	// Make sure the camera rig will get its private variables, such as rig interface parameter overrides.
 	ScratchResult.VariableTable.Override(
 			CameraRigInfo.LastResult->VariableTable, 
-			ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
+			ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private);
 
 	FRootCameraNodeEvaluator* RootEvaluator = Params.Evaluator->GetRootNodeEvaluator();
 

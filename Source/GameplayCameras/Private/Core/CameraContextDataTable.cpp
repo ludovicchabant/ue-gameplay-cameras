@@ -540,20 +540,29 @@ void FCameraContextDataTable::ClearAllWrittenThisFrameFlags()
 
 void FCameraContextDataTable::OverrideAll(const FCameraContextDataTable& OtherTable)
 {
-	Override(OtherTable, false);
+	InternalOverride(OtherTable, ECameraContextDataTableFilter::None);
 }
 
 void FCameraContextDataTable::OverrideKnown(const FCameraContextDataTable& OtherTable)
 {
-	Override(OtherTable, true);
+	InternalOverride(OtherTable, ECameraContextDataTableFilter::KnownOnly);
 }
 
-void FCameraContextDataTable::Override(const FCameraContextDataTable& OtherTable, bool bKnownOnly)
+void FCameraContextDataTable::Override(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter)
 {
+	InternalOverride(OtherTable, Filter);
+}
+
+void FCameraContextDataTable::InternalOverride(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter)
+{
+	const bool bKnownOnly = EnumHasAllFlags(Filter, ECameraContextDataTableFilter::KnownOnly);
+	const bool bChangedOnly = EnumHasAllFlags(Filter, ECameraContextDataTableFilter::ChangedOnly);
+
 	for (const FEntry& OtherEntry : OtherTable.Entries)
 	{
 		const EEntryFlags OtherFlags = OtherEntry.Flags;
-		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written))
+		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written)
+				&& (!bChangedOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::WrittenThisFrame)))
 		{
 			int32 ThisIndex = EntryLookup.FindRef(OtherEntry.ID, INDEX_NONE);
 			if (ThisIndex == INDEX_NONE)

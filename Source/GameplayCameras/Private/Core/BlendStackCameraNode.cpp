@@ -86,11 +86,16 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 		return false;
 	}
 
-	// Allocate variables in the variable table.
+	// Allocate variable table and context data table.
 	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
-
-	// Allocate context data in the data table.
 	NewEntry.Result.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
+
+	// Set all the data from the context.
+	const FCameraNodeEvaluationResult& ContextResult = EvaluationContext->GetInitialResult();
+	NewEntry.Result.VariableTable.Override(
+			ContextResult.VariableTable,
+			ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private);
+	NewEntry.Result.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 	// Initialize the node evaluators.
 	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
@@ -170,7 +175,12 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 		FCameraRigEntry& Entry(Entries[Index]);
 		TSharedPtr<const FCameraEvaluationContext> CurContext = Entry.EvaluationContext.Pin();
 
-		OutResolvedEntries.Add({ Entry, CurContext, Index });
+		FResolvedEntry& ResolvedEntry = OutResolvedEntries.Emplace_GetRef(Entry, CurContext);
+		ResolvedEntry.EntryIndex = Index;
+		if (Index == Entries.Num() - 1)
+		{
+			ResolvedEntry.bIsActiveEntry = true;
+		}
 
 		// While we make these resolved entries, emit warnings and errors as needed.
 		if (!Entry.bIsFrozen)
@@ -637,6 +647,9 @@ void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationP
 
 void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private | ECameraVariableTableFilter::ChangedOnly;
+	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
+
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
@@ -657,10 +670,18 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 
 		// Override it with whatever the evaluation context has set on its result.
 		// Evaluation contexts may have private variables we need to pass along, such as when rig parameter
-		// overrides have been set on them.
+		// overrides have been set on them, so include private variables in the filter.
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
-		CurResult.VariableTable.Override(ContextResult.VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
-		CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
+		CurResult.VariableTable.Override(ContextResult.VariableTable, VariableTableFilter);
+		CurResult.ContextDataTable.Override(ContextResult.ContextDataTable, ContextDataTableFilter);
+		if (ResolvedEntry.bIsActiveEntry)
+		{
+			if (const FCameraNodeEvaluationResult* ActiveOnlyResult = ResolvedEntry.Context->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig))
+			{
+				CurResult.VariableTable.Override(ActiveOnlyResult->VariableTable, VariableTableFilter);
+				CurResult.ContextDataTable.Override(ActiveOnlyResult->ContextDataTable, ContextDataTableFilter);
+			}
+		}
 
 		// Gather input parameters if needed (and remember if it was indeed needed).
 		if (!Entry.bInputRunThisFrame)
@@ -756,6 +777,14 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
 		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
+		if (ResolvedEntry.bIsActiveEntry)
+		{
+			if (const FCameraNodeEvaluationResult* ActiveOnlyResult = ResolvedEntry.Context->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig))
+			{
+				CurResult.CameraPose.OverrideChanged(ActiveOnlyResult->CameraPose);
+				CurResult.bIsCameraCut |= ActiveOnlyResult->bIsCameraCut;
+			}
+		}
 		CurResult.bIsValid = true;
 
 		// Run the camera rig's root node.
@@ -1025,6 +1054,9 @@ void FPersistentBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 
 void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private | ECameraVariableTableFilter::ChangedOnly;
+	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
+
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
@@ -1046,11 +1078,11 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 
 				// Override it with whatever the evaluation context has set on its result.
 				// Evaluation contexts may have private variables we need to pass along, such as when rig parameter
-				// overrides have been set on them.
+				// overrides have been set on them, so include private variables in the filter.
 				const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
 				CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-				CurResult.VariableTable.Override(ContextResult.VariableTable, ECameraVariableTableFilter::AllPublic | ECameraVariableTableFilter::Private);
-				CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
+				CurResult.VariableTable.Override(ContextResult.VariableTable, VariableTableFilter);
+				CurResult.ContextDataTable.Override(ContextResult.ContextDataTable, ContextDataTableFilter);
 
 				// Setup flags.
 				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;

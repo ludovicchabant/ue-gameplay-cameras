@@ -32,13 +32,11 @@ enum class ECameraVariableTableFilter
 	Output = 1 << 1,
 	/** Include private variables. */
 	Private = 1 << 3,
-	/** Include changed variables. */
+	/** Only include variables that were written this frame. */
 	ChangedOnly = 1 << 2,
 
-	/** All variables. */
-	AllPublic = Input | Output,
-	/** All changed variables. */
-	AllPublicChanged = Input | Output | ChangedOnly
+	/** Both input and output variables. */
+	InputOutput = Input | Output,
 };
 ENUM_CLASS_FLAGS(ECameraVariableTableFilter)
 

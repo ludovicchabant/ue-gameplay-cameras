@@ -144,7 +144,7 @@ public:
 	FTransform3d GetTransform() const;
 
 	/** Sets the transform of the camera. */
-	void SetTransform(FTransform3d Transform);
+	void SetTransform(FTransform3d Transform, bool bForceSet = false);
 
 	/**
 	 * Computes the horizontal field of view of the camera.
