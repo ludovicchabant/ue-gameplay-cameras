@@ -19,10 +19,6 @@ public:
 
 	// FGraphPanelPinFactory interface.
 	virtual TSharedPtr<SGraphPin> CreatePin(UEdGraphPin* Pin) const override;
-
-private:
-
-	TSharedPtr<SGraphPin> CreateCameraVariablePickerPin(UEdGraphPin* Pin) const;
 };
 
 }  // namespace UE::Cameras

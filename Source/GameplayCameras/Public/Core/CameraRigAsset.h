@@ -87,6 +87,16 @@ struct TStructOpsTypeTraits<FCameraRigAllocationInfo> : public TStructOpsTypeTra
 };
 
 /**
+ * The type of a camera rig parameter.
+ */
+UENUM()
+enum class ECameraRigInterfaceParameterType : uint8
+{
+	Blendable,
+	Data
+};
+
+/**
  * Base class for interface parameters on a camera rig asset.
  */
 UCLASS(MinimalAPI, meta=(
@@ -372,6 +382,10 @@ protected:
 	virtual void PostInitProperties() override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
+	virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
+#if WITH_EDITOR
+	virtual void GetAssetRegistryTagMetadata(TMap<FName, FAssetRegistryTagMetadata>& OutMetadata) const override;
+#endif
 
 private:
 

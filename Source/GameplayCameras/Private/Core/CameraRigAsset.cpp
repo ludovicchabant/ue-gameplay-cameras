@@ -6,6 +6,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraRigAssetBuilder.h"
 #include "Core/CameraVariableAssets.h"
+#include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAsset)
@@ -399,6 +400,46 @@ void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObje
 		ensure(NumRemoved == 1);
 		EventHandlers.Notify(&ICameraRigAssetEventHandler::OnObjectRemovedFromGraph, TransitionsGraphName, InObject);
 	}
+}
+
+#endif  // WITH_EDITOR
+
+void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
+{
+	const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
+	for (const UCameraRigBlendableParameter* BlendableParameter : Interface.BlendableParameters)
+	{
+		if (BlendableParameter)
+		{
+			FAssetRegistryTag BlendableParameterTag;
+			BlendableParameterTag.Name = FName(BlendableParameter->InterfaceParameterName);
+			BlendableParameterTag.Value = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter->ParameterType);
+			BlendableParameterTag.Type = FAssetRegistryTag::TT_Alphabetical;
+			Context.AddTag(BlendableParameterTag);
+		}
+	}
+
+	const UEnum* ContextDataTypeEnum = StaticEnum<ECameraContextDataType>();
+	for (const UCameraRigDataParameter* DataParameter : Interface.DataParameters)
+	{
+		if (DataParameter)
+		{
+			FAssetRegistryTag DataParameterTag;
+			DataParameterTag.Name = FName(DataParameter->InterfaceParameterName);
+			DataParameterTag.Value = ContextDataTypeEnum->GetNameStringByValue((int64)DataParameter->DataType);
+			DataParameterTag.Type = FAssetRegistryTag::TT_Alphabetical;
+			Context.AddTag(DataParameterTag);
+		}
+	}
+
+	Super::GetAssetRegistryTags(Context);
+}
+
+#if WITH_EDITOR
+
+void UCameraRigAsset::GetAssetRegistryTagMetadata(TMap<FName, FAssetRegistryTagMetadata>& OutMetadata) const
+{
+	Super::GetAssetRegistryTagMetadata(OutMetadata);
 }
 
 #endif  // WITH_EDITOR

@@ -23,6 +23,7 @@ namespace UnrealBuildTool.Rules
 					"BlueprintGraph",
 					"Kismet",
 					"KismetCompiler",
+					"SlateCore",
 					"UnrealEd",
 				}
 			);

@@ -24,16 +24,11 @@ TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreatePin(UEdGraphPi
 	{
 		if (PinPropertyClass->IsChildOf<UCameraVariableAsset>())
 		{
-			return CreateCameraVariablePickerPin(Pin);
+			return SNew(SCameraVariableNameGraphPin, Pin);
 		}
 	}
 
 	return nullptr;
-}
-
-TSharedPtr<SGraphPin> FGameplayCamerasGraphPanelPinFactory::CreateCameraVariablePickerPin(UEdGraphPin* Pin) const
-{
-	return SNew(SCameraVariableNameGraphPin, Pin);
 }
 
 }  // namespace UE::Cameras
