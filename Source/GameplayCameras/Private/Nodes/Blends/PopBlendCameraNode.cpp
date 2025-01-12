@@ -25,6 +25,16 @@ void FPopBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Para
 
 void FPopBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
 {
+	FPopBlendCameraNodeHelper::PopParameters(Params, OutResult);
+}
+
+void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
+{
+	FPopBlendCameraNodeHelper::PopResults(Params, OutResult);
+}
+
+void FPopBlendCameraNodeHelper::PopParameters(const UE::Cameras::FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
+{
 	const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
 	OutResult.VariableTable.Override(ChildVariableTable, ECameraVariableTableFilter::Input);
 
@@ -32,7 +42,7 @@ void FPopBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendPa
 	OutResult.bIsBlendFinished = true;
 }
 
-void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
+void FPopBlendCameraNodeHelper::PopResults(const UE::Cameras::FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult)
 {
 	const FCameraNodeEvaluationResult& ChildResult(Params.ChildResult);
 	FCameraNodeEvaluationResult& BlendedResult(OutResult.BlendedResult);

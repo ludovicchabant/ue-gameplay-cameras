@@ -50,6 +50,17 @@ public:
 	/** Gets the last evaluated blend factor. */
 	float GetBlendFactor() const { return BlendFactor; }
 
+	/** Gets whether the blend is currently at 100%. */
+	bool IsBlendFull() const { return BlendFactor >= 1.f; }
+
+	/** 
+	 * Gets whether the blend was flagged as finished.
+	 * A simple blend typically finishes when it reaches 100%, but in rare cases it may
+	 * want to continue running after that, possibly going back below 100% before going
+	 * back up.
+	 */
+	bool IsBlendFinished() const { return bIsBlendFinished; }
+
 protected:
 
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
