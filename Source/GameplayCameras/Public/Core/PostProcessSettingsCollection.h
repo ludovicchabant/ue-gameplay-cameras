@@ -46,21 +46,12 @@ struct GAMEPLAYCAMERAS_API FPostProcessSettingsCollection
 	void LerpAll(const FPostProcessSettingsCollection& ToCollection, float BlendFactor);
 	void LerpAll(const FPostProcessSettings& ToPostProcessSettings, float BlendFactor);
 
-	/**
-	 * Interpolates the post-process settings towards the values in the given other collection. Only
-	 * values from the other collection that have their bOverride_Xxx set to true will be interpolated.
-	 * If the current value isn't overriden, it will interpolate from the default value. All affected
-	 * values will get their bOverride_Xxx flag set.
-	 */
-	void LerpChanged(const FPostProcessSettingsCollection& ToCollection, float BlendFactor);
-	void LerpChanged(const FPostProcessSettings& ToPostProcessSettings, float BlendFactor);
-
 	/** Serializes this collection into the given archive. */
 	void Serialize(FArchive& Ar);
 
 private:
 
-	void InternalLerpChanged(const FPostProcessSettings& ToPostProcessSettings, float BlendFactor, bool bChangedOnly);
+	void InternalLerp(const FPostProcessSettings& ToPostProcessSettings, float BlendFactor);
 
 private:
 
