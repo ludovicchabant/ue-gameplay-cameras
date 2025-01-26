@@ -6,6 +6,7 @@
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
+#include "MovieScene/GameplayCamerasTrackInstancePropertyBindings.h"
 #include "Nodes/Framing/CameraFramingZone.h"
 #include "ShowFlags.h"
 #include "UObject/UObjectBase.h"
@@ -34,7 +35,8 @@ public:
 	virtual void StartupModule() override
 	{
 		RegisterBuiltInBlendableStructs();
-
+		RegisterTrackInstanceCustomPropertyBindings();
+		
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		UE::Cameras::FCameraDebugColors::RegisterBuiltinColorSchemes();
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
@@ -43,6 +45,7 @@ public:
 	virtual void ShutdownModule() override
 	{
 		UnregisterBuiltInBlendableStructs();
+		UnregisterTrackInstanceCustomPropertyBindings();
 	}
 
 public:
@@ -113,6 +116,16 @@ private:
 		{
 			UnregisterBlendableStruct(FCameraFramingZone::StaticStruct());
 		}
+	}
+	
+	void RegisterTrackInstanceCustomPropertyBindings()
+	{
+		UE::Cameras::FGameplayCamerasTrackInstancePropertyBindings::Register();
+	}
+
+	void UnregisterTrackInstanceCustomPropertyBindings()
+	{
+		UE::Cameras::FGameplayCamerasTrackInstancePropertyBindings::Unregister();
 	}
 
 private:

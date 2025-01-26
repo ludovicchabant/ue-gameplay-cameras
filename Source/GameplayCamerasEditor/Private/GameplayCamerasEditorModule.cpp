@@ -40,10 +40,12 @@
 #include "IGameplayCamerasModule.h"
 #include "IRewindDebuggerExtension.h"
 #include "ISettingsModule.h"
+#include "ISequencerModule.h"
 #include "K2Node_Event.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
+#include "Sequencer/GameplayCameraComponentTrackEditor.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
 #include "Toolkits/BlueprintCameraDirectorAssetEditorMode.h"
@@ -97,6 +99,7 @@ public:
 		RegisterDetailsCustomizations();
 		RegisterEdGraphUtilities();
 		RegisterComponentVisualizers();
+		RegisterSequencerTracks();
 
 		InitializeLiveEditManager();
 
@@ -124,6 +127,7 @@ public:
 		UnregisterDetailsCustomizations();
 		UnregisterEdGraphUtilities();
 		UnregisterComponentVisualizers();
+		UnregisterSequencerTracks();
 
 		TeardownLiveEditManager();
 
@@ -546,6 +550,18 @@ private:
 			GUnrealEd->UnregisterComponentVisualizer(UGameplayCameraComponent::StaticClass()->GetFName());
 		}
 	}
+	
+	void RegisterSequencerTracks()
+	{
+		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
+		GameplayCameraComponentTrackCreateEditorHandle = SequencerModule.RegisterTrackEditor(FOnCreateTrackEditor::CreateStatic(&FGameplayCameraComponentTrackEditor::CreateTrackEditor));
+	}
+
+	void UnregisterSequencerTracks()
+	{
+		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
+		SequencerModule.UnRegisterTrackEditor(GameplayCameraComponentTrackCreateEditorHandle);
+	}
 
 	void InitializeLiveEditManager()
 	{
@@ -578,6 +594,8 @@ private:
 
 	TMap<FString, UE::Cameras::FCameraDebugCategoryInfo> DebugCategoryInfos;
 	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
+	
+	FDelegateHandle GameplayCameraComponentTrackCreateEditorHandle;
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 	TSharedPtr<UE::Cameras::FCameraSystemTraceModule> TraceModule;
