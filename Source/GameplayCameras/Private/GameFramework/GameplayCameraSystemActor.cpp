@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
+#include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCamerasSettings.h"
 
@@ -25,20 +26,20 @@ void AGameplayCameraSystemActor::CalcCamera(float DeltaTime, struct FMinimalView
 	CameraSystemComponent->GetCameraView(DeltaTime, OutResult);
 }
 
-AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bForceSpawn)
+AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bSpawnIfMissing)
+{
+	bool bDidSpawn;
+	return GetAutoSpawnedCameraSystemActor(PlayerController, bSpawnIfMissing, &bDidSpawn);
+}
+
+AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bSpawnIfMissing, bool* bOutSpawned)
 {
 	static const TCHAR* AutoSpawnedActorName = TEXT("AutoSpawnedGameplayCameraSystemActor");
-
-	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-	if (!Settings->bAutoSpawnCameraSystemActor)
-	{
-		return nullptr;
-	}
 
 	UGameplayCameraSystemHost* Host = UGameplayCameraSystemHost::FindHost(PlayerController);
 	if (!Host)
 	{
-		if (bForceSpawn)
+		if (bSpawnIfMissing)
 		{
 			Host = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
 		}
@@ -51,10 +52,11 @@ AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSyst
 		}
 	}
 
+	*bOutSpawned = false;
 	AGameplayCameraSystemActor* SpawnedActor = FindObject<AGameplayCameraSystemActor>(PlayerController, AutoSpawnedActorName);
 	if (!SpawnedActor)
 	{
-		if (bForceSpawn)
+		if (bSpawnIfMissing)
 		{
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Name = AutoSpawnedActorName;
@@ -63,12 +65,8 @@ AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSyst
 			SpawnedActor = World->SpawnActor<AGameplayCameraSystemActor>(SpawnParams);
 
 			SpawnedActor->Rename(nullptr, PlayerController);
-			
-			UGameplayCameraSystemComponent* CameraSystemComponent = SpawnedActor->CameraSystemComponent;
-			if (ensure(CameraSystemComponent))
-			{
-				CameraSystemComponent->bSetPlayerControllerRotation = Settings->bAutoSpawnCameraSystemActorSetsControlRotation;
-			}
+
+			*bOutSpawned = true;
 		}
 		else
 		{
@@ -81,10 +79,31 @@ AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSyst
 
 void AGameplayCameraSystemActor::AutoManageActiveViewTarget(APlayerController* PlayerController)
 {
-	AGameplayCameraSystemActor* SpawnedActor = GetAutoSpawnedCameraSystemActor(PlayerController, true);
+	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+	if (!Settings->bAutoSpawnCameraSystemActor)
+	{
+		return;
+	}
+
+	if (AGameplayCamerasPlayerCameraManager* PlayerCameraManager = Cast<AGameplayCamerasPlayerCameraManager>(PlayerController->PlayerCameraManager))
+	{
+		return;
+	}
+
+	bool bDidSpawn = false;
+	AGameplayCameraSystemActor* SpawnedActor = GetAutoSpawnedCameraSystemActor(PlayerController, true, &bDidSpawn);
 	if (SpawnedActor)
 	{
-		SpawnedActor->GetCameraSystemComponent()->ActivateCameraSystemForPlayerController(PlayerController);
+		UGameplayCameraSystemComponent* CameraSystemComponent = SpawnedActor->CameraSystemComponent;
+		if (ensure(CameraSystemComponent))
+		{
+			if (bDidSpawn)
+			{
+				CameraSystemComponent->bSetPlayerControllerRotation = Settings->bAutoSpawnCameraSystemActorSetsControlRotation;
+			}
+
+			CameraSystemComponent->ActivateCameraSystemForPlayerController(PlayerController);
+		}
 	}
 }
 

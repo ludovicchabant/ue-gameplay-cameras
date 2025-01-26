@@ -99,6 +99,34 @@ bool FCameraEvaluationContextStack::RemoveContext(TSharedRef<FCameraEvaluationCo
 	return false;
 }
 
+bool FCameraEvaluationContextStack::RemoveContextsOwnedBy(UObject* ContextOwner, bool bAlsoRemoveInnerOwners)
+{
+	bool bRemovedAny = false;
+
+	for (auto It = Entries.CreateIterator(); It; ++It)
+	{
+		FContextEntry& Entry = (*It);
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			if (!Context->GetOwner())
+			{
+				continue;
+			}
+
+			if (Context->GetOwner() == ContextOwner || (bAlsoRemoveInnerOwners && Context->GetOwner()->IsIn(ContextOwner)))
+			{
+				FCameraEvaluationContextDeactivateParams DeactivateParams;
+				Context->Deactivate(DeactivateParams);
+
+				It.RemoveCurrent();
+				bRemovedAny = true;
+			}
+		}
+	}
+
+	return bRemovedAny;
+}
+
 void FCameraEvaluationContextStack::PopContext()
 {
 	Entries.Pop();

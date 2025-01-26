@@ -40,7 +40,7 @@ public:
 	 * settings, or if no actor has been spawned yet.
 	 */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	static AGameplayCameraSystemActor* GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bForceSpawn = false);
+	static AGameplayCameraSystemActor* GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bSpawnIfMissing = false);
 
 	/**
 	 * Automatically sets a camera system actor as the view-target, spawning a unique
@@ -54,6 +54,10 @@ public:
 
 	// AActor interface.
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
+
+private:
+
+	static AGameplayCameraSystemActor* GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bSpawnIfMissing, bool* bOutSpawned);
 
 private:
 

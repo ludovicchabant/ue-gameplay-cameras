@@ -342,6 +342,7 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.Location = CameraPose.GetLocation();
 	DesiredView.Rotation = CameraPose.GetRotation();
 	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
+	DesiredView.DesiredFOV = DesiredView.FOV;
 
 	DesiredView.AspectRatio = CameraPose.GetSensorAspectRatio();
 	DesiredView.bConstrainAspectRatio = CameraPose.GetConstrainAspectRatio();

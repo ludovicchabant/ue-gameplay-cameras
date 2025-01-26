@@ -47,6 +47,9 @@ public:
 	/** Remove an existing context from the stack. */
 	bool RemoveContext(TSharedRef<FCameraEvaluationContext> Context);
 
+	/** Remove contexts owned by the given object. */
+	bool RemoveContextsOwnedBy(UObject* ContextOwner, bool bAlsoRemoveInnerOwners = false);
+
 	/** Pop the active (top) context. */
 	void PopContext();
 
