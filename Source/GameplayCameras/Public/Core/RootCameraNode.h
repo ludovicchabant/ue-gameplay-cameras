@@ -119,6 +119,9 @@ public:
 	/** Gets information about the active camera rig in the main layer. */
 	void GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const;
 
+	/** Gets whether any camera rig is running. */
+	bool HasAnyActiveCameraRig() const;
+
 	/**
 	 * Builds the hierarchy of the system for a given single camera rig.
 	 * This is expected to return the nodes of all the layers, except for the main layer which

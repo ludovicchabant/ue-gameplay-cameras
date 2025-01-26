@@ -134,7 +134,12 @@ enum class ECameraNodeEvaluationType
 	/** Normal evaluation. */
 	Standard,
 	/** Evaluation for IK aiming. */
-	IK
+	IK,
+
+#if WITH_EDITOR
+	/** Evaluation for editor preview. */
+	EditorPreview
+#endif  // WITH_EDITOR
 };
 
 /**
@@ -218,6 +223,17 @@ struct GAMEPLAYCAMERAS_API FCameraNodeEvaluatorSerializeParams
 {
 };
 
+#if WITH_EDITOR
+
+/**
+ * Parameter structure for drawing editor preview.
+ */
+struct FCameraEditorPreviewDrawParams
+{
+};
+
+#endif  // WITH_EDITOR
+
 /**
  * Base class for objects responsible for running a camera node.
  */
@@ -266,6 +282,10 @@ public:
 	{
 		return Cast<CameraNodeType>(PrivateCameraNode);
 	}
+
+#if WITH_EDITOR
+	void DrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer);
+#endif  // WITH_EDITOR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Called to create debug blocks for this node evaluator. */
@@ -321,6 +341,10 @@ protected:
 	 * Requires setting the ECameraNodeEvaluatorFlags::NeedsSerialize flag, which is set by default.
 	 */
 	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) {}
+
+#if WITH_EDITOR
+	GAMEPLAYCAMERAS_API virtual void OnDrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+#endif  // WITH_EDITOR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Called to create debug blocks for this node evaluator. */

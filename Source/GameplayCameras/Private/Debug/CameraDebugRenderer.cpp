@@ -114,36 +114,23 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugColorScheme(
 
 FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject, bool bInIsExternalRendering)
 {
-	Canvas = nullptr;
-	CanvasSize = FVector2D(EForceInit::ForceInit);
+	FCanvas* InCanvas = nullptr;
+	const FSceneView* InSceneView = nullptr;
 	if (InCanvasObject)
 	{
-		Canvas = InCanvasObject->Canvas;
-		SceneView = InCanvasObject->SceneView;
-
-		CanvasSize = FVector2d(InCanvasObject->SizeX, InCanvasObject->SizeY);
+		InCanvas = InCanvasObject->Canvas;
+		InSceneView = InCanvasObject->SceneView;
 	}
 
-	Initialize(InWorld, bInIsExternalRendering);
+	Initialize(InWorld, InSceneView, InCanvas, bInIsExternalRendering);
 }
 
 FCameraDebugRenderer::FCameraDebugRenderer(UWorld* InWorld, const FSceneView* InSceneView, FCanvas* InCanvas, bool bInIsExternalRendering)
 {
-	Canvas = nullptr;
-	CanvasSize = FVector2D(EForceInit::ForceInit);
-	if (InCanvas)
-	{
-		Canvas = InCanvas;
-		SceneView = InSceneView;
-
-		const FIntRect ViewRect = InCanvas->GetViewRect();
-		CanvasSize = FVector2d(ViewRect.Width(), ViewRect.Height());
-	}
-
-	Initialize(InWorld, bInIsExternalRendering);
+	Initialize(InWorld, InSceneView, InCanvas, bInIsExternalRendering);
 }
 
-void FCameraDebugRenderer::Initialize(UWorld* InWorld, bool bInIsExternalRendering)
+void FCameraDebugRenderer::Initialize(UWorld* InWorld, const FSceneView* InSceneView, FCanvas* InCanvas, bool bInIsExternalRendering)
 {
 	World = InWorld;
 	bIsExternalRendering = bInIsExternalRendering;
@@ -156,8 +143,22 @@ void FCameraDebugRenderer::Initialize(UWorld* InWorld, bool bInIsExternalRenderi
 
 	NextCardPosition = FVector2f::ZeroVector;
 	NextCardColumn = 0;
-	if (Canvas)
+
+	CanvasSize = FVector2D(EForceInit::ForceInit);
+
+	if (InSceneView && InCanvas)
 	{
+		SceneView = InSceneView;
+		Canvas = InCanvas;
+
+		FIntRect ViewRect = InCanvas->GetViewRect();
+		if (ViewRect.Width() == 0 || ViewRect.Height() == 0)
+		{
+			ViewRect = InSceneView->UnconstrainedViewRect;
+		}
+
+		CanvasSize = FVector2d(ViewRect.Width(), ViewRect.Height());
+
 		NextCardPosition = FVector2f{ 
 			(float)CanvasSize.X - (float)GGameplayCamerasDebugCardWidth - (float)GGameplayCamerasDebugRightMargin,
 			(float)GGameplayCamerasDebugTopMargin };

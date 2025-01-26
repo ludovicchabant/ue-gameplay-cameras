@@ -2,7 +2,6 @@
 
 #include "Core/CameraSystemEvaluator.h"
 
-#include "Algo/Transform.h"
 #include "Camera/CameraTypes.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
@@ -15,6 +14,7 @@
 #include "Debug/CameraSystemTrace.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCamerasSettings.h"
+#include "Math/ColorList.h"
 #include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
@@ -193,6 +193,11 @@ void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCame
 
 void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 {
+	UpdateImpl(Params.DeltaTime, ECameraNodeEvaluationType::Standard);
+}
+
+void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationType EvaluationType)
+{
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
 	// Reset our result' flags.
@@ -204,7 +209,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	RootNodeResult.VariableTable.AutoResetValues();
 
 	// Pre-update all services.
-	PreUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
+	PreUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);
 
 	// Get the active evaluation context.
 	TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
@@ -219,7 +224,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	if (ActiveDirectorEvaluator)
 	{
 		FCameraDirectorEvaluationParams DirectorParams;
-		DirectorParams.DeltaTime = Params.DeltaTime;
+		DirectorParams.DeltaTime = DeltaTime;
 		DirectorParams.OwnerContext = ActiveContext;
 
 		FCameraDirectorEvaluationResult DirectorResult;
@@ -277,7 +282,8 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 		// Setup the params/result for running the root camera node.
 		FCameraNodeEvaluationParams NodeParams;
 		NodeParams.Evaluator = this;
-		NodeParams.DeltaTime = Params.DeltaTime;
+		NodeParams.DeltaTime = DeltaTime;
+		NodeParams.EvaluationType = EvaluationType;
 
 		RootNodeResult.Reset();
 
@@ -288,7 +294,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 	}
 
 	// Post-update all services.
-	PostUpdateServices(Params.DeltaTime, ECameraEvaluationServiceFlags::None);
+	PostUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);
 
 	// Harvest the result.
 	Result.Reset(RootNodeResult);
@@ -359,6 +365,30 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	CameraPose.ApplyPhysicalCameraSettings(DesiredView.PostProcessSettings, false);
 }
 
+#if WITH_EDITOR
+
+void FCameraSystemEvaluator::EditorPreviewUpdate(const FCameraSystemEvaluationParams& Params)
+{
+	UpdateImpl(Params.DeltaTime, ECameraNodeEvaluationType::EditorPreview);
+}
+
+void FCameraSystemEvaluator::DrawEditorPreview(const FCameraSystemEditorPreviewParams& Params)
+{	
+	FCameraEditorPreviewDrawParams NodeParams;
+
+	UObject* Owner = WeakOwner.Get();
+	UWorld* OwnerWorld = (Owner && Params.bDrawWorldDebug) ? Owner->GetWorld() : nullptr;
+	FCameraDebugRenderer Renderer(OwnerWorld, Params.SceneView, Params.Canvas, !Params.bIsLockedToCamera);
+
+	Renderer.BeginDrawing();
+	{
+		RootEvaluator->DrawEditorPreview(NodeParams, Renderer);
+	}
+	Renderer.EndDrawing();
+}
+
+#endif  // WITH_EDITOR
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 bool FCameraSystemEvaluator::IsDebugTraceEnabled()
@@ -410,7 +440,7 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 		FCameraSystemTrace::TraceEvaluation(OwnerWorld, Result, *RootDebugBlock);
 	}
 #endif
-	
+
 	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject, Params.bIsDebugCameraEnabled);
 	RootDebugBlock->RootDebugDraw(Renderer);
 }

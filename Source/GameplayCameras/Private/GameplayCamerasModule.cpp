@@ -6,10 +6,18 @@
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
+#include "ShowFlags.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasModule"
 
 DEFINE_LOG_CATEGORY(LogCameraSystem);
+
+namespace UE::Cameras
+{
+
+TCustomShowFlag<> GameplayCamerasShowFlag(TEXT("GameplayCameras"), true, SFG_Developer, LOCTEXT("ShowFlagDisplayName", "Gameplay Cameras"));
+
+}  // namespace UE::Cameras
 
 IGameplayCamerasModule& IGameplayCamerasModule::Get()
 {

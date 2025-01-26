@@ -161,7 +161,7 @@ public:
 
 private:
 
-	void Initialize(UWorld* InWorld, bool bInIsExternalRendering);
+	void Initialize(UWorld* InWorld, const FSceneView* InSceneView, FCanvas* InCanvas, bool bInIsExternalRendering);
 
 	void AddTextFmtImpl(const TCHAR* Fmt, va_list Args);
 	void AddTextImpl(const TCHAR* Buffer);

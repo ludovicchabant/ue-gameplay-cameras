@@ -31,6 +31,13 @@ void FRootCameraNodeEvaluator::GetActiveCameraRigInfo(FCameraRigEvaluationInfo& 
 	OnGetActiveCameraRigInfo(OutCameraRigInfo);
 }
 
+bool FRootCameraNodeEvaluator::HasAnyActiveCameraRig() const
+{
+	FCameraRigEvaluationInfo RigInfo;
+	GetActiveCameraRigInfo(RigInfo);
+	return RigInfo.RootEvaluator != nullptr;
+}
+
 void FRootCameraNodeEvaluator::BuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
 {
 	OnBuildSingleCameraRigHierarchy(Params, OutHierarchy);

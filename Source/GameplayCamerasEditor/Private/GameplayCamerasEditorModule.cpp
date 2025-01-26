@@ -12,6 +12,7 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Commands/ObjectTreeGraphEditorCommands.h"
+#include "ComponentVisualizers/GameplayCameraComponentVisualizer.h"
 #include "Customizations/CameraAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
@@ -27,9 +28,11 @@
 #include "Debugger/SGameplayCamerasDebugger.h"
 #include "Directors/BlueprintCameraDirector.h"
 #include "EdGraph/EdGraph.h"
+#include "Editor/UnrealEdEngine.h"
 #include "Editors/GameplayCamerasGraphPanelPinFactory.h"
 #include "Editors/SCameraVariablePicker.h"
 #include "Features/IModularFeatures.h"
+#include "GameFramework/GameplayCameraComponent.h"
 #include "GameplayCameras.h"
 #include "GameplayCamerasEditorSettings.h"
 #include "GameplayCamerasLiveEditManager.h"
@@ -50,6 +53,7 @@
 #include "Trace/CameraSystemRewindDebuggerExtension.h"
 #include "Trace/CameraSystemRewindDebuggerTrack.h"
 #include "Trace/CameraSystemTraceModule.h"
+#include "UnrealEdGlobals.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasEditor"
 
@@ -92,6 +96,7 @@ public:
 		RegisterRewindDebuggerFeatures();
 		RegisterDetailsCustomizations();
 		RegisterEdGraphUtilities();
+		RegisterComponentVisualizers();
 
 		InitializeLiveEditManager();
 
@@ -118,6 +123,7 @@ public:
 		UnregisterRewindDebuggerFeatures();
 		UnregisterDetailsCustomizations();
 		UnregisterEdGraphUtilities();
+		UnregisterComponentVisualizers();
 
 		TeardownLiveEditManager();
 
@@ -521,6 +527,24 @@ private:
 		}
 
 		FKismetEditorUtilities::UnregisterAutoBlueprintNodeCreation(this);
+	}
+
+	void RegisterComponentVisualizers()
+	{
+		using namespace UE::Cameras;
+
+		if (GUnrealEd)
+		{
+			GUnrealEd->RegisterComponentVisualizer(UGameplayCameraComponent::StaticClass()->GetFName(), MakeShared<FGameplayCameraComponentVisualizer>());
+		}
+	}
+
+	void UnregisterComponentVisualizers()
+	{
+		if (GUnrealEd)
+		{
+			GUnrealEd->UnregisterComponentVisualizer(UGameplayCameraComponent::StaticClass()->GetFName());
+		}
 	}
 
 	void InitializeLiveEditManager()

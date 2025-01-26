@@ -10,6 +10,7 @@
 #include "GameplayCameraActor.generated.h"
 
 class APlayerController;
+class UCineCameraComponent;
 class UGameplayCameraComponent;
 
 /**
@@ -34,6 +35,9 @@ public:
 
 	// AActor interface.
 	virtual USceneComponent* GetDefaultAttachComponent() const override;
+	virtual void Tick(float DeltaTime) override;
+	virtual bool ShouldTickIfViewportsOnly() const override;
+	virtual void DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
 
 private:
 

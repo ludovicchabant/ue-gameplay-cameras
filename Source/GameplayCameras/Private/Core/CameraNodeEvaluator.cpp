@@ -177,6 +177,24 @@ void FCameraNodeEvaluator::Serialize(const FCameraNodeEvaluatorSerializeParams& 
 	OnSerialize(Params, Ar);
 }
 
+#if WITH_EDITOR
+
+void FCameraNodeEvaluator::DrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	OnDrawEditorPreview(Params, Renderer);
+
+	FCameraNodeEvaluatorChildrenView ChildrenView(GetChildren());
+	for (FCameraNodeEvaluator* Child : ChildrenView)
+	{
+		if (Child)
+		{
+			Child->DrawEditorPreview(Params, Renderer);
+		}
+	}
+}
+
+#endif  // WITH_EDITOR
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 void FCameraNodeEvaluator::BuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)

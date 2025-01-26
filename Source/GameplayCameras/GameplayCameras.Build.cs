@@ -24,5 +24,13 @@ public class GameplayCameras : ModuleRules
 				"TraceLog"
 			}
 		);
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+				{
+					"UnrealEd"
+				});
+		}
 	}
 }

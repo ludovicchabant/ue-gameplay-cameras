@@ -73,6 +73,12 @@ public:
 	 */
 	static GAMEPLAYCAMERAS_API UGameplayCameraSystemHost* FindHost(APlayerController* PlayerController, const TCHAR* HostName = nullptr, bool bAllowNull = true);
 
+#if WITH_EDITOR
+
+	static GAMEPLAYCAMERAS_API UGameplayCameraSystemHost* CreateEditorPreviewHost(UObject* Outer, const TCHAR* HostName = nullptr);
+
+#endif  // WITH_EDITOR
+
 private:
 
 	/** Default host name to use when creating a new host. */

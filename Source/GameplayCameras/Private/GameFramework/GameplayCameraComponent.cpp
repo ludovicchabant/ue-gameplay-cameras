@@ -2,38 +2,48 @@
 
 #include "GameFramework/GameplayCameraComponent.h"
 
-#include "Components/StaticMeshComponent.h"
+#include "CineCameraComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetBuilder.h"
 #include "Core/CameraBuildLog.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
+#include "Debug/CameraDebugRenderer.h"
+#include "Engine/Canvas.h"
 #include "Engine/EngineTypes.h"
-#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
-#include "GameplayCameras.h"
+#include "GameplayCamerasDelegates.h"
 #include "Kismet/GameplayStatics.h"
-#include "UObject/ConstructorHelpers.h"
+#include "Misc/AssertionMacros.h"
+#include "PrimitiveDrawInterface.h"
+#include "SceneView.h"
+#include "ShowFlags.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
 
 #define LOCTEXT_NAMESPACE "GameplayCameraComponent"
 
+namespace UE::Cameras
+{
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+extern bool GGameplayCamerasDebugEnable;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+}  // namespace UE::Cameras
+
 UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
+	bTickInEditor = true;
 	bWantsOnUpdateTransform = true;
+
 	PrimaryComponentTick.bCanEverTick = true;
 
-#if WITH_EDITORONLY_DATA
-	if (GIsEditor && !IsRunningCommandlet())
-	{
-		static ConstructorHelpers::FObjectFinder<UStaticMesh> EditorCameraMesh(
-				TEXT("/Engine/EditorMeshes/Camera/SM_CineCam.SM_CineCam"));
-		PreviewMesh = EditorCameraMesh.Object;
-	}
-#endif  // WITH_EDITORONLY_DATA
+	OutputCameraComponent = ObjectInit.CreateDefaultSubobject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), true);
+	OutputCameraComponent->SetupAttachment(this);
 }
 
 void UGameplayCameraComponent::PostLoad()
@@ -56,6 +66,15 @@ void UGameplayCameraComponent::AddReferencedObjects(UObject* InThis, FReferenceC
 	{
 		This->EvaluationContext->AddReferencedObjects(Collector);
 	}
+
+#if WITH_EDITOR
+
+	if (This->EditorPreviewEvaluator)
+	{
+		This->EditorPreviewEvaluator->AddReferencedObjects(Collector);
+	}
+
+#endif  // WITH_EDITOR
 }
 
 TSharedPtr<const UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetEvaluationContext() const
@@ -97,14 +116,6 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(int32 PlayerIndex
 	DeactivateCameraEvaluationContext();
 
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	if (!PlayerController)
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't activate gameplay camera: no player controller found!"),
-				ELogVerbosity::Error);
-		return;
-	}
-
 	ActivateCameraEvaluationContext(PlayerController);
 }
 
@@ -121,6 +132,11 @@ void UGameplayCameraComponent::DeactivateCameraEvaluationContext()
 	{
 		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
 		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+	}
+
+	if (OutputCameraComponent)
+	{
+		OutputCameraComponent->SetRelativeTransform(FTransform());
 	}
 
 	// Don't deactivate the component: we still need to update our evaluation context while any
@@ -158,6 +174,19 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 	AGameplayCameraSystemActor::AutoManageActiveViewTarget(PlayerController);
 
+	EnsureCameraEvaluationContextCreated(PlayerController);
+
+	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
+	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+
+	// Make sure the component is active so it receives tick updates to maintain the evaluation context.
+	Activate();
+}
+
+void UGameplayCameraComponent::EnsureCameraEvaluationContextCreated(APlayerController* PlayerController)
+{
+	using namespace UE::Cameras;
+
 	if (!EvaluationContext.IsValid())
 	{
 		EvaluationContext = MakeShared<FGameplayCameraComponentEvaluationContext>();
@@ -170,12 +199,6 @@ void UGameplayCameraComponent::ActivateCameraEvaluationContext(APlayerController
 
 		UpdateCameraEvaluationContext(true);
 	}
-
-	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
-	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
-
-	// Make sure the component is active so it receives tick updates to maintain the evaluation context.
-	Activate();
 }
 
 #define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT(ErrorMsg, ErrorResult)\
@@ -234,42 +257,46 @@ FBlueprintCameraVariableTable UGameplayCameraComponent::GetInitialVariableTable(
 
 void UGameplayCameraComponent::OnRegister()
 {
+	using namespace UE::Cameras;
+
 	Super::OnRegister();
 
-#if WITH_EDITORONLY_DATA
-	if (PreviewMesh && !PreviewMeshComponent)
-	{
-		PreviewMeshComponent = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transactional | RF_TextExportTransient);
-		PreviewMeshComponent->SetupAttachment(this);
-		PreviewMeshComponent->SetIsVisualizationComponent(true);
-		PreviewMeshComponent->SetStaticMesh(PreviewMesh);
-		PreviewMeshComponent->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
-		PreviewMeshComponent->bHiddenInGame = true;
-		PreviewMeshComponent->CastShadow = false;
-		PreviewMeshComponent->CreationMethod = CreationMethod;
-		PreviewMeshComponent->RegisterComponentWithWorld(GetWorld());
-	}
+#if WITH_EDITOR
 
-	UpdatePreviewMeshTransform();
-#endif	// WITH_EDITORONLY_DATA
+	UWorld* World = GetWorld();
+	bIsEditorWorld = (World && (World->WorldType == EWorldType::Editor || World->WorldType == EWorldType::EditorPreview));
+
+	FGameplayCamerasDelegates::OnCameraAssetBuilt().AddUObject(this, &UGameplayCameraComponent::OnCameraAssetBuilt);
+
+	const TCHAR* ShowFlagName = TEXT("GameplayCameras");
+	CustomShowFlag = FEngineShowFlags::FindIndexByName(ShowFlagName);
+
+#endif  // WITH_EDITOR
 }
 
 void UGameplayCameraComponent::BeginPlay()
 {
+	using namespace UE::Cameras;
+
 	Super::BeginPlay();
 
 #if WITH_EDITOR
+
 	if (CameraReference.IsValid())
 	{
-		// Auto-build the camera asset on begin play to make sure we've got the latest user edits.
-		using namespace UE::Cameras;
-		FCameraBuildLog BuildLog;
-		FCameraAssetBuilder Builder(BuildLog);
-		Builder.BuildCamera(CameraReference.GetCameraAsset());
+		UWorld* World = GetWorld();
+		if (World && World->WorldType == EWorldType::PIE)
+		{
+			// Auto-build the camera asset on begin play to make sure we've got the latest user edits.
+			FCameraBuildLog BuildLog;
+			FCameraAssetBuilder Builder(BuildLog);
+			Builder.BuildCamera(CameraReference.GetCameraAsset());
+		}
 
 		CameraReference.RebuildParametersIfNeeded();
 	}
-#endif
+
+#endif  // WITH_EDITOR
 
 	if (IsActive() && AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
 	{
@@ -285,13 +312,43 @@ void UGameplayCameraComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void UGameplayCameraComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
+void UGameplayCameraComponent::OnUnregister()
 {
+	using namespace UE::Cameras;
+
+#if WITH_EDITOR
+
+	FGameplayCamerasDelegates::OnCameraAssetBuilt().RemoveAll(this);
+
+#endif  // WITH_EDITOR
+
+	Super::OnUnregister();
+}
+
+void UGameplayCameraComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
+{
+	using namespace UE::Cameras;
+
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+#if WITH_EDITOR
+
+	// Make sure things are setup (or not) if we want to run the camera logic in editor (or not).
+	AutoManageEditorPreviewEvaluator();
+
+#endif  // WITH_EDITOR
 
 	if (EvaluationContext)
 	{
 		UpdateCameraEvaluationContext(false);
+
+#if WITH_EDITOR
+		
+		UpdateEditorPreviewEvaluator(DeltaTime);
+
+#endif  // WITH_EDITOR
+
+		UpdateOutputCameraComponent();
 	}
 }
 
@@ -318,16 +375,61 @@ void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bApplyParamete
 	}
 }
 
+void UGameplayCameraComponent::UpdateOutputCameraComponent()
+{
+	using namespace UE::Cameras;
+
+	if (!OutputCameraComponent)
+	{
+		return;
+	}
+
+	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator;
+
+	if (CameraSystemHost)
+	{
+		CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
+	}
+#if WITH_EDITOR
+	else if (EditorPreviewEvaluator)
+	{
+		CameraSystemEvaluator = EditorPreviewEvaluator;
+	}
+#endif  // WITH_EDITOR
+
+	bool bGotValidTransform = false;
+	if (CameraSystemEvaluator)
+	{
+		FRootCameraNodeEvaluator* RootNodeEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+		if (RootNodeEvaluator && RootNodeEvaluator->HasAnyActiveCameraRig())
+		{
+			const FCameraSystemEvaluationResult& Result = CameraSystemEvaluator->GetEvaluatedResult();
+
+			OutputCameraComponent->SetWorldTransform(Result.CameraPose.GetTransform());
+			OutputCameraComponent->SetFieldOfView(Result.CameraPose.GetEffectiveFieldOfView());
+			OutputCameraComponent->CurrentAperture = Result.CameraPose.GetAperture();
+			OutputCameraComponent->Filmback.SensorWidth = Result.CameraPose.GetSensorWidth();
+			OutputCameraComponent->Filmback.SensorHeight = Result.CameraPose.GetSensorHeight();
+			OutputCameraComponent->bConstrainAspectRatio = Result.CameraPose.GetConstrainAspectRatio();
+			OutputCameraComponent->bOverrideAspectRatioAxisConstraint = Result.CameraPose.GetOverrideAspectRatioAxisConstraint();
+			OutputCameraComponent->AspectRatioAxisConstraint = Result.CameraPose.GetAspectRatioAxisConstraint();
+
+			OutputCameraComponent->FocusSettings.ManualFocusDistance = Result.CameraPose.GetFocusDistance();
+			OutputCameraComponent->FocusSettings.FocusMethod = (Result.CameraPose.GetEnablePhysicalCamera() ? ECameraFocusMethod::Manual : ECameraFocusMethod::Disable);
+
+			bGotValidTransform = true;
+		}
+	}
+	
+	if (!bGotValidTransform)
+	{
+		OutputCameraComponent->SetRelativeTransform(FTransform());
+	}
+}
+
 void UGameplayCameraComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
 {
 	Super::OnComponentDestroyed(bDestroyingHierarchy);
-
-#if WITH_EDITORONLY_DATA
-	if (PreviewMeshComponent)
-	{
-		PreviewMeshComponent->DestroyComponent();
-	}
-#endif  // WITH_EDITORONLY_DATA
 }
 
 void UGameplayCameraComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport)
@@ -338,33 +440,150 @@ void UGameplayCameraComponent::OnUpdateTransform(EUpdateTransformFlags UpdateTra
 	{
 		bIsCameraCutNextFrame = true;
 	}
-}
-
-#if WITH_EDITORONLY_DATA
-
-void UGameplayCameraComponent::UpdatePreviewMeshTransform()
-{
-	if (PreviewMeshComponent)
-	{
-		// CineCam mesh is wrong, adjust like UCineCameraComponent
-		PreviewMeshComponent->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
-		PreviewMeshComponent->SetRelativeLocation(FVector(-46.f, 0, -24.f));
-		PreviewMeshComponent->SetRelativeScale3D(FVector::OneVector);
-	}
-}
-
-#endif  // WITH_EDITORONLY_DATA
 
 #if WITH_EDITOR
 
+	if (bIsEditorWorld && EvaluationContext)
+	{
+		UpdateCameraEvaluationContext(false);
+	}
+
+#endif  // WITH_EDITOR
+}
+
+#if WITH_EDITOR
+
+void UGameplayCameraComponent::AutoManageEditorPreviewEvaluator()
+{
+	using namespace UE::Cameras;
+
+	if (!bIsEditorWorld)
+	{
+		return;
+	}
+
+	if (bRunInEditor && !(EditorPreviewEvaluator && EvaluationContext))
+	{
+		// We want to run the camera logic in the editor but we haven't set things up for that.
+		// Let's create the preview evaluator and the evaluation context.
+		if (!EditorPreviewEvaluator)
+		{
+			EditorPreviewEvaluator = MakeShared<FCameraSystemEvaluator>();
+			EditorPreviewEvaluator->Initialize(this);
+		}
+		if (!EvaluationContext)
+		{
+			EnsureCameraEvaluationContextCreated(nullptr);
+			EditorPreviewEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+		}
+	}
+	else if (!bRunInEditor && (EditorPreviewEvaluator || EvaluationContext))
+	{
+		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
+		EditorPreviewEvaluator = nullptr;
+		EvaluationContext = nullptr;
+	}
+}
+
+void UGameplayCameraComponent::OnCameraAssetBuilt(const UCameraAsset* InCameraAsset)
+{
+	using namespace UE::Cameras;
+
+	if (InCameraAsset != CameraReference.GetCameraAsset())
+	{
+		return;
+	}
+
+	// If our camera asset was just built, it may have some new parameters. We need to rebuild
+	// our variable table and context data table, and re-apply overrides.
+	if (bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	{
+		const FCameraAssetAllocationInfo& AllocationInfo = InCameraAsset->GetAllocationInfo();
+		FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
+		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+
+		CameraReference.RebuildParametersIfNeeded();
+
+		UpdateCameraEvaluationContext(true);
+	}
+}
+
 bool UGameplayCameraComponent::GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut)
 {
-	// TODO: in the future, run the camera asset in a private camera system evaluator, with a UI
-	//		 to pick which camera rig to preview.
-	const FTransform3d& ComponentTransform = GetComponentTransform();
-	ViewOut.Location = ComponentTransform.GetLocation();
-	ViewOut.Rotation = ComponentTransform.Rotator();
-	return true;
+	if (OutputCameraComponent)
+	{
+		OutputCameraComponent->GetEditorPreviewInfo(DeltaTime, ViewOut);
+		return true;
+	}
+	return false;
+}
+
+void UGameplayCameraComponent::UpdateEditorPreviewEvaluator(float DeltaTime)
+{
+	using namespace UE::Cameras;
+
+	if (EditorPreviewEvaluator)
+	{
+		FCameraSystemEvaluationParams Params;
+		Params.DeltaTime = DeltaTime;
+		EditorPreviewEvaluator->Update(Params);
+	}
+}
+
+void UGameplayCameraComponent::OnDrawVisualizationHUD(const FViewport* Viewport, const FSceneView* SceneView, FCanvas* Canvas) const
+{
+	using namespace UE::Cameras;
+
+	const bool bHasShowFlag = SceneView->Family->EngineShowFlags.GetSingleFlag(CustomShowFlag);
+	if (bHasShowFlag && bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	{
+		const AActor* OwnerActor = GetOwner();
+
+		const AActor* ViewActor = SceneView->ViewActor.Get();
+		const bool bIsLockedToCamera = (ViewActor == OwnerActor);
+
+		FCameraSystemEditorPreviewParams Params;
+		Params.Canvas = Canvas;
+		Params.SceneView = SceneView;
+		Params.bIsLockedToCamera = bIsLockedToCamera;
+		Params.bDrawWorldDebug = false;
+
+		EditorPreviewEvaluator->DrawEditorPreview(Params);
+	}
+}
+
+void UGameplayCameraComponent::PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	using namespace UE::Cameras;
+
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	const FName MemberPropertyName = PropertyChangedEvent.GetMemberPropertyName();
+	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, CameraReference))
+	{
+		if (EditorPreviewEvaluator && EvaluationContext)
+		{
+			if (EvaluationContext->GetCameraAsset() != CameraReference.GetCameraAsset())
+			{
+				// The camera asset has changed! Recreate the context.
+				EditorPreviewEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+				EvaluationContext = nullptr;
+
+				EnsureCameraEvaluationContextCreated(nullptr);
+				EditorPreviewEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+			}
+			else
+			{
+				// Otherwise, maybe one of the parameter overrides has changed. Re-apply them.
+				UpdateCameraEvaluationContext(true);
+			}
+		}
+	}
+	else if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, bRunInEditor))
+	{
+		AutoManageEditorPreviewEvaluator();
+	}
 }
 
 #endif  // WITH_EDITOR

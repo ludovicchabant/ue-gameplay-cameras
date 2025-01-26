@@ -13,7 +13,12 @@
 #include "GameplayCameraComponent.generated.h"
 
 class APlayerController;
+class FPrimitiveDrawInterface;
+class FSceneView;
+class FViewport;
 class UCameraAsset;
+class UCanvas;
+class UCineCameraComponent;
 class UGameplayCameraSystemHost;
 
 namespace UE::Cameras
@@ -47,6 +52,10 @@ public:
 	GAMEPLAYCAMERAS_API APlayerController* GetPlayerController() const;
 
 public:
+
+	/** Gets the child camera component used as the "output" for the gameplay/procedural camera. */
+	UFUNCTION(BlueprintGetter, Category=Camera)
+	UCineCameraComponent* GetOutputCameraComponent() const { return OutputCameraComponent; }
 
 	/** Activates the camera for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
@@ -86,7 +95,8 @@ public:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
+	virtual void OnUnregister() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 #if WITH_EDITOR
 	virtual bool GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut) override;
@@ -96,22 +106,34 @@ public:
 	virtual void OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport) override;
 
 	// UObject interface.
-	void PostLoad() override;
+	virtual void PostLoad() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
+
+public:
+
+#if WITH_EDITOR
+	GAMEPLAYCAMERAS_API void OnDrawVisualizationHUD(const FViewport* Viewport, const FSceneView* SceneView, FCanvas* Canvas) const;
+#endif
 
 private:
 
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
+	void EnsureCameraEvaluationContextCreated(APlayerController* PlayerController);
 	void UpdateCameraEvaluationContext(bool bApplyParameterOverrides);
+	void UpdateOutputCameraComponent();
 	void DeactivateCameraEvaluationContext();
 
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
+	void AutoManageEditorPreviewEvaluator();
+	void OnCameraAssetBuilt(const UCameraAsset* InCameraAsset);
 
-	void UpdatePreviewMeshTransform();
-
-#endif
+	void UpdateEditorPreviewEvaluator(float DeltaTime);
+#endif  // WITH_EDITOR
 
 public:
 
@@ -126,6 +148,21 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation, meta=(EditCondition="bAutoActivate"))
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
+#if WITH_EDITORONLY_DATA
+
+	UPROPERTY(EditAnywhere, Category=Camera)
+	bool bRunInEditor = true;
+
+#endif  // WITH_EDITORONLY_DATA
+
+protected:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UCineCameraComponent> OutputCameraComponent;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
+
 protected:
 
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
@@ -134,18 +171,15 @@ protected:
 
 	bool bIsCameraCutNextFrame = false;
 
-	UPROPERTY()
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
+#if WITH_EDITOR
+	
+	TSharedPtr<UE::Cameras::FCameraSystemEvaluator> EditorPreviewEvaluator;
 
-#if WITH_EDITORONLY_DATA
+	bool bIsEditorWorld = false;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UStaticMesh> PreviewMesh;
+	int32 CustomShowFlag = INDEX_NONE;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UStaticMeshComponent> PreviewMeshComponent;
-
-#endif	// WITH_EDITORONLY_DATA
+#endif  // WITH_EDITOR
 
 private:
 

@@ -14,6 +14,8 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
 
+class FCanvas;
+class FSceneView;
 class UCameraDirector;
 class UCameraRigAsset;
 class UCanvas;
@@ -28,6 +30,7 @@ class FCameraEvaluationService;
 class FCameraRigCombinationRegistry;
 class FRootCameraNodeEvaluator;
 enum class ECameraEvaluationServiceFlags;
+enum class ECameraNodeEvaluationType;
 struct FRootCameraNodeCameraRigEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -83,12 +86,49 @@ public:
 };
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
+
+/**
+ * Parameter structure for running the debug pass of the camera system.
+ */
 struct FCameraSystemDebugUpdateParams
 {
+	/** The canvas to draw upon. */
 	UCanvas* CanvasObject = nullptr;
+
+	/** Whether the debug camera is enabled, giving an "outside" view of camera system. */
 	bool bIsDebugCameraEnabled = false;
 };
+
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+#if WITH_EDITOR
+
+/**
+ * Parameter structure for rendering the state of the camera system in editor.
+ */
+struct FCameraSystemEditorPreviewParams
+{
+	/** The canvas to draw upon. */
+	FCanvas* Canvas = nullptr;
+
+	/** The scene view being renderered. */
+	const FSceneView* SceneView = nullptr;
+
+	/**
+	 * Whether debug drawing is done from "inside" the camera system.
+	 * When false, it is acceptable to draw camera frustrums and axes.
+	 * When true, these things shouldn't be drawn as they would clutter the view
+	 * and obfuscate the scene.
+	 */
+	bool bIsLockedToCamera = true;
+
+	/**
+	 * Whether to enable drawing debug lines and other 3D primitives in the world.
+	 */
+	bool bDrawWorldDebug = true;
+};
+
+#endif  // WITH_EDITOR
 
 /**
  * The main camera system evaluator class.
@@ -167,11 +207,21 @@ public:
 	/** Collect reference objects for the garbage collector. */
 	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
+#if WITH_EDITOR
+	/** Run an update suitable for an in-editor preview. */
+	GAMEPLAYCAMERAS_API void EditorPreviewUpdate(const FCameraSystemEvaluationParams& Params);
+
+	/** Render information about the state of the camera system in-editor. */
+	GAMEPLAYCAMERAS_API void DrawEditorPreview(const FCameraSystemEditorPreviewParams& Params);
+#endif  // WITH_EDITOR
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	GAMEPLAYCAMERAS_API void DebugUpdate(const FCameraSystemDebugUpdateParams& Params);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:
+
+	void UpdateImpl(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
 
 	void PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);
 	void PostUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);

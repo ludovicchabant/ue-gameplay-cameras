@@ -4,6 +4,7 @@
 
 #include "Core/CameraSystemEvaluator.h"
 #include "Debug/DebugDrawService.h"
+#include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
@@ -38,7 +39,7 @@ UGameplayCameraSystemHost* UGameplayCameraSystemHost::FindOrCreateHost(APlayerCo
 		HostName = DefaultHostName;
 	}
 
-	UGameplayCameraSystemHost* NewHost = NewObject<UGameplayCameraSystemHost>(PlayerController, HostName);
+	UGameplayCameraSystemHost* NewHost = NewObject<UGameplayCameraSystemHost>(PlayerController, HostName, RF_Transient);
 
 	NewHost->Initialize();
 
@@ -64,6 +65,17 @@ UGameplayCameraSystemHost* UGameplayCameraSystemHost::FindHost(APlayerController
 			HostName, *GetNameSafe(PlayerController));
 	return Host;
 }
+
+#if WITH_EDITOR
+
+UGameplayCameraSystemHost* UGameplayCameraSystemHost::CreateEditorPreviewHost(UObject* Outer, const TCHAR* HostName)
+{
+	UGameplayCameraSystemHost* NewHost = NewObject<UGameplayCameraSystemHost>(Outer, HostName, RF_Transient);
+	NewHost->Initialize();
+	return NewHost;
+}
+
+#endif  // WITH_EDITOR
 
 UGameplayCameraSystemHost::UGameplayCameraSystemHost(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

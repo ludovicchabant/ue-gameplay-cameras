@@ -2,6 +2,7 @@
 
 #include "GameFramework/GameplayCameraActor.h"
 
+#include "CineCameraComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraComponent.h"
@@ -22,6 +23,21 @@ AGameplayCameraActor::AGameplayCameraActor(const FObjectInitializer& ObjectInit)
 USceneComponent* AGameplayCameraActor::GetDefaultAttachComponent() const
 {
 	return CameraComponent;
+}
+
+void AGameplayCameraActor::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+bool AGameplayCameraActor::ShouldTickIfViewportsOnly() const
+{
+	return true;
+}
+
+void AGameplayCameraActor::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos)
+{
+	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
 }
 
 #undef LOCTEXT_NAMESPACE
