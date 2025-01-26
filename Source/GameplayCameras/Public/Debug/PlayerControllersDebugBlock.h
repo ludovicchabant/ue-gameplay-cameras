@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Debug/CameraDebugBlock.h"
+#include "Engine/EngineTypes.h"
+#include "Math/UnrealMath.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -26,6 +28,7 @@ public:
 
 protected:
 
+	// FCameraDebugBlock interface.
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
 	virtual void OnSerialize(FArchive& Ar) override;
 
@@ -35,7 +38,13 @@ private:
 	{
 		FString PlayerControllerName;
 		FString CameraManagerName;
-		FString ActiveViewTargetName;
+		FString ViewTargetName;
+		FString LocalPlayerName;
+		TOptional<EAspectRatioAxisConstraint> DefaultAspectRatioAxisConstraint;
+		FVector3d ViewTargetLocation;
+		FRotator3d ViewTargetRotation;
+		float ViewTargetFOV;
+		float ViewTargetAspectRatio;
 	};
 	TArray<FPlayerControllerDebugInfo> PlayerControllers;
 	bool bHadValidWorld = false;
