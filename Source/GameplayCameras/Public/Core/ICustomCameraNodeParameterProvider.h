@@ -30,7 +30,7 @@ struct FCustomCameraNodeBlendableParameter
 
 	/** The type of the parameter. */
 	UPROPERTY()
-	ECameraVariableType ParameterType;
+	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
 
 	/** An optional camera variable that is dynamically driving the parameter's value. */
 	UPROPERTY()
@@ -51,7 +51,7 @@ struct FCustomCameraNodeDataParameter
 
 	/** The type of the parameter. */
 	UPROPERTY()
-	ECameraContextDataType ParameterType;
+	ECameraContextDataType ParameterType = ECameraContextDataType::Name;
 
 	/** An extra type object for the parameter. */
 	UPROPERTY()

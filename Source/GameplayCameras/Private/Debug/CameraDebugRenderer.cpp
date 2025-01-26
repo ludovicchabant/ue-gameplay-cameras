@@ -542,7 +542,7 @@ void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FVecto
 
 ULineBatchComponent* FCameraDebugRenderer::GetDebugLineBatcher() const
 {
-	return World ? World->ForegroundLineBatcher : nullptr;
+	return World ? World->GetLineBatcher(UWorld::ELineBatcherType::Foreground) : nullptr;
 }
 
 void FCameraDebugRenderer::SkipAttachedBlocks()
