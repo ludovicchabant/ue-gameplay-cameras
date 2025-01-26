@@ -2,6 +2,7 @@
 
 #include "Core/CameraRigJoints.h"
 
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "Core/BuiltInCameraVariables.h"
 
 namespace UE::Cameras

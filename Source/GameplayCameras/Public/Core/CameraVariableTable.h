@@ -5,17 +5,20 @@
 #include "Containers/Map.h"
 #include "Containers/Set.h"
 #include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "CoreTypes.h"
 #include "GameplayCameras.h"
 #include "Misc/EnumClassFlags.h"
 #include "Templates/UnrealTypeTraits.h"
-#include "UObject/NameTypes.h"
 
 namespace UE::Cameras
 {
 
 template<typename ValueType>
-struct TCameraVariableTraits;
+struct TCameraVariableTraits
+{
+	static const ECameraVariableType Type = ECameraVariableType::BlendableStruct;
+};
 
 template<typename ValueType>
 struct TCameraVariableInterpolation;
@@ -152,21 +155,25 @@ public:
 
 	const uint8* GetValue(
 			FCameraVariableID VariableID,
-			ECameraVariableType ExpectedVariableType) const;
+			ECameraVariableType ExpectedVariableType,
+			const UScriptStruct* ExpectedBlendableStructType) const;
 
 	const uint8* TryGetValue(
 			FCameraVariableID VariableID,
-			ECameraVariableType ExpectedVariableType) const;
+			ECameraVariableType ExpectedVariableType,
+			const UScriptStruct* ExpectedBlendableStructType) const;
 
 	void SetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 
+			const UScriptStruct* ExpectedBlendableStructType,
 			const uint8* InRawValuePtr,
 			bool bMarkAsWrittenThisFrame = true);
 
 	bool TrySetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 
+			const UScriptStruct* ExpectedBlendableStructType,
 			const uint8* InRawValuePtr,
 			bool bMarkAsWrittenThisFrame = true);
 
@@ -187,7 +194,10 @@ private:
 
 	struct FEntry;
 
-	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, uint32& OutSizeOf, uint32& OutAlignOf);
+	static void CacheBlendableStructs();
+	static FBlendableStructTypeErasedInterpolator GetBlendableStructInterpolator(const UScriptStruct* StructType);
+
+	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf);
 
 	template<typename ValueType>
 	static bool CheckVariableType(ECameraVariableType InType)
@@ -220,6 +230,7 @@ private:
 	{
 		FCameraVariableID ID;
 		ECameraVariableType Type;
+		const UScriptStruct* StructType = nullptr;
 		uint32 Offset;
 		mutable EEntryFlags Flags;
 #if WITH_EDITORONLY_DATA
@@ -233,6 +244,9 @@ private:
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
 	uint32 Used = 0;
+
+	static TArray<FBlendableStructInfo> CachedBlendableStructs;
+	static bool bCachedBlendableStructs;
 
 	template<typename T>
 	friend struct TCameraVariableInterpolation;

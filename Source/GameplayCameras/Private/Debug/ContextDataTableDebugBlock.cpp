@@ -29,7 +29,10 @@ void FContextDataTableDebugBlock::Initialize(const FCameraContextDataTable& InCo
 {
 	for (const FCameraContextDataTable::FEntry& Entry : InContextDataTable.Entries)
 	{
-		const uint8* EntryData = InContextDataTable.Memory + Entry.Offset;
+		FString EntryName;
+#if WITH_EDITORONLY_DATA
+		EntryName = Entry.DebugName;
+#endif
 
 		FName EntryTypeName;
 		if (Entry.TypeObject)
@@ -38,6 +41,7 @@ void FContextDataTableDebugBlock::Initialize(const FCameraContextDataTable& InCo
 		}
 
 		FString EntryValueStr;
+		const uint8* EntryData = InContextDataTable.Memory + Entry.Offset;
 		switch (Entry.Type)
 		{
 			case ECameraContextDataType::Name:
@@ -70,7 +74,7 @@ void FContextDataTableDebugBlock::Initialize(const FCameraContextDataTable& InCo
 				break;
 		}
 
-		FEntryDebugInfo EntryDebugInfo{ Entry.ID.DataName, EntryTypeName, EntryValueStr};
+		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryTypeName, EntryValueStr};
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraContextDataTable::EEntryFlags::Written);
 		EntryDebugInfo.bWrittenThisFrame = EnumHasAnyFlags(Entry.Flags, FCameraContextDataTable::EEntryFlags::WrittenThisFrame);
 		Entries.Add(EntryDebugInfo);
@@ -88,22 +92,38 @@ void FContextDataTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams&
 
 	for (const FEntryDebugInfo& Entry : Entries)
 	{
-		Renderer.AddText(TEXT("%s [%s] "), *Entry.Name.ToString(), *Entry.TypeName.ToString());
-		if (!Entry.bWritten)
+#if WITH_EDITORONLY_DATA
+		if (!Entry.Name.IsEmpty())
 		{
-			Renderer.AddText("{cam_warning}[Uninitialized]");
+			Renderer.AddText(TEXT("%s [%s] "), *Entry.Name, *Entry.TypeName.ToString());
 		}
-		else if (Entry.bWrittenThisFrame)
+		else
 		{
-			Renderer.AddText(TEXT(" {cam_passive}[WrittenThisFrame]"));
+			Renderer.AddText(TEXT("<no name data> [%s] "), *Entry.TypeName.ToString());
 		}
-		Renderer.NewLine();
+#else
+		Renderer.AddText(TEXT("[%d] <no name data> : "), Entry.ID);
+#endif
 
-		Renderer.AddIndent();
+		if (Entry.bWritten)
 		{
-			Renderer.AddText(Entry.Value);
+			if (Entry.bWrittenThisFrame)
+			{
+				Renderer.AddText(TEXT(" {cam_passive}[WrittenThisFrame]"));
+			}
+			Renderer.NewLine();
+
+			Renderer.AddIndent();
+			{
+				Renderer.AddText(Entry.Value);
+			}
+			Renderer.RemoveIndent();
 		}
-		Renderer.RemoveIndent();
+		else
+		{
+			Renderer.AddText("{cam_warning}[Uninitialized]\n");
+		}
+
 		Renderer.SetTextColor(Colors.Default);
 	}
 }

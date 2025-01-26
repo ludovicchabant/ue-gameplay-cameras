@@ -22,108 +22,6 @@ namespace UE::Cameras
 namespace Internal
 {
 
-template<typename VariableAssetType, typename ValueType>
-void SetPrivateVariableDefaultValue(VariableAssetType* PrivateVariable, typename TCallTraits<ValueType>::ParamType Value)
-{
-	if (PrivateVariable->DefaultValue != Value)
-	{
-		PrivateVariable->Modify();
-		PrivateVariable->DefaultValue = Value;
-	}
-}
-
-template<>
-void SetPrivateVariableDefaultValue<UTransform3dCameraVariable, FTransform3d>(UTransform3dCameraVariable* PrivateVariable, const FTransform3d& Value)
-{
-	// Template overload because transforms don't have an operator!=.
-	if (!PrivateVariable->DefaultValue.Equals(Value, 0.f))
-	{
-		PrivateVariable->Modify();
-		PrivateVariable->DefaultValue = Value;
-	}
-}
-
-template<>
-void SetPrivateVariableDefaultValue<UTransform3fCameraVariable, FTransform3f>(UTransform3fCameraVariable* PrivateVariable, const FTransform3f& Value)
-{
-	// Template overload because transforms don't have an operator!=.
-	if (!PrivateVariable->DefaultValue.Equals(Value, 0.f))
-	{
-		PrivateVariable->Modify();
-		PrivateVariable->DefaultValue = Value;
-	}
-}
-
-template<>
-void SetPrivateVariableDefaultValue<UBooleanCameraVariable, bool>(UBooleanCameraVariable* PrivateVariable, bool bValue)
-{
-	// Template overload because boolean variables have a bDefaultValue field, not DefaultValue.
-	if (PrivateVariable->bDefaultValue != bValue)
-	{
-		PrivateVariable->Modify();
-		PrivateVariable->bDefaultValue = bValue;
-	}
-}
-
-FString MakePrivateVariableName(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter)
-{
-	return FString::Format(
-			TEXT("Override_{0}_{1}"), 
-			{ CameraRig->GetName(), BlendableParameter->InterfaceParameterName });
-}
-
-UCameraVariableAsset* CreatePrivateVariable(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter)
-{
-	TSubclassOf<UCameraVariableAsset> VariableClass;
-	switch (BlendableParameter->ParameterType)
-	{
-#define UE_CAMERA_VARIABLE_FOR_TYPE(VariableType, VariableName)\
-		case ECameraVariableType::VariableName:\
-			VariableClass = U##VariableName##CameraVariable::StaticClass();\
-			break;
-		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-	}
-	if (!ensure(VariableClass))
-	{
-		return nullptr;
-	}
-
-	const FString VariableName = MakePrivateVariableName(CameraRig, BlendableParameter);
-	UCameraVariableAsset* PrivateVariable = NewObject<UCameraVariableAsset>(
-			CameraRig, VariableClass, FName(*VariableName), RF_Transactional);
-
-	// Make sure it's a private variable.
-	PrivateVariable->bIsPrivate = true;
-	PrivateVariable->bAutoReset = false;
-
-	// Make it an input variable if the parameter is pre-blended.
-	PrivateVariable->bIsInput = BlendableParameter->bIsPreBlended;
-
-	return PrivateVariable;
-}
-
-void UpdatePrivateVariable(UCameraRigAsset* CameraRig, const UCameraRigBlendableParameter* BlendableParameter, UCameraVariableAsset* PrivateVariable)
-{
-	check(PrivateVariable);
-
-	ensure(PrivateVariable->bIsPrivate);
-	ensure(!PrivateVariable->bAutoReset);
-
-	const FString VariableName = MakePrivateVariableName(CameraRig, BlendableParameter);
-	if (PrivateVariable->GetName() != VariableName)
-	{
-		ensure(!PrivateVariable->HasAnyFlags(RF_Public));
-		PrivateVariable->Rename(*VariableName, nullptr);
-	}
-
-	if (PrivateVariable->bIsInput != BlendableParameter->bIsPreBlended)
-	{
-		PrivateVariable->Modify();
-		PrivateVariable->bIsInput = BlendableParameter->bIsPreBlended;
-	}
-}
-
 struct FInterfaceParameterBindingBuilder
 {
 	UCameraRigAsset* CameraRig;
@@ -144,70 +42,32 @@ struct FInterfaceParameterBindingBuilder
 		Owner.BuildLog.AddMessage(EMessageSeverity::Error, MoveTemp(ErrorMessage));
 	}
 
-	template<typename CameraParameterType>
-	void SetCameraParameterOverride(
+	template<typename CameraParameterOrVariableReferenceType>
+	void SetCameraParameterOrVariableReferenceOverride(
 			const UCameraRigBlendableParameter* BlendableParameter,
 			FStructProperty* TargetProperty,
-			CameraParameterType* CameraParameterPtr)
+			CameraParameterOrVariableReferenceType* CameraParameterOrVariableReferencePtr)
 	{
-		using VariableAssetType = typename CameraParameterType::VariableAssetType;
+		using VariableAssetType = typename CameraParameterOrVariableReferenceType::VariableAssetType;
 		using ValueType = typename VariableAssetType::ValueType;
 
-		ensure(BlendableParameter->PrivateVariable);
+		ensure(BlendableParameter->PrivateVariableID.IsValid());
 		ensure(BlendableParameter->TargetPropertyName == TargetProperty->GetFName());
 
-		VariableAssetType* NewVariable = EnsureCompatibleVariable<VariableAssetType>(BlendableParameter);
-		const bool bIsValid = CheckTwiceDrivenParameter(BlendableParameter, CameraParameterPtr);
-		if (!NewVariable || !bIsValid)
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CameraParameterOrVariableReferencePtr);
+		if (!bIsValid)
 		{
 			return;
 		}
 
-		// Find the variable that was previously driving this parameter. If it has changed, flag the
-		// camera node as having been modified.
 		UCameraNode* TargetNode = BlendableParameter->Target;
-		VariableAssetType* PreviousVariable = FindOldDrivingVariable<VariableAssetType>(TargetProperty->GetFName(), TargetNode);
-		if (PreviousVariable != NewVariable)
+		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(TargetProperty->GetFName(), TargetNode);
+		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
 		{
 			TargetNode->Modify();
 		}
 
-		SetPrivateVariableDefaultValue<VariableAssetType, ValueType>(NewVariable, CameraParameterPtr->Value);
-
-		CameraParameterPtr->Variable = NewVariable;
-	}
-
-	template<typename VariableReferenceType>
-	void SetVariableReferenceOverride(
-			const UCameraRigBlendableParameter* BlendableParameter,
-			FStructProperty* TargetProperty,
-			VariableReferenceType* VariableReferencePtr)
-	{
-		using VariableAssetType = typename VariableReferenceType::VariableAssetType;
-		using ValueType = typename VariableAssetType::ValueType;
-
-		ensure(BlendableParameter->PrivateVariable);
-		ensure(BlendableParameter->TargetPropertyName == TargetProperty->GetFName());
-
-		VariableAssetType* NewVariable = EnsureCompatibleVariable<VariableAssetType>(BlendableParameter);
-		const bool bIsValid = CheckTwiceDrivenParameter(BlendableParameter, VariableReferencePtr);
-		if (!NewVariable || !bIsValid)
-		{
-			return;
-		}
-
-		// Find the variable that was previously driving this reference. If it has changed, flag the
-		// camera node as having been modified.
-		UCameraNode* TargetNode = BlendableParameter->Target;
-		VariableAssetType* PreviousVariable = FindOldDrivingVariable<VariableAssetType>(TargetProperty->GetFName(), TargetNode);
-		if (PreviousVariable != NewVariable)
-		{
-			TargetNode->Modify();
-		}
-
-		// No default value to set on the driving variable.
-
-		VariableReferencePtr->Variable = NewVariable;
+		CameraParameterOrVariableReferencePtr->VariableID = BlendableParameter->PrivateVariableID;
 	}
 
 	template<typename VariableAssetType>
@@ -217,29 +77,68 @@ struct FInterfaceParameterBindingBuilder
 	{
 		using ValueType = typename VariableAssetType::ValueType;
 
-		ensure(BlendableParameter->PrivateVariable);
+		ensure(BlendableParameter->PrivateVariableID.IsValid());
 		ensure(BlendableParameter->TargetPropertyName == CustomParameter.ParameterName);
 
-		VariableAssetType* NewVariable = EnsureCompatibleVariable<VariableAssetType>(BlendableParameter);
-		const bool bIsValid = CheckTwiceDrivenParameter(BlendableParameter, *CustomParameter.OverrideVariable);
-		if (!NewVariable || !bIsValid)
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter);
+		if (!bIsValid)
 		{
 			return;
 		}
 
-		// Find the variable that was previously driving this override. If it has changed, flag the
-		// camera node as having been modified.
 		UCameraNode* TargetNode = BlendableParameter->Target;
-		VariableAssetType* PreviousVariable = FindOldDrivingVariable<VariableAssetType>(CustomParameter.ParameterName, TargetNode);
-		if (PreviousVariable != NewVariable)
+		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(CustomParameter.ParameterName, TargetNode);
+		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
 		{
 			TargetNode->Modify();
 		}
 
-		const ValueType* DefaultValue = reinterpret_cast<const ValueType*>(CustomParameter.DefaultValuePtr);
-		SetPrivateVariableDefaultValue<VariableAssetType, ValueType>(NewVariable, *DefaultValue);
+		(*CustomParameter.OverrideVariableID) = BlendableParameter->PrivateVariableID;
+	}
 
-		(*CustomParameter.OverrideVariable) = NewVariable;
+	void SetCustomBlendableStructParameterOverride(
+			const UCameraRigBlendableParameter* BlendableParameter,
+			const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
+	{
+		ensure(BlendableParameter->PrivateVariableID.IsValid());
+		ensure(BlendableParameter->TargetPropertyName == CustomParameter.ParameterName);
+
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter.OverrideVariableID);
+		if (!bIsValid)
+		{
+			return;
+		}
+
+		// Also ensure the struct type is compatible.
+		if (CustomParameter.BlendableStructType != BlendableParameter->BlendableStructType)
+		{
+			ReportError(BlendableParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"IncompatibleBlendableStructType", 
+							"Invalid interface parameter '{0}', driving property '{1}' on '{2}': expected type {3} but was {4}"),
+						FText::FromString(BlendableParameter->InterfaceParameterName),
+						FText::FromName(BlendableParameter->TargetPropertyName),
+						FText::FromName(BlendableParameter->Target->GetFName()),
+#if WITH_EDITORONLY_DATA
+						CustomParameter.BlendableStructType->GetDisplayNameText(),
+						BlendableParameter->BlendableStructType->GetDisplayNameText()
+#else
+						FText::FromName(CustomParameter.BlendableStructType->GetFName()),
+						FText::FromName(BlendableParameter->BlendableStructType->GetFName())
+#endif
+						));
+			return;
+		}
+
+		UCameraNode* TargetNode = BlendableParameter->Target;
+		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(CustomParameter.ParameterName, TargetNode);
+		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
+		{
+			TargetNode->Modify();
+		}
+
+		(*CustomParameter.OverrideVariableID) = BlendableParameter->PrivateVariableID;
 	}
 
 	void SetDataContextPropertyOverride(
@@ -249,7 +148,7 @@ struct FInterfaceParameterBindingBuilder
 	{
 		ensure(DataParameter->PrivateDataID);
 
-		const bool bIsValid = CheckTwiceDrivenParameter(DataParameter, *OverrideDataID);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, OverrideDataID);
 		if (!bIsValid)
 		{
 			return;
@@ -272,7 +171,7 @@ struct FInterfaceParameterBindingBuilder
 		ensure(DataParameter->PrivateDataID);
 		ensure(DataParameter->TargetPropertyName == CustomParameter.ParameterName);
 
-		const bool bIsValid = CheckTwiceDrivenParameter(DataParameter, *CustomParameter.OverrideDataID);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, CustomParameter.OverrideDataID);
 		if (!bIsValid)
 		{
 			return;
@@ -290,15 +189,14 @@ struct FInterfaceParameterBindingBuilder
 
 private:
 
-	template<typename ExpectedVariableAssetType>
-	ExpectedVariableAssetType* FindOldDrivingVariable(FName ForParameterName, UCameraNode* ForCameraNode)
+	FCameraVariableID FindOldDrivingVariableID(FName ForParameterName, UCameraNode* ForCameraNode)
 	{
 		using FDrivenParameterKey = FCameraRigAssetBuilder::FDrivenParameterKey;
 
 		FDrivenParameterKey ParameterKey{ ForParameterName, ForCameraNode };
-		TObjectPtr<UCameraVariableAsset> ReusedVariable;
-		Owner.OldDrivenBlendableParameters.RemoveAndCopyValue(ParameterKey, ReusedVariable);
-		return CastChecked<ExpectedVariableAssetType>(ReusedVariable, ECastCheckedType::NullAllowed);
+		FCameraVariableID ReusedVariableID;
+		Owner.OldDrivenBlendableParameters.RemoveAndCopyValue(ParameterKey, ReusedVariableID);
+		return ReusedVariableID;
 	}
 
 	FCameraContextDataID FindOldDrivingDataID(FName ForParameterName, UCameraNode* ForCameraNode)
@@ -311,48 +209,90 @@ private:
 		return ReusedDataID;
 	}
 
-	template<typename CameraParameterType>
-	bool CheckTwiceDrivenParameter(
+	template<typename CameraParameterOrVariableReferenceType>
+	bool CheckIfParameterCanBeOverridden(
 			const UCameraRigBlendableParameter* BlendableParameter, 
-			CameraParameterType* CameraParameter)
+			CameraParameterOrVariableReferenceType* CameraParameterOrVariableReference)
 	{
-		using VariableAssetType = typename CameraParameterType::VariableAssetType;
-		return CheckTwiceDrivenParameter<VariableAssetType>(BlendableParameter, CameraParameter->Variable);
+		if (CameraParameterOrVariableReference->Variable != nullptr)
+		{
+			ReportError(BlendableParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"BlendableParameterDrivenTwice", 
+							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
+						FText::FromName(BlendableParameter->Target->GetFName()), 
+						FText::FromName(BlendableParameter->TargetPropertyName)));
+			return false;
+		}
+
+		return CheckIfParameterCanBeOverridden(BlendableParameter, &CameraParameterOrVariableReference->VariableID);
 	}
 
-	template<typename VariableAssetType>
-	bool CheckTwiceDrivenParameter(
+	bool CheckIfParameterCanBeOverridden(
 			const UCameraRigBlendableParameter* BlendableParameter, 
-			TObjectPtr<VariableAssetType> CameraParameterVariable)
+			const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
 	{
-		if (CameraParameterVariable != nullptr)
+		if (CustomParameter.OverrideVariable != nullptr)
 		{
-			// We should have cleared all exposed parameters in GatherOldDrivenParameters, so the only variables
-			// left on camera parameters should be user-defined ones.
-			UObject* VariableOuter = CameraParameterVariable->GetOuter();
-			if (ensureMsgf(
-						VariableOuter != CameraRig, 
-						TEXT("Unexpected driving variable found: all exposed parameters should have been cleared before rebuilding.")))
-			{
-				// If this parameter is driven by a user-defined variable, emit an error.
-				ReportError(BlendableParameter->Target,
-						FText::Format(
-							LOCTEXT(
-								"BlendableParameterDrivenTwice", 
-								"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
-							FText::FromName(BlendableParameter->Target->GetFName()), 
-							FText::FromName(BlendableParameter->TargetPropertyName)));
-				return false;
-			}
+			ReportError(BlendableParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"BlendableParameterDrivenTwice", 
+							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
+						FText::FromName(BlendableParameter->Target->GetFName()), 
+						FText::FromName(BlendableParameter->TargetPropertyName)));
+			return false;
+		}
+
+		return CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter.OverrideVariableID);
+	}
+
+	bool CheckIfParameterCanBeOverridden(
+			const UCameraRigBlendableParameter* BlendableParameter, 
+			FCameraVariableID* VariableID)
+	{
+		if (!VariableID)
+		{
+			ReportError(BlendableParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"BlendableParameterMissingOverrideID", 
+							"Camera node parameter '{0}.{1}' cannot be overriden by a parameter"),
+						FText::FromName(BlendableParameter->Target->GetFName()), 
+						FText::FromName(BlendableParameter->TargetPropertyName)));
+			return false;
+		}
+		if (VariableID->IsValid())
+		{
+			ReportError(BlendableParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"BlendableParameterDrivenTwice", 
+							"Camera node parameter '{0}.{1}' is somehow overriden twice!"),
+						FText::FromName(BlendableParameter->Target->GetFName()), 
+						FText::FromName(BlendableParameter->TargetPropertyName)));
+			return false;
 		}
 		return true;
 	}
 
-	bool CheckTwiceDrivenParameter(
+	bool CheckIfParameterCanBeOverridden(
 			const UCameraRigDataParameter* DataParameter,
-			FCameraContextDataID DataID)
+			FCameraContextDataID* DataID)
 	{
-		if (DataID.IsValid())
+		if (!DataID)
+		{
+			ReportError(DataParameter->Target,
+					FText::Format(
+						LOCTEXT(
+							"DataParameterMissingOverrideID", 
+							"Camera node parameter '{0}.{1}' cannot be overriden by a parameter"),
+						FText::FromName(DataParameter->Target->GetFName()), 
+						FText::FromName(DataParameter->TargetPropertyName)));
+			return false;
+		}
+		if (DataID->IsValid())
 		{
 			ReportError(DataParameter->Target,
 					FText::Format(
@@ -366,54 +306,12 @@ private:
 		return true;
 	}
 
-	template<typename VariableAssetType>
-	VariableAssetType* EnsureCompatibleVariable(const UCameraRigBlendableParameter* BlendableParameter)
-	{
-		if (!ensure(BlendableParameter->PrivateVariable))
-		{
-			return nullptr;
-		}
-
-		VariableAssetType* Variable = Cast<VariableAssetType>(BlendableParameter->PrivateVariable);
-
-		if (!Variable)
-		{
-			const UClass* VariableAssetClass = VariableAssetType::StaticClass();
-			const UCameraVariableAsset* DefaultObject = VariableAssetClass->template GetDefaultObject<UCameraVariableAsset>();
-
-			ReportError(BlendableParameter->Target,
-				FText::Format(LOCTEXT(
-					"IncompatibleCameraNodeParameter",
-					"Invalid interface parameter '{0}', driving property '{1}' on '{2}': expected {3} camera parameter but was {4}"),
-					FText::FromString(BlendableParameter->InterfaceParameterName),
-					FText::FromName(BlendableParameter->TargetPropertyName),
-					FText::FromName(BlendableParameter->Target->GetFName()),
-					FText::FromName(UEnum::GetValueAsName(DefaultObject->GetVariableType())),
-					FText::FromName(UEnum::GetValueAsName(BlendableParameter->ParameterType))
-					)
-				);
-			return nullptr;
-		}
-
-		return Variable;
-	}
-
 private:
 
 	FCameraRigAssetBuilder& Owner;
 };
 
-void TrashPrivateVariable(UCameraVariableAsset* VariableToTrash)
-{
-	TStringBuilder<256> StringBuilder;
-	StringBuilder.Append("TRASH_");
-	StringBuilder.Append(VariableToTrash->GetName());
-
-	VariableToTrash->Modify();
-	VariableToTrash->Rename(StringBuilder.ToString());
-}
-
-void AddCameraVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVariableTableAllocationInfo& AllocationInfo)
+void AddVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVariableTableAllocationInfo& AllocationInfo)
 {
 	if (Variable)
 	{
@@ -422,7 +320,21 @@ void AddCameraVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVa
 	}
 }
 
-void AddContextDataToAllocationInfo(FCameraContextDataID DataID, ECameraContextDataType DataType, const UObject* DataTypeObject, FCameraContextDataAllocationInfo& AllocationInfo)
+void AddVariableToAllocationInfo(FCameraVariableID VariableID, ECameraVariableType VariableType, const UScriptStruct* BlendableStructType, FCameraVariableTableAllocationInfo& AllocationInfo)
+{
+	if (VariableID)
+	{
+		FCameraVariableDefinition VariableDefinition;
+		VariableDefinition.VariableID = VariableID;
+		VariableDefinition.VariableType = VariableType;
+		VariableDefinition.BlendableStructType = BlendableStructType;
+		VariableDefinition.bIsPrivate = true;
+		VariableDefinition.bIsInput = true;
+		AllocationInfo.VariableDefinitions.Add(VariableDefinition);
+	}
+}
+
+void AddContextDataToAllocationInfo(FCameraContextDataID DataID, ECameraContextDataType DataType, const UObject* DataTypeObject, FCameraContextDataTableAllocationInfo& AllocationInfo)
 {
 	if (DataID)
 	{
@@ -489,6 +401,7 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 
 	CallBuild();
 
+	BuildParameterDefinitions();
 	BuildDefaultParameters();
 }
 
@@ -526,9 +439,9 @@ void FCameraRigAssetBuilder::CallPreBuild()
 
 void FCameraRigAssetBuilder::GatherOldDrivenParameters()
 {
-	// Keep track of which camera parameters and variable references were previously driven by 
-	// private variables, and then clear those variables. This is because it's easier to rebuild 
-	// all this from a blank slate than trying to figure out what changed.
+	// Keep track of which blendable/data parameters were previously overriden with private IDs.
+	// Then clear those private IDs. This is because it's easier to rebuild all this from a blank 
+	// slate than trying to figure out what changed.
 	//
 	// As we rebuild things in BuildInterfaceParameterBindings, we compare to the old state to
 	// figure out if we need to flag anything as modified for the current transaction.
@@ -574,33 +487,23 @@ void FCameraRigAssetBuilder::GatherOldDrivenParameters()
 			if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 			{\
 				auto* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(CameraNode);\
-				if (CameraParameterPtr->Variable)\
+				if (CameraParameterPtr->VariableID.IsValid() && !CameraParameterPtr->Variable)\
 				{\
-					UObject* VariableOuter = CameraParameterPtr->Variable->GetOuter();\
-					if (VariableOuter == CameraRig)\
-					{\
-						OldDrivenBlendableParameters.Add(\
-								FDrivenParameterKey{ StructProperty->GetFName(), CameraNode },\
-								*reinterpret_cast<TObjectPtr<UCameraVariableAsset>*>(\
-									reinterpret_cast<FObjectPtr*>(&CameraParameterPtr->Variable)));\
-						CameraParameterPtr->Variable = nullptr;\
-					}\
+					OldDrivenBlendableParameters.Add(\
+							FDrivenParameterKey{ StructProperty->GetFName(), CameraNode },\
+							CameraParameterPtr->VariableID);\
+					CameraParameterPtr->VariableID = FCameraVariableID();\
 				}\
 			}\
 			else if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 			{\
 				auto* VariableReferencePtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(CameraNode);\
-				if (VariableReferencePtr->Variable)\
+				if (VariableReferencePtr->VariableID.IsValid() && !VariableReferencePtr->Variable)\
 				{\
-					UObject* VariableOuter = VariableReferencePtr->Variable->GetOuter();\
-					if (VariableOuter == CameraRig)\
-					{\
-						OldDrivenBlendableParameters.Add(\
-								FDrivenParameterKey{ StructProperty->GetFName(), CameraNode },\
-								*reinterpret_cast<TObjectPtr<UCameraVariableAsset>*>(\
-									reinterpret_cast<FObjectPtr*>(&VariableReferencePtr->Variable)));\
-						VariableReferencePtr->Variable = nullptr;\
-					}\
+					OldDrivenBlendableParameters.Add(\
+							FDrivenParameterKey{ StructProperty->GetFName(), CameraNode },\
+							VariableReferencePtr->VariableID);\
+					VariableReferencePtr->VariableID = FCameraVariableID();\
 				}\
 			}\
 			else
@@ -618,27 +521,23 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 			for (const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& BlendableParameter : CustomParameters.BlendableParameters)
 			{
-				if (!ensure(BlendableParameter.OverrideVariable))
+				if (!BlendableParameter.OverrideVariableID)
 				{
 					continue;
 				}
 
-				if (UCameraVariableAsset* Variable = BlendableParameter.OverrideVariable->Get())
+				if (BlendableParameter.OverrideVariableID->IsValid())
 				{
-					UObject* VariableOuter = Variable->GetOuter();
-					if (VariableOuter == CameraRig)
-					{
-						OldDrivenBlendableParameters.Add(
-								FDrivenParameterKey{ BlendableParameter.ParameterName, CameraNode },
-								*BlendableParameter.OverrideVariable);
-						(*BlendableParameter.OverrideVariable) = nullptr;
-					}
+					OldDrivenBlendableParameters.Add(
+							FDrivenParameterKey{ BlendableParameter.ParameterName, CameraNode },
+							*BlendableParameter.OverrideVariableID);
+					(*BlendableParameter.OverrideVariableID) = FCameraVariableID();
 				}
 			}
 
 			for (const FCustomCameraNodeParameterInfos::FDataParameterInfo& DataParameter : CustomParameters.DataParameters)
 			{
-				if (!ensure(DataParameter.OverrideDataID))
+				if (!DataParameter.OverrideDataID)
 				{
 					continue;
 				}
@@ -686,28 +585,14 @@ void FCameraRigAssetBuilder::BuildInterfaceParameters()
 			continue;
 		}
 
-		// Create a new private variable for this interface parameter if it doesn't have on yet (e.g. it's a
-		// newly-created parameter), or if its type has changed.
-		UCameraVariableAsset* PrivateVariable = BlendableParameter->PrivateVariable;
-		if (PrivateVariable && PrivateVariable->GetVariableType() == BlendableParameter->ParameterType)
+		// Create a new private variable ID for this interface parameter. Flag the parameter as changed if
+		// the ID is different, generally when it's a new parameter.
+		FCameraVariableID VariableID = FCameraVariableID::FromHashValue(GetTypeHash(BlendableParameter->GetGuid()));
+		if (BlendableParameter->PrivateVariableID != VariableID)
 		{
-			UpdatePrivateVariable(CameraRig, BlendableParameter, PrivateVariable);
-			continue;
-		}
-
-		if (PrivateVariable)
-		{
-			// Trash it so its name is available for the new private variable.
-			TrashPrivateVariable(PrivateVariable);
-
-			// We supposedly have removed all references to private variables in GatherOldDrivenParameters,
-			// so once we null-out the reference on the interface parameter, this private variable should
-			// not be used anymore and should get GC'ed soon.
 			BlendableParameter->Modify();
-			BlendableParameter->PrivateVariable = nullptr;
+			BlendableParameter->PrivateVariableID = VariableID;
 		}
-
-		BlendableParameter->PrivateVariable = CreatePrivateVariable(CameraRig, BlendableParameter);
 	}
 
 	for (auto It = CameraRig->Interface.DataParameters.CreateIterator(); It; ++It)
@@ -737,13 +622,9 @@ void FCameraRigAssetBuilder::BuildInterfaceParameters()
 			continue;
 		}
 
-		// Create the data ID for this parameter. Flag the parameter as changed if the ID
-		// is different, such as if it was renamed.
-		const FString DataIDName = FString::Format(
-				TEXT("Override_{0}_{1}"), 
-				{ CameraRig->GetName(), DataParameter->InterfaceParameterName });
-
-		FCameraContextDataID DataID = FCameraContextDataID::FromName(FName(DataIDName));
+		// Create a new private data ID for this interface parameter. Flag the parameter as changed if
+		// the ID is different, generally when it's a new parameter.
+		FCameraContextDataID DataID = FCameraContextDataID::FromHashValue(GetTypeHash(DataParameter->GetGuid()));
 		if (DataParameter->PrivateDataID != DataID)
 		{
 			DataParameter->Modify();
@@ -802,11 +683,11 @@ void FCameraRigAssetBuilder::BuildInterfaceParameterBindings()
 
 		// See if this interface parameter is overriding a camera node parameter.
 		// Otherwise, maybe it's targeting a camera rig node's override for an inner rig interface parameter.
-		if (SetupCameraParameterOrVariableReferenceOverride(BlendableParameter))
+		if (SetupCustomBlendableParameterOverride(BlendableParameter))
 		{
 			// Implicit continue.
 		}
-		else if (SetupCustomBlendableParameterOverride(BlendableParameter))
+		else if (SetupCameraParameterOrVariableReferenceOverride(BlendableParameter))
 		{
 			// Implicit continue.
 		}
@@ -850,11 +731,11 @@ void FCameraRigAssetBuilder::BuildInterfaceParameterBindings()
 			continue;
 		}
 
-		if (SetupDataContextPropertyOverride(DataParameter))
+		if (SetupCustomDataParameterOverride(DataParameter))
 		{
 			// Implicit continue.
 		}
-		else if (SetupCustomDataParameterOverride(DataParameter))
+		else if (SetupDataContextPropertyOverride(DataParameter))
 		{
 			// Implicit continue.
 		}
@@ -913,14 +794,14 @@ bool FCameraRigAssetBuilder::SetupCameraParameterOrVariableReferenceOverride(con
 	if (TargetStructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 	{\
 		auto* CameraParameterPtr = TargetStructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(Target);\
-		Builder.SetCameraParameterOverride<F##ValueName##CameraParameter>(\
+		Builder.SetCameraParameterOrVariableReferenceOverride<F##ValueName##CameraParameter>(\
 				BlendableParameter, TargetStructProperty, CameraParameterPtr\
 				);\
 	}\
 	else if (TargetStructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 	{\
 		auto* VariableReferencePtr = TargetStructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(Target);\
-		Builder.SetVariableReferenceOverride<F##ValueName##CameraVariableReference>(\
+		Builder.SetCameraParameterOrVariableReferenceOverride<F##ValueName##CameraVariableReference>(\
 				BlendableParameter, TargetStructProperty, VariableReferencePtr\
 				);\
 	}\
@@ -978,6 +859,9 @@ bool FCameraRigAssetBuilder::SetupCustomBlendableParameterOverride(const UCamera
 			break;
 	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+		case ECameraVariableType::BlendableStruct:
+			Builder.SetCustomBlendableStructParameterOverride(BlendableParameter, *TargetCustomParameter);
+			break;
 	}
 
 	return true;
@@ -1056,7 +940,7 @@ void FCameraRigAssetBuilder::DiscardUnusedParameters()
 	// must be discarded. These are nodes and properties that used to be driven by
 	// variables and now aren't, so we need to flag them as modified.
 
-	for (TPair<FDrivenParameterKey, TObjectPtr<UCameraVariableAsset>> Pair : OldDrivenBlendableParameters)
+	for (TPair<FDrivenParameterKey, FCameraVariableID> Pair : OldDrivenBlendableParameters)
 	{
 		UCameraNode* Target = Pair.Key.Value;
 		Target->Modify();
@@ -1090,6 +974,9 @@ void FCameraRigAssetBuilder::CallBuild()
 		CallBuild(BuildContext, CameraNode);
 	}
 
+	// Add parameters to the allocation info.
+	BuildParametersAllocationInfo(BuildContext);
+
 	// Set the final allocation info on the camera rig asset.
 	if (CameraRig->AllocationInfo != BuildContext.AllocationInfo)
 	{
@@ -1103,8 +990,8 @@ void FCameraRigAssetBuilder::CallBuild(FCameraRigBuildContext& BuildContext, UCa
 	using namespace UE::Cameras::Internal;
 
 	// Look for properties that are camera parameters, and gather what camera variables they reference. 
-	// This is for both exposed rig parameters (which we just built in BuildNewDrivenParameters) and 
-	// for parameters driven by user-defined variables.
+	// This is only for user-defined variable overrides. We will do the same for exposed camera rig
+	// parameters later, in BuildParametersAllocationInfo.
 	UClass* CameraNodeClass = CameraNode->GetClass();
 	FCameraRigAllocationInfo& AllocationInfo = BuildContext.AllocationInfo;
 	for (TFieldIterator<FProperty> It(CameraNodeClass); It; ++It)
@@ -1119,12 +1006,12 @@ void FCameraRigAssetBuilder::CallBuild(FCameraRigBuildContext& BuildContext, UCa
 		if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 		{\
 			auto* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(CameraNode);\
-			AddCameraVariableToAllocationInfo(CameraParameterPtr->Variable, AllocationInfo.VariableTableInfo);\
+			AddVariableToAllocationInfo(CameraParameterPtr->Variable, AllocationInfo.VariableTableInfo);\
 		}\
 		else if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 		{\
 			auto* CameraVariableReferencePtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(CameraNode);\
-			AddCameraVariableToAllocationInfo(CameraVariableReferencePtr->Variable, AllocationInfo.VariableTableInfo);\
+			AddVariableToAllocationInfo(CameraVariableReferencePtr->Variable, AllocationInfo.VariableTableInfo);\
 		}\
 		else
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -1134,9 +1021,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 		}
 	}
 
-	// Now do the same with custom parameters handled by the node itself. These custom parameters have 
-	// been hooked up to overrides in BuildInterfaceParameterBindings so we should be getting them back 
-	// with the overrides set here.
+	// Now do the same with custom parameters handled by the node itself.
 	if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNode))
 	{
 		FCustomCameraNodeParameterInfos CustomParameters;
@@ -1144,18 +1029,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 		for (const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& BlendableParameter : CustomParameters.BlendableParameters)
 		{
-			if (ensure(BlendableParameter.OverrideVariable))
-			{
-				AddCameraVariableToAllocationInfo(BlendableParameter.OverrideVariable->Get(), AllocationInfo.VariableTableInfo);
-			}
-		}
-
-		for (const FCustomCameraNodeParameterInfos::FDataParameterInfo& DataParameter : CustomParameters.DataParameters)
-		{
-			if (ensure(DataParameter.OverrideDataID))
-			{
-				AddContextDataToAllocationInfo(*DataParameter.OverrideDataID, DataParameter.ParameterType, DataParameter.ParameterTypeObject, AllocationInfo.ContextDataTableInfo);
-			}
+			AddVariableToAllocationInfo(BlendableParameter.OverrideVariable, AllocationInfo.VariableTableInfo);
 		}
 	}
 
@@ -1163,11 +1037,80 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	CameraNode->Build(BuildContext);
 }
 
+void FCameraRigAssetBuilder::BuildParametersAllocationInfo(FCameraRigBuildContext& BuildContext)
+{
+	// The variables and context data definitions should have already been added by the camera nodes
+	// who have override variable IDs and data IDs set on them. 
+
+	for (const UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
+	{
+		if (!BlendableParameter->PrivateVariableID.IsValid())
+		{
+			continue;
+		}
+
+		FCameraVariableDefinition Definition = BlendableParameter->GetVariableDefinition();
+		BuildContext.AllocationInfo.VariableTableInfo.VariableDefinitions.Add(Definition);
+	}
+
+	for (const UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
+	{
+		if (!DataParameter->PrivateDataID.IsValid())
+		{
+			continue;
+		}
+
+		FCameraContextDataDefinition Definition = DataParameter->GetDataDefinition();
+		BuildContext.AllocationInfo.ContextDataTableInfo.DataDefinitions.Add(Definition);
+	}
+}
+
+void FCameraRigAssetBuilder::BuildParameterDefinitions()
+{
+	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
+
+	for (const UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
+	{
+		if (BlendableParameter && BlendableParameter->PrivateVariableID)
+		{
+			FCameraRigParameterDefinition Definition;
+			Definition.ParameterName = FName(BlendableParameter->InterfaceParameterName);
+			Definition.ParameterGuid = BlendableParameter->GetGuid();
+			Definition.ParameterType = ECameraRigInterfaceParameterType::Blendable;
+			Definition.VariableID = BlendableParameter->PrivateVariableID;
+			Definition.VariableType = BlendableParameter->ParameterType;
+			Definition.BlendableStructType = BlendableParameter->BlendableStructType;
+			ParameterDefinitions.Add(Definition);
+		}
+	}
+
+	for (const UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
+	{
+		if (DataParameter && DataParameter->PrivateDataID)
+		{
+			FCameraRigParameterDefinition Definition;
+			Definition.ParameterName = FName(DataParameter->InterfaceParameterName);
+			Definition.ParameterGuid = DataParameter->GetGuid();
+			Definition.ParameterType = ECameraRigInterfaceParameterType::Data;
+			Definition.DataID = DataParameter->PrivateDataID;
+			Definition.DataType = DataParameter->DataType;
+			Definition.DataTypeObject = DataParameter->DataTypeObject;
+			ParameterDefinitions.Add(Definition);
+		}
+	}
+
+	if (ParameterDefinitions != CameraRig->ParameterDefinitions)
+	{
+		CameraRig->Modify();
+		CameraRig->ParameterDefinitions = ParameterDefinitions;
+	}
+}
+
 void FCameraRigAssetBuilder::BuildDefaultParameters()
 {
 	FInstancedPropertyBag DefaultParameters;
-	BuildDefaultParameters(CameraRig, DefaultParameters);
-	if (DefaultParameters.GetPropertyBagStruct() != CameraRig->DefaultParameters.GetPropertyBagStruct())
+	FCameraRigParameterBuilder::BuildDefaultParameters(CameraRig, DefaultParameters);
+	if (!DefaultParameters.Identical(&CameraRig->DefaultParameters, 0))
 	{
 		CameraRig->Modify();
 		CameraRig->DefaultParameters = DefaultParameters;
@@ -1188,89 +1131,6 @@ void FCameraRigAssetBuilder::UpdateBuildStatus()
 
 	// Don't modify the camera rig: BuildStatus is transient.
 	CameraRig->BuildStatus = BuildStatus;
-}
-
-void FCameraRigAssetBuilder::BuildDefaultParameters(UCameraRigAsset* CameraRigAsset, FInstancedPropertyBag& OutPropertyBag)
-{
-	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
-	AppendDefaultParameters(CameraRigAsset->Interface, DefaultParameterProperties);
-	OutPropertyBag.AddProperties(DefaultParameterProperties);
-}
-
-void FCameraRigAssetBuilder::AppendDefaultParameters(const FCameraRigInterface& CameraRigInterface, TArray<FPropertyBagPropertyDesc>& OutProperties)
-{
-	for (const UCameraRigBlendableParameter* BlendableParameter : CameraRigInterface.BlendableParameters)
-	{
-		FName PropertyName(BlendableParameter->InterfaceParameterName);
-
-		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;
-		const UObject* PropertyTypeObject = nullptr;
-
-		switch (BlendableParameter->ParameterType)
-		{
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-			case ECameraVariableType::ValueName:\
-				PropertyTypeObject = F##ValueName##CameraParameter::StaticStruct();\
-				break;
-		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-			default:
-				ensure(false);
-				break;
-		}
-
-		FPropertyBagPropertyDesc NewProperty(PropertyName, PropertyType, PropertyTypeObject);
-		// Make the property bag match the camera interface parameter GUIDs.
-		NewProperty.ID = BlendableParameter->GetGuid();
-
-		OutProperties.Add(NewProperty);
-	}
-
-	for (const UCameraRigDataParameter* DataParameter : CameraRigInterface.DataParameters)
-	{
-		FName PropertyName(DataParameter->InterfaceParameterName);
-
-		bool bIsValid = true;
-		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Bool;
-		const UObject* PropertyTypeObject = DataParameter->DataTypeObject;
-
-		switch (DataParameter->DataType)
-		{
-			case ECameraContextDataType::Name:
-				PropertyType = EPropertyBagPropertyType::Name;
-				break;
-			case ECameraContextDataType::String:
-				PropertyType = EPropertyBagPropertyType::String;
-				break;
-			case ECameraContextDataType::Enum:
-				PropertyType = EPropertyBagPropertyType::Enum;
-				ensure(PropertyTypeObject && PropertyTypeObject->IsA<UEnum>());
-				break;
-			case ECameraContextDataType::Struct:
-				PropertyType = EPropertyBagPropertyType::Struct;
-				ensure(PropertyTypeObject && PropertyTypeObject->IsA<UScriptStruct>());
-				break;
-			case ECameraContextDataType::Object:
-				PropertyType = EPropertyBagPropertyType::Object;
-				break;
-			case ECameraContextDataType::Class:
-				PropertyType = EPropertyBagPropertyType::Class;
-				break;
-			default:
-				ensure(false);
-				bIsValid = false;
-				break;
-		}
-
-		if (bIsValid)
-		{
-			FPropertyBagPropertyDesc NewProperty(PropertyName, PropertyType, PropertyTypeObject);
-			// Make the property bag match the camera interface parameter GUIDs.
-			NewProperty.ID = DataParameter->GetGuid();
-
-			OutProperties.Add(NewProperty);
-		}
-	}
 }
 
 }  // namespace UE::Cameras

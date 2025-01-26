@@ -3,18 +3,18 @@
 #pragma once
 
 #include "Core/CameraVariableTableFwd.h"
-#include "Core/CameraContextDataAllocationInfo.h"
+#include "Core/CameraContextDataTableAllocationInfo.h"
 #include "UObject/Interface.h"
 #include "UObject/ObjectPtr.h"
 
 #include "ICustomCameraNodeParameterProvider.generated.h"
 
 class UCameraNode;
-class UCameraVariableAsset;
 
 namespace UE::Cameras
 {
 	class FCameraRigAssetBuilder;
+	class FCameraRigParameterBuilder;
 	namespace Internal { struct FInterfaceParameterBindingBuilder; }
 }
 
@@ -32,11 +32,19 @@ struct FCustomCameraNodeBlendableParameter
 	UPROPERTY()
 	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
 
-	/** An optional camera variable that is dynamically driving the parameter's value. */
+	/** The struct type of a blendable struct. */
+	UPROPERTY()
+	TObjectPtr<const UScriptStruct> BlendableStructType;
+
+	/** An optional camera variable ID for dynamically driving the parameter's value. */
+	UPROPERTY()
+	FCameraVariableID OverrideVariableID;
+
+	/** An optional user-defined camera variable for dynamically driving the parameter's value. */
 	UPROPERTY()
 	TObjectPtr<UCameraVariableAsset> OverrideVariable;
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCustomCameraNodeBlendableParameter& A, const FCustomCameraNodeBlendableParameter& B);
+	bool operator==(const FCustomCameraNodeBlendableParameter& Other) const = default;
 };
 
 /** Describes a custom camera data parameter. */
@@ -61,7 +69,7 @@ struct FCustomCameraNodeDataParameter
 	UPROPERTY()
 	FCameraContextDataID OverrideDataID;
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCustomCameraNodeDataParameter& A, const FCustomCameraNodeDataParameter& B);
+	bool operator==(const FCustomCameraNodeDataParameter& Other) const = default;
 };
 
 /** Describes custom camera parameters. */
@@ -84,7 +92,7 @@ struct FCustomCameraNodeParameters
 	/** Removes all parameters from this structure. */
 	void Reset() { BlendableParameters.Reset(); DataParameters.Reset(); }
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCustomCameraNodeParameters& A, const FCustomCameraNodeParameters& B);
+	bool operator==(const FCustomCameraNodeParameters& Other) const = default;
 };
 
 /**
@@ -95,35 +103,33 @@ struct FCustomCameraNodeParameterInfos
 	/** Returns whether there are any blendable or data parameters. */
 	bool HasAnyParameters() const { return !BlendableParameters.IsEmpty() || !DataParameters.IsEmpty(); }
 
-	/** Declares a blendable parameter. */
-	template<typename VariableAssetType>
-	void AddBlendableParameter(
-			FName ParameterName, 
-			ECameraVariableType ParameterType, 
-			const uint8* DefaultValuePtr,
-			TObjectPtr<VariableAssetType>* OverrideVariable)
-	{
-		FObjectPtr* OverrideVariablePtr = reinterpret_cast<FObjectPtr*>(OverrideVariable);
-		BlendableParameters.Add({ 
-				ParameterName, 
-				ParameterType, 
-				DefaultValuePtr,
-				reinterpret_cast<TObjectPtr<UCameraVariableAsset>*>(OverrideVariable) });
-	}
-
-	/** Declares a blendable parameter. */
+	/** 
+	 * Declares a blendable parameter. 
+	 * Pass a null pointer for OverrideVariableID if this parameter should not be overridable
+	 * by a camera rig parameter.
+	 */
 	GAMEPLAYCAMERAS_API void AddBlendableParameter(
 			FName ParameterName, 
 			ECameraVariableType ParameterType, 
-			const uint8* DefaultValuePtr,
-			TObjectPtr<UCameraVariableAsset>* OverrideVariable);
+			const UScriptStruct* BlendableStructType,
+			const uint8* DefaultValue,
+			FCameraVariableID* OverrideVariableID);
 
-	/** Declares a data parameter. */
+	GAMEPLAYCAMERAS_API void AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue);
+
+	/** 
+	 * Declares a data parameter.
+	 * Pass a null pointer for OverrideDataID if this parameter should not be overridable
+	 * by a camera rig parameter.
+	 */
 	GAMEPLAYCAMERAS_API void AddDataParameter(
 			FName ParameterName, 
 			ECameraContextDataType ParameterType,
 			const UObject* ParameterTypeObject,
+			const uint8* DefaultValue,
 			FCameraContextDataID* OverrideDataID);
+
+	GAMEPLAYCAMERAS_API void AddDataParameter(FCustomCameraNodeDataParameter& Parameter, const uint8* DefaultValue);
 
 	/** Gets the list of blendable parameters. */
 	GAMEPLAYCAMERAS_API void GetBlendableParameters(TArray<FCustomCameraNodeBlendableParameter>& OutBlendableParameters) const;
@@ -141,8 +147,10 @@ private:
 	{
 		FName ParameterName;
 		ECameraVariableType ParameterType;
-		const uint8* DefaultValuePtr = nullptr;
-		TObjectPtr<UCameraVariableAsset>* OverrideVariable = nullptr;
+		const UScriptStruct* BlendableStructType = nullptr;
+		const uint8* DefaultValue = nullptr;
+		FCameraVariableID* OverrideVariableID = nullptr;
+		UCameraVariableAsset* OverrideVariable = nullptr;
 	};
 
 	struct FDataParameterInfo
@@ -150,6 +158,7 @@ private:
 		FName ParameterName;
 		ECameraContextDataType ParameterType;
 		const UObject* ParameterTypeObject;
+		const uint8* DefaultValue = nullptr;
 		FCameraContextDataID* OverrideDataID = nullptr;
 	};
 
@@ -157,6 +166,7 @@ private:
 	TArray<FDataParameterInfo> DataParameters;
 
 	friend class UE::Cameras::FCameraRigAssetBuilder;
+	friend class UE::Cameras::FCameraRigParameterBuilder;
 	friend struct UE::Cameras::Internal::FInterfaceParameterBindingBuilder;
 };
 

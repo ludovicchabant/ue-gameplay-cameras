@@ -4,43 +4,44 @@
 
 #include "GameplayCamerasDelegates.h"
 
-bool operator==(const FCustomCameraNodeBlendableParameter& A, const FCustomCameraNodeBlendableParameter& B)
-{
-	return A.ParameterName == B.ParameterName &&
-		A.ParameterType == B.ParameterType &&
-		A.OverrideVariable == B.OverrideVariable;
-}
-
-bool operator==(const FCustomCameraNodeDataParameter& A, const FCustomCameraNodeDataParameter& B)
-{
-	return A.ParameterName == B.ParameterName &&
-		A.ParameterType == B.ParameterType &&
-		A.ParameterTypeObject == B.ParameterTypeObject &&
-		A.OverrideDataID == B.OverrideDataID;
-}
-
-bool operator==(const FCustomCameraNodeParameters& A, const FCustomCameraNodeParameters& B)
-{
-	return A.BlendableParameters == B.BlendableParameters &&
-		A.DataParameters == B.DataParameters;
-}
-
 void FCustomCameraNodeParameterInfos::AddBlendableParameter(
 		FName ParameterName, 
 		ECameraVariableType ParameterType, 
-		const uint8* DefaultValuePtr,
-		TObjectPtr<UCameraVariableAsset>* OverrideVariable)
+		const UScriptStruct* BlendableStructType,
+		const uint8* DefaultValue,
+		FCameraVariableID* OverrideVariableID)
 {
-	BlendableParameters.Add({ ParameterName, ParameterType, DefaultValuePtr, OverrideVariable });
+	BlendableParameters.Add({ ParameterName, ParameterType, BlendableStructType, DefaultValue, OverrideVariableID });
+}
+
+void FCustomCameraNodeParameterInfos::AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue)
+{
+	AddBlendableParameter(
+			Parameter.ParameterName,
+			Parameter.ParameterType,
+			Parameter.BlendableStructType,
+			DefaultValue,
+			Parameter.OverrideVariable ? nullptr : &Parameter.OverrideVariableID);
 }
 
 void FCustomCameraNodeParameterInfos::AddDataParameter(
 		FName ParameterName, 
 		ECameraContextDataType ParameterType,
 		const UObject* ParameterTypeObject,
+		const uint8* DefaultValue,
 		FCameraContextDataID* OverrideDataID)
 {
-	DataParameters.Add({ ParameterName, ParameterType, ParameterTypeObject, OverrideDataID });
+	DataParameters.Add({ ParameterName, ParameterType, ParameterTypeObject, DefaultValue, OverrideDataID });
+}
+
+void FCustomCameraNodeParameterInfos::AddDataParameter(FCustomCameraNodeDataParameter& Parameter, const uint8* DefaultValue)
+{
+	AddDataParameter(
+			Parameter.ParameterName,
+			Parameter.ParameterType,
+			Parameter.ParameterTypeObject,
+			DefaultValue,
+			&Parameter.OverrideDataID);
 }
 
 void FCustomCameraNodeParameterInfos::GetBlendableParameters(TArray<FCustomCameraNodeBlendableParameter>& OutBlendableParameters) const
@@ -50,9 +51,11 @@ void FCustomCameraNodeParameterInfos::GetBlendableParameters(TArray<FCustomCamer
 		FCustomCameraNodeBlendableParameter& OutParameter = OutBlendableParameters.Emplace_GetRef();
 		OutParameter.ParameterName = BlendableParameter.ParameterName;
 		OutParameter.ParameterType = BlendableParameter.ParameterType;
-		if (BlendableParameter.OverrideVariable)
+		OutParameter.BlendableStructType = BlendableParameter.BlendableStructType;
+		OutParameter.OverrideVariable = BlendableParameter.OverrideVariable;
+		if (BlendableParameter.OverrideVariableID)
 		{
-			OutParameter.OverrideVariable = *BlendableParameter.OverrideVariable;
+			OutParameter.OverrideVariableID = *BlendableParameter.OverrideVariableID;
 		}
 	}
 }
@@ -80,10 +83,10 @@ bool FCustomCameraNodeParameterInfos::FindBlendableParameter(FName ParameterName
 		{
 			OutParameter.ParameterName = BlendableParameter.ParameterName;
 			OutParameter.ParameterType = BlendableParameter.ParameterType;
-			OutParameter.OverrideVariable = nullptr;
-			if (BlendableParameter.OverrideVariable)
+			OutParameter.BlendableStructType = BlendableParameter.BlendableStructType;
+			if (BlendableParameter.OverrideVariableID)
 			{
-				OutParameter.OverrideVariable = *BlendableParameter.OverrideVariable;
+				OutParameter.OverrideVariableID = *BlendableParameter.OverrideVariableID;
 			}
 			return true;
 		}

@@ -6,6 +6,7 @@
 #include "Core/BlendCameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
@@ -187,13 +188,13 @@ void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStac
 		{
 			continue;
 		}
-		if (!BlendableParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariableID)
 		{
 			continue;
 		}
 
-		BlendedParameterOverridesTableAllocationInfo.VariableDefinitions.Add(
-				BlendableParameter->PrivateVariable->GetVariableDefinition());
+		FCameraVariableDefinition Definition = BlendableParameter->GetVariableDefinition();
+		BlendedParameterOverridesTableAllocationInfo.VariableDefinitions.Add(Definition);
 	}
 
 	FCameraRigCameraNodeEvaluator* RootPrefabNodeEvaluator = RootEvaluator->CastThisChecked<FCameraRigCameraNodeEvaluator>();
@@ -225,23 +226,28 @@ void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 
 void FBlendStackRootCameraNodeEvaluator::SetDefaultBlendableParameterValues(FCameraVariableTable& OutVariableTable)
 {
-	for (const UCameraRigBlendableParameter* BlendableParameter : BlendablePrefabCameraRig->Interface.BlendableParameters)
+	const FInstancedPropertyBag& DefaultParameters = BlendablePrefabCameraRig->GetDefaultParameters();
+	const uint8* RawDefaultParametersContainer = DefaultParameters.GetValue().GetMemory();
+
+	for (const FCameraRigParameterDefinition& Definition : BlendablePrefabCameraRig->GetParameterDefinitions())
 	{
-		if (!ensure(BlendableParameter))
+		if (Definition.ParameterType != ECameraRigInterfaceParameterType::Blendable)
+		{
+			continue;
+		}
+		if (!Definition.VariableID.IsValid())
 		{
 			continue;
 		}
 
-		const UCameraVariableAsset* PrivateVariable = BlendableParameter->PrivateVariable;
-		if (!PrivateVariable)
+		const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
+		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
 		{
 			continue;
 		}
 
-		OutVariableTable.SetValue(
-				PrivateVariable->GetVariableID(), 
-				PrivateVariable->GetVariableType(), 
-				PrivateVariable->GetDefaultValuePtr());
+		const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
+		OutVariableTable.SetValue(Definition.VariableID, Definition.VariableType, Definition.BlendableStructType, (const uint8*)RawValuePtr);
 	}
 }
 

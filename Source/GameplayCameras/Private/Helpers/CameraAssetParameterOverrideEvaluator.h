@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "UObject/UnrealNames.h"
+
 struct FCameraAssetReference;
 
 namespace UE::Cameras

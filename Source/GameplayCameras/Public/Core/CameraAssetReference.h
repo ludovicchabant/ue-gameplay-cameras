@@ -71,7 +71,7 @@ public:
 	}
 
 	/** Gets the IDs of the parameters with override values. */
-	TConstArrayView<FGuid> GetOverridenParameterGuids() const
+	TConstArrayView<FGuid> GetOverriddenParameterGuids() const
 	{
 		return ParameterOverrideGuids;
 	}
@@ -85,8 +85,8 @@ public:
 
 	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
 
-	GAMEPLAYCAMERAS_API bool IsParameterOverriden(const FGuid PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden);
+	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden);
 
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
 	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();

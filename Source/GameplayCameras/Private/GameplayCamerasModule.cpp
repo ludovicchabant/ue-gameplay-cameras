@@ -35,6 +35,42 @@ public:
 public:
 
 	// IGameplayCamerasModule interface
+	virtual void RegisterBlendableStruct(const UScriptStruct* StructType, UE::Cameras::FBlendableStructTypeErasedInterpolator Interpolator) override
+	{
+		using namespace UE::Cameras;
+
+		if (!ensure(EnumHasAllFlags(StructType->StructFlags, STRUCT_IsPlainOldData)))
+		{
+			return;
+		}
+
+		const bool bAlreadyRegistered = BlendableStructs.ContainsByPredicate([StructType](const FBlendableStructInfo& Item)
+				{
+					return Item.StructType == StructType;
+				});
+		if (ensure(!bAlreadyRegistered))
+		{
+			FBlendableStructInfo& NewInfo = BlendableStructs.Emplace_GetRef();
+			NewInfo.StructType = StructType;
+			NewInfo.Interpolator = Interpolator;
+		}
+	}
+
+	virtual TConstArrayView<UE::Cameras::FBlendableStructInfo> GetBlendableStructs() const override
+	{
+		return BlendableStructs;
+	}
+
+	virtual void UnregisterBlendableStruct(const UScriptStruct* StructType) override
+	{
+		using namespace UE::Cameras;
+
+		BlendableStructs.RemoveAll([StructType](const FBlendableStructInfo& Item)
+				{
+					return Item.StructType == StructType;
+				});
+	}
+
 #if WITH_EDITOR
 	virtual TSharedPtr<IGameplayCamerasLiveEditManager> GetLiveEditManager() const override
 	{
@@ -48,6 +84,8 @@ public:
 #endif
 
 private:
+
+	TArray<UE::Cameras::FBlendableStructInfo> BlendableStructs;
 
 #if WITH_EDITOR
 	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;

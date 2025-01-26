@@ -36,7 +36,8 @@ private:
 
 	struct FEntryDebugInfo
 	{
-		FName Name;
+		uint32 ID;
+		FString Name;
 		FName TypeName;
 		FString Value;
 		bool bWritten;

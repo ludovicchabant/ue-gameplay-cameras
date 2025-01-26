@@ -207,17 +207,34 @@ bool FCameraVariableReferenceDetailsCustomization::CanClearVariable() const
 
 void FCameraVariableReferenceDetailsCustomization::OnClearVariable()
 {
-	VariableProperty->ResetToDefault();
-	PropertyUtilities->RequestForceRefresh();
+	OnSetVariable(nullptr);
 }
 
 void FCameraVariableReferenceDetailsCustomization::OnSetVariable(UCameraVariableAsset* InVariable)
 {
+	TArray<void*> RawData;
+	StructProperty->AccessRawData(RawData);
+
+	TArray<UObject*> OuterObjects;
+	StructProperty->GetOuterObjects(OuterObjects);
+
+	check(!OuterObjects.Num() || OuterObjects.Num() == RawData.Num());
+
 	{
 		FScopedTransaction Transaction(FText::Format(
 					LOCTEXT("SetPropertyValue", "Set {0}"), StructProperty->GetPropertyDisplayName()));
 
-		VariableProperty->SetValue(InVariable);
+		StructProperty->NotifyPreChange();
+
+		for (int32 ValueIndex = 0; ValueIndex < RawData.Num(); ++ValueIndex)
+		{
+			SetReferenceVariable(RawData[ValueIndex], InVariable);
+		}
+
+		StructProperty->NotifyPostChange(EPropertyChangeType::ValueSet);
+
+		FPropertyChangedEvent ChangeEvent(StructProperty->GetProperty(), EPropertyChangeType::ValueSet, OuterObjects);
+		PropertyUtilities->NotifyFinishedChangingProperties(ChangeEvent);
 	}
 
 	PropertyUtilities->RequestForceRefresh();
@@ -228,6 +245,16 @@ void FCameraVariableReferenceDetailsCustomization::OnResetToDefault()
 {
 	PropertyUtilities->RequestForceRefresh();
 }
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+void F##ValueName##CameraVariableReferenceDetailsCustomization::SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable)\
+{\
+	F##ValueName##CameraVariableReference* TypedData = reinterpret_cast<F##ValueName##CameraVariableReference*>(InRawData);\
+	TypedData->Variable = CastChecked<U##ValueName##CameraVariable>(InVariable, ECastCheckedType::NullAllowed);\
+	TypedData->VariableID = InVariable ? InVariable->GetVariableID() : FCameraVariableID();\
+}
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
 
 }  // namespace UE::Cameras
 

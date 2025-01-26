@@ -7,7 +7,7 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/UnrealNames.h"
 
-#include "CameraContextDataAllocationInfo.generated.h"
+#include "CameraContextDataTableAllocationInfo.generated.h"
 
 class UCameraNode;
 
@@ -31,14 +31,20 @@ struct FCameraContextDataDefinition
 	UPROPERTY()
 	TObjectPtr<const UObject> DataTypeObject;
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraContextDataDefinition& A, const FCameraContextDataDefinition& B);
+#if WITH_EDITORONLY_DATA
+	/** The name of the data, for debugging purposes. */
+	UPROPERTY()
+	FString DataName;
+#endif
+
+	bool operator==(const FCameraContextDataDefinition& Other) const = default;
 };
 
 /**
  * Collection of context data entries for a camera rig.
  */
 USTRUCT()
-struct FCameraContextDataAllocationInfo
+struct FCameraContextDataTableAllocationInfo
 {
 	GENERATED_BODY()
 
@@ -46,12 +52,9 @@ struct FCameraContextDataAllocationInfo
 	UPROPERTY()
 	TArray<FCameraContextDataDefinition> DataDefinitions;
 
-	/** Adds a new context data definition. */
-	GAMEPLAYCAMERAS_API void Add(const UCameraNode* Owner, FName DataName, ECameraContextDataType DataType, const UObject* DataTypeObject);
-
 	/**Combines the given allocation info with this one. */
-	GAMEPLAYCAMERAS_API void Combine(const FCameraContextDataAllocationInfo& OtherInfo);
+	GAMEPLAYCAMERAS_API void Combine(const FCameraContextDataTableAllocationInfo& OtherInfo);
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraContextDataAllocationInfo& A, const FCameraContextDataAllocationInfo& B);
+	bool operator==(const FCameraContextDataTableAllocationInfo& Other) const = default;
 };
 

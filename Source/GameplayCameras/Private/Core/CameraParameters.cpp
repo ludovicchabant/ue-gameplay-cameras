@@ -2,6 +2,7 @@
 
 #include "Core/CameraParameters.h"
 
+#include "Core/CameraRigAsset.h"
 #include "Math/Rotator.h"
 #include "Math/Transform.h"
 #include "Math/Vector.h"
@@ -203,4 +204,18 @@ bool FTransform3dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag&
 
 	return false;
 }
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+void F##ValueName##CameraParameter::PostSerialize(const FArchive& Ar)\
+{\
+	if (Ar.IsLoading())\
+	{\
+		if (Variable && Variable->GetOuter()->IsA<UCameraRigAsset>())\
+		{\
+			Variable = nullptr;\
+		}\
+	}\
+}
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
 

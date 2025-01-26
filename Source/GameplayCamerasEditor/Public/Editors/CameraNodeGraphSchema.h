@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraContextDataTableFwd.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphPinColors.h"
@@ -57,13 +58,6 @@ private:
 	UE::Cameras::FCameraNodeGraphPinColors PinColors;
 };
 
-UENUM()
-enum class EInterfaceParameterCreateNodeType
-{
-	BlendableParameter,
-	DataParameter
-};
-
 /**
  * Graph editor action for adding a new camera rig parameter node.
  */
@@ -74,25 +68,9 @@ struct FCameraNodeGraphSchemaAction_NewInterfaceParameterNode : public FEdGraphS
 
 public:
 
-	/** The camera node being driven by the camera rig parameter. */
+	/** The new parameter's definition. */
 	UPROPERTY()
-	TObjectPtr<UCameraNode> Target;
-
-	/** The property on the target camera node being driven by the camera rig parameter. */
-	UPROPERTY()
-	FName TargetPropertyName;
-
-	UPROPERTY()
-	EInterfaceParameterCreateNodeType NewNodeType = EInterfaceParameterCreateNodeType::BlendableParameter;
-
-	UPROPERTY()
-	ECameraVariableType BlendableParameterType;
-
-	UPROPERTY()
-	ECameraContextDataType DataParameterType;
-
-	UPROPERTY()
-	TObjectPtr<const UObject> DataParameterTypeObject;
+	FCameraRigParameterDefinition ParameterDefinition;
 
 public:
 

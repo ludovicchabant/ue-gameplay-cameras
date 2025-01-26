@@ -45,49 +45,54 @@ struct FCameraContextDataID
 
 public:
 
-	FCameraContextDataID() : DataName(NAME_None) {}
+	FCameraContextDataID() : Value(INVALID) {}
 
-	bool IsValid() const { return DataName != NAME_None; }
+	uint32 GetValue() const { return Value; }
+
+	bool IsValid() const { return Value != INVALID; }
 
 	explicit operator bool() const { return IsValid(); }
 
-	static FCameraContextDataID FromName(FName InName)
+	static FCameraContextDataID FromHashValue(uint32 InValue)
 	{
-		return FCameraContextDataID{ InName };
+		return FCameraContextDataID(InValue);
 	}
 
 public:
 
+	friend bool operator<(FCameraContextDataID A, FCameraContextDataID B)
+	{
+		return A.Value < B.Value;
+	}
+
 	friend bool operator==(FCameraContextDataID A, FCameraContextDataID B)
 	{
-		return A.DataName == B.DataName;
+		return A.Value == B.Value;
 	}
 
 	friend bool operator!=(FCameraContextDataID A, FCameraContextDataID B)
 	{
-		return !(A == B);
-	}
-
-	friend bool operator<(FCameraContextDataID A, FCameraContextDataID B)
-	{
-		return A.DataName.Compare(B.DataName) < 0;
+		return A.Value != B.Value;
 	}
 
 	friend uint32 GetTypeHash(FCameraContextDataID In)
 	{
-		return GetTypeHash(In.DataName);
+		return In.Value;
+	}
+
+	friend FArchive& operator<< (FArchive& Ar, FCameraContextDataID& In)
+	{
+		Ar << In.Value;
+		return Ar;
 	}
 
 private:
 
-	FCameraContextDataID(FName InName) : DataName(InName) {}
+	FCameraContextDataID(uint32 InValue) : Value(InValue) {}
+
+	static const uint32 INVALID = uint32(-1);
 
 	UPROPERTY()
-	FName DataName = NAME_None;
-
-	friend class UE::Cameras::FCameraContextDataTable;
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	friend class UE::Cameras::FContextDataTableDebugBlock;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+	uint32 Value;
 };
 

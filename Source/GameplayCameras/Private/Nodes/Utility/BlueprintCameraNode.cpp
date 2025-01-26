@@ -96,17 +96,17 @@ void FBlueprintCameraNodeEvaluator::ApplyParameterOverrides(const FCameraVariabl
 	const UBlueprintCameraNode* BlueprintNode = GetCameraNodeAs<UBlueprintCameraNode>();
 	const FCustomCameraNodeParameters& Overrides = BlueprintNode->CameraNodeEvaluatorOverrides;
 
-	// Set the value of any properties driven by a camera variable.
 	for (const FCustomCameraNodeBlendableParameter& BlendableParameter : Overrides.BlendableParameters)
 	{
 		FProperty* Property = EvaluatorBlueprintClass->FindPropertyByName(BlendableParameter.ParameterName);
 		if (ensure(Property))
 		{
-			if (BlendableParameter.OverrideVariable)
+			if (BlendableParameter.OverrideVariableID)
 			{
 				const uint8* ValuePtr = VariableTable.GetValue(
-						BlendableParameter.OverrideVariable->GetVariableID(), 
-						BlendableParameter.ParameterType);
+						BlendableParameter.OverrideVariableID,
+						BlendableParameter.ParameterType,
+						BlendableParameter.BlendableStructType);
 				Property->SetValue_InContainer(EvaluatorBlueprint, ValuePtr);
 			}
 		}
@@ -284,11 +284,16 @@ void UBlueprintCameraNode::RebuildOverrides()
 
 	// Remember the overrides already present on parameters.
 	TMap<FName, UCameraVariableAsset*> OldOverrideVariableMap;
+	TMap<FName, FCameraVariableID> OldOverrideVariableIDMap;
 	for (const FCustomCameraNodeBlendableParameter& OldOverride : CameraNodeEvaluatorOverrides.BlendableParameters)
 	{
 		if (OldOverride.OverrideVariable)
 		{
 			OldOverrideVariableMap.Add(OldOverride.ParameterName, OldOverride.OverrideVariable);
+		}
+		if (OldOverride.OverrideVariableID)
+		{
+			OldOverrideVariableIDMap.Add(OldOverride.ParameterName, OldOverride.OverrideVariableID);
 		}
 	}
 	TMap<FName, FCameraContextDataID> OldOverrideDataIDMap;
@@ -401,6 +406,7 @@ void UBlueprintCameraNode::RebuildOverrides()
 				bIsBlendableProperty = true;
 				BlendablePropertyType = ECameraVariableType::Transform3d;
 			}
+			// TODO: make blendable property if the struct is registered as blendable
 			else
 			{
 				bIsDataProperty = true;
@@ -448,6 +454,12 @@ void UBlueprintCameraNode::RebuildOverrides()
 			if (OldOverrideVariable && OldOverrideVariable->GetVariableType() == BlendablePropertyType)
 			{
 				NewOverride.OverrideVariable = OldOverrideVariable;
+			}
+			FCameraVariableID OldOverrideVariableID;
+			OldOverrideVariableIDMap.RemoveAndCopyValue(NewOverride.ParameterName, OldOverrideVariableID);
+			if (OldOverrideVariableID)
+			{
+				NewOverride.OverrideVariableID = OldOverrideVariableID;
 			}
 
 			NewOverrides.BlendableParameters.Add(NewOverride);
@@ -525,11 +537,7 @@ void UBlueprintCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParame
 		}
 
 		const void* DefaultValuePtr = BlendableProperty->ContainerPtrToValuePtr<void>(CameraNodeEvaluatorTemplate);
-		OutParameterInfos.AddBlendableParameter(
-				BlendableParameter.ParameterName,
-				BlendableParameter.ParameterType, 
-				reinterpret_cast<const uint8*>(DefaultValuePtr),
-				&BlendableParameter.OverrideVariable);
+		OutParameterInfos.AddBlendableParameter(BlendableParameter, (const uint8*)DefaultValuePtr);
 	}
 
 	for (FCustomCameraNodeDataParameter& DataParameter : CameraNodeEvaluatorOverrides.DataParameters)
@@ -540,11 +548,8 @@ void UBlueprintCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParame
 			continue;
 		}
 
-		OutParameterInfos.AddDataParameter(
-				DataParameter.ParameterName,
-				DataParameter.ParameterType,
-				DataParameter.ParameterTypeObject,
-				&DataParameter.OverrideDataID);
+		const void* DefaultValuePtr = DataProperty->ContainerPtrToValuePtr<void>(CameraNodeEvaluatorTemplate);
+		OutParameterInfos.AddDataParameter(DataParameter, (const uint8*)DefaultValuePtr);
 	}
 }
 

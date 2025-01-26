@@ -34,21 +34,31 @@ void FVariableTableDebugBlock::Initialize(const FCameraVariableTable& InVariable
 #endif
 
 		FString EntryValueStr;
+		const uint8* RawValuePtr = InVariableTable.Memory + Entry.Offset;
+
+		switch (Entry.Type)
+		{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 			case ECameraVariableType::ValueName:\
 				if (EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written))\
 				{\
-					const ValueType EntryValue = InVariableTable.GetValue<ValueType>(FCameraVariableID::FromHashValue(Entry.ID.GetValue()));\
-					EntryValueStr = ToDebugString(EntryValue);\
+					const ValueType* EntryValue = reinterpret_cast<const ValueType*>(RawValuePtr);\
+					EntryValueStr = ToDebugString(*EntryValue);\
 				}\
 				break;
-		switch (Entry.Type)
-		{
 			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-		}
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+			case ECameraVariableType::BlendableStruct:
+				if (EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written))
+				{
+					const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry.StructType);
+					const int32 ExportFlags = PPF_Delimited | PPF_IncludeTransient | PPF_ExternalEditor;
+					StructType->ExportText(EntryValueStr, RawValuePtr, nullptr, nullptr, ExportFlags, nullptr);
+				}
+				break;
+		}
 
-		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryValueStr};
+		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryValueStr };
 		EntryDebugInfo.bIsInput = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Input);
 		EntryDebugInfo.bIsPrivate = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Private);
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraVariableTable::EEntryFlags::Written);

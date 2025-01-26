@@ -74,9 +74,8 @@ bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameter
 
 	UCameraRigBlendableParameter* Parameter = CameraRig->Interface.BlendableParameters[0];
 	UTEST_EQUAL("Test parameter", Parameter->InterfaceParameterName, TEXT("Test"));
-	UTEST_NOT_NULL("Test parameter variable", Parameter->PrivateVariable.Get());
-	UTEST_EQUAL("Test parameter variable name", Parameter->PrivateVariable->GetName(), "Override_SimpleTest_Test");
-	UTEST_EQUAL("Test node parameter", (UCameraVariableAsset*)OffsetNode->TranslationOffset.Variable, Parameter->PrivateVariable.Get());
+	UTEST_TRUE("Test parameter variable ID", Parameter->PrivateVariableID.IsValid());
+	UTEST_EQUAL("Test node parameter", OffsetNode->TranslationOffset.VariableID, Parameter->PrivateVariableID);
 
 	return true;
 }
@@ -163,20 +162,13 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 	UCameraRigBlendableParameter* OffsetParam = InnerCameraRig->Interface.BlendableParameters[0];
 	UCameraRigBlendableParameter* FocalLengthParam = InnerCameraRig->Interface.BlendableParameters[1];
 
-	UTEST_EQUAL_EXPR(OffsetParam->PrivateVariable->GetName(), "Override_InnerCameraRig_OffsetParam");
-	UTEST_EQUAL_EXPR(FocalLengthParam->PrivateVariable->GetName(), "Override_InnerCameraRig_FocalLengthParam");
-
 	// Test that the inner nodes are driven by the interface parameters.
 	{
 		UOffsetCameraNode* OffsetNode = Registry->Get<UOffsetCameraNode>("Offset");
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetNode->TranslationOffset.Variable.Get(), OffsetParam->PrivateVariable.Get());
-		UTEST_EQUAL_EXPR(OffsetNode->TranslationOffset.Variable->DefaultValue, OffsetNode->TranslationOffset.Value);
-		UTEST_EQUAL_EXPR(OffsetNode->TranslationOffset.Variable->DefaultValue, FVector3d(10, 20, 30));
+		UTEST_EQUAL_EXPR(OffsetNode->TranslationOffset.VariableID, OffsetParam->PrivateVariableID);
 
 		ULensParametersCameraNode* LensNode = Registry->Get<ULensParametersCameraNode>("Lens");
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)LensNode->FocalLength.Variable.Get(), FocalLengthParam->PrivateVariable.Get());
-		UTEST_EQUAL_EXPR(LensNode->FocalLength.Variable->DefaultValue, LensNode->FocalLength.Value);
-		UTEST_EQUAL_EXPR(LensNode->FocalLength.Variable->DefaultValue, 20.f);
+		UTEST_EQUAL_EXPR(LensNode->FocalLength.VariableID, FocalLengthParam->PrivateVariableID);
 	}
 
 	// Test that the middle prefab node is driving the inner interface parameters, and that one of those
@@ -207,8 +199,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 
 		const FPropertyBagPropertyDesc* OffsetParamDesc = ParameterOverrides.FindPropertyDescByName("OffsetParam");
 		FVector3dCameraParameter* OffsetParamOverride = ParameterOverrides.GetValueStruct<FVector3dCameraParameter>("OffsetParam").GetValue();
-		UTEST_EQUAL_EXPR((UCameraVariableAsset*)OffsetParamOverride->Variable.Get(), MiddleOffsetParam->PrivateVariable.Get());
-		UTEST_EQUAL_EXPR(OffsetParamOverride->Variable->DefaultValue, FVector3d(15, 25, 35));
+		UTEST_EQUAL_EXPR(OffsetParamOverride->VariableID, MiddleOffsetParam->PrivateVariableID);
 	}
 
 	// Test that the outer prefab node is driving the middle interface parameters.

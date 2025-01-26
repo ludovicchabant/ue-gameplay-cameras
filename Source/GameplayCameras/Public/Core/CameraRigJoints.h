@@ -5,6 +5,8 @@
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
 
+struct FCameraVariableDefinition;
+
 namespace UE::Cameras
 {
 

@@ -5,7 +5,9 @@
 #include "Core/CameraContextDataTable.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "Core/CameraVariableTable.h"
+#include "IGameplayCamerasModule.h"
 
 namespace UE::Cameras
 {
@@ -16,35 +18,14 @@ namespace Internal
 template<typename ParameterType>
 void ApplyBlendableParameterOverride(
 		const UCameraRigAsset* CameraRig,
-		const UCameraRigBlendableParameter* BlendableParameter,
+		const FCameraRigParameterDefinition& ParameterDefinition,
 		const ParameterType& ParameterValue,
 		FCameraVariableTable& VariableTable,
 		bool bDrivenOverridesOnly)
 {
 	using ValueType = typename ParameterType::ValueType;
 
-	if (!ensure(BlendableParameter))
-	{
-		return;
-	}
-
-	if (!BlendableParameter->PrivateVariable)
-	{
-		// Ignore un-built parameter overrides in the editor since the user could have just added
-		// an override while PIE is running. They need to hit the Build button for the override
-		// to apply.
-		// Outside of the editor, report this as an error.
-#if !WITH_EDITOR
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("Invalid blendable parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
-				*BlendableParameter->InterfaceParameterName,
-				*GetPathNameSafe(CameraRig));
-#endif
-		return;
-	}
-
-	FCameraVariableID ParameterVariableID(BlendableParameter->PrivateVariable->GetVariableID());
-
+	const FCameraVariableID ParameterVariableID(ParameterDefinition.VariableID);
 	if (ParameterValue.Variable != nullptr)
 	{
 		// The override is driven by a variable... read its value and set it as the value for the
@@ -62,31 +43,171 @@ void ApplyBlendableParameterOverride(
 	}
 }
 
-void ApplyDataParameterOverride(
+void ApplyBlendableParameterOverride(
 		const UCameraRigAsset* CameraRig,
-		const UCameraRigDataParameter* DataParameter,
-		const FStructView& ParameterValue,
-		FCameraContextDataTable& ContextDataTable)
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const FInstancedPropertyBag& PropertyBag,
+		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
+		FCameraVariableTable& VariableTable,
+		bool bDrivenOverridesOnly)
 {
-	if (!ensure(DataParameter))
+	ensure(ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Blendable);
+
+	if (!ParameterDefinition.VariableID)
+	{
+		// Ignore un-built parameter overrides in the editor since the user could have just added
+		// an override while PIE is running. They need to hit the Build button for the override
+		// to apply.
+		// Outside of the editor, report this as an error.
+#if !WITH_EDITOR
+		UE_LOG(LogCameraSystem, Error,
+				TEXT("Invalid blendable parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
+				*ParameterDefinition.ParameterName.ToString(),
+				*GetPathNameSafe(CameraRig));
+#endif
+		return;
+	}
+
+	TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc);
+	if (!ensureMsgf(
+				ParameterValueOrError.HasValue() && !ParameterValueOrError.HasError(),
+				TEXT("Camera parameter has no valid value! Error: %s"),
+				*UEnum::GetValueAsString(ParameterValueOrError.GetError())))
 	{
 		return;
 	}
 
-	if (!DataParameter->PrivateDataID)
+	const FStructView& ParameterValue = ParameterValueOrError.GetValue();
+	const UScriptStruct* ParameterType = ParameterValue.GetScriptStruct();
+
+	switch (ParameterDefinition.VariableType)
+	{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+		case ECameraVariableType::ValueName:\
+			{\
+				check(ParameterType == F##ValueName##CameraParameter::StaticStruct());\
+				const F##ValueName##CameraParameter& TypedParameterValue = ParameterValue.Get<F##ValueName##CameraParameter>();\
+				ApplyBlendableParameterOverride(CameraRig, ParameterDefinition, TypedParameterValue, VariableTable, bDrivenOverridesOnly);\
+			}\
+			break;
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+		case ECameraVariableType::BlendableStruct:
+			{
+				const uint8* RawValuePtr = ParameterValue.GetMemory();
+				VariableTable.SetValue(ParameterDefinition.VariableID, ParameterDefinition.VariableType, ParameterDefinition.BlendableStructType, RawValuePtr);
+			}
+			break;
+		default:
+			ensure(false);
+			break;
+	}
+}
+
+template<typename ParameterType>
+void OverrideContextDataTableEntry(
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const ParameterType& ParameterValue,
+		FCameraContextDataTable& ContextDataTable)
+{
+	const uint8* RawParameterValue = reinterpret_cast<const uint8*>(&ParameterValue);
+	ContextDataTable.SetData(ParameterDefinition.DataID, ParameterDefinition.DataType, ParameterDefinition.DataTypeObject, RawParameterValue);
+}
+
+template<>
+void OverrideContextDataTableEntry<FStructView>(
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const FStructView& ParameterValue,
+		FCameraContextDataTable& ContextDataTable)
+{
+	const uint8* RawParameterValue = ParameterValue.GetMemory();
+	ContextDataTable.SetData(ParameterDefinition.DataID, ParameterDefinition.DataType, ParameterDefinition.DataTypeObject, RawParameterValue);
+}
+
+template<typename ParameterType>
+void ApplyDataParameterOverride(
+		const UCameraRigAsset* CameraRig,
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const TValueOrError<ParameterType, EPropertyBagResult>& ParameterValueOrError,
+		FCameraContextDataTable& ContextDataTable)
+{
+	if (!ensureMsgf(
+				ParameterValueOrError.HasValue() && !ParameterValueOrError.HasError(),
+				TEXT("Camera parameter has no valid value! Error: %s"),
+				*UEnum::GetValueAsString(ParameterValueOrError.GetError())))
+	{
+		return;
+	}
+
+	// Write the override value into the context data table.
+	const ParameterType& ParameterValue = ParameterValueOrError.GetValue();
+	OverrideContextDataTableEntry<ParameterType>(ParameterDefinition, ParameterValue, ContextDataTable);
+}
+
+void ApplyDataParameterOverride(
+		const UCameraRigAsset* CameraRig,
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const FInstancedPropertyBag& PropertyBag,
+		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
+		FCameraContextDataTable& ContextDataTable)
+{
+	ensure(ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Data);
+
+	if (!ParameterDefinition.DataID)
 	{
 #if !WITH_EDITOR
 		UE_LOG(LogCameraSystem, Error,
 				TEXT("Invalid data parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
-				*DataParameter->InterfaceParameterName,
+				*ParameterDefinition.ParameterName.ToString(),
 				*GetPathNameSafe(CameraRig));
 		return;
 #endif
 	}
 
-	// Write the override value into the context data table.
-	FCameraContextDataID ParameterDataID = DataParameter->PrivateDataID;
-	ContextDataTable.SetStructViewData(ParameterDataID, ParameterValue);
+	switch (ParameterDefinition.DataType)
+	{
+		case ECameraContextDataType::Name:
+			{
+				TValueOrError<FName, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueName(PropertyBagPropertyDesc);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		case ECameraContextDataType::String:
+			{
+				TValueOrError<FString, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueString(PropertyBagPropertyDesc);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		case ECameraContextDataType::Enum:
+			{
+				const UEnum* EnumType = CastChecked<const UEnum>(ParameterDefinition.DataTypeObject);
+				TValueOrError<uint8, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueEnum(PropertyBagPropertyDesc, EnumType);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		case ECameraContextDataType::Struct:
+			{
+				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(ParameterDefinition.DataTypeObject);
+				TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc, StructType);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		case ECameraContextDataType::Object:
+			{
+				TValueOrError<UObject*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueObject(PropertyBagPropertyDesc);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		case ECameraContextDataType::Class:
+			{
+				TValueOrError<UClass*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueClass(PropertyBagPropertyDesc);
+				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+			}
+			break;
+		default:
+			ensure(false);
+			break;
+	}
 }
 
 }  // namespace Internal
@@ -95,39 +216,39 @@ FCameraParameterOverrideHelper::FCameraParameterOverrideHelper(FCameraVariableTa
 	: VariableTable(OutVariableTable)
 	, ContextDataTable(OutContextDataTable)
 {
+	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
+	BlendableStructs = GameplayCamerasModule.GetBlendableStructs();
 }
 
 void FCameraParameterOverrideHelper::ApplyParameterOverride(
 		const UCameraRigAsset* CameraRig,
-		const FGuid& ParameterGuid,
-		TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError,
+		const FCameraRigParameterDefinition& ParameterDefinition,
+		const FInstancedPropertyBag& PropertyBag,
+		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		bool bDrivenOverridesOnly)
 {
 	using namespace Internal;
 
-	if (ensureMsgf(
-				ParameterValueOrError.HasValue() && !ParameterValueOrError.HasError(),
-				TEXT("Camera parameter has no valid value! Error: %s"),
-				*UEnum::GetValueAsString(ParameterValueOrError.GetError())))
+	switch (ParameterDefinition.ParameterType)
 	{
-		const FStructView& ParameterValue = ParameterValueOrError.GetValue();
-		const UScriptStruct* ParameterType = ParameterValue.GetScriptStruct();
-
-		// Check if this is a blendable parameter or a data parameter.
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-		if (ParameterType == F##ValueName##CameraParameter::StaticStruct())\
-		{\
-			const UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByGuid(ParameterGuid);\
-			const F##ValueName##CameraParameter& TypedParameterValue = ParameterValue.Get<F##ValueName##CameraParameter>();\
-			ApplyBlendableParameterOverride(CameraRig, BlendableParameter, TypedParameterValue, VariableTable, bDrivenOverridesOnly);\
-		}\
-		else
-		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-		{
-			const UCameraRigDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByGuid(ParameterGuid);
-			ApplyDataParameterOverride(CameraRig, DataParameter, ParameterValue, ContextDataTable);
-		}
+		case ECameraRigInterfaceParameterType::Blendable:
+			{
+				ApplyBlendableParameterOverride(
+						CameraRig, 
+						ParameterDefinition,
+						PropertyBag, PropertyBagPropertyDesc, 
+						VariableTable, bDrivenOverridesOnly);
+			}
+			break;
+		case ECameraRigInterfaceParameterType::Data:
+			{
+				ApplyDataParameterOverride(
+						CameraRig, 
+						ParameterDefinition,
+						PropertyBag, PropertyBagPropertyDesc, 
+						ContextDataTable);
+			}
+			break;
 	}
 }
 

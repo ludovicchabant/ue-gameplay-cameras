@@ -9,9 +9,12 @@
 #include "Math/NumericLimits.h"
 #include "StructUtils/InstancedStruct.h"
 #include "StructUtils/StructView.h"
+#include "Templates/PointerIsConvertibleFromTo.h"
+#include "Templates/Requires.h"
+#include <type_traits>
 
-struct FCameraContextDataAllocationInfo;
 struct FCameraContextDataDefinition;
+struct FCameraContextDataTableAllocationInfo;
 
 namespace UE::Cameras
 {
@@ -23,9 +26,10 @@ class FContextDataTableDebugBlock;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 template<typename DataType>
-struct TCameraContextDataReader
+struct TCameraContextDataTraits
 {
-	void Initialize(FCameraContextDataID InID, const FCameraContextDataTable& InContextDataTable);
+	static ECameraContextDataType GetDataType();
+	static const UObject* GetDataTypeObject();
 };
 
 /**
@@ -54,7 +58,7 @@ public:
 	~FCameraContextDataTable();
 
 	/** Initializes the context data table so that it fits the provided allocation info. */
-	void Initialize(const FCameraContextDataAllocationInfo& AllocationInfo);
+	void Initialize(const FCameraContextDataTableAllocationInfo& AllocationInfo);
 
 	/** Adds a data entry to the table. */
 	void AddData(const FCameraContextDataDefinition& DataDefinition);
@@ -82,6 +86,9 @@ public:
 
 	template<typename BaseClass>
 	TSubclassOf<BaseClass> GetClassData(FCameraContextDataID InID) const;
+
+	template<typename ValueType>
+	const ValueType* TryGetData(FCameraContextDataID InID) const;
 
 	// Setter methods.
 
@@ -147,7 +154,7 @@ private:
 		uint32 Offset;
 		EEntryFlags Flags;
 #if WITH_EDITORONLY_DATA
-		FName DebugName;
+		FString DebugName;
 #endif
 	};
 
@@ -227,6 +234,18 @@ TSubclassOf<BaseClass> FCameraContextDataTable::GetClassData(FCameraContextDataI
 	return nullptr;
 }
 
+template<typename ValueType>
+const ValueType* FCameraContextDataTable::TryGetData(FCameraContextDataID InID) const
+{
+	ECameraContextDataType DataType = TCameraContextDataTraits<ValueType>::GetDataType();
+	const UObject* DataTypeObject = TCameraContextDataTraits<ValueType>::GetDataTypeObject();
+	if (const uint8* RawValue = TryGetData(InID, DataType, DataTypeObject))
+	{
+		return reinterpret_cast<const ValueType*>(RawValue);
+	}
+	return nullptr;
+}
+
 template<typename EnumType>
 void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, EnumType InData)
 {
@@ -263,6 +282,52 @@ bool FCameraContextDataTable::SetDataImpl(FCameraContextDataID InID, ECameraCont
 		return true;
 	}
 	return false;
+}
+
+template<typename DataType>
+ECameraContextDataType TCameraContextDataTraits<DataType>::GetDataType()
+{
+	if constexpr(std::is_same_v<DataType, FName>)
+	{
+		return ECameraContextDataType::Name;
+	}
+	else if constexpr(std::is_same_v<DataType, FString>)
+	{
+		return ECameraContextDataType::Name;
+	}
+	else if constexpr(std::is_enum_v<DataType>)
+	{
+		return ECameraContextDataType::Enum;
+	}
+	else if constexpr(TPointerIsConvertibleFromTo<DataType, UClass>::Value)
+	{
+		return ECameraContextDataType::Class;
+	}
+	else if constexpr(TPointerIsConvertibleFromTo<DataType, UObject>::Value)
+	{
+		return ECameraContextDataType::Object;
+	}
+	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct), UScriptStruct*>)
+	{
+		return ECameraContextDataType::Struct;
+	}
+};
+
+template<typename DataType>
+const UObject* TCameraContextDataTraits<DataType>::GetDataTypeObject()
+{
+	if constexpr(std::is_enum_v<DataType>)
+	{
+		return StaticEnum<DataType>();
+	}
+	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct), UScriptStruct*>)
+	{
+		return DataType::StaticStruct();
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 }  // namespace UE::Cameras

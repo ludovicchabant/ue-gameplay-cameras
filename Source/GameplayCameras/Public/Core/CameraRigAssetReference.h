@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraParameters.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/ObjectPtr.h"
 
@@ -10,6 +12,7 @@
 
 class UCameraRigAsset;
 struct FCameraRigAssetReference;
+struct FCustomCameraNodeParameterInfos;
 struct FPropertyTag;
 
 namespace UE::Cameras
@@ -235,6 +238,35 @@ private:
 };
 
 /**
+ * Metadata for a referenced camera rig's parameters.
+ */
+USTRUCT()
+struct FCameraRigAssetReferenceParameterMetaData
+{
+	GENERATED_BODY()
+
+	/** The GUID of the parameter. */
+	UPROPERTY()
+	FGuid ParameterGuid;
+
+	/** The type of parameter. */
+	UPROPERTY()
+	ECameraRigInterfaceParameterType ParameterType = ECameraRigInterfaceParameterType::Blendable;
+
+	/** The ID to use for overriding a blendable parameter. */
+	UPROPERTY()
+	FCameraVariableID OverrideVariableID;
+
+	/** The ID to use for overriding a data parameter. */
+	UPROPERTY()
+	FCameraContextDataID OverrideDataID;
+
+	/** Whether this parameter has an override value. */
+	UPROPERTY()
+	bool bIsOverridden = false;
+};
+
+/**
  * A structure holding a reference to a camera rig asset, along with the interface parameter
  * override values.
  */
@@ -288,12 +320,6 @@ public:
 		return Parameters;
 	}
 
-	/** Gets the IDs of the parameters with override values. */
-	TConstArrayView<FGuid> GetOverridenParameterGuids() const
-	{
-		return ParameterOverrideGuids;
-	}
-
 	/** Applies the parameter override values to the given evaluation result. */
 	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly);
 
@@ -304,12 +330,21 @@ public:
 	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
 	void PostSerialize(const FArchive& Ar);
 
-	GAMEPLAYCAMERAS_API bool IsParameterOverriden(const FGuid PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden);
+	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
 
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
 	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
 	GAMEPLAYCAMERAS_API void RebuildParameters();
+
+	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos);
+
+private:
+
+	const FCameraRigAssetReferenceParameterMetaData* FindMetaData(const FGuid& PropertyID) const;
+	FCameraRigAssetReferenceParameterMetaData* FindMetaData(const FGuid& PropertyID);
+	
+	void GenerateOverriddenParameterGuidArray(TArray<FGuid>& OutOverriddenIDs) const;
 
 private:
 
@@ -321,9 +356,9 @@ private:
 	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout))
 	FInstancedPropertyBag Parameters;
 
-	/** The list of camera rig parameters with override values. */
-	UPROPERTY(EditAnywhere, Category="")
-	TArray<FGuid> ParameterOverrideGuids;
+	/** Metadata for the parameters. */
+	UPROPERTY()
+	TArray<FCameraRigAssetReferenceParameterMetaData> ParameterMetaData;
 
 
 	// Deprecated

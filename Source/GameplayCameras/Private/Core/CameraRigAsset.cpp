@@ -20,15 +20,8 @@ void FCameraRigAllocationInfo::Append(const FCameraRigAllocationInfo& OtherAlloc
 	const FCameraVariableTableAllocationInfo& OtherVariableTableInfo(OtherAllocationInfo.VariableTableInfo);
 	VariableTableInfo.VariableDefinitions.Append(OtherVariableTableInfo.VariableDefinitions);
 
-	const FCameraContextDataAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);
+	const FCameraContextDataTableAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);
 	ContextDataTableInfo.DataDefinitions.Append(OtherContextDataTableInfo.DataDefinitions);
-}
-
-bool operator==(const FCameraRigAllocationInfo& A, const FCameraRigAllocationInfo& B)
-{
-	return A.EvaluatorInfo == B.EvaluatorInfo
-		&& A.VariableTableInfo == B.VariableTableInfo
-		&& A.ContextDataTableInfo == B.ContextDataTableInfo;
 }
 
 #if WITH_EDITOR
@@ -79,6 +72,48 @@ void UCameraRigInterfaceParameterBase::PostDuplicate(EDuplicateMode::Type Duplic
 		Guid = FGuid::NewGuid();
 	}
 }
+
+FCameraVariableDefinition UCameraRigBlendableParameter::GetVariableDefinition() const
+{
+	FCameraVariableDefinition Definition;
+	Definition.VariableID = PrivateVariableID;
+	Definition.VariableType = ParameterType;
+	Definition.BlendableStructType = BlendableStructType;
+	Definition.bIsPrivate = true;
+	Definition.bIsInput = bIsPreBlended;
+#if WITH_EDITORONLY_DATA
+	Definition.VariableName = GetVariableName();
+#endif
+	return Definition;
+}
+
+FCameraContextDataDefinition UCameraRigDataParameter::GetDataDefinition() const
+{
+	FCameraContextDataDefinition Definition;
+	Definition.DataID = PrivateDataID;
+	Definition.DataType = DataType;
+	Definition.DataTypeObject = DataTypeObject;
+#if WITH_EDITORONLY_DATA
+	Definition.DataName = GetDataName();
+#endif
+	return Definition;
+}
+
+#if WITH_EDITORONLY_DATA
+
+FString UCameraRigBlendableParameter::GetVariableName() const
+{
+	const UCameraRigAsset* Owner = GetTypedOuter<UCameraRigAsset>();
+	return FString::Printf(TEXT("Override_%s_%s"), *GetNameSafe(Owner), *InterfaceParameterName);
+}
+
+FString UCameraRigDataParameter::GetDataName() const
+{
+	const UCameraRigAsset* Owner = GetTypedOuter<UCameraRigAsset>();
+	return FString::Printf(TEXT("Override_%s_%s"), *GetNameSafe(Owner), *InterfaceParameterName);
+}
+
+#endif  // WITH_EDITORONLY_DATA
 
 UCameraRigBlendableParameter* FCameraRigInterface::FindBlendableParameterByName(const FString& ParameterName) const
 {
@@ -172,9 +207,10 @@ void UCameraRigAsset::PostLoad()
 	{
 		if (BlendableParameter->ParameterType == ECameraVariableType::Boolean)
 		{
-			if (BlendableParameter->PrivateVariable)
+			if (BlendableParameter->PrivateVariable_DEPRECATED)
 			{
-				BlendableParameter->ParameterType = BlendableParameter->PrivateVariable->GetVariableType();
+				BlendableParameter->ParameterType = BlendableParameter->PrivateVariable_DEPRECATED->GetVariableType();
+				BlendableParameter->PrivateVariable_DEPRECATED = nullptr;
 			}
 		}
 	}

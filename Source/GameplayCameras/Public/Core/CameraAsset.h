@@ -3,10 +3,11 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
-#include "Core/CameraContextDataAllocationInfo.h"
+#include "Core/CameraContextDataTableAllocationInfo.h"
 #include "Core/CameraEventHandler.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "Core/CameraRigTransition.h"
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "CoreTypes.h"
@@ -56,7 +57,7 @@ struct FCameraAssetAllocationInfo
 
 	/** Combined context data table allocation info for all the camera rigs. */
 	UPROPERTY()
-	FCameraContextDataAllocationInfo ContextDataTableInfo;
+	FCameraContextDataTableAllocationInfo ContextDataTableInfo;
 
 	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraAssetAllocationInfo& A, const FCameraAssetAllocationInfo& B);
 };
@@ -94,10 +95,15 @@ public:
 	/** Removes an exit transition. */
 	GAMEPLAYCAMERAS_API int32 RemoveExitTransition(UCameraRigTransition* InTransition);
 
+public:
+
 	/** Gets the default parameter values for all camera rigs. */
 	const FInstancedPropertyBag& GetDefaultParameters() const { return DefaultParameters; }
 	/** Gets the default parameter values for all camera rigs. */
 	FInstancedPropertyBag& GetDefaultParameters() { return DefaultParameters; }
+
+	/** Gets the definitions of parameters exposed on this camera asset. */
+	TConstArrayView<FCameraRigParameterDefinition> GetParameterDefinitions() const { return ParameterDefinitions; }
 
 public:
 
@@ -180,9 +186,13 @@ private:
 	UPROPERTY()
 	FInstancedPropertyBag DefaultParameters;
 
-	/** Generated list of camera rigs owning each of the parameters. */
+	/** Generated list of all the camera rigs' parameters. */
 	UPROPERTY()
-	TArray<TWeakObjectPtr<const UCameraRigAsset>> ParameterOwners;
+	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
+
+	/** Owner rigs for each parameter definition. */
+	UPROPERTY()
+	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
 
 	/** Allocation info for the camera asset. */
 	UPROPERTY()

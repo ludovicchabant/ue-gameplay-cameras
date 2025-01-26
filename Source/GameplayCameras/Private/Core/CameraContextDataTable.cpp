@@ -2,7 +2,7 @@
 
 #include "Core/CameraContextDataTable.h"
 
-#include "Core/CameraContextDataAllocationInfo.h"
+#include "Core/CameraContextDataTableAllocationInfo.h"
 
 namespace UE::Cameras
 {
@@ -46,7 +46,7 @@ void FCameraContextDataTable::AddReferencedObjects(FReferenceCollector& Referenc
 	}
 }
 
-void FCameraContextDataTable::Initialize(const FCameraContextDataAllocationInfo& AllocationInfo)
+void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocationInfo& AllocationInfo)
 {
 	// Reset any previous state.
 	DestroyBuffer();
@@ -71,7 +71,7 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataAllocationInfo&
 		NewEntry.Offset = NewEntryOffset;
 		NewEntry.Flags = EEntryFlags::None;
 #if WITH_EDITORONLY_DATA
-		NewEntry.DebugName = DataDefinition.DataID.DataName;
+		NewEntry.DebugName = DataDefinition.DataName;
 #endif
 
 		Entries.Add(NewEntry);
@@ -120,7 +120,7 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	NewEntry.Offset = DataPtr - Memory;
 	NewEntry.Flags = EEntryFlags::None;
 #if WITH_EDITORONLY_DATA
-	NewEntry.DebugName = DataDefinition.DataID.DataName;
+	NewEntry.DebugName = DataDefinition.DataName;
 #endif
 	
 	Entries.Add(NewEntry);
@@ -150,8 +150,9 @@ bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType D
 				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataTypeObject);
 				if (StructType)
 				{
-					OutSizeOf = StructType->PropertiesSize;
-					OutAlignOf = StructType->MinAlignment;
+					const UScriptStruct::ICppStructOps* StructOps = StructType->GetCppStructOps();
+					OutSizeOf = StructOps->GetSize();
+					OutAlignOf = StructOps->GetAlignment();
 				}
 			}
 			break;
@@ -417,8 +418,8 @@ const uint8* FCameraContextDataTable::GetData(FCameraContextDataID DataID, ECame
 	const uint8* Data = TryGetData(DataID, ExpectedDataType, ExpectedDataTypeObject);
 	ensureMsgf(
 			Data, 
-			TEXT("Can't get camera context data (ID '%s') because it doesn't exist in the table, or isn't of the expected data type."), 
-			*DataID.DataName.ToString());
+			TEXT("Can't get camera context data (ID '%d') because it doesn't exist in the table, or isn't of the expected data type."), 
+			DataID.GetValue());
 	return Data;
 }
 
@@ -439,7 +440,7 @@ const uint8* FCameraContextDataTable::TryGetData(FCameraContextDataID DataID, EC
 void FCameraContextDataTable::SetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame)
 {
 	const bool bDidSet = TrySetData(DataID, ExpectedDataType, ExpectedDataTypeObject, InRawDataPtr, bMarkAsWrittenThisFrame);
-	ensureMsgf(bDidSet, TEXT("Can't set camera context data (ID '%s') beacuse it doesn't exist in the table."), *DataID.DataName.ToString());
+	ensureMsgf(bDidSet, TEXT("Can't set camera context data (ID '%d') beacuse it doesn't exist in the table."), DataID.GetValue());
 }
 
 bool FCameraContextDataTable::TrySetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame)

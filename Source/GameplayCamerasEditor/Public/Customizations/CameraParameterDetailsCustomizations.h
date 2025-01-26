@@ -45,7 +45,7 @@ public:
 
 protected:
 
-	virtual void GetValueAndVariablePropertyNames(FName& OutValueProperty, FName& OutVariableProperty) = 0;
+	virtual bool HasNonUserOverride(void* InRawData) = 0;
 	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
 private:
@@ -62,7 +62,7 @@ private:
 	{
 		UCameraVariableAsset* CommonVariable = nullptr;
 		ECameraVariableValue VariableValue = ECameraVariableValue::NotSet;
-		bool bIsExposedParameterVariable = false;
+		bool bHasNonUserOverride = false;
 
 		FText InfoText;
 		FText ErrorText;
@@ -112,11 +112,7 @@ protected:
 class F##ValueName##CameraParameterDetailsCustomization : public FCameraParameterDetailsCustomization\
 {\
 protected:\
-	virtual void GetValueAndVariablePropertyNames(FName& OutValueProperty, FName& OutVariableProperty) override\
-	{\
-		OutValueProperty = GET_MEMBER_NAME_CHECKED(F##ValueName##CameraParameter, Value);\
-		OutVariableProperty = GET_MEMBER_NAME_CHECKED(F##ValueName##CameraParameter, Variable);\
-	}\
+	virtual bool HasNonUserOverride(void* InRawData) override;\
 	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()

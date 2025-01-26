@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Containers/UnrealString.h"
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "CoreTypes.h"
 #include "Math/MathFwd.h"
 

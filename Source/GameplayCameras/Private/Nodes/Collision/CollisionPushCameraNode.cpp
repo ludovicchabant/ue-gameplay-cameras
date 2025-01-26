@@ -3,11 +3,11 @@
 #include "Nodes/Collision/CollisionPushCameraNode.h"
 
 #include "CollisionQueryParams.h"
-#include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraValueInterpolator.h"
+#include "Core/CameraVariableReferenceReader.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugColors.h"
@@ -52,6 +52,9 @@ private:
 	void UpdatePushFactor(bool bFoundHit, float CurrentPushFactor, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 private:
+
+	TCameraVariableReferenceReader<bool> EnableCollisionReader;
+	TCameraVariableReferenceReader<FVector3d> CustomSafePositionReader;
 
 	TCameraParameterReader<float> CollisionSphereRadiusReader;
 	TCameraParameterReader<FVector3d> SafePositionOffsetReader;
@@ -99,6 +102,9 @@ void FCollisionPushCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorI
 {
 	const UCollisionPushCameraNode* CollisionPushNode = GetCameraNodeAs<UCollisionPushCameraNode>();
 
+	EnableCollisionReader.Initialize(CollisionPushNode->EnableCollision);
+	CustomSafePositionReader.Initialize(CollisionPushNode->CustomSafePosition);
+
 	CollisionSphereRadiusReader.Initialize(CollisionPushNode->CollisionSphereRadius);
 	SafePositionOffsetReader.Initialize(CollisionPushNode->SafePositionOffset);
 
@@ -132,12 +138,7 @@ void FCollisionPushCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams&
 	}
 
 	// See if collision is enabled. If not, handle it as if we didn't collide with anything.
-	bool bEnableCollision = true;
-	const UCollisionPushCameraNode* ThisNode = GetCameraNodeAs<UCollisionPushCameraNode>();
-	if (const UBooleanCameraVariable* EnableCollisionVariable = ThisNode->EnableCollision.Get())
-	{
-		bEnableCollision = OutResult.VariableTable.GetValue(EnableCollisionVariable);
-	}
+	const bool bEnableCollision = EnableCollisionReader.Get(OutResult.VariableTable);
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	bDebugCollisionEnabled = bEnableCollision;
 #endif
@@ -235,16 +236,13 @@ TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(const FC
 #endif
 
 	// See if we have a custom safe position.
-	if (UVector3dCameraVariable* CustomSafePositionVariable = ThisNode->CustomSafePosition.Get())
+	FVector3d SafePosition;
+	if (CustomSafePositionReader.TryGet(OutResult.VariableTable, SafePosition))
 	{
-		FVector3d SafePosition;
-		if (OutResult.VariableTable.TryGetValue(CustomSafePositionVariable, SafePosition))
-		{
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-			bDebugGotSafePosition = false;
+		bDebugGotSafePosition = false;
 #endif
-			return TOptional<FVector3d>(SafePosition);
-		}
+		return TOptional<FVector3d>(SafePosition);
 	}
 	
 	// Compute the base safe position.
@@ -269,7 +267,6 @@ TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(const FC
 			break;
 	}
 
-	FVector3d SafePosition;
 	const bool bGotSafePosition = FCameraNodeSpaceMath::GetCameraNodeOriginPosition(Params, OutResult, OriginPosition, SafePosition);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

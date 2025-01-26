@@ -218,21 +218,26 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 						FText::GetEmpty(),
 						LOCTEXT("NewInterfaceParameterAction", "Camera Rig Parameter"),
 						LOCTEXT("NewInterfaceParameterActionToolTip", "Exposes this parameter on the camera rig"));
-			Action->Target = Cast<UCameraNode>(CameraNodeNode->GetObject());
-			Action->TargetPropertyName = DraggedPin->PinName;
 
 			if (DraggedPin->PinType.PinCategory == PC_CameraParameter ||
 				DraggedPin->PinType.PinCategory == PC_CameraVariableReference)
 			{
-				ECameraVariableType ParameterType;
+				ECameraVariableType VariableType;
+				const UScriptStruct* BlendableStructType = nullptr;
 
-				if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+				FCustomCameraNodeBlendableParameter BlendableParameter;
+				if (CustomParameters.FindBlendableParameter(DraggedPin->PinName, BlendableParameter))
+				{
+					VariableType = BlendableParameter.ParameterType;
+					BlendableStructType = BlendableParameter.BlendableStructType;
+				}
+				else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 				{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 					if ((StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct()) ||\
 						(StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct()))\
 					{\
-						ParameterType = ECameraVariableType::ValueName;\
+						VariableType = ECameraVariableType::ValueName;\
 					}\
 					else
 					UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -246,22 +251,16 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 				}
 				else
 				{
-					FCustomCameraNodeBlendableParameter BlendableParameter;
-					if (CustomParameters.FindBlendableParameter(DraggedPin->PinName, BlendableParameter))
-					{
-						ParameterType = BlendableParameter.ParameterType;
-					}
-					else
-					{
-						// Unexpected: a parameter pin was created, but we found no property or custom
-						// parameter for it!
-						ensure(false);
-						return;
-					}
+					// Unexpected as per previous comments.
+					ensure(false);
+					return;
 				}
 
-				Action->NewNodeType = EInterfaceParameterCreateNodeType::BlendableParameter;
-				Action->BlendableParameterType = ParameterType;
+				FCameraRigParameterDefinition NewParameterDefinition;
+				NewParameterDefinition.ParameterType = ECameraRigInterfaceParameterType::Blendable;
+				NewParameterDefinition.VariableType = VariableType;
+				NewParameterDefinition.BlendableStructType = BlendableStructType;
+				Action->ParameterDefinition = NewParameterDefinition;
 			}
 			else if (DraggedPin->PinType.PinCategory == PC_CameraContextData)
 			{
@@ -321,9 +320,11 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 					}
 				}
 
-				Action->NewNodeType = EInterfaceParameterCreateNodeType::DataParameter;
-				Action->DataParameterType = DataType;
-				Action->DataParameterTypeObject = DataTypeObject;
+				FCameraRigParameterDefinition NewParameterDefinition;
+				NewParameterDefinition.ParameterType = ECameraRigInterfaceParameterType::Data;
+				NewParameterDefinition.DataType = DataType;
+				NewParameterDefinition.DataTypeObject = DataTypeObject;
+				Action->ParameterDefinition = NewParameterDefinition;
 			}
 
 			ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(Action.ToSharedPtr()));
@@ -581,25 +582,19 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	// Create a new interface parameter and set it up based on the pin we're creating it from, if any.
 	UCameraRigInterfaceParameterBase* NewInterfaceParameter = nullptr;
-	if (NewNodeType == EInterfaceParameterCreateNodeType::BlendableParameter)
+	if (ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
 	{
 		UCameraRigBlendableParameter* NewBlendableParameter = NewObject<UCameraRigBlendableParameter>(CameraRig, NAME_None, RF_Transactional);
-		if (FromPin)
-		{
-			NewBlendableParameter->ParameterType = (ECameraVariableType)StaticEnum<ECameraVariableType>()->GetValueByName(FromPin->PinType.PinSubCategory);
-		}
+		NewBlendableParameter->ParameterType = ParameterDefinition.VariableType;
+		NewBlendableParameter->BlendableStructType = ParameterDefinition.BlendableStructType;
 		CameraRig->Interface.BlendableParameters.Add(NewBlendableParameter);
 		NewInterfaceParameter = NewBlendableParameter;
 	}
-	else if (NewNodeType == EInterfaceParameterCreateNodeType::DataParameter)
+	else if (ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Data)
 	{
 		UCameraRigDataParameter* NewDataParameter = NewObject<UCameraRigDataParameter>(CameraRig, NAME_None, RF_Transactional);
-		if (FromPin)
-		{
-			const UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
-			NewDataParameter->DataType = (ECameraContextDataType)DataTypeEnum->GetValueByName(FromPin->PinType.PinSubCategory);
-			NewDataParameter->DataTypeObject = FromPin->PinType.PinSubCategoryObject.Get();
-		}
+		NewDataParameter->DataType = ParameterDefinition.DataType;
+		NewDataParameter->DataTypeObject = ParameterDefinition.DataTypeObject;
 		CameraRig->Interface.DataParameters.Add(NewDataParameter);
 		NewInterfaceParameter = NewDataParameter;
 	}

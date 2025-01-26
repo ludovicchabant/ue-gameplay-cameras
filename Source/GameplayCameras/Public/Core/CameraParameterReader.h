@@ -9,6 +9,9 @@
 namespace UE::Cameras
 {
 
+/**
+ * A utility class for reading the effective value of a camera parameter.
+ */
 template<typename ValueType>
 class TCameraParameterReader
 {
@@ -33,14 +36,9 @@ public:
 				"The given parameter is of the wrong type for this reader! Value types must be the same.");
 
 		DefaultValuePtr = &Parameter.Value;
-		ensureMsgf(DefaultValuePtr, TEXT("The given parameter doesn't have a value!"));
+		VariableID = Parameter.VariableID;
 
-		if (Parameter.Variable)
-		{
-			VariableID = Parameter.Variable->GetVariableID();
-			DefaultValuePtr = reinterpret_cast<const ValueType*>(Parameter.Variable->GetDefaultValuePtr());
-			ensureMsgf(DefaultValuePtr, TEXT("The given parameter's driving variable doesn't have a default value!"));
-		}
+		ensureMsgf(DefaultValuePtr, TEXT("The given parameter doesn't have a value!"));
 	}
 
 	/**

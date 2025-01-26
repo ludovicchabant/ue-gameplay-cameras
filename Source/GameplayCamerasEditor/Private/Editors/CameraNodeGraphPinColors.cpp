@@ -31,6 +31,7 @@ void FCameraNodeGraphPinColors::Initialize()
 	PinColors.Add(TypeEnum->GetNameByValue((int64)ECameraVariableType::Rotator3d), Settings->RotatorPinTypeColor);
 	PinColors.Add(TypeEnum->GetNameByValue((int64)ECameraVariableType::Transform3f), Settings->TransformPinTypeColor);
 	PinColors.Add(TypeEnum->GetNameByValue((int64)ECameraVariableType::Transform3d), Settings->TransformPinTypeColor);
+	PinColors.Add(TypeEnum->GetNameByValue((int64)ECameraVariableType::BlendableStruct), Settings->StructPinTypeColor);
 
 	PinColors.Add(FBooleanCameraParameter::StaticStruct()->GetFName(), Settings->BooleanPinTypeColor);
 	PinColors.Add(FInteger32CameraParameter::StaticStruct()->GetFName(), Settings->IntPinTypeColor);

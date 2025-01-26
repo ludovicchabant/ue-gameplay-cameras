@@ -7,6 +7,7 @@
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetBuilder.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "GameplayCamerasDelegates.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -75,32 +76,45 @@ void FCameraAssetBuilder::BuildCameraImpl()
 		CameraRigBuilder.BuildCameraRig(CameraRig);
 	}
 
-	// Get the list of all the camera rigs' interface parameters, and rebuild our
-	// parameters property bag.
-	int32 NextParameterPropertyIndex = 0;
-	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
-	TArray<TWeakObjectPtr<const UCameraRigAsset>> ParameterOwners;
+	// Get the list of all the camera rigs' interface parameters, and cache some information
+	// about them.
+	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
+	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
 
 	for (const UCameraRigAsset* CameraRig : CameraRigs)
 	{
-		FCameraRigAssetBuilder::AppendDefaultParameters(CameraRig->Interface, DefaultParameterProperties);
-
-		for (int32 Index = NextParameterPropertyIndex; Index < DefaultParameterProperties.Num(); ++Index)
+		for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
 		{
+			ParameterDefinitions.Add(Definition);
 			ParameterOwners.Add(CameraRig);
 		}
-		NextParameterPropertyIndex = DefaultParameterProperties.Num();
 	}
 
+	if (ParameterDefinitions != CameraAsset->ParameterDefinitions || ParameterOwners != CameraAsset->ParameterOwners)
+	{
+		CameraAsset->Modify();
+		CameraAsset->ParameterDefinitions = ParameterDefinitions;
+		CameraAsset->ParameterOwners = ParameterOwners;
+	}
+
+	// Get the list of all the camera rigs' interface parameters, and rebuild our
+	// parameters property bag.
+	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
+	for (const UCameraRigAsset* CameraRig : CameraRigs)
+	{
+		FCameraRigParameterBuilder::AppendDefaultParameterProperties(CameraRig, DefaultParameterProperties);
+	}
 	FInstancedPropertyBag DefaultParameters;
 	DefaultParameters.AddProperties(DefaultParameterProperties);
+	for (const UCameraRigAsset* CameraRig : CameraRigs)
+	{
+		FCameraRigParameterBuilder::SetDefaultParameterValues(CameraRig, DefaultParameters);
+	}
 
-	if (DefaultParameters.GetPropertyBagStruct() != CameraAsset->DefaultParameters.GetPropertyBagStruct() ||
-			ParameterOwners != CameraAsset->ParameterOwners)
+	if (!DefaultParameters.Identical(&CameraAsset->DefaultParameters, 0))
 	{
 		CameraAsset->Modify();
 		CameraAsset->DefaultParameters = DefaultParameters;
-		CameraAsset->ParameterOwners = ParameterOwners;
 	}
 
 	// Accumulate all the camera rigs' allocation infos and store that on the asset.

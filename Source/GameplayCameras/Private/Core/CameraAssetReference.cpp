@@ -24,12 +24,12 @@ void FCameraAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEval
 	OverrideEvaluator.ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, bDrivenOverridesOnly);
 }
 
-bool FCameraAssetReference::IsParameterOverriden(const FGuid PropertyID) const
+bool FCameraAssetReference::IsParameterOverridden(const FGuid PropertyID) const
 {
 	return ParameterOverrideGuids.Contains(PropertyID);
 }
 
-void FCameraAssetReference::SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden)
+void FCameraAssetReference::SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden)
 {
 	if (bIsOverridden)
 	{

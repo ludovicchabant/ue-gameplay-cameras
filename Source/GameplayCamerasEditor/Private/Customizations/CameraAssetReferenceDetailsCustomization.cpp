@@ -39,12 +39,12 @@ protected:
 		
 		virtual bool IsPropertyOverridden(const FGuid PropertyID) const override
 		{
-			return CameraAssetReference.IsParameterOverriden(PropertyID);
+			return CameraAssetReference.IsParameterOverridden(PropertyID);
 		}
 		
 		virtual void SetPropertyOverride(const FGuid PropertyID, const bool bIsOverridden) const override
 		{
-			CameraAssetReference.SetParameterOverriden(PropertyID, bIsOverridden);
+			CameraAssetReference.SetParameterOverridden(PropertyID, bIsOverridden);
 		}
 
 	private:

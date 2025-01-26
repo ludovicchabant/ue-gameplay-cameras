@@ -31,7 +31,7 @@ public:
 	UK2Node_SetCameraRigParameter(const FObjectInitializer& ObjectInit);
 
 	void Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName);
-	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType);
+	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType, const UScriptStruct* InBlendableStructType);
 	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, const UObject* InCameraContextDataTypeObject);
 
 public:
@@ -58,6 +58,9 @@ private:
 
 	UPROPERTY()
 	ECameraVariableType BlendableCameraParameterType;
+
+	UPROPERTY()
+	TObjectPtr<const UScriptStruct> BlendableStructType;
 
 	UPROPERTY()
 	ECameraContextDataType DataCameraParameterType;

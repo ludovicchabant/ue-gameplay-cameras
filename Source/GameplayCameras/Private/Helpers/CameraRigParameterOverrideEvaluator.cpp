@@ -33,18 +33,29 @@ void FCameraRigParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVariab
 	const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig();
 	const FInstancedPropertyBag& CameraRigParameters = CameraRigReference.GetParameters();
 	const UPropertyBag* CameraRigParametersStruct = CameraRigParameters.GetPropertyBagStruct();
+	if (!CameraRigParametersStruct)
+	{
+		return;
+	}
+
+	TConstArrayView<FCameraRigParameterDefinition> ParameterDefinitions = CameraRig->GetParameterDefinitions();
 
 	FCameraParameterOverrideHelper Helper(*OutVariableTable, *OutContextDataTable);
 
-	for (const FPropertyBagPropertyDesc& PropertyDesc : CameraRigParametersStruct->GetPropertyDescs())
+	for (const FCameraRigParameterDefinition& Definition : ParameterDefinitions)
 	{
-		if (!CameraRigReference.IsParameterOverriden(PropertyDesc.ID))
+		if (!CameraRigReference.IsParameterOverridden(Definition.ParameterGuid))
 		{
 			continue;
 		}
 
-		TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = CameraRigParameters.GetValueStruct(PropertyDesc);
-		Helper.ApplyParameterOverride(CameraRig, PropertyDesc.ID, ParameterValueOrError, bDrivenOverridesOnly);
+		const FPropertyBagPropertyDesc* PropertyDesc = CameraRigParametersStruct->FindPropertyDescByID(Definition.ParameterGuid);
+		if (!ensure(PropertyDesc))
+		{
+			continue;
+		}
+
+		Helper.ApplyParameterOverride(CameraRig, Definition, CameraRigParameters, *PropertyDesc, bDrivenOverridesOnly);
 	}
 }
 

@@ -60,14 +60,10 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 	PropertyUtilities = CustomizationUtils.GetPropertyUtilities();
 	StructProperty = PropertyHandle;
 
-	// Figure out the parameter value and driving variable property names for the actual camera
-	// parameter type we are displaying. In theory these are always called "Value" and "Variable", but
-	// we do this in a statically-typed way via polyphormism, instead of in a duck-typing way.
-	FName ValuePropertyName, VariablePropertyName;
-	GetValueAndVariablePropertyNames(ValuePropertyName, VariablePropertyName);
-
-	ValueProperty = PropertyHandle->GetChildHandle(ValuePropertyName);
-	VariableProperty = PropertyHandle->GetChildHandle(VariablePropertyName);
+	// All camera parameters should have a "Value" and "Variable" property.
+	ValueProperty = PropertyHandle->GetChildHandle("Value");
+	VariableProperty = PropertyHandle->GetChildHandle("Variable");
+	ensure(ValueProperty && VariableProperty);
 
 	// Get the type of camera variable we need for this camera parameter (bool variable, float variable, etc.)
 	VariableClass = nullptr;
@@ -75,6 +71,7 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 	{
 		VariableClass = VariableObjectProperty->PropertyClass;
 	}
+	ensure(VariableClass);
 
 	// Update our variable info once now. We will then update it every tick, since the UI needs it
 	// for various things.
@@ -169,21 +166,23 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 			.OnGetMenuContent(this, &FCameraParameterDetailsCustomization::BuildCameraVariableBrowser)
 		]
 	];
-
-	// Setup some custom reset-to-default behavior, if we are allowed to.
-	// (see the code in FCameraRigAssetReferenceDetailsCustomization that sets this metadata)
-	const bool bNoResetToDefault = StructProperty->GetBoolMetaData("NoCustomCameraParameterResetToDefault");
-	if (!bNoResetToDefault)
-	{
-		HeaderRow.OverrideResetToDefault(
-				FResetToDefaultOverride::Create(
-					FIsResetToDefaultVisible::CreateSP(this, &FCameraParameterDetailsCustomization::IsResetToDefaultVisible),
-					FResetToDefaultHandler::CreateSP(this, &FCameraParameterDetailsCustomization::OnResetToDefault)));
-	}
 }
 
 void FCameraParameterDetailsCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
+	uint32 NumChildren = 0;
+	FPropertyAccess::Result Result = ValueProperty->GetNumChildren(NumChildren);
+	if (Result == FPropertyAccess::Success)
+	{
+		for (uint32 Index = 0; Index < NumChildren; ++Index)
+		{
+			TSharedPtr<IPropertyHandle> ChildProperty = ValueProperty->GetChildHandle(Index);
+			if (ChildProperty)
+			{
+				ChildBuilder.AddProperty(ChildProperty.ToSharedRef());
+			}
+		}
+	}
 }
 
 void FCameraParameterDetailsCustomization::Tick(float DeltaTime)
@@ -195,6 +194,13 @@ void FCameraParameterDetailsCustomization::Tick(float DeltaTime)
 void FCameraParameterDetailsCustomization::UpdateVariableInfo()
 {
 	VariableInfo = FCameraVariableInfo();
+
+	StructProperty->EnumerateRawData(
+			[this](void* RawData, const int32 ValueIndex, const int32 NumValues)
+			{
+				VariableInfo.bHasNonUserOverride |= HasNonUserOverride(RawData);
+				return true;
+			});
 
 	UObject* VariableObject = nullptr;
 	FPropertyAccess::Result PropertyAccessResult = VariableProperty->GetValue(VariableObject);
@@ -209,7 +215,6 @@ void FCameraParameterDetailsCustomization::UpdateVariableInfo()
 				VariableInfo.InfoText = Variable->DisplayName.IsEmpty() ?
 					FText::FromName(Variable->GetFName()) :
 					FText::FromString(Variable->DisplayName);
-				VariableInfo.bIsExposedParameterVariable = VariableInfo.CommonVariable->bIsPrivate;
 			}
 			else
 			{
@@ -217,7 +222,7 @@ void FCameraParameterDetailsCustomization::UpdateVariableInfo()
 				VariableInfo.ErrorText = LOCTEXT("InvalidVariableObject", "Invalid Variable");
 			}
 		}
-		// else: variable is not set
+		// else: variable is not set, leave info/error texts empty.
 	}
 	else if (PropertyAccessResult == FPropertyAccess::MultipleValues)
 	{
@@ -278,15 +283,15 @@ TSharedRef<SWidget> FCameraParameterDetailsCustomization::BuildCameraVariableBro
 bool FCameraParameterDetailsCustomization::IsValueEditorEnabled() const
 {
 	// The value widget is enabled (i.e. the user can change the value) if the parameter isn't driven by
-	// a variable, or if that variable is a private variable meant to expose the parameter on the rig interface.
-	return (VariableInfo.VariableValue == ECameraVariableValue::NotSet || VariableInfo.bIsExposedParameterVariable);
+	// a variable that was set by the user.
+	return VariableInfo.VariableValue == ECameraVariableValue::NotSet;
 }
 
 bool FCameraParameterDetailsCustomization::IsCameraVariableBrowserEnabled() const
 {
 	// The variable picker is enabled if the parameter isn't exposed to the rig interface via a private variable,
 	// since we can't drive a value with both an interface parameter and a user-defined variable.
-	return !VariableInfo.bIsExposedParameterVariable;
+	return !VariableInfo.bHasNonUserOverride;
 }
 
 FText FCameraParameterDetailsCustomization::GetVariableInfoText() const
@@ -296,7 +301,7 @@ FText FCameraParameterDetailsCustomization::GetVariableInfoText() const
 
 EVisibility FCameraParameterDetailsCustomization::GetVariableInfoTextVisibility() const
 {
-	const bool bShowVariableInfoText = !VariableInfo.InfoText.IsEmpty() && !VariableInfo.bIsExposedParameterVariable;
+	const bool bShowVariableInfoText = !VariableInfo.InfoText.IsEmpty();
 	return bShowVariableInfoText ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
@@ -307,7 +312,7 @@ FOptionalSize FCameraParameterDetailsCustomization::GetVariableInfoTextMaxWidth(
 	// IMPORTANT: update this if the main layout changes inside Construct()
 	const float FixedSpace = 1.f + (2.f+ 16.f + 2.f) + (2.f + 16.f + 2.f) + 1.f;
 
-	const bool bShowVariableInfoText = !VariableInfo.InfoText.IsEmpty() && !VariableInfo.bIsExposedParameterVariable;
+	const bool bShowVariableInfoText = !VariableInfo.InfoText.IsEmpty();
 	const float LayoutBoxWidth = LayoutBox ? LayoutBox->GetPaintSpaceGeometry().GetLocalSize().X : 0.f;
 	return bShowVariableInfoText ? FOptionalSize((LayoutBoxWidth - FixedSpace) / 3.f) : FOptionalSize(0);
 }
@@ -319,7 +324,7 @@ FText FCameraParameterDetailsCustomization::GetVariableErrorText() const
 
 EVisibility FCameraParameterDetailsCustomization::GetVariableErrorTextVisibility() const
 {
-	const bool bShowVariableErrorText = !VariableInfo.ErrorText.IsEmpty() && !VariableInfo.bIsExposedParameterVariable;
+	const bool bShowVariableErrorText = !VariableInfo.ErrorText.IsEmpty();
 	return bShowVariableErrorText ? EVisibility::Visible : EVisibility::Collapsed;
 }
 
@@ -328,7 +333,7 @@ FOptionalSize FCameraParameterDetailsCustomization::GetVariableErrorTextMaxWidth
 	// See comments in GetVariableInfoTextMaxWidth.
 	const float FixedSpace = 1.f + (2.f+ 16.f + 2.f) + (2.f + 16.f + 2.f) + 1.f;
 
-	const bool bShowVariableErrorText = !VariableInfo.ErrorText.IsEmpty() && !VariableInfo.bIsExposedParameterVariable;
+	const bool bShowVariableErrorText = !VariableInfo.ErrorText.IsEmpty();
 	const float LayoutBoxWidth = LayoutBox ? LayoutBox->GetPaintSpaceGeometry().GetLocalSize().X : 0.f;
 	return bShowVariableErrorText ? FOptionalSize((LayoutBoxWidth - FixedSpace) / 3.f) : FOptionalSize(0);
 }
@@ -340,8 +345,7 @@ bool FCameraParameterDetailsCustomization::CanClearVariable() const
 
 void FCameraParameterDetailsCustomization::OnClearVariable()
 {
-	VariableProperty->ResetToDefault();
-	PropertyUtilities->RequestForceRefresh();
+	OnSetVariable(nullptr);
 }
 
 void FCameraParameterDetailsCustomization::OnSetVariable(UCameraVariableAsset* InVariable)
@@ -378,35 +382,31 @@ void FCameraParameterDetailsCustomization::OnSetVariable(UCameraVariableAsset* I
 bool FCameraParameterDetailsCustomization::IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> InPropertyHandle) const
 {
 	// The user can reset the camera parameter to its default if the value is non-default, and/or the
-	// variable is a user-defined variable. In other words, if the variable is private because the parameter
-	// is exposed, then we don't want to reset that -- we only want to reset the value.
-	return 
-		ValueProperty->CanResetToDefault() || 
-		(VariableProperty->CanResetToDefault() && !VariableInfo.bIsExposedParameterVariable);
+	// variable is a user-defined variable. In other words, the VariableID property should not play a role
+	// in this.
+	return ValueProperty->CanResetToDefault() || VariableProperty->CanResetToDefault();
 }
 
 void FCameraParameterDetailsCustomization::OnResetToDefault(TSharedPtr<IPropertyHandle> InPropertyHandle)
 {
-	// As mentioned above, if the camera parameter is exposed publicly on the camera rig, we only want
-	// to reset the value to the default (and keep the private variable set on it).
-	// Otherwise, we can reset both the value and the variable.
-	if (VariableInfo.bIsExposedParameterVariable)
-	{
-		ValueProperty->ResetToDefault();
-	}
-	else
-	{
-		StructProperty->ResetToDefault();
-	}
+	// As mentioned above, we only reset the value and the variable, not the VariableID.
+	ValueProperty->ResetToDefault();
+	VariableProperty->ResetToDefault();
 
 	PropertyUtilities->RequestForceRefresh();
 }
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+bool F##ValueName##CameraParameterDetailsCustomization::HasNonUserOverride(void* InRawData)\
+{\
+	F##ValueName##CameraParameter* TypedData = reinterpret_cast<F##ValueName##CameraParameter*>(InRawData);\
+	return TypedData->HasNonUserOverride();\
+}\
 void F##ValueName##CameraParameterDetailsCustomization::SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable)\
 {\
 	F##ValueName##CameraParameter* TypedData = reinterpret_cast<F##ValueName##CameraParameter*>(InRawData);\
 	TypedData->Variable = CastChecked<U##ValueName##CameraVariable>(InVariable, ECastCheckedType::NullAllowed);\
+	TypedData->VariableID = InVariable ? InVariable->GetVariableID() : FCameraVariableID();\
 }
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE

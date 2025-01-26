@@ -3,12 +3,13 @@
 #pragma once
 
 #include "Core/CameraBuildStatus.h"
-#include "Core/CameraContextDataAllocationInfo.h"
+#include "Core/CameraContextDataTableAllocationInfo.h"
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraEventHandler.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
+#include "Core/CameraRigParameterDefinition.h"
 #include "Core/CameraRigTransition.h"
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableTableAllocationInfo.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "CoreTypes.h"
@@ -67,13 +68,13 @@ struct FCameraRigAllocationInfo
 
 	/** Allocation info for the context data table. */
 	UPROPERTY()
-	FCameraContextDataAllocationInfo ContextDataTableInfo;
+	FCameraContextDataTableAllocationInfo ContextDataTableInfo;
 
 public:
 
 	GAMEPLAYCAMERAS_API void Append(const FCameraRigAllocationInfo& OtherAllocationInfo);
 
-	GAMEPLAYCAMERAS_API friend bool operator==(const FCameraRigAllocationInfo& A, const FCameraRigAllocationInfo& B);
+	bool operator==(const FCameraRigAllocationInfo& Other) const = default;
 };
 
 template<>
@@ -84,16 +85,6 @@ struct TStructOpsTypeTraits<FCameraRigAllocationInfo> : public TStructOpsTypeTra
 		WithCopy = true,
 		WithIdenticalViaEquality = true
 	};
-};
-
-/**
- * The type of a camera rig parameter.
- */
-UENUM()
-enum class ECameraRigInterfaceParameterType : uint8
-{
-	Blendable,
-	Data
 };
 
 /**
@@ -183,6 +174,10 @@ public:
 	UPROPERTY()
 	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
 
+	/** The struct type of this parameter if it is a blendable struct. */
+	UPROPERTY()
+	TObjectPtr<const UScriptStruct> BlendableStructType;
+
 	/**
 	 * Whether this parameter's value should be pre-blended.
 	 *
@@ -195,13 +190,24 @@ public:
 
 	// Built on save/cook.
 
-	/**
-	 * The private camera variable created to drive the target camera parameter on
-	 * the target camera node. This variable is created by the build method on the
-	 * camera rig.
-	 */
+	/** The ID to use to access the underlying variable value in the variable table. */
 	UPROPERTY()
-	TObjectPtr<UCameraVariableAsset> PrivateVariable;
+	FCameraVariableID PrivateVariableID;
+
+
+	// Deprecated.
+
+	UPROPERTY()
+	TObjectPtr<UCameraVariableAsset> PrivateVariable_DEPRECATED;
+
+public:
+
+	/** Gets the camera variable definition for this parameter. */
+	GAMEPLAYCAMERAS_API FCameraVariableDefinition GetVariableDefinition() const;
+
+#if WITH_EDITORONLY_DATA
+	GAMEPLAYCAMERAS_API FString GetVariableName() const;
+#endif
 };
 
 UCLASS(MinimalAPI)
@@ -221,9 +227,18 @@ public:
 
 	// Built on save/cook.
 
-	/** The reference to use to access the underlying data in the context data table. */
+	/** The ID to use to access the underlying data in the context data table. */
 	UPROPERTY()
 	FCameraContextDataID PrivateDataID;
+
+public:
+
+	/** Gets the camera context data definition for this parameter. */
+	GAMEPLAYCAMERAS_API FCameraContextDataDefinition GetDataDefinition() const;
+
+#if WITH_EDITORONLY_DATA
+	GAMEPLAYCAMERAS_API FString GetDataName() const;
+#endif
 };
 
 /**
@@ -236,10 +251,11 @@ struct FCameraRigInterface
 
 public:
 
-	/** The list of exposed parameters on the camera rig. */
+	/** The list of exposed blendable parameters on the camera rig. */
 	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigBlendableParameter>> BlendableParameters;
 
+	/** The list of exposed data parameters on the camera rig. */
 	UPROPERTY(Instanced)
 	TArray<TObjectPtr<UCameraRigDataParameter>> DataParameters;
 
@@ -322,6 +338,9 @@ public:
 	/** Gets the default values for the parameters exposed on this camera rig. */
 	FInstancedPropertyBag& GetDefaultParameters() { return DefaultParameters; }
 
+	/** Gets the definitions of parameters exposed on this camera rig. */
+	TConstArrayView<FCameraRigParameterDefinition> GetParameterDefinitions() const { return ParameterDefinitions; }
+
 public:
 
 	/** The current build state of this camera rig. */
@@ -396,6 +415,10 @@ private:
 	/** The default interface parameter values, generated during build. */
 	UPROPERTY()
 	FInstancedPropertyBag DefaultParameters;
+
+	/** The definitions of parameters exposed on this camera rig. */
+	UPROPERTY()
+	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
 
 #if WITH_EDITORONLY_DATA
 

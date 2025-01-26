@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableReferences.h"
 #include "IPropertyTypeCustomization.h"
 
 class FPropertyEditorModule;
@@ -30,6 +30,10 @@ public:
 	/** IPropertyTypeCustomization interface */
 	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+
+protected:
+
+	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
 private:
 
@@ -59,6 +63,8 @@ protected:
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 class F##ValueName##CameraVariableReferenceDetailsCustomization : public FCameraVariableReferenceDetailsCustomization\
 {\
+protected:\
+	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE

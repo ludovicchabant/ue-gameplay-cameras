@@ -129,6 +129,9 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 					break;
 				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+				case ECameraVariableType::BlendableStruct:
+					PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableParameter.BlendableStructType.Get());
+					break;
 			}
 
 			UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, BlendableParameter.ParameterName);

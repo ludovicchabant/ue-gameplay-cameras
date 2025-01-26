@@ -15,7 +15,6 @@ class FStructProperty;
 class UCameraNode;
 class UCameraRigAsset;
 class UCameraRigCameraNode;
-class UCameraVariableAsset;
 struct FCameraVariableTableAllocationInfo;
 struct FInstancedPropertyBag;
 
@@ -63,8 +62,10 @@ private:
 
 	void CallBuild();
 	void CallBuild(FCameraRigBuildContext& BuildContext, UCameraNode* CameraNode);
+	void BuildParametersAllocationInfo(FCameraRigBuildContext& BuildContext);
 
 	void BuildDefaultParameters();
+	void BuildParameterDefinitions();
 
 	void UpdateBuildStatus();
 
@@ -76,13 +77,6 @@ private:
 	bool SetupDataContextPropertyOverride(const UCameraRigDataParameter* DataParameter);
 	bool SetupCustomDataParameterOverride(const UCameraRigDataParameter* DataParameter);
 
-public:
-
-	// Internal API.
-
-	static void BuildDefaultParameters(UCameraRigAsset* CameraRigAsset, FInstancedPropertyBag& OutPropertyBag);
-	static void AppendDefaultParameters(const FCameraRigInterface& CameraRigInterface, TArray<FPropertyBagPropertyDesc>& OutProperties);
-
 private:
 
 	FCameraBuildLog& BuildLog;
@@ -92,7 +86,7 @@ private:
 	FCameraNodeHierarchy CameraNodeHierarchy;
 
 	using FDrivenParameterKey = TTuple<FName, UCameraNode*>;
-	TMap<FDrivenParameterKey, TObjectPtr<UCameraVariableAsset>> OldDrivenBlendableParameters;
+	TMap<FDrivenParameterKey, FCameraVariableID> OldDrivenBlendableParameters;
 	TMap<FDrivenParameterKey, FCameraContextDataID> OldDrivenDataParameters;
 
 	friend struct Internal::FInterfaceParameterBindingBuilder;

@@ -126,63 +126,7 @@ void UCameraRigCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
 
 void UCameraRigCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
 {
-	const FInstancedPropertyBag& ParameterOverrides = CameraRigReference.GetParameters();
-	const UPropertyBag* ParameterOverridesStruct = ParameterOverrides.GetPropertyBagStruct();
-	if (!ParameterOverridesStruct)
-	{
-		return;
-	}
-
-	for (const FPropertyBagPropertyDesc& PropertyDesc : ParameterOverridesStruct->GetPropertyDescs())
-	{
-		switch (PropertyDesc.ValueType)
-		{
-			case EPropertyBagPropertyType::Struct:
-				{
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-					if (PropertyDesc.ValueTypeObject == F##ValueName##CameraParameter::StaticStruct())\
-					{\
-						using CameraParameterType = F##ValueName##CameraParameter;\
-						TValueOrError<CameraParameterType*, EPropertyBagResult> PropertyValue =\
-						ParameterOverrides.GetValueStruct<CameraParameterType>(PropertyDesc);\
-						if (ensure(PropertyValue.HasValue() && !PropertyValue.HasError()))\
-						{\
-							CameraParameterType* CameraParameter = PropertyValue.GetValue();\
-							check(CameraParameter);\
-							const uint8* DefaultValuePtr = reinterpret_cast<const uint8*>(&CameraParameter->Value);\
-							OutParameterInfos.AddBlendableParameter(\
-									PropertyDesc.Name, ECameraVariableType::ValueName, DefaultValuePtr, &CameraParameter->Variable);\
-						}\
-					}\
-					else
-					UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-					{
-						const UScriptStruct* DataType = CastChecked<const UScriptStruct>(PropertyDesc.ValueTypeObject);
-						OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::Struct, DataType, nullptr);
-					}
-				}
-				break;
-			case EPropertyBagPropertyType::Name:
-				OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::Name, nullptr, nullptr);
-				break;
-			case EPropertyBagPropertyType::String:
-				OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::String, nullptr, nullptr);
-				break;
-			case EPropertyBagPropertyType::Enum:
-				{
-					const UEnum* EnumType = CastChecked<const UEnum>(PropertyDesc.ValueTypeObject);
-					OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::Enum, EnumType, nullptr);
-				}
-				break;
-			case EPropertyBagPropertyType::Object:
-				OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::Object, nullptr, nullptr);
-				break;
-			case EPropertyBagPropertyType::Class:
-				OutParameterInfos.AddDataParameter(PropertyDesc.Name, ECameraContextDataType::Object, nullptr, nullptr);
-				break;
-		}
-	}
+	CameraRigReference.GetCustomCameraNodeParameters(OutParameterInfos);
 }
 
 FCameraNodeEvaluatorPtr UCameraRigCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const

@@ -3,6 +3,7 @@
 #include "Core/CameraVariableTable.h"
 
 #include "HAL/UnrealMemory.h"
+#include "IGameplayCamerasModule.h"
 #include "Math/UnrealMath.h"
 
 namespace UE::Cameras
@@ -24,6 +25,9 @@ bool IsVariableInMask(FCameraVariableID VariableID, const FCameraVariableTableFl
 }
 
 }  // namespace Private
+
+TArray<FBlendableStructInfo> FCameraVariableTable::CachedBlendableStructs;
+bool FCameraVariableTable::bCachedBlendableStructs(false);
 
 FCameraVariableTable::FCameraVariableTable()
 {
@@ -83,7 +87,7 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 	uint32 CurSizeOf, CurAlignOf;
 	for (const FCameraVariableDefinition& VariableDefinition : AllocationInfo.VariableDefinitions)
 	{
-		GetVariableTypeAllocationInfo(VariableDefinition.VariableType, CurSizeOf, CurAlignOf);
+		GetVariableTypeAllocationInfo(VariableDefinition.VariableType, VariableDefinition.BlendableStructType, CurSizeOf, CurAlignOf);
 		const uint32 NewEntryOffset = Align(TotalSizeOf, CurAlignOf);
 		TotalSizeOf = NewEntryOffset + CurSizeOf;
 		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
@@ -91,6 +95,7 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 		FEntry NewEntry;
 		NewEntry.ID = VariableDefinition.VariableID;
 		NewEntry.Type = VariableDefinition.VariableType;
+		NewEntry.StructType = VariableDefinition.BlendableStructType;
 		NewEntry.Offset = NewEntryOffset;
 		NewEntry.Flags = EEntryFlags::None;
 		if (VariableDefinition.bIsPrivate)
@@ -133,14 +138,46 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 				break;
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+			case ECameraVariableType::BlendableStruct:
+				{
+					check(Entry.StructType);
+					Entry.StructType->InitializeStruct(ValuePtr);
+				}
+				break;
 		}
 	}
+}
+
+void FCameraVariableTable::CacheBlendableStructs()
+{
+	if (bCachedBlendableStructs)
+	{
+		return;
+	}
+
+	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
+	CachedBlendableStructs = GameplayCamerasModule.GetBlendableStructs();
+	bCachedBlendableStructs = true;
+}
+
+FBlendableStructTypeErasedInterpolator FCameraVariableTable::GetBlendableStructInterpolator(const UScriptStruct* StructType)
+{
+	CacheBlendableStructs();
+
+	for (const FBlendableStructInfo& Info : CachedBlendableStructs)
+	{
+		if (Info.StructType == StructType)
+		{
+			return Info.Interpolator;
+		}
+	}
+	return nullptr;
 }
 
 void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& VariableDefinition)
 {
 	uint32 SizeOf, AlignOf;
-	GetVariableTypeAllocationInfo(VariableDefinition.VariableType, SizeOf, AlignOf);
+	GetVariableTypeAllocationInfo(VariableDefinition.VariableType, VariableDefinition.BlendableStructType, SizeOf, AlignOf);
 
 	uint8* VariablePtr = Align(Memory + Used, AlignOf);
 	uint32 NewUsed = (VariablePtr + SizeOf) - Memory;
@@ -157,6 +194,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	FEntry NewEntry;
 	NewEntry.ID = VariableDefinition.VariableID;
 	NewEntry.Type = VariableDefinition.VariableType;
+	NewEntry.StructType = VariableDefinition.BlendableStructType;
 	NewEntry.Offset = VariablePtr - Memory;
 	NewEntry.Flags = EEntryFlags::None;
 	if (VariableDefinition.bIsPrivate)
@@ -215,7 +253,7 @@ const FCameraVariableTable::FEntry* FCameraVariableTable::FindEntry(FCameraVaria
 	return IndexPtr ? &Entries[*IndexPtr] : nullptr;
 }
 
-bool FCameraVariableTable::GetVariableTypeAllocationInfo(ECameraVariableType VariableType, uint32& OutSizeOf, uint32& OutAlignOf)
+bool FCameraVariableTable::GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf)
 {
 	switch (VariableType)
 	{
@@ -226,6 +264,14 @@ bool FCameraVariableTable::GetVariableTypeAllocationInfo(ECameraVariableType Var
 			return true;
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+		case ECameraVariableType::BlendableStruct:
+			{
+				check(StructType);
+				const UScriptStruct::ICppStructOps* StructOps = StructType->GetCppStructOps();
+				OutSizeOf = StructOps->GetSize();
+				OutAlignOf = StructOps->GetAlignment();
+			}
+			return true;
 	}
 	return false;
 }
@@ -235,19 +281,25 @@ bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 	return EntryLookup.Contains(VariableID);
 }
 
-const uint8* FCameraVariableTable::GetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType) const
+const uint8* FCameraVariableTable::GetValue(
+		FCameraVariableID VariableID,
+		ECameraVariableType ExpectedVariableType,
+		const UScriptStruct* ExpectedBlendableStructType) const
 {
-	const uint8* Value = TryGetValue(VariableID, ExpectedVariableType);
+	const uint8* Value = TryGetValue(VariableID, ExpectedVariableType, ExpectedBlendableStructType);
 	ensureMsgf(Value, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue());
 	return Value;
 }
 
-const uint8* FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ECameraVariableType ExpectedVariableType) const
+const uint8* FCameraVariableTable::TryGetValue(
+		FCameraVariableID VariableID,
+		ECameraVariableType ExpectedVariableType,
+		const UScriptStruct* ExpectedBlendableStructType) const
 {
 	const FEntry* Entry = FindEntry(VariableID);
 	if (Entry)
 	{
-		ensure(Entry->Type == ExpectedVariableType);
+		ensure(Entry->Type == ExpectedVariableType && Entry->StructType == ExpectedBlendableStructType);
 		return Memory + Entry->Offset;
 	}
 
@@ -257,15 +309,16 @@ const uint8* FCameraVariableTable::TryGetValue(FCameraVariableID VariableID, ECa
 void FCameraVariableTable::SetValue(
 		FCameraVariableID VariableID, 
 		ECameraVariableType ExpectedVariableType, 
+		const UScriptStruct* ExpectedBlendableStructType,
 		const uint8* InRawValuePtr,
 		bool bMarkAsWrittenThisFrame)
 {
 	FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
 	{
-		check(ExpectedVariableType == Entry->Type);
+		check(ExpectedVariableType == Entry->Type && ExpectedBlendableStructType == Entry->StructType);
 		uint32 SizeOf, AlignOf;
-		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
+		GetVariableTypeAllocationInfo(Entry->Type, Entry->StructType, SizeOf, AlignOf);
 		uint8* ValuePtr = Memory + Entry->Offset;
 		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
 		Entry->Flags |= EEntryFlags::Written;
@@ -279,14 +332,15 @@ void FCameraVariableTable::SetValue(
 bool FCameraVariableTable::TrySetValue(
 		FCameraVariableID VariableID,
 		ECameraVariableType ExpectedVariableType,
+		const UScriptStruct* ExpectedBlendableStructType,
 		const uint8* InRawValuePtr,
 		bool bMarkAsWrittenThisFrame)
 {
 	if (FEntry* Entry = FindEntry(VariableID))
 	{
-		check(ExpectedVariableType == Entry->Type);
+		check(ExpectedVariableType == Entry->Type && ExpectedBlendableStructType == Entry->StructType);
 		uint32 SizeOf, AlignOf;
-		GetVariableTypeAllocationInfo(Entry->Type, SizeOf, AlignOf);
+		GetVariableTypeAllocationInfo(Entry->Type, Entry->StructType, SizeOf, AlignOf);
 		uint8* ValuePtr = Memory + Entry->Offset;
 		FMemory::Memcpy(ValuePtr, InRawValuePtr, SizeOf);
 		Entry->Flags |= EEntryFlags::Written;
@@ -358,6 +412,7 @@ bool FCameraVariableTable::TryGetVariableDefinition(FCameraVariableID VariableID
 	{
 		OutVariableDefinition.VariableID = Entry->ID;
 		OutVariableDefinition.VariableType = Entry->Type;
+		OutVariableDefinition.BlendableStructType = Entry->StructType;
 		OutVariableDefinition.bIsPrivate = EnumHasAnyFlags(Entry->Flags, EEntryFlags::Private);
 		OutVariableDefinition.bIsInput = EnumHasAnyFlags(Entry->Flags, EEntryFlags::Input);
 #if WITH_EDITORONLY_DATA
@@ -471,7 +526,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 #else
 				const FString& DebugName = GUnavailableVariableDebugName;
 #endif
-				checkf(ThisEntry->Type == OtherEntry.Type, 
+				checkf(ThisEntry->Type == OtherEntry.Type && ThisEntry->StructType == OtherEntry.StructType, 
 						TEXT("Camera variable name collision! Expected '%d' (%s) to be of type '%s' but other table has type '%s'!"),
 						ThisEntry->ID.GetValue(), *DebugName,
 						*UEnum::GetValueAsString(ThisEntry->Type), *UEnum::GetValueAsString(OtherEntry.Type));
@@ -482,6 +537,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 				FCameraVariableDefinition NewVariableDefinition;
 				NewVariableDefinition.VariableID = OtherEntry.ID;
 				NewVariableDefinition.VariableType = OtherEntry.Type;
+				NewVariableDefinition.BlendableStructType = OtherEntry.StructType;
 				NewVariableDefinition.bIsInput = EnumHasAllFlags(OtherEntry.Flags, EEntryFlags::Input);
 #if WITH_EDITORONLY_DATA
 				NewVariableDefinition.VariableName = OtherEntry.DebugName;
@@ -494,7 +550,7 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 			if (ensure(ThisEntry))
 			{
 				uint32 ValueSize = 0, ValueAlignment = 0;
-				GetVariableTypeAllocationInfo(ThisEntry->Type, ValueSize, ValueAlignment);
+				GetVariableTypeAllocationInfo(ThisEntry->Type, ThisEntry->StructType, ValueSize, ValueAlignment);
 				check(ValueSize != 0);
 
 				uint8* ThisValuePtr = Memory + ThisEntry->Offset;
@@ -584,6 +640,16 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 						break;
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+					case ECameraVariableType::BlendableStruct:
+						{
+							check(FromEntry->StructType);
+							FBlendableStructTypeErasedInterpolator Interpolator = GetBlendableStructInterpolator(FromEntry->StructType);
+							if (ensure(Interpolator))
+							{
+								Interpolator(FromValuePtr, ToValuePtr, Factor);
+							}
+						}
+						break;
 				}
 				// We consider this variable "written to this frame" if it was written in either variable tables this frame.
 				// If the value interpolates because the from/to values are different, but neither was written this frame, we
@@ -597,6 +663,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 				FCameraVariableDefinition NewVariableDefinition;
 				NewVariableDefinition.VariableID = ToEntry.ID;
 				NewVariableDefinition.VariableType = ToEntry.Type;
+				NewVariableDefinition.BlendableStructType = ToEntry.StructType;
 				NewVariableDefinition.bIsInput = EnumHasAllFlags(ToEntry.Flags, EEntryFlags::Input);
 #if WITH_EDITORONLY_DATA
 				NewVariableDefinition.VariableName = ToEntry.DebugName;
@@ -607,7 +674,7 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 				check(FromEntry);
 
 				uint32 ValueSize = 0, ValueAlignment = 0;
-				GetVariableTypeAllocationInfo(FromEntry->Type, ValueSize, ValueAlignment);
+				GetVariableTypeAllocationInfo(FromEntry->Type, FromEntry->StructType, ValueSize, ValueAlignment);
 				check(ValueSize != 0);
 
 				uint8* FromValuePtr = Memory + FromEntry->Offset;
@@ -625,45 +692,4 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 }
 
 }  // namespace UE::Cameras
-
-bool operator==(const FCameraVariableDefinition& A, const FCameraVariableDefinition& B)
-{
-	return A.VariableID == B.VariableID
-		&& A.VariableType == B.VariableType
-		&& A.bIsPrivate == B.bIsPrivate
-		&& A.bIsInput == B.bIsInput
-#if WITH_EDITORONLY_DATA
-		&& A.VariableName == B.VariableName
-#endif
-		;
-}
-
-void FCameraVariableTableAllocationInfo::Combine(const FCameraVariableTableAllocationInfo& OtherInfo)
-{
-	TMap<FCameraVariableID, int32> KnownIDs;
-	for (auto It = VariableDefinitions.CreateConstIterator(); It; ++It)
-	{
-		const FCameraVariableDefinition& VariableDefinition(*It);
-		KnownIDs.Add(VariableDefinition.VariableID, It.GetIndex());
-	}
-
-	for (const FCameraVariableDefinition& OtherVariableDefinition : OtherInfo.VariableDefinitions)
-	{
-		const int32 KnownIndex = KnownIDs.FindRef(OtherVariableDefinition.VariableID, INDEX_NONE);
-		if (KnownIndex == INDEX_NONE)
-		{
-			VariableDefinitions.Add(OtherVariableDefinition);
-		}
-		else
-		{
-			const FCameraVariableDefinition& KnownVariableDefinition(VariableDefinitions[KnownIndex]);
-			ensure(KnownVariableDefinition == OtherVariableDefinition);
-		}
-	}
-}
-
-bool operator==(const FCameraVariableTableAllocationInfo& A, const FCameraVariableTableAllocationInfo& B)
-{
-	return A.VariableDefinitions == B.VariableDefinitions;
-}
 

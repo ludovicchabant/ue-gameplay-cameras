@@ -7,6 +7,7 @@
 #include "Editor.h"
 #include "Editors/CameraNodeGraphDragDropOp.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "IGameplayCamerasModule.h"
 #include "ScopedTransaction.h"
 #include "SPinTypeSelector.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -157,7 +158,6 @@ protected:
 
 			return SNew(SBox)
 				.MinDesiredWidth(125.f)
-				.MaxDesiredWidth(400.f)
 				.Padding(this, &SCameraRigBlendableParameterTableRow::GetPinTypeSelectorPadding)
 				[
 					SNew(SPinTypeSelector, FGetPinTypeTree::CreateSP(this, &SCameraRigBlendableParameterTableRow::GetPinTypeTreeInfos))
@@ -181,7 +181,7 @@ protected:
 	FMargin GetPinTypeSelectorPadding() const
 	{
 		// Add some horizontal margin when the pin type selector is read-only, so that the transition on hover is seamless.
-		return IsHovered() ? FMargin(0) : FMargin(8, 0);
+		return IsHovered() ? FMargin(0) : FMargin(7, 0);
 	}
 
 	void GetPinTypeTreeInfos(TArray<FPinTypeTreeItem>& TypeTree, ETypeTreeFilter TypeTreeFilter) const
@@ -207,6 +207,28 @@ protected:
 		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FRotator>::Get(), LOCTEXT("Rotator3dType", "A double precision 3D rotation")));
 		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FTransform3f>::Get(), LOCTEXT("Transform3fType", "A 3D transformation")));
 		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FTransform>::Get(), LOCTEXT("Transform3dType", "A double precision 3D transformation")));
+
+		TSharedPtr<FPinTypeTreeInfo> Structs = MakeShared<FPinTypeTreeInfo>(
+				LOCTEXT("BlendableStructPinTypeLabel", "Blendable Structures"),
+				UEdGraphSchema_K2::PC_Struct,
+				K2Schema,
+				LOCTEXT("BlendableStructPinTypeToolTip", "Blendable structure types"),
+				true);
+		IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
+		for (const FBlendableStructInfo& BlendableStruct : GameplayCamerasModule.GetBlendableStructs())
+		{
+			if (const UScriptStruct* StructType = BlendableStruct.StructType)
+			{
+				Structs->Children.Add(
+						MakeShared<UEdGraphSchema_K2::FPinTypeTreeInfo>(
+							UEdGraphSchema_K2::PC_Struct,
+							const_cast<UScriptStruct*>(StructType),
+							StructType->GetToolTipText(),
+							false,
+							(uint8)EObjectReferenceType::NotAnObject));
+			}
+		}
+		TypeTree.Add(Structs);
 	}
 
 	FEdGraphPinType GetBlendableParameterPinType() const
@@ -265,6 +287,10 @@ protected:
 			case ECameraVariableType::Transform3d:
 				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
 				PinType.PinSubCategoryObject = TBaseStructure<FTransform>::Get();
+				break;
+			case ECameraVariableType::BlendableStruct:
+				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
+				PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(Item->BlendableStructType.Get());
 				break;
 		}
 		return PinType;
@@ -431,7 +457,6 @@ protected:
 
 			return SNew(SBox)
 				.MinDesiredWidth(125.f)
-				.MaxDesiredWidth(400.f)
 				.Padding(this, &SCameraRigDataParameterTableRow::GetPinTypeSelectorPadding)
 				[
 					SNew(SPinTypeSelector, FGetPinTypeTree::CreateUObject(K2Schema, &UEdGraphSchema_K2::GetVariableTypeTree))
@@ -450,7 +475,7 @@ protected:
 	FMargin GetPinTypeSelectorPadding() const
 	{
 		// Add some horizontal margin when the pin type selector is read-only, so that the transition on hover is seamless.
-		return IsHovered() ? FMargin(0) : FMargin(8, 0);
+		return IsHovered() ? FMargin(0) : FMargin(7, 0);
 	}
 
 	FEdGraphPinType GetDataParameterPinType() const

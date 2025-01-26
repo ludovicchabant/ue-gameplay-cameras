@@ -161,7 +161,7 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 
 	AutoCreateDirectorEvaluator();
 
-	if (ensure(DirectorEvaluator))
+	if (DirectorEvaluator)
 	{
 		FCameraDirectorActivateParams DirectorParams;
 		DirectorParams.Evaluator = Params.Evaluator;
@@ -179,7 +179,7 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 		return;
 	}
 
-	if (ensure(DirectorEvaluator))
+	if (DirectorEvaluator)
 	{
 		FCameraDirectorDeactivateParams DirectorParams;
 		DirectorParams.OwnerContext = SharedThis(this);

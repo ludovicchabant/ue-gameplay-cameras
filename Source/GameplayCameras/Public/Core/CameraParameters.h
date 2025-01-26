@@ -11,11 +11,24 @@
 #define UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(ParameterClass)\
 	ParameterClass(typename TCallTraits<ParameterClass::ValueType>::ParamType InValue)\
 		: Value(InValue)\
-	{}
+	{}\
+	bool HasUserOverride() const { return Variable != nullptr; }\
+	bool HasNonUserOverride() const { return VariableID.IsValid() && (!Variable || Variable->GetVariableID() != VariableID); }\
+	void PostSerialize(const FArchive& Ar);
 
 #define UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(ParameterClass)\
 	ParameterClass() {}\
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(ParameterClass)
+
+// All camera parameters have:
+//
+// - Value: a value for the user to tweak. This is the "default" value.
+// - Variable: a variable chosen by the user to drive this parameter. 
+// - VariableID: the ID of the variable driving this parameter.
+//
+// When Variable is set, VariableID is the ID of that variable.
+// When Variable is not set, VariableID is the ID of something else
+// driving the parameter, such as a camera rig parameter override.
 
 /** Boolean camera parameter. */
 USTRUCT()
@@ -28,6 +41,9 @@ struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	bool Value = false;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UBooleanCameraVariable> Variable;
@@ -49,6 +65,9 @@ struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	int32 Value = 0;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UInteger32CameraVariable> Variable;
 
@@ -68,6 +87,9 @@ struct FFloatCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	float Value = 0.f;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UFloatCameraVariable> Variable;
@@ -89,6 +111,9 @@ struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	double Value = 0.0;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UDoubleCameraVariable> Variable;
 
@@ -108,6 +133,9 @@ struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector2f Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2fCameraVariable> Variable;
@@ -130,6 +158,9 @@ struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector2D Value;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2dCameraVariable> Variable;
 
@@ -150,6 +181,9 @@ struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3f Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3fCameraVariable> Variable;
@@ -172,6 +206,9 @@ struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3d Value;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3dCameraVariable> Variable;
 
@@ -192,6 +229,9 @@ struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector4f Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4fCameraVariable> Variable;
@@ -214,6 +254,9 @@ struct GAMEPLAYCAMERAS_API FVector4dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector4d Value;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4dCameraVariable> Variable;
 
@@ -234,6 +277,9 @@ struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FRotator3f Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3fCameraVariable> Variable;
@@ -256,6 +302,9 @@ struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	FRotator3d Value;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3dCameraVariable> Variable;
 
@@ -277,6 +326,9 @@ struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	FTransform3f Value;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UTransform3fCameraVariable> Variable;
 
@@ -296,6 +348,9 @@ struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FTransform3d Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UTransform3dCameraVariable> Variable;
@@ -335,7 +390,7 @@ inline bool CameraParameterValueEquals<FTransform3d>(const FTransform3d& A, cons
 	template<> struct TStructOpsTypeTraits<F##ValueName##CameraParameter>\
 		: public TStructOpsTypeTraitsBase2<F##ValueName##CameraParameter>\
 	{\
-		enum { WithStructuredSerializeFromMismatchedTag = true };\
+		enum { WithStructuredSerializeFromMismatchedTag = true, WithPostSerialize = true };\
 	};
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE

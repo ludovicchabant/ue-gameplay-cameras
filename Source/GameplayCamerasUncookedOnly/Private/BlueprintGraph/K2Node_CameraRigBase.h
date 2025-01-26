@@ -45,7 +45,7 @@ public:
 public:
 
 	static FEdGraphPinType MakeBlendableParameterPinType(const UCameraRigBlendableParameter* BlendableParameter);
-	static FEdGraphPinType MakeBlendableParameterPinType(ECameraVariableType CameraVariableType);
+	static FEdGraphPinType MakeBlendableParameterPinType(ECameraVariableType CameraVariableType, const UScriptStruct* BlendableStructType);
 	static FEdGraphPinType MakeDataParameterPinType(const UCameraRigDataParameter* DataParameter);
 	static FEdGraphPinType MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, const UObject* CameraContextDataTypeObject);
 

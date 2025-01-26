@@ -56,7 +56,7 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 			PreloadObject(BlendableParameter);
 			if (BlendableParameter)
 			{
-				PreloadObject(BlendableParameter->PrivateVariable);
+				PreloadObject(const_cast<UScriptStruct*>(BlendableParameter->BlendableStructType.Get()));
 			}
 		}
 		for (UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
@@ -152,7 +152,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 			continue;
 		}
 
-		if (!BlendableParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariableID)
 		{
 			CompilerContext.MessageLog.Error(*LOCTEXT("ErrorMissingParameterVariable", "SetCameraRigParameters node @@ needs camera rig @@ to be built.").ToString(), this, CameraRig);
 			continue;
@@ -330,7 +330,7 @@ void UK2Node_SetCameraRigParameters::CreateParameterPins()
 			continue;
 		}
 
-		if (!BlendableParameter->PrivateVariable)
+		if (!BlendableParameter->PrivateVariableID)
 		{
 			// Camera rig isn't fully built.
 			continue;

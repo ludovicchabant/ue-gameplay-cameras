@@ -17,41 +17,48 @@
 namespace UE::Cameras::Private
 {
 
-template<typename VariableAssetType>
-void SetCameraRigBlendableParameter(FBlueprintCameraVariableTable VariableTable, VariableAssetType* PrivateVariable, typename VariableAssetType::ValueType Value)
+template<typename ValueType>
+void SetCameraRigBlendableParameter(FBlueprintCameraVariableTable VariableTable, FCameraVariableID PrivateVariableID, typename TCallTraits<ValueType>::ParamType Value)
 {
 	if (!VariableTable.IsValid())
 	{
 		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
 		return;
 	}
-	if (PrivateVariable == nullptr)
+	if (!PrivateVariableID.IsValid())
 	{
 		FFrame::KismetExecutionMessage(TEXT("No camera rig was passed."), ELogVerbosity::Error);
 		return;
 	}
 
-	VariableTable.GetVariableTable()->SetValue(PrivateVariable, Value, true);
+	VariableTable.GetVariableTable()->TrySetValue<ValueType>(PrivateVariableID, Value);
 }
 
-UCameraVariableAsset* GetParameterPrivateVariable(UCameraRigAsset* CameraRig, const FString& ParameterName)
+FCameraVariableID GetParameterPrivateVariableID(UCameraRigAsset* CameraRig, const FString& ParameterName, const UScriptStruct* BlendableStructType = nullptr)
 {
 	UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(ParameterName);
 	if (!BlendableParameter)
 	{
 		const FText Text = LOCTEXT("NoSuchBlendableParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this camera variable table value will most probably accomplish nothing.");
 		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return nullptr;
+		return FCameraVariableID();
 	}
 
-	if (!BlendableParameter->PrivateVariable)
+	if (!BlendableParameter->PrivateVariableID)
 	{
 		const FText Text = LOCTEXT("CameraRigNeedsBuilding", "Parameter '{0}' isn't built. Please build camera rig '{1}'.");
 		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return nullptr;
+		return FCameraVariableID();
 	}
 
-	return BlendableParameter->PrivateVariable;
+	if (BlendableParameter->BlendableStructType != BlendableStructType)
+	{
+		const FText Text = LOCTEXT("InvalidParameterType", "Parameter '{0}' has an incorrect type. Please build camera rig '{1}'.");
+		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
+		return FCameraVariableID();
+	}
+
+	return BlendableParameter->PrivateVariableID;
 }
 
 bool ValidateSetCameraRigDataParameter(FBlueprintCameraContextDataTable& ContextDataTable, FCameraContextDataID DataID)
@@ -98,74 +105,93 @@ UCameraRigParameterInterop::UCameraRigParameterInterop(const FObjectInitializer&
 
 void UCameraRigParameterInterop::SetBooleanParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, bool ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<bool>(
 			Result.GetVariableTable(), 
-			Cast<UBooleanCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)), 
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName), 
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetIntegerParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, int32 ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<int32>(
 			Result.GetVariableTable(), 
-			Cast<UInteger32CameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)), 
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName), 
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetFloatParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<float>(
 			Result.GetVariableTable(), 
-			Cast<UFloatCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			(float)ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetDoubleParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<double>(
 			Result.GetVariableTable(), 
-			Cast<UDoubleCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetVector2Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector2D ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector2D>(
 			Result.GetVariableTable(), 
-			Cast<UVector2dCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetVector3Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector>(
 			Result.GetVariableTable(), 
-			Cast<UVector3dCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetVector4Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector4 ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector4>(
 			Result.GetVariableTable(), 
-			Cast<UVector4dCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetRotatorParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FRotator ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<FRotator>(
 			Result.GetVariableTable(), 
-			Cast<URotator3dCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
 }
 
 void UCameraRigParameterInterop::SetTransformParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FTransform ParameterValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter(
+	UE::Cameras::Private::SetCameraRigBlendableParameter<FTransform>(
 			Result.GetVariableTable(), 
-			Cast<UTransform3dCameraVariable>(UE::Cameras::Private::GetParameterPrivateVariable(CameraRig, ParameterName)),
+			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
 			ParameterValue);
+}
+
+void UCameraRigParameterInterop::SetBlendableStructParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const FInstancedStruct& ParameterValue)
+{
+	FBlueprintCameraVariableTable VariableTable = Result.GetVariableTable();
+	if (!VariableTable.IsValid())
+	{
+		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
+		return;
+	}
+
+	FCameraVariableID PrivateVariableID = UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName, ParameterValue.GetScriptStruct());
+	if (!PrivateVariableID.IsValid())
+	{
+		FFrame::KismetExecutionMessage(TEXT("No camera rig was passed."), ELogVerbosity::Error);
+		return;
+	}
+
+	VariableTable.GetVariableTable()->TrySetValue(PrivateVariableID, ECameraVariableType::BlendableStruct, ParameterValue.GetScriptStruct(), ParameterValue.GetMemory());
 }
 
 void UCameraRigParameterInterop::SetNameParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FName ParameterValue)

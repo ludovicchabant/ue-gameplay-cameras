@@ -9,9 +9,17 @@
 #define UE_DEFINE_CAMERA_VARIABLE_REFERENCE(ValueName)\
 	F##ValueName##CameraVariableReference() {}\
 	F##ValueName##CameraVariableReference(VariableAssetType* InVariable) : Variable(InVariable) {}\
-	bool IsValid() const { return (bool)Variable; }\
-	U##ValueName##CameraVariable* Get() const { return Variable.Get(); }\
-	operator U##ValueName##CameraVariable* () const { return Variable.Get(); }
+	bool IsValid() const { return VariableID.IsValid(); }\
+	bool HasVariable() const { return Variable != nullptr; }
+
+// All camera references have:
+//
+// - Variable: a variable chosen by the user.
+// - VariableID: the ID of the variable to use for this reference.
+//
+// When Variable is set, VariableID is the ID of that variable.
+// When Variable is not set, VariableID is the ID of something else that
+// the caller code should use, such as a camera rig parameter override.
 
 USTRUCT()
 struct FBooleanCameraVariableReference
@@ -19,6 +27,9 @@ struct FBooleanCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UBooleanCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UBooleanCameraVariable> Variable;
@@ -33,6 +44,9 @@ struct FInteger32CameraVariableReference
 
 	using VariableAssetType = UInteger32CameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UInteger32CameraVariable> Variable;
 
@@ -45,6 +59,9 @@ struct FFloatCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UFloatCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UFloatCameraVariable> Variable;
@@ -59,6 +76,9 @@ struct FDoubleCameraVariableReference
 
 	using VariableAssetType = UDoubleCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UDoubleCameraVariable> Variable;
 
@@ -71,6 +91,9 @@ struct FVector2fCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UVector2fCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector2fCameraVariable> Variable;
@@ -85,6 +108,9 @@ struct FVector2dCameraVariableReference
 
 	using VariableAssetType = UVector2dCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector2dCameraVariable> Variable;
 
@@ -97,6 +123,9 @@ struct FVector3fCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UVector3fCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector3fCameraVariable> Variable;
@@ -111,6 +140,9 @@ struct FVector3dCameraVariableReference
 
 	using VariableAssetType = UVector3dCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector3dCameraVariable> Variable;
 
@@ -123,6 +155,9 @@ struct FVector4fCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UVector4fCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector4fCameraVariable> Variable;
@@ -137,6 +172,9 @@ struct FVector4dCameraVariableReference
 
 	using VariableAssetType = UVector4dCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UVector4dCameraVariable> Variable;
 
@@ -149,6 +187,9 @@ struct FRotator3fCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = URotator3fCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<URotator3fCameraVariable> Variable;
@@ -163,6 +204,9 @@ struct FRotator3dCameraVariableReference
 
 	using VariableAssetType = URotator3dCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<URotator3dCameraVariable> Variable;
 
@@ -176,6 +220,9 @@ struct FTransform3fCameraVariableReference
 
 	using VariableAssetType = UTransform3fCameraVariable;
 
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UTransform3fCameraVariable> Variable;
 
@@ -188,6 +235,9 @@ struct FTransform3dCameraVariableReference
 	GENERATED_BODY()
 
 	using VariableAssetType = UTransform3dCameraVariable;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
 
 	UPROPERTY(EditAnywhere, Category="Variable")
 	TObjectPtr<UTransform3dCameraVariable> Variable;

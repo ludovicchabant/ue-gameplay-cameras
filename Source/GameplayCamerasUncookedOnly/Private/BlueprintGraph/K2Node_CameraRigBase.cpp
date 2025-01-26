@@ -14,6 +14,7 @@
 #include "GameplayCamerasDelegates.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
+#include "Nodes/Framing/CameraFramingZone.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "K2Node_CameraRigBase"
@@ -132,10 +133,10 @@ void UK2Node_CameraRigBase::OnCameraRigAssetBuilt(const UCameraRigAsset* InBuilt
 
 FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(const UCameraRigBlendableParameter* BlendableParameter)
 {
-	return MakeBlendableParameterPinType(BlendableParameter->PrivateVariable->GetVariableType());
+	return MakeBlendableParameterPinType(BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
 }
 
-FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVariableType CameraVariableType)
+FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVariableType CameraVariableType, const UScriptStruct* BlendableStructType)
 {
 	FName PinCategory;
 	FName PinSubCategory;
@@ -176,6 +177,10 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVari
 		case ECameraVariableType::Transform3d:
 			PinCategory = UEdGraphSchema_K2::PC_Struct;
 			PinSubCategoryObject = TBaseStructure<FTransform>::Get();
+			break;
+		case ECameraVariableType::BlendableStruct:
+			PinCategory = UEdGraphSchema_K2::PC_Struct;
+			PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableStructType);
 			break;
 	}
 
@@ -225,9 +230,9 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDa
 
 FName UK2Node_CameraRigBase::GetBlendableParameterInteropSettingFunctionName(const UCameraRigBlendableParameter* BlendableParameter)
 {
-	if (ensure(BlendableParameter && BlendableParameter->PrivateVariable))
+	if (ensure(BlendableParameter && BlendableParameter->PrivateVariableID))
 	{
-		return GetBlendableParameterInteropSettingFunctionName(BlendableParameter->PrivateVariable->GetVariableType());
+		return GetBlendableParameterInteropSettingFunctionName(BlendableParameter->ParameterType);
 	}
 	return NAME_None;
 }
@@ -264,6 +269,9 @@ FName UK2Node_CameraRigBase::GetBlendableParameterInteropSettingFunctionName(ECa
 			break;
 		case ECameraVariableType::Transform3d:
 			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetTransformParameter);
+			break;
+		case ECameraVariableType::BlendableStruct:
+			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetBlendableStructParameter);
 			break;
 	}
 

@@ -4,6 +4,7 @@
 
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/ICustomCameraNodeParameterProvider.h"
 #include "Helpers/CameraRigParameterOverrideEvaluator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAssetReference)
@@ -28,20 +29,50 @@ void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeE
 	OverrideEvaluator.ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, bDrivenOverridesOnly);
 }
 
-bool FCameraRigAssetReference::IsParameterOverriden(const FGuid PropertyID) const
+const FCameraRigAssetReferenceParameterMetaData* FCameraRigAssetReference::FindMetaData(const FGuid& PropertyID) const
 {
-	return ParameterOverrideGuids.Contains(PropertyID);
+	return ParameterMetaData.FindByPredicate(
+			[PropertyID](const FCameraRigAssetReferenceParameterMetaData& Item)
+			{
+				return Item.ParameterGuid == PropertyID;
+			});
 }
 
-void FCameraRigAssetReference::SetParameterOverriden(const FGuid PropertyID, bool bIsOverridden)
+FCameraRigAssetReferenceParameterMetaData* FCameraRigAssetReference::FindMetaData(const FGuid& PropertyID)
 {
-	if (bIsOverridden)
+	return ParameterMetaData.FindByPredicate(
+			[PropertyID](FCameraRigAssetReferenceParameterMetaData& Item)
+			{
+				return Item.ParameterGuid == PropertyID;
+			});
+}
+
+void FCameraRigAssetReference::GenerateOverriddenParameterGuidArray(TArray<FGuid>& OutOverriddenIDs) const
+{
+	for (const FCameraRigAssetReferenceParameterMetaData& MetaData : ParameterMetaData)
 	{
-		ParameterOverrideGuids.AddUnique(PropertyID);
+		if (MetaData.bIsOverridden)
+		{
+			OutOverriddenIDs.Add(MetaData.ParameterGuid);
+		}
 	}
-	else
+}
+
+bool FCameraRigAssetReference::IsParameterOverridden(const FGuid& PropertyID) const
+{
+	if (const FCameraRigAssetReferenceParameterMetaData* MetaData = FindMetaData(PropertyID))
 	{
-		ParameterOverrideGuids.Remove(PropertyID);
+		return MetaData->bIsOverridden;
+	}
+	return false;
+}
+
+void FCameraRigAssetReference::SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden)
+{
+	FCameraRigAssetReferenceParameterMetaData* MetaData = FindMetaData(PropertyID);
+	if (ensure(MetaData))
+	{
+		MetaData->bIsOverridden = bIsOverridden;
 	}
 }
 
@@ -79,23 +110,193 @@ void FCameraRigAssetReference::RebuildParameters()
 {
 	if (CameraRig)
 	{
+		TArray<FGuid> ParameterOverrideGuids;
+		GenerateOverriddenParameterGuidArray(ParameterOverrideGuids);
 		Parameters.MigrateToNewBagInstanceWithOverrides(CameraRig->GetDefaultParameters(), ParameterOverrideGuids);
-		
-		// Remove overrides for parameters that don't exist anymore.
+
 		if (const UPropertyBag* ParametersType = Parameters.GetPropertyBagStruct())
 		{
-			for (TArray<FGuid>::TIterator It = ParameterOverrideGuids.CreateIterator(); It; ++It)
+			// Remove metadata for parameters that don't exist anymore, and add default metadata for
+			// new parameters.
+			TSet<FGuid> ExistingMetaDataIDs;
+			for (TArray<FCameraRigAssetReferenceParameterMetaData>::TIterator It = ParameterMetaData.CreateIterator(); It; ++It)
 			{
-				if (!ParametersType->FindPropertyDescByID(*It))
+				ExistingMetaDataIDs.Add(It->ParameterGuid);
+			}
+
+			TSet<FGuid> WantedMetaDataIDs;
+			TMap<FGuid, ECameraRigInterfaceParameterType> WantedParameterTypes;
+			for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+			{
+				WantedMetaDataIDs.Add(Definition.ParameterGuid);
+				WantedParameterTypes.Add(Definition.ParameterGuid, Definition.ParameterType);
+			}
+
+			TSet<FGuid> RemovedMetaDataIDs = ExistingMetaDataIDs.Difference(WantedMetaDataIDs);
+			for (TArray<FCameraRigAssetReferenceParameterMetaData>::TIterator It = ParameterMetaData.CreateIterator(); It; ++It)
+			{
+				if (RemovedMetaDataIDs.Contains(It->ParameterGuid))
 				{
 					It.RemoveCurrentSwap();
 				}
 			}
+
+			TSet<FGuid> AddedMetaDataIDs = WantedMetaDataIDs.Difference(ExistingMetaDataIDs);
+			for (const FGuid& ParameterGuid : AddedMetaDataIDs)
+			{
+				FCameraRigAssetReferenceParameterMetaData NewMetaData;
+				NewMetaData.ParameterGuid = ParameterGuid;
+				NewMetaData.ParameterType = WantedParameterTypes.FindChecked(ParameterGuid);
+				ParameterMetaData.Add(NewMetaData);
+			}
+		}
+		else
+		{
+			ParameterMetaData.Reset();
 		}
 	}
 	else
 	{
 		Parameters.Reset();
+		ParameterMetaData.Reset();
+	}
+}
+
+void FCameraRigAssetReference::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+{
+	if (!CameraRig)
+	{
+		return;
+	}
+
+	RebuildParametersIfNeeded();
+
+	const UPropertyBag* ParametersStruct = Parameters.GetPropertyBagStruct();
+	const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
+	if (!ensure(ParametersStruct && ParametersStruct == DefaultParameters.GetPropertyBagStruct()))
+	{
+		return;
+	}
+
+	for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+	{
+		const FPropertyBagPropertyDesc* PropertyDesc = ParametersStruct->FindPropertyDescByID(Definition.ParameterGuid);
+		if (!ensure(PropertyDesc))
+		{
+			continue;
+		}
+
+		if (Definition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
+		{
+			if (!ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Struct))
+			{
+				continue;
+			}
+
+			switch (Definition.VariableType)
+			{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+				case ECameraVariableType::ValueName:\
+					if (ensure(PropertyDesc->ValueTypeObject == F##ValueName##CameraParameter::StaticStruct()))\
+					{\
+						using CameraParameterType = F##ValueName##CameraParameter;\
+						TValueOrError<CameraParameterType*, EPropertyBagResult> PropertyValue =\
+							Parameters.GetValueStruct<CameraParameterType>(*PropertyDesc);\
+						if (ensure(PropertyValue.HasValue() && !PropertyValue.HasError()))\
+						{\
+							CameraParameterType* CameraParameter = PropertyValue.GetValue();\
+							check(CameraParameter);\
+							OutParameterInfos.AddBlendableParameter(\
+									Definition.ParameterName,\
+									Definition.VariableType,\
+									nullptr,\
+									reinterpret_cast<uint8*>(&CameraParameter->Value),\
+									&CameraParameter->VariableID);\
+						}\
+					}\
+					break;
+				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+				case ECameraVariableType::BlendableStruct:
+					{
+						TValueOrError<FStructView, EPropertyBagResult> PropertyValue =
+							Parameters.GetValueStruct(*PropertyDesc, Definition.BlendableStructType);
+						if (ensure(PropertyValue.HasValue() && !PropertyValue.HasError()))
+						{
+							FStructView& StructValue = PropertyValue.GetValue();
+							check(StructValue.IsValid());
+
+							FCameraRigAssetReferenceParameterMetaData* MetaData = FindMetaData(Definition.ParameterGuid);
+							check(MetaData);
+							ensure(MetaData->ParameterType == ECameraRigInterfaceParameterType::Blendable);
+
+							OutParameterInfos.AddBlendableParameter(
+									Definition.ParameterName,
+									Definition.VariableType,
+									Definition.BlendableStructType,
+									StructValue.GetMemory(),
+									&MetaData->OverrideVariableID);
+						}
+					}
+					break;
+			}
+		}
+		else if (Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+		{
+			FCameraRigAssetReferenceParameterMetaData* MetaData = FindMetaData(Definition.ParameterGuid);
+			check(MetaData);
+			ensure(MetaData->ParameterType == ECameraRigInterfaceParameterType::Data);
+
+			switch (Definition.DataType)
+			{
+				case ECameraContextDataType::Name:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Name))
+					{
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueName(*PropertyDesc).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Name, nullptr, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+				case ECameraContextDataType::String:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::String))
+					{
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueString(*PropertyDesc).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::String, nullptr, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+				case ECameraContextDataType::Enum:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Enum &&
+								PropertyDesc->ValueTypeObject == Definition.DataTypeObject))
+					{
+						const UEnum* EnumType = CastChecked<const UEnum>(Definition.DataTypeObject);
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueEnum(*PropertyDesc, EnumType).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Enum, EnumType, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+				case ECameraContextDataType::Struct:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Struct &&
+								PropertyDesc->ValueTypeObject == Definition.DataTypeObject))
+					{
+						const UScriptStruct* DataType = CastChecked<const UScriptStruct>(Definition.DataTypeObject);
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueStruct(*PropertyDesc, DataType).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Struct, DataType, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+				case ECameraContextDataType::Object:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Object))
+					{
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueObject(*PropertyDesc).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Object, Definition.DataTypeObject, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+				case ECameraContextDataType::Class:
+					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Class))
+					{
+						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueClass(*PropertyDesc).TryGetValue());
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Class, Definition.DataTypeObject, DefaultValue, &MetaData->OverrideDataID);
+					}
+					break;
+			}
+		}
 	}
 }
 
@@ -118,7 +319,7 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 	// Make a property bag with the legacy overrides, and then set the values in it.
 	bool bHasAnyLegacyOverride = false;
 	TArray<FPropertyBagPropertyDesc> LegacyParameterProperties;
-	TArray<FGuid> LegacyParameterOverrides;
+	TArray<FCameraRigAssetReferenceParameterMetaData> LegacyParameterMetaData;
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 	for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
@@ -129,7 +330,11 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 		FPropertyBagPropertyDesc LegacyParameterProperty(PropertyName, PropertyType, PropertyTypeObject);\
 		LegacyParameterProperty.ID = ParameterOverride.InterfaceParameterGuid;\
 		LegacyParameterProperties.Add(LegacyParameterProperty);\
-		LegacyParameterOverrides.Add(LegacyParameterProperty.ID);\
+		FCameraRigAssetReferenceParameterMetaData MetaData;\
+		MetaData.ParameterGuid = ParameterOverride.InterfaceParameterGuid;\
+		MetaData.ParameterType = ECameraRigInterfaceParameterType::Blendable;\
+		MetaData.bIsOverridden = true;\
+		LegacyParameterMetaData.Add(MetaData);\
 		bHasAnyLegacyOverride = true;\
 	}
 	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -140,7 +345,7 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 		Parameters = FInstancedPropertyBag();
 		Parameters.AddProperties(LegacyParameterProperties);
 
-		ParameterOverrideGuids = LegacyParameterOverrides;
+		ParameterMetaData = LegacyParameterMetaData;
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\

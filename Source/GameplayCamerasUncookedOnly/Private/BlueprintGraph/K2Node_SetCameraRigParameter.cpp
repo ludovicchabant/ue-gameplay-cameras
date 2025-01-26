@@ -30,7 +30,7 @@ void UK2Node_SetCameraRigParameter::Initialize(const FAssetData& UnloadedCameraR
 	{
 		if (const UCameraRigBlendableParameter* BlendableParameter = LoadedCameraRig->Interface.FindBlendableParameterByName(InCameraParameterName))
 		{
-			Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->ParameterType);
+			Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
 		}
 		else if (const UCameraRigDataParameter* DataParameter = LoadedCameraRig->Interface.FindDataParameterByName(InCameraParameterName))
 		{
@@ -40,12 +40,13 @@ void UK2Node_SetCameraRigParameter::Initialize(const FAssetData& UnloadedCameraR
 	}
 }
 
-void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType)
+void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType, const UScriptStruct* InBlendableStructType)
 {
 	CameraRig = InCameraRig;
 	CameraParameterName = InCameraParameterName;
 	CameraParameterType = EK2Node_CameraParameterType::Blendable;
 	BlendableCameraParameterType = InCameraVariableType;
+	BlendableStructType = InBlendableStructType;
 }
 
 void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, const UObject* InCameraContextDataTypeObject)
@@ -66,7 +67,7 @@ void UK2Node_SetCameraRigParameter::AllocateDefaultPins()
 	switch (CameraParameterType)
 	{
 		case EK2Node_CameraParameterType::Blendable:
-			PinType = UK2Node_CameraRigBase::MakeBlendableParameterPinType(BlendableCameraParameterType);
+			PinType = UK2Node_CameraRigBase::MakeBlendableParameterPinType(BlendableCameraParameterType, BlendableStructType);
 			break;
 		case EK2Node_CameraParameterType::Data:
 			PinType = UK2Node_CameraRigBase::MakeDataParameterPinType(DataCameraParameterType, DataCameraParameterTypeObject);

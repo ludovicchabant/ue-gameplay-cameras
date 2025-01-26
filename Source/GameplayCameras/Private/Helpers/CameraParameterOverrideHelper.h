@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "Core/CameraVariableTableFwd.h"
 #include "StructUtils/PropertyBag.h"
 
 class UCameraRigAsset;
-class UCameraRigBlendableParameter;
-class UCameraRigDataParameter;
+struct FCameraRigParameterDefinition;
 
 namespace UE::Cameras
 {
@@ -24,14 +24,17 @@ struct FCameraParameterOverrideHelper
 
 	void ApplyParameterOverride(
 			const UCameraRigAsset* CameraRig,
-			const FGuid& ParameterGuid,
-			TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError,
+			const FCameraRigParameterDefinition& ParameterDefinition,
+			const FInstancedPropertyBag& PropertyBag,
+			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 			bool bDrivenOverridesOnly);
 
 private:
 
 	FCameraVariableTable& VariableTable;
 	FCameraContextDataTable& ContextDataTable;
+
+	TArray<FBlendableStructInfo> BlendableStructs;
 };
 
 }  // namespace UE::Cameras
