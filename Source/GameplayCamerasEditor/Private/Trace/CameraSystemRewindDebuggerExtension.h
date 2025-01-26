@@ -17,7 +17,6 @@ class UCanvas;
 namespace UE::Cameras
 {
 
-class FDebugCanvasDeferredRenderer;
 class FRootCameraDebugBlock;
 
 /**
@@ -30,9 +29,11 @@ public:
 	FCameraSystemRewindDebuggerExtension();
 	virtual ~FCameraSystemRewindDebuggerExtension();
 
+	// IRewindDebuggerExtension interface.
 	virtual void RecordingStarted(IRewindDebugger* RewindDebugger) override;
 	virtual void Update(float DeltaTime, IRewindDebugger* RewindDebugger) override;
 	virtual void RecordingStopped(IRewindDebugger* RewindDebugger) override;
+	virtual void Clear(IRewindDebugger* RewindDebugger) override;
 
 private:
 
@@ -48,8 +49,6 @@ private:
 
 	FCameraDebugBlockStorage DebugBlockStorage;
 	FRootCameraDebugBlock* RootDebugBlock = nullptr;
-
-	TSharedPtr<FDebugCanvasDeferredRenderer> DeferredRenderer;
 };
 
 }  // namespace UE::Cameras

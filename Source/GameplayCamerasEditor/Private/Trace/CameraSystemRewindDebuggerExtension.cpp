@@ -84,6 +84,16 @@ void FCameraSystemRewindDebuggerExtension::RecordingStopped(IRewindDebugger* Rew
 	UE::Trace::ToggleChannel(*FCameraSystemTrace::ChannelName, false);
 }
 
+void FCameraSystemRewindDebuggerExtension::Clear(IRewindDebugger* RewindDebugger)
+{
+	EnsureDebugDrawDelegate(false);
+
+	VisualizedWorld = nullptr;
+
+	DebugBlockStorage.DestroyDebugBlocks(true);
+	RootDebugBlock = nullptr;
+}
+
 void FCameraSystemRewindDebuggerExtension::EnsureDebugDrawDelegate(bool bIsRegistered)
 {
 	if (bIsRegistered && !DebugDrawDelegateHandle.IsValid())
