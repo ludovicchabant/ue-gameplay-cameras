@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "GameplayCameras.h"
 #include "UObject/ObjectMacros.h"
 #include "Components/SceneComponent.h"
 
@@ -61,19 +60,8 @@ public:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
-
-public:
-
-	// Internal API
-	void OnBecomeViewTarget();
-	void OnEndViewTarget();
 
 private:
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	void DebugDraw(UCanvas* Canvas, APlayerController* PlayController);
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #if WITH_EDITOR
 	void CreateCameraSystemSpriteComponent();
@@ -97,15 +85,11 @@ public:
 
 private:
 	
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TWeakObjectPtr<APlayerController> WeakPlayerController;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	FDelegateHandle DebugDrawDelegateHandle;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #if WITH_EDITORONLY_DATA
 

@@ -20,23 +20,9 @@ AGameplayCameraSystemActor::AGameplayCameraSystemActor(const FObjectInitializer&
 	RootComponent = CameraSystemComponent;
 }
 
-void AGameplayCameraSystemActor::BecomeViewTarget(APlayerController* PC)
-{
-	Super::BecomeViewTarget(PC);
-
-	CameraSystemComponent->OnBecomeViewTarget();
-}
-
 void AGameplayCameraSystemActor::CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult)
 {
 	CameraSystemComponent->GetCameraView(DeltaTime, OutResult);
-}
-
-void AGameplayCameraSystemActor::EndViewTarget(APlayerController* PC)
-{
-	CameraSystemComponent->OnEndViewTarget();
-
-	Super::EndViewTarget(PC);
 }
 
 AGameplayCameraSystemActor* AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bForceSpawn)

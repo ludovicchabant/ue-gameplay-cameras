@@ -53,9 +53,7 @@ public:
 public:
 
 	// AActor interface.
-	virtual void BecomeViewTarget(APlayerController* PC) override;
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
-	virtual void EndViewTarget(APlayerController* PC) override;
 
 private:
 

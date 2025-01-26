@@ -4,7 +4,6 @@
 
 #include "Components/BillboardComponent.h"
 #include "Core/CameraSystemEvaluator.h"
-#include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
@@ -66,21 +65,6 @@ void UGameplayCameraSystemComponent::OnRegister()
 #if WITH_EDITOR
 	CreateCameraSystemSpriteComponent();
 #endif  // WITH_EDITOR
-
-	AActor* OwnerActor = GetOwner();
-	if (!OwnerActor || OwnerActor->HasAnyFlags(RF_ClassDefaultObject))
-	{
-		return;
-	}
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	UWorld* World = GetWorld();
-	if (World && World->IsGameWorld())
-	{
-		DebugDrawDelegateHandle = UDebugDrawService::Register(
-				TEXT("Game"), FDebugDrawDelegate::CreateUObject(this, &UGameplayCameraSystemComponent::DebugDraw));
-	}
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 #if WITH_EDITOR
@@ -226,49 +210,6 @@ void UGameplayCameraSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayR
 
 	Super::EndPlay(EndPlayReason);
 }
-
-void UGameplayCameraSystemComponent::OnComponentDestroyed(bool bDestroyingHierarchy)
-{
-	Super::OnComponentDestroyed(bDestroyingHierarchy);
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	if (DebugDrawDelegateHandle.IsValid())
-	{
-		UDebugDrawService::Unregister(DebugDrawDelegateHandle);
-		DebugDrawDelegateHandle.Reset();
-	}
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-}
-
-void UGameplayCameraSystemComponent::OnBecomeViewTarget()
-{
-}
-
-void UGameplayCameraSystemComponent::OnEndViewTarget()
-{
-}
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-
-void UGameplayCameraSystemComponent::DebugDraw(UCanvas* Canvas, APlayerController* PlayController)
-{
-	using namespace UE::Cameras;
-
-	TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator(false);
-	if (Evaluator.IsValid())
-	{
-		// We're looking from the outside if we are not the view target, or if we don't have a player
-		// anymore (which happens in spectator mode like with the debug camera).
-		APlayerController* ActualPlayerController = WeakPlayerController.Get();
-		const bool bIsDebugCameraEnabled = (ActualPlayerController && (ActualPlayerController->GetViewTarget() != GetOwner() || !ActualPlayerController->Player));
-
-		FCameraSystemDebugUpdateParams DebugUpdateParams;
-		DebugUpdateParams.CanvasObject = Canvas;
-		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
-		Evaluator->DebugUpdate(DebugUpdateParams);
-	}
-}
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 #undef LOCTEXT_NAMESPACE
 

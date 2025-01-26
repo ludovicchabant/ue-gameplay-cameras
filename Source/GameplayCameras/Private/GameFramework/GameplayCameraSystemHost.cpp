@@ -3,6 +3,7 @@
 #include "GameFramework/GameplayCameraSystemHost.h"
 
 #include "Core/CameraSystemEvaluator.h"
+#include "Debug/DebugDrawService.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
@@ -39,6 +40,8 @@ UGameplayCameraSystemHost* UGameplayCameraSystemHost::FindOrCreateHost(APlayerCo
 
 	UGameplayCameraSystemHost* NewHost = NewObject<UGameplayCameraSystemHost>(PlayerController, HostName);
 
+	NewHost->Initialize();
+
 	return NewHost;
 }
 
@@ -65,18 +68,36 @@ UGameplayCameraSystemHost* UGameplayCameraSystemHost::FindHost(APlayerController
 UGameplayCameraSystemHost::UGameplayCameraSystemHost(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	if (!HasAnyFlags(RF_ClassDefaultObject))
+}
+
+void UGameplayCameraSystemHost::Initialize()
+{
+	Evaluator = MakeShared<FCameraSystemEvaluator>();
+	Evaluator->Initialize(this);
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	UWorld* World = GetWorld();
+	if (World && World->IsGameWorld())
 	{
-		Evaluator = MakeShared<FCameraSystemEvaluator>();
-		Evaluator->Initialize(this);
+		DebugDrawDelegateHandle = UDebugDrawService::Register(
+				TEXT("Game"), FDebugDrawDelegate::CreateUObject(this, &UGameplayCameraSystemHost::DebugDraw));
 	}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 void UGameplayCameraSystemHost::BeginDestroy()
 {
-	Super::BeginDestroy();
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	if (DebugDrawDelegateHandle.IsValid())
+	{
+		UDebugDrawService::Unregister(DebugDrawDelegateHandle);
+		DebugDrawDelegateHandle.Reset();
+	}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 	Evaluator.Reset();
+
+	Super::BeginDestroy();
 }
 
 void UGameplayCameraSystemHost::AddReferencedObjects(UObject* Object, FReferenceCollector& Collector)
@@ -99,4 +120,25 @@ TSharedPtr<UE::Cameras::FCameraSystemEvaluator> UGameplayCameraSystemHost::GetCa
 {
 	return Evaluator;
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void UGameplayCameraSystemHost::DebugDraw(UCanvas* Canvas, APlayerController* PlayerController)
+{
+	using namespace UE::Cameras;
+
+	if (Evaluator.IsValid())
+	{
+		// We're looking from the outside if we are not the view target, or if we don't have a player
+		// anymore (which happens in spectator mode like with the debug camera).
+		APlayerController* ActualPlayerController = GetPlayerController();
+		const bool bIsDebugCameraEnabled = !ActualPlayerController || !ActualPlayerController->Player;
+
+		FCameraSystemDebugUpdateParams DebugUpdateParams;
+		DebugUpdateParams.CanvasObject = Canvas;
+		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
+		Evaluator->DebugUpdate(DebugUpdateParams);
+	}
+}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 

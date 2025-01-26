@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "UObject/Object.h"
+#include "GameplayCameras.h"
 #include "Templates/SharedPointerFwd.h"
+#include "UObject/Object.h"
 
 #include "GameplayCameraSystemHost.generated.h"
 
 class APlayerController;
+class UCanvas;
 
 namespace UE::Cameras
 {
@@ -49,6 +51,14 @@ protected:
 	// UObject interface.
 	GAMEPLAYCAMERAS_API virtual void BeginDestroy() override;
 
+private:
+
+	void Initialize();
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	void DebugDraw(UCanvas* Canvas, APlayerController* PlayerController);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 public:
 
 	/**
@@ -70,5 +80,9 @@ private:
 
 	/** The camera system evaluator. */
 	TSharedPtr<FCameraSystemEvaluator> Evaluator;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FDelegateHandle DebugDrawDelegateHandle;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
