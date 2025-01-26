@@ -38,6 +38,9 @@ public:
 	GAMEPLAYCAMERAS_API UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
 
 	/** Get the camera evaluation context used by this component. */
+	GAMEPLAYCAMERAS_API TSharedPtr<const UE::Cameras::FCameraEvaluationContext> GetEvaluationContext() const;
+
+	/** Get the camera evaluation context used by this component. */
 	GAMEPLAYCAMERAS_API TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
 
 	/** Get the player controller this component is currently activated for (if any). */
@@ -94,6 +97,8 @@ public:
 
 	// UObject interface.
 	void PostLoad() override;
+
+	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
 private:
 

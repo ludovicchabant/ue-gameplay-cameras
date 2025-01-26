@@ -47,6 +47,22 @@ void UGameplayCameraComponent::PostLoad()
 	}
 }
 
+void UGameplayCameraComponent::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
+{
+	Super::AddReferencedObjects(InThis, Collector);
+
+	UGameplayCameraComponent* This = CastChecked<UGameplayCameraComponent>(InThis);
+	if (This->EvaluationContext.IsValid())
+	{
+		This->EvaluationContext->AddReferencedObjects(Collector);
+	}
+}
+
+TSharedPtr<const UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetEvaluationContext() const
+{
+	return EvaluationContext;
+}
+
 TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponent::GetEvaluationContext()
 {
 	return EvaluationContext;
