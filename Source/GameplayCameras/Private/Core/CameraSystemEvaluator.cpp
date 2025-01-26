@@ -234,6 +234,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			FActivateCameraRigParams CameraRigParams;
 			CameraRigParams.EvaluationContext = ActiveCameraRig.EvaluationContext;
 			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
+			CameraRigParams.TransitionOverride = DirectorResult.TransitionOverride;
 			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}
@@ -266,6 +267,7 @@ void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 			FActivateCameraRigParams CameraRigParams;
 			CameraRigParams.EvaluationContext = CommonContext;
 			CameraRigParams.CameraRig = CombinedCameraRig;
+			CameraRigParams.TransitionOverride = DirectorResult.TransitionOverride;
 			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
 			RootEvaluator->ActivateCameraRig(CameraRigParams);
 		}

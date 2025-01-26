@@ -10,6 +10,7 @@
 
 class UCameraDirector;
 class UCameraRigAsset;
+class UCameraRigTransition;
 
 namespace UE::Cameras
 {
@@ -85,6 +86,9 @@ struct FCameraDirectorEvaluationResult
 	/** The camera rig(s) that the director says should be active this frame in the main layer. */
 	FActiveCameraRigInfos ActiveCameraRigs;
 
+	/** A transition to use for the next camera rig activation, instead of looking up one according to usual rules. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
+
 	/** Whether to force creating a new instance of the camera rigs, even if they are already active in the main layer. */
 	bool bForceActivateCameraRigs = false;
 
@@ -155,9 +159,6 @@ public:
 
 	/** Deactivates the camera director evaluator. */
 	GAMEPLAYCAMERAS_API void Deactivate(const FCameraDirectorDeactivateParams& Params);
-	
-	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
-	GAMEPLAYCAMERAS_API void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
 
 	/** Gets the camera director. */
 	const UCameraDirector* GetCameraDirector() const { return PrivateCameraDirector; }
@@ -169,6 +170,19 @@ public:
 		return Cast<CameraDirectorType>(PrivateCameraDirector);
 	}
 
+public:
+
+	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
+	GAMEPLAYCAMERAS_API void Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult);
+
+	/** Request that the next camera rig activation use the provided transition. */
+	GAMEPLAYCAMERAS_API void OverrideNextActivationTransition(const UCameraRigTransition* TransitionOverride);
+
+	/** Request that the next camera rig activation be forced. */
+	GAMEPLAYCAMERAS_API void ForceNextActivation();
+
+public:
+
 	GAMEPLAYCAMERAS_API bool AddChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
 	GAMEPLAYCAMERAS_API bool RemoveChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
 
@@ -178,6 +192,8 @@ public:
 
 	// Internal API.
 	void SetPrivateCameraDirector(const UCameraDirector* InCameraDirector);
+
+	void OnEndCameraSystemUpdate();
 
 protected:
 
@@ -224,6 +240,12 @@ private:
 
 	/** The camera director this evaluator is running. */
 	TObjectPtr<const UCameraDirector> PrivateCameraDirector;
+
+	/** A forced transition to use on the next update. Cleared after every system update. */
+	TObjectPtr<const UCameraRigTransition> NextActivationTransitionOverride;
+
+	/** Whether to force camera rig activation on the next update. Cleared after every system update. */
+	bool bNextActivationForce = false;
 };
 
 template<typename EvaluatorType, typename ...ArgTypes>

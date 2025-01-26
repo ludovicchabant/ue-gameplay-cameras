@@ -848,6 +848,12 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransition(const FBlendStackCameraPushParams& Params) const
 {
+	// If we are forced to use a specific transition, our search is over.
+	if (Params.TransitionOverride)
+	{
+		return Params.TransitionOverride;
+	}
+
 	// Find a transition that works for blending towards ToCameraRig.
 	// If the stack isn't empty, we need to find a transition that works between the previous and 
 	// next camera rigs. If the stack is empty, we blend the new camera rig in from nothing if

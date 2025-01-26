@@ -239,6 +239,9 @@ struct FBlendStackCameraPushParams
 	/** The source camera rig asset to instantiate and push on the blend stack. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
 
+	/** A transition to use, instead of looking one up. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
+
 	/** Whether to force pushing a new instance of the camera rig, even if it is currently active. */
 	bool bForcePush = false;
 };
@@ -310,6 +313,9 @@ struct FBlendStackCameraInsertParams
 
 	/** The source camera rig asset to instantiate and push on the blend stack. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
+
+	/** A transition to use, instead of looking one up. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
 
 	/** Whether to force insert a new instance of the camera rig, even if there is already one in the stack. */
 	bool bForceInsert = false;

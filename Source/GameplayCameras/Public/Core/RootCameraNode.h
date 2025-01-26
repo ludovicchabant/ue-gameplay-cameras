@@ -9,6 +9,7 @@
 #include "RootCameraNode.generated.h"
 
 class UCameraRigAsset;
+class UCameraRigTransition;
 
 /**
  * Defines evaluation layers for camera rigs.
@@ -50,6 +51,9 @@ struct FActivateCameraRigParams
 
 	/** The source camera rig asset that will be instantiated. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
+
+	/** A transition to use, instead of looking one up. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
 
 	/** The evaluation layer on which to instantiate the camera rig. */
 	ECameraRigLayer Layer = ECameraRigLayer::Main;

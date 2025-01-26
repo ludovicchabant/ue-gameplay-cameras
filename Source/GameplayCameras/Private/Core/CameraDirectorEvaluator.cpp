@@ -4,6 +4,7 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraRigTransition.h"
 
 namespace UE::Cameras
 {
@@ -48,6 +49,35 @@ void FCameraDirectorEvaluator::Deactivate(const FCameraDirectorDeactivateParams&
 void FCameraDirectorEvaluator::Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	OnRun(Params, OutResult);
+
+	if (NextActivationTransitionOverride)
+	{
+		OutResult.TransitionOverride = NextActivationTransitionOverride;
+	}
+	NextActivationTransitionOverride = nullptr;
+
+	if (bNextActivationForce)
+	{
+		OutResult.bForceActivateCameraRigs = true;
+	}
+	bNextActivationForce = false;
+}
+
+void FCameraDirectorEvaluator::OnEndCameraSystemUpdate()
+{
+	// Also clear these here, in case we didn't run this frame.
+	NextActivationTransitionOverride = nullptr;
+	bNextActivationForce = false;
+}
+
+void FCameraDirectorEvaluator::OverrideNextActivationTransition(const UCameraRigTransition* TransitionOverride)
+{
+	NextActivationTransitionOverride = TransitionOverride;
+}
+
+void FCameraDirectorEvaluator::ForceNextActivation()
+{
+	bNextActivationForce = true;
 }
 
 bool FCameraDirectorEvaluator::AddChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext)

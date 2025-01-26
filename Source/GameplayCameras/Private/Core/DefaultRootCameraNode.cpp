@@ -86,6 +86,7 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		FBlendStackCameraPushParams PushParams;
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
+		PushParams.TransitionOverride = Params.TransitionOverride;
 		PushParams.bForcePush = Params.bForceActivate;
 		MainLayer->Push(PushParams);
 	}
@@ -109,6 +110,7 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 			FBlendStackCameraInsertParams InsertParams;
 			InsertParams.EvaluationContext = Params.EvaluationContext;
 			InsertParams.CameraRig = Params.CameraRig;
+			InsertParams.TransitionOverride = Params.TransitionOverride;
 			InsertParams.bForceInsert = Params.bForceActivate;
 			TargetLayer->Insert(InsertParams);
 		}

@@ -87,6 +87,16 @@ void FCameraEvaluationContext::OnEndCameraSystemUpdate()
 		Result.VariableTable.ClearAllWrittenThisFrameFlags();
 		Result.ContextDataTable.ClearAllWrittenThisFrameFlags();
 	}
+
+	if (DirectorEvaluator)
+	{
+		DirectorEvaluator->OnEndCameraSystemUpdate();
+	}
+
+	for (TSharedPtr<FCameraEvaluationContext> ChildContext : ChildrenContexts)
+	{
+		ChildContext->OnEndCameraSystemUpdate();
+	}
 }
 
 void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
