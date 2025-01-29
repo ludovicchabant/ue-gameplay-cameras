@@ -76,6 +76,6 @@ public:
 
 	/** Sets the camera pose. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
-	static void SetCameraPose(FBlueprintCameraNodeEvaluationResult& Data, const FBlueprintCameraPose& CameraPose);
+	static void SetCameraPose(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Data, const FBlueprintCameraPose& CameraPose);
 };
 
