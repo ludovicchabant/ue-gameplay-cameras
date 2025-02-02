@@ -51,24 +51,6 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowVariableIDs(
 	GGameplayCamerasDebugPoseStatsShowVariableIDs,
 	TEXT(""));
 
-bool GGameplayCamerasDebugDrawBackground = true;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugDrawBackground(
-	TEXT("GameplayCameras.Debug.DrawBackground"),
-	GGameplayCamerasDebugDrawBackground,
-	TEXT(""));
-
-float GGameplayCamerasDebugBackgroundOpacity = 0.6f;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugBackgroundOpacity(
-	TEXT("GameplayCameras.Debug.BackgroundOpacity"),
-	GGameplayCamerasDebugBackgroundOpacity,
-	TEXT(""));
-
-FString GGameplayCamerasDebugColorScheme = TEXT("SolarizedDark");
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugColorScheme(
-	TEXT("GameplayCameras.Debug.ColorScheme"),
-	GGameplayCamerasDebugColorScheme,
-	TEXT(""));
-
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FRootCameraDebugBlock)
 
 void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
@@ -168,17 +150,10 @@ void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer)
 		Params.ActiveCategories.Add(FString(CategoryView));
 	}
 
-	// Update the color scheme in case it changed.
-	FCameraDebugColors::Set(GGameplayCamerasDebugColorScheme);
-
 	// Do the drawing!
+	Renderer.BeginDrawing();
 	FCameraDebugBlock::DebugDraw(Params, Renderer);
-
-	// Render a translucent background to help readability.
-	if (GGameplayCamerasDebugDrawBackground)
-	{
-		Renderer.DrawTextBackgroundTile(GGameplayCamerasDebugBackgroundOpacity);
-	}
+	Renderer.EndDrawing();
 }
 
 }  // namespace UE::Cameras

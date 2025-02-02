@@ -11,6 +11,7 @@
 #include "Misc/StringBuilder.h"
 
 class FCanvas;
+class FSceneView;
 class UCanvas;
 class UFont;
 class ULineBatchComponent;
@@ -43,11 +44,16 @@ public:
 
 	/** Creates a new debug renderer. */
 	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, UCanvas* InCanvasObject, bool bInIsExternalRendering = false);
+	/** Creates a new debug renderer. */
+	GAMEPLAYCAMERAS_API FCameraDebugRenderer(UWorld* InWorld, const FSceneView* InSceneView, FCanvas* InCanvas, bool bInIsExternalRendering = false);
 	/** Destroys the debug renderer. */
 	GAMEPLAYCAMERAS_API ~FCameraDebugRenderer();
 
 	/** Whether we are looking at the camera system from the "outside". */
 	bool IsExternalRendering() const { return bIsExternalRendering; }
+
+	GAMEPLAYCAMERAS_API void BeginDrawing();
+	GAMEPLAYCAMERAS_API void EndDrawing();
 
 	/** Adds text to the text wall. */
 	GAMEPLAYCAMERAS_API void AddText(const FString& InString);
@@ -107,6 +113,8 @@ public:
 	GAMEPLAYCAMERAS_API void DrawPoint(const FVector3d& Location, float PointSize, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D line. */
 	GAMEPLAYCAMERAS_API void DrawLine(const FVector3d& Start, const FVector3d& End, const FLinearColor& LineColor, float LineThickness = 1.f);
+	/** Draws a 3D box. */
+	GAMEPLAYCAMERAS_API void DrawBox(const FVector3d& Center, const FVector3d& Size, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D sphere. */
 	GAMEPLAYCAMERAS_API void DrawSphere(const FVector3d& Center, float Radius, int32 Segments, const FLinearColor& LineColor, float LineThickness = 1.f);
 	/** Draws a 3D arrow. */
@@ -138,13 +146,13 @@ public:
 public:
 
 	/** Gets the drawing canvas. */
-	FCanvas* GetCanvas() const;
+	FCanvas* GetCanvas() const { return Canvas; }
 
 	/** Gets the size of the canvas. */
-	FVector2D GetCanvasSize() const;
+	FVector2D GetCanvasSize() const { return CanvasSize; }
 
 	/** Returns whether this renderer has a valid canvas to draw upon. */
-	bool HasCanvas() const { return CanvasObject != nullptr; }
+	bool HasCanvas() const { return Canvas != nullptr; }
 
 public:
 
@@ -152,6 +160,8 @@ public:
 	void DrawTextBackgroundTile(float Opacity);
 
 private:
+
+	void Initialize(UWorld* InWorld, bool bInIsExternalRendering);
 
 	void AddTextFmtImpl(const TCHAR* Fmt, va_list Args);
 	void AddTextImpl(const TCHAR* Buffer);
@@ -167,9 +177,13 @@ private:
 private:
 
 	/** The world in which we might draw debug primitives. */
-	UWorld* World;
+	UWorld* World = nullptr;
 	/** The canvas used to draw the text wall. */
-	UCanvas* CanvasObject;
+	FCanvas* Canvas = nullptr;
+
+	const FSceneView* SceneView = nullptr;
+	/** The size of the canvas. */
+	FVector2D CanvasSize;
 	/** Whether we are looking from the "outside" of the camera system. */
 	bool bIsExternalRendering = false;
 
