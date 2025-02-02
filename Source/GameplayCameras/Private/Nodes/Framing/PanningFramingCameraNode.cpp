@@ -79,7 +79,6 @@ void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	const FVector3d TargetLocation = OptTargetLocation.GetValue();
 	const FTransform3d LastShotTransform = BuildPanningShotTransform(OutResult.CameraPose);
 	UpdateFramingState(Params, OutResult, TargetLocation, LastShotTransform);
-	ComputeDesiredState(Params.DeltaTime);
 
 	// If we need to reframe the target this tick, figure out how much we need to rotate the camera
 	// to accomplish that.
@@ -117,6 +116,8 @@ void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 
 	const FTransform3d NewShotTransform = BuildPanningShotTransform(OutResult.CameraPose);
 	OutResult.CameraPose.SetTransform(NewShotTransform);
+
+	EndFramingUpdate(Params, OutResult);
 }
 
 FTransform3d FPanningFramingCameraNodeEvaluator::BuildPanningShotTransform(const FCameraPose& CameraPose) const

@@ -6,6 +6,7 @@
 #include "Math/MathFwd.h"
 
 class FArchive;
+struct FCameraFramingZone;
 struct FCameraPose;
 
 namespace UE::Cameras
@@ -14,19 +15,8 @@ namespace UE::Cameras
 struct FCameraFieldsOfView;
 
 /**
- * Effective margins for a rectangular screen-space zone.
- */
-struct FFramingZoneMargins
-{
-	double LeftMargin = 0;
-	double TopMargin = 0;
-	double RightMargin = 0;
-	double BottomMargin = 0;
-};
-
-/**
  * Effective coordinates for a rectangular screen-space zone.
- * Unlike FFramingZoneMargins, which stores margin values from the screen's edges,
+ * Unlike FCameraFramingZone, whose values can mean anything (margins, offsets, etc)
  * this struct is expected to store actual screen coordinates in 0..1 UI space.
  */
 struct FFramingZone
@@ -38,9 +28,6 @@ struct FFramingZone
 
 	/** Builds an empty framing zone. */
 	FFramingZone();
-
-	/** Build a framing zone from a set of margins. */
-	FFramingZone(const FFramingZoneMargins& FramingZoneMargins);
 
 	/** Makes sure all the bounds have valid values between 0 and 1. */
 	void ClampBounds();
@@ -75,6 +62,14 @@ struct FFramingZone
 	FVector2d GetCanvasSize(const FVector2d& CanvasSize) const;
 
 	void Serialize(FArchive& Ar);
+
+public:
+
+	/** Build a framing zone from a set of margins relative to the screen edge. */
+	static FFramingZone FromScreenMargins(const FCameraFramingZone& Margins);
+
+	/** Build a framing zone from a set of margins relative to a screen location. */
+	static FFramingZone FromRelativeMargins(const FVector2d& ScreenLocation, const FCameraFramingZone& Margins);
 
 private:
 

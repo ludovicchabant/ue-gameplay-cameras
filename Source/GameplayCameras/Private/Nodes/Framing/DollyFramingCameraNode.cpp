@@ -85,7 +85,6 @@ void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& 
 	const FVector3d TargetLocation = OptTargetLocation.GetValue();
 	const FTransform3d LastShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
 	UpdateFramingState(Params, OutResult, TargetLocation, LastShotTransform);
-	ComputeDesiredState(Params.DeltaTime);
 
 	// If we need to reframe the target this tick, figure out how much we need to move the dolly
 	// to accomplish that.
@@ -125,6 +124,8 @@ void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& 
 
 	const FTransform3d NewShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
 	OutResult.CameraPose.SetTransform(NewShotTransform);
+
+	EndFramingUpdate(Params, OutResult);
 }
 
 FTransform3d FDollyFramingCameraNodeEvaluator::BuildDollyShotTransform(const FCameraPose& CameraPose) const

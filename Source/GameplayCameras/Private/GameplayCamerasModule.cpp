@@ -6,7 +6,9 @@
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
+#include "Nodes/Framing/CameraFramingZone.h"
 #include "ShowFlags.h"
+#include "UObject/UObjectBase.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCamerasModule"
 
@@ -31,6 +33,8 @@ public:
 	// IModuleInterface interface
 	virtual void StartupModule() override
 	{
+		RegisterBuiltInBlendableStructs();
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		UE::Cameras::FCameraDebugColors::RegisterBuiltinColorSchemes();
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
@@ -38,6 +42,7 @@ public:
 
 	virtual void ShutdownModule() override
 	{
+		UnregisterBuiltInBlendableStructs();
 	}
 
 public:
@@ -90,6 +95,25 @@ public:
 		LiveEditManager = InLiveEditManager;
 	}
 #endif
+
+private:
+
+	void RegisterBuiltInBlendableStructs()
+	{
+		using namespace UE::Cameras;
+
+		RegisterBlendableStruct(FCameraFramingZone::StaticStruct(), &FCameraFramingZone::TypeErasedInterpolate);
+	}
+
+	void UnregisterBuiltInBlendableStructs()
+	{
+		using namespace UE::Cameras;
+
+		if (UObjectInitialized())
+		{
+			UnregisterBlendableStruct(FCameraFramingZone::StaticStruct());
+		}
+	}
 
 private:
 

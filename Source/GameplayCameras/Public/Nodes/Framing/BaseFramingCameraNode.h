@@ -6,7 +6,9 @@
 #include "Core/CameraParameterReader.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
+#include "Core/ICustomCameraNodeParameterProvider.h"
 #include "Nodes/Framing/CameraFramingZone.h"
+#include "Nodes/Framing/CameraTargetInfo.h"
 #include "Math/CameraFramingZoneMath.h"
 #include "Math/CriticalDamper.h"
 
@@ -19,26 +21,33 @@ class UVector3dCameraVariable;
  * The base class for a standard scren-space framing camera node.
  */
 UCLASS(MinimalAPI, Abstract, meta=(CameraNodeCategories="Framing"))
-class UBaseFramingCameraNode : public UCameraNode
+class UBaseFramingCameraNode : public UCameraNode, public ICustomCameraNodeParameterProvider
 {
 	GENERATED_BODY()
 
 public:
 
-	/**
-	 * A camera variable providing the location of the target to frame. If unspecified,
-	 * the player pawn's location will be used by default.
+	/** 
+	 * A variable whose value is the desired target's location in world space.
+	 * If set, and if the variable has been set, the obtained value takes priority
+	 * over the TargetInfo property.
 	 */
 	UPROPERTY(EditAnywhere, Category="Target")
 	FVector3dCameraVariableReference TargetLocation;
 
-	/** The ideal horizontal screen-space position of the target. */
-	UPROPERTY(EditAnywhere, Category="Framing Target")
-	FDoubleCameraParameter HorizontalFraming;
+	UPROPERTY(EditAnywhere, Category="Target")
+	FCameraTargetInfoParameter TargetInfo;
 
-	/** The ideal vertical screen-space position of the target. */
+	/**
+	 * Whether the camera pose's target distance should be set to the distance between
+	 * its location and the effective target's location.
+	 */
+	UPROPERTY(EditAnywhere, Category="Target")
+	FBooleanCameraParameter SetTargetDistance;
+
+	/** The ideal horizontal and vertical screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
-	FDoubleCameraParameter VerticalFraming;
+	FVector2dCameraParameter IdealFramingLocation;
 
 	/** The damping factor for how fast the framing recenters on the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
@@ -53,33 +62,51 @@ public:
 	FFloatCameraParameter LowReframeDampingFactor;
 
 	/**
-	 * The distance from the ideal framing position at which we can disengage reframing.
-	 * This should be a very small value, but if it is too small the reframing will keep "chasing"
-	 * the target for a long time even if it stays in the dead zone.
+	 * The time spent ramping up the reframing after exiting the dead zone.
+	 * If set to zero or a negative value, reframing will immediately restart once the target
+	 * has exited the dead zone. Otherwise the ReframeDampingFactor will interpolate from zero to
+	 * its desired value over the specified amount of seconds.
 	 */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
-	FFloatCameraParameter ReframeUnlockRadius;
+	FFloatCameraParameter ReengageTime;
+
+	/**
+	 * The time spent ramping down the reframing after entering the dead zone.
+	 * If set to zero or a negative value, reframing will immediately stop once the target has 
+	 * entered the dead zone. Otherwise, the ReframeDampingFactor will interpolate towards zero
+	 * over the specified amount of seconds.
+	 */
+	UPROPERTY(EditAnywhere, Category="Framing Target")
+	FFloatCameraParameter DisengageTime;
+
+	UPROPERTY(EditAnywhere, Category="Framing Target")
+	FFloatCameraParameter TargetMovementAnticipationTime;
 
 	/** 
-	 * The margins of the dead zone, i.e. the zone inside which the target can freely move.
-	 * Margins are expressed in screen percentages from the edges.
+	 * The size of the dead zone, i.e. the zone inside which the target can freely move.
+	 * Sizes are expressed screen percentages around the desired framing location.
 	 */
 	UPROPERTY(EditAnywhere, Category="Framing Zones")
-	FCameraFramingZone DeadZone;
+	FCameraFramingZoneParameter DeadZone;
 
 	/**
 	 * The margins of the soft zone, i.e. the zone inside which the reframing will engage, in order
 	 * to bring the target back towards the ideal framing position. If the target is outside of the
 	 * soft zone, it will be forcibly and immedialy brought back to its edges, so this zone also 
 	 * defines the "hard" or "safe" zone of framing.
-	 * Margins are expressed in screen percentages from the edges.
+	 * Sizes are expressed in screen percentages from the edges.
 	 */
 	UPROPERTY(EditAnywhere, Category="Framing Zones")
-	FCameraFramingZone SoftZone;
+	FCameraFramingZoneParameter SoftZone;
 
 public:
 
 	UBaseFramingCameraNode(const FObjectInitializer& ObjectInit);
+
+public:
+
+	// ICustomCameraNodeParameterProvider interface.
+	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
 };
 
 namespace UE::Cameras
@@ -88,45 +115,25 @@ namespace UE::Cameras
 class FCameraVariableTable;
 
 /**
- * Utility struct for reading a framing zone's margin parameters.
- */
-struct FCameraFramingZoneParameterReader
-{
-public:
-
-	TCameraParameterReader<double> LeftMargin;
-	TCameraParameterReader<double> TopMargin;
-	TCameraParameterReader<double> RightMargin;
-	TCameraParameterReader<double> BottomMargin;
-
-public:
-
-	void Initialize(const FCameraFramingZone& FramingZone);
-	FFramingZoneMargins GetZoneMargins(const FCameraVariableTable& VariableTable) const;
-};
-
-/**
  * The base class for a framing camera node evaluator.
  *
  * This evaluator does nothing per se but provides utility functions to be called in 
  * a sub-class' OnRun method. Namely:
  *
+ * - AcquireTargetLocation() : a default way to get the world location of the desired
+ *			target.
+ *
  * - UpdateFramingState() : computes the current state of the framing node. The result
  *			can be obtained from the State field.
+ *			The, compute the desired framing state for the current tick, including the 
+ *			desired framing correction. This can be obtained from the Desired field.
+ *			It is up to the sub-class to implement the necessary logic to honor this 
+ *			correction. For instance, a dolly shot would translate left/right (and maybe 
+ *			up/down too) to try and reframe things accordingly, whereas a panning shot 
+ *			would rotate the camera left/right/up/down to accomplish the same.
  *
- * - ComputeDesiredState() : one the current state has been written, this method computes
- *			the desired framing state for the current tick, including the desired framing
- *			correction. It is up to the sub-class to implement the necessary logic to
- *			honor this correction. For instance, a dolly shot would translate left/right 
- *			(and maybe up/down too) to try and reframe things accordingly, whereas a panning
- *			shot would rotate the camera left/right/up/down to accomplish the same.
- *
- * - RegisterNewFraming() : once the framing correction has been executed by the sub-class,
- *			it's important to register the new camera transform with RegisterNewFraming, 
- *			otherwise the reframing will always act only on the incoming camera pose! If this
- *			incoming camera pose is fixed (e.g. the previous nodes are only fixed offsets)
- *			then if RegisterNewFraming isn't called, the reframing will always do the same
- *			thing every frame!
+ * - EndFramingUpdate() : the sub-class should call near the end of its OnRun method.
+ *			This will for instance optionally set the target distance.
  */
 class FBaseFramingCameraNodeEvaluator : public FCameraNodeEvaluator
 {
@@ -136,22 +143,37 @@ protected:
 
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
+#if WITH_EDITOR
+	virtual void OnDrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+#endif  // WITH_EDITOR
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 protected:
 
+	struct FState;
+	struct FDesired;
+
 	/** Gets the target location. */
 	TOptional<FVector3d> AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult);
 	/** Updates the framing state for the current tick, see State member field. */
 	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
-	/** Computes the desired reframing for the current tick, see Desired member field. */
-	void ComputeDesiredState(float DeltaTime);
+	/** Wraps-up the update with optional operations. */
+	void EndFramingUpdate(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 private:
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	static void DrawFramingState(const FState& State, const FDesired& Desired, FCameraDebugRenderer& Renderer);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 	FVector2d GetHardReframeCoords() const;
+
+	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
+	FVector3d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector3d& InTargetLocation);
+	void ComputeDesiredState(float DeltaTime);
 
 protected:
 
@@ -178,14 +200,17 @@ protected:
 	/** Utility structure for all the parameter readers we need every frame. */
 	struct FReaders
 	{
-		TCameraParameterReader<double> HorizontalFraming;
-		TCameraParameterReader<double> VerticalFraming;
+		TCameraParameterReader<FVector2d> IdealFramingLocation;
+		TCameraParameterReader<bool> SetTargetDistance;
+
 		TCameraParameterReader<float> ReframeDampingFactor;
 		TCameraParameterReader<float> LowReframeDampingFactor;
-		TCameraParameterReader<float> ReframeUnlockRadius;
+		TCameraParameterReader<float> ReengageTime;
+		TCameraParameterReader<float> DisengageTime;
+		TCameraParameterReader<float> TargetMovementAnticipationTime;
 
-		FCameraFramingZoneParameterReader DeadZoneMargin;
-		FCameraFramingZoneParameterReader SoftZoneMargin;
+		TCameraParameterReader<FCameraFramingZone> DeadZone;
+		TCameraParameterReader<FCameraFramingZone> SoftZone;
 	};
 	FReaders Readers;
 
@@ -201,8 +226,18 @@ protected:
 		float ReframeDampingFactor;
 		/** Current low reframing damping factor. */
 		float LowReframeDampingFactor;
-		/** Current reframe unlock radius. */
-		float ReframeUnlockRadius;
+		/** Current alpha between reframing damping factors. */
+		float ReframeDampingFactorAlpha;
+		/** Current reengage time. */
+		float ReengageTime;
+		/** Current disengage time. */
+		float DisengageTime;
+		/** Current time spent disengaging or reengaging reframing */
+		float ToggleEngageTimeLeft;
+		/** Current reframing damping factor alpha due to engage toggle */
+		float ToggleEngageAlpha;
+		/** Current look-ahead time for anticipating target movement */
+		float TargetMovementAnticipationTime;
 		/** Current coordinates of the dead zone. */
 		FFramingZone DeadZone;
 		/** Current coordinates of the soft zone. */
@@ -217,6 +252,13 @@ protected:
 
 		/** The damper for reframing from the soft zone. */
 		FCriticalDamper ReframeDamper;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		/** Intersection of the reframing vector with the dead zone box. */
+		FVector2d DeadZoneEdgePoint;
+		/** Intersection of the reframing vector with the hard zone box. */
+		FVector2d HardZoneEdgePoint;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 		void Serialize(FArchive& Ar);
 	};
@@ -244,6 +286,12 @@ protected:
 		void Serialize(FArchive& Ar);
 	};
 	FDesired Desired;
+
+	struct FWorldTargetAnticipation
+	{
+		TArray<TTuple<FVector3d, float>, TInlineAllocator<10>> History;
+	};
+	FWorldTargetAnticipation Anticipation;
 
 	friend class FBaseFramingCameraDebugBlock;
 	friend FArchive& operator <<(FArchive& Ar, FState& State);

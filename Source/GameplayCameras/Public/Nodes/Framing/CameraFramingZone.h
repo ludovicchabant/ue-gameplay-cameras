@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
-#include "Core/CameraParameters.h"
 
 #include "CameraFramingZone.generated.h"
 
@@ -13,57 +13,125 @@
  * All margins are defined in percentages of the screen's horizontal size. They are also 
  * all defined relative to their respective edges.
  */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FCameraFramingZone
 {
 	GENERATED_BODY()
 
 public:
 
-	UPROPERTY(EditAnywhere, Category="Framing")
-	FDoubleCameraParameter LeftMargin;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Framing")
+	double Left;
 
-	UPROPERTY(EditAnywhere, Category="Framing")
-	FDoubleCameraParameter TopMargin;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Framing")
+	double Top;
 
-	UPROPERTY(EditAnywhere, Category="Framing")
-	FDoubleCameraParameter RightMargin;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Framing")
+	double Right;
 
-	UPROPERTY(EditAnywhere, Category="Framing")
-	FDoubleCameraParameter BottomMargin;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Framing")
+	double Bottom;
 
 public:
 
 	FCameraFramingZone()
 	{
-		LeftMargin.Value = 0;
-		TopMargin.Value = 0;
-		RightMargin.Value = 0;
-		BottomMargin.Value = 0;
+		Left = 0;
+		Top = 0;
+		Right = 0;
+		Bottom = 0;
 	}
 
-	FCameraFramingZone(double UniformMargin)
+	FCameraFramingZone(double UniformValue)
 	{
-		LeftMargin.Value = UniformMargin;
-		TopMargin.Value = UniformMargin;
-		RightMargin.Value = UniformMargin;
-		BottomMargin.Value = UniformMargin;
+		Left = UniformValue;
+		Top = UniformValue;
+		Right = UniformValue;
+		Bottom = UniformValue;
 	}
 
-	FCameraFramingZone(double HorizontalMargin, double VerticalMargin)
+	FCameraFramingZone(double Horizontal, double Vertical)
 	{
-		LeftMargin.Value = HorizontalMargin;
-		TopMargin.Value = VerticalMargin;
-		RightMargin.Value = HorizontalMargin;
-		BottomMargin.Value = VerticalMargin;
+		Left = Horizontal;
+		Top = Vertical;
+		Right = Horizontal;
+		Bottom = Vertical;
 	}
 
-	FCameraFramingZone(double InLeftMargin, double InTopMargin, double InRightMargin, double InBottomMargin)
+	FCameraFramingZone(double InLeft, double InTop, double InRight, double InBottom)
 	{
-		LeftMargin.Value = InLeftMargin;
-		TopMargin.Value = InTopMargin;
-		RightMargin.Value = InRightMargin;
-		BottomMargin.Value = InBottomMargin;
+		Left = InLeft;
+		Top = InTop;
+		Right = InRight;
+		Bottom = InBottom;
 	}
+
+public:
+
+	FCameraFramingZone operator*(float Scale) const
+	{
+		return FCameraFramingZone(Left * Scale, Top * Scale, Right * Scale, Bottom * Scale);
+	}
+
+	FCameraFramingZone operator*(const FCameraFramingZone& Scale) const
+	{
+		return FCameraFramingZone(
+				Left * Scale.Left, 
+				Top * Scale.Top,
+				Right * Scale.Right,
+				Bottom * Scale.Bottom);
+	}
+
+	FCameraFramingZone operator+(const FCameraFramingZone& Other) const
+	{
+		return FCameraFramingZone(
+				Left + Other.Left, 
+				Top + Other.Top,
+				Right + Other.Right,
+				Bottom + Other.Bottom);
+	}
+
+	FCameraFramingZone operator-(const FCameraFramingZone& Other) const
+	{
+		return FCameraFramingZone(
+				Left - Other.Left, 
+				Top - Other.Top,
+				Right - Other.Right,
+				Bottom - Other.Bottom);
+	}
+
+	bool operator== (const FCameraFramingZone& Other) const = default;
+	bool operator!= (const FCameraFramingZone& Other) const = default;
+
+public:
+
+	GAMEPLAYCAMERAS_API static void TypeErasedInterpolate(uint8* From, const uint8* To, float Alpha);
+
+	GAMEPLAYCAMERAS_API FString ToString() const;
+};
+
+template <> struct TIsPODType<FCameraFramingZone>
+{
+	enum { Value = true };
+};
+
+/** Framing zone camera parameter. */
+USTRUCT()
+struct GAMEPLAYCAMERAS_API FCameraFramingZoneParameter
+{
+	GENERATED_BODY()
+
+	using ValueType = FCameraFramingZone;
+
+	UPROPERTY(EditAnywhere, Category=Common, meta=(ShowOnlyInnerProperties))
+	FCameraFramingZone Value;
+
+	UPROPERTY()
+	FCameraVariableID VariableID;
+
+	FCameraFramingZoneParameter() {}
+	FCameraFramingZoneParameter(const FCameraFramingZone& InValue)
+		: Value(InValue)
+	{}
 };
 

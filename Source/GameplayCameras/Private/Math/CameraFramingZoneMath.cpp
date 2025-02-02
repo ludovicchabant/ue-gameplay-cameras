@@ -8,22 +8,40 @@
 namespace UE::Cameras
 {
 
+FFramingZone FFramingZone::FromScreenMargins(const FCameraFramingZone& Margins)
+{
+	FFramingZone NewZone;
+
+	NewZone.LeftBound = Margins.Left;
+	NewZone.TopBound = Margins.Top;
+	NewZone.RightBound = 1.0 - Margins.Right;
+	NewZone.BottomBound = 1.0 - Margins.Bottom;
+
+	NewZone.ClampBounds();
+
+	return NewZone;
+}
+
+FFramingZone FFramingZone::FromRelativeMargins(const FVector2d& ScreenLocation, const FCameraFramingZone& Margins)
+{
+	FFramingZone NewZone;
+
+	NewZone.LeftBound = ScreenLocation.X - Margins.Left;
+	NewZone.TopBound = ScreenLocation.Y - Margins.Top;
+	NewZone.RightBound = ScreenLocation.X + Margins.Right;
+	NewZone.BottomBound = ScreenLocation.Y + Margins.Bottom;
+
+	NewZone.ClampBounds();
+
+	return NewZone;
+}
+
 FFramingZone::FFramingZone()
 {
 	LeftBound = 0;
 	TopBound = 0;
 	RightBound = 1;
 	BottomBound = 1;
-}
-
-FFramingZone::FFramingZone(const FFramingZoneMargins& FramingZoneMargins)
-{
-	LeftBound = FramingZoneMargins.LeftMargin;
-	TopBound = FramingZoneMargins.TopMargin;
-	RightBound = 1.0 - FramingZoneMargins.RightMargin;
-	BottomBound = 1.0 - FramingZoneMargins.BottomMargin;
-
-	ClampBounds();
 }
 
 void FFramingZone::ClampBounds()
