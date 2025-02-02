@@ -150,9 +150,8 @@ bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType D
 				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataTypeObject);
 				if (StructType)
 				{
-					const UScriptStruct::ICppStructOps* StructOps = StructType->GetCppStructOps();
-					OutSizeOf = StructOps->GetSize();
-					OutAlignOf = StructOps->GetAlignment();
+					OutSizeOf = StructType->GetPropertiesSize();
+					OutAlignOf = StructType->GetMinAlignment();
 				}
 			}
 			break;

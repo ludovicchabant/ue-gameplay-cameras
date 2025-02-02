@@ -330,7 +330,7 @@ ECameraContextDataType TCameraContextDataTraits<DataType>::GetDataType()
 	{
 		return ECameraContextDataType::Object;
 	}
-	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct), UScriptStruct*>)
+	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct()), UScriptStruct*>)
 	{
 		return ECameraContextDataType::Struct;
 	}
@@ -352,7 +352,7 @@ const UObject* TCameraContextDataTraits<DataType>::GetDataTypeObject()
 	{
 		return StaticEnum<DataType>();
 	}
-	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct), UScriptStruct*>)
+	else if constexpr(std::is_same_v<decltype(DataType::StaticStruct()), UScriptStruct*>)
 	{
 		return DataType::StaticStruct();
 	}
