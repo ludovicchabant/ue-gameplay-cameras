@@ -45,6 +45,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorModule.h"
+#include "Sequencer/CameraFramingZoneTrackEditor.h"
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
@@ -553,14 +554,18 @@ private:
 	
 	void RegisterSequencerTracks()
 	{
+		using namespace UE::Cameras;
+
 		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
 		GameplayCameraComponentTrackCreateEditorHandle = SequencerModule.RegisterTrackEditor(FOnCreateTrackEditor::CreateStatic(&FGameplayCameraComponentTrackEditor::CreateTrackEditor));
+		CameraFramingZoneTrackCreateEditorHandle = SequencerModule.RegisterPropertyTrackEditor<FCameraFramingZoneTrackEditor>();
 	}
 
 	void UnregisterSequencerTracks()
 	{
 		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
 		SequencerModule.UnRegisterTrackEditor(GameplayCameraComponentTrackCreateEditorHandle);
+		SequencerModule.UnRegisterTrackEditor(CameraFramingZoneTrackCreateEditorHandle);
 	}
 
 	void InitializeLiveEditManager()
@@ -596,6 +601,7 @@ private:
 	TMap<FString, FOnCreateDebugCategoryPanel> DebugCategoryPanelCreators;
 	
 	FDelegateHandle GameplayCameraComponentTrackCreateEditorHandle;
+	FDelegateHandle CameraFramingZoneTrackCreateEditorHandle;
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 	TSharedPtr<UE::Cameras::FCameraSystemTraceModule> TraceModule;

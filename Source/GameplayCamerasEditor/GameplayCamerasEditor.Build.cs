@@ -39,6 +39,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"KismetWidgets",
 				"LevelEditor",
 				"MovieScene",
+				"MovieSceneTools",
 				"MovieSceneTracks",
 				"Projects",
 				"RenderCore",

@@ -5,7 +5,10 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigParameterDefinition.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "GameFramework/Actor.h"
 #include "GameFramework/GameplayCameraComponent.h"
+#include "MovieScene/MovieSceneCameraFramingZoneTrack.h"
+#include "Nodes/Framing/CameraFramingZone.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Tracks/MovieSceneActorReferenceTrack.h"
 #include "Tracks/MovieSceneBoolTrack.h"
@@ -293,13 +296,35 @@ TSubclassOf<UMovieScenePropertyTrack> FGameplayCameraComponentTrackEditor::GetPa
 			case ECameraVariableType::Transform3f:
 			case ECameraVariableType::Transform3d:
 				return UMovieSceneTransformTrack::StaticClass();
+			case ECameraVariableType::BlendableStruct:
+				if (Definition.BlendableStructType == FCameraFramingZone::StaticStruct())
+				{
+					return UMovieSceneCameraFramingZoneTrack::StaticClass();
+				}
+				break;
 			default:
 				break;
 		}
 	}
 	else if (Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
 	{
-		// TODO
+		switch (Definition.DataType)
+		{
+			case ECameraContextDataType::String:
+				return UMovieSceneStringTrack::StaticClass();
+			case ECameraContextDataType::Enum:
+				return UMovieSceneEnumTrack::StaticClass();
+			case ECameraContextDataType::Object:
+				if (Definition.DataTypeObject)
+				{
+					const UClass* ObjectClass = Cast<const UClass>(Definition.DataTypeObject);
+					if (ObjectClass && ObjectClass->IsChildOf<AActor>())
+					{
+						return UMovieSceneActorReferenceTrack::StaticClass();
+					}
+				}
+				return UMovieSceneObjectPropertyTrack::StaticClass();
+		}
 	}
 	return nullptr;
 }
