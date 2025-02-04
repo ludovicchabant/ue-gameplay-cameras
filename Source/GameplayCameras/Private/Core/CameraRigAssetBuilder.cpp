@@ -269,7 +269,7 @@ private:
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterDrivenTwice", 
-							"Camera node parameter '{0}.{1}' is somehow overriden twice!"),
+							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
 						FText::FromName(BlendableParameter->Target->GetFName()), 
 						FText::FromName(BlendableParameter->TargetPropertyName)));
 			return false;
