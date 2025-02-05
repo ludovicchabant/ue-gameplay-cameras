@@ -34,7 +34,7 @@ void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVari
 	const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
 	const FInstancedPropertyBag& CameraParameters = CameraReference.GetParameters();
 	const UPropertyBag* CameraParametersStruct = CameraParameters.GetPropertyBagStruct();
-	if (!CameraParametersStruct)
+	if (!CameraAsset || !CameraParametersStruct)
 	{
 		return;
 	}

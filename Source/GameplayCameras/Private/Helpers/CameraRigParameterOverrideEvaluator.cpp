@@ -33,7 +33,7 @@ void FCameraRigParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVariab
 	const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig();
 	const FInstancedPropertyBag& CameraRigParameters = CameraRigReference.GetParameters();
 	const UPropertyBag* CameraRigParametersStruct = CameraRigParameters.GetPropertyBagStruct();
-	if (!CameraRigParametersStruct)
+	if (!CameraRig || !CameraRigParametersStruct)
 	{
 		return;
 	}
