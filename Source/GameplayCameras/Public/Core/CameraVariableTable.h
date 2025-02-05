@@ -34,9 +34,11 @@ enum class ECameraVariableTableFilter
 	/** Include output variables (i.e. anything not an input). */
 	Output = 1 << 1,
 	/** Include private variables. */
-	Private = 1 << 3,
+	Private = 1 << 2,
+	/** Only include data that is common to both tables. */
+	KnownOnly = 1 << 3,
 	/** Only include variables that were written this frame. */
-	ChangedOnly = 1 << 2,
+	ChangedOnly = 1 << 4,
 
 	/** Both input and output variables. */
 	InputOutput = Input | Output,
