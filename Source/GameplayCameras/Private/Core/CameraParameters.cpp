@@ -3,6 +3,7 @@
 #include "Core/CameraParameters.h"
 
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraVariableTable.h"
 #include "Math/Rotator.h"
 #include "Math/Transform.h"
 #include "Math/Vector.h"
@@ -214,6 +215,21 @@ void F##ValueName##CameraParameter::PostSerialize(const FArchive& Ar)\
 		{\
 			Variable = nullptr;\
 		}\
+	}\
+}\
+ValueType F##ValueName##CameraParameter::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
+{\
+	if (!VariableID.IsValid())\
+	{\
+		return Value;\
+	}\
+	else\
+	{\
+		if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableID))\
+		{\
+			return *ActualValue;\
+		}\
+		return Value;\
 	}\
 }
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()

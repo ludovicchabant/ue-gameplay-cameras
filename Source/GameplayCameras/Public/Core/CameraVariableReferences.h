@@ -6,11 +6,17 @@
 
 #include "CameraVariableReferences.generated.h"
 
+namespace UE::Cameras
+{
+	class FCameraVariableTable;
+}
+
 #define UE_DEFINE_CAMERA_VARIABLE_REFERENCE(ValueName)\
 	F##ValueName##CameraVariableReference() {}\
 	F##ValueName##CameraVariableReference(VariableAssetType* InVariable) : Variable(InVariable) {}\
 	bool IsValid() const { return VariableID.IsValid(); }\
-	bool HasVariable() const { return Variable != nullptr; }
+	bool HasVariable() const { return Variable != nullptr; }\
+	const F##ValueName##CameraVariableReference::ValueType* GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const;
 
 // All camera references have:
 //
@@ -26,6 +32,7 @@ struct FBooleanCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = bool;
 	using VariableAssetType = UBooleanCameraVariable;
 
 	UPROPERTY()
@@ -42,6 +49,7 @@ struct FInteger32CameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = int32;
 	using VariableAssetType = UInteger32CameraVariable;
 
 	UPROPERTY()
@@ -58,6 +66,7 @@ struct FFloatCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = float;
 	using VariableAssetType = UFloatCameraVariable;
 
 	UPROPERTY()
@@ -74,6 +83,7 @@ struct FDoubleCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = double;
 	using VariableAssetType = UDoubleCameraVariable;
 
 	UPROPERTY()
@@ -90,6 +100,7 @@ struct FVector2fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector2f;
 	using VariableAssetType = UVector2fCameraVariable;
 
 	UPROPERTY()
@@ -106,6 +117,7 @@ struct FVector2dCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector2d;
 	using VariableAssetType = UVector2dCameraVariable;
 
 	UPROPERTY()
@@ -122,6 +134,7 @@ struct FVector3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector3f;
 	using VariableAssetType = UVector3fCameraVariable;
 
 	UPROPERTY()
@@ -138,6 +151,7 @@ struct FVector3dCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector3d;
 	using VariableAssetType = UVector3dCameraVariable;
 
 	UPROPERTY()
@@ -154,6 +168,7 @@ struct FVector4fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector4f;
 	using VariableAssetType = UVector4fCameraVariable;
 
 	UPROPERTY()
@@ -170,6 +185,7 @@ struct FVector4dCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FVector4d;
 	using VariableAssetType = UVector4dCameraVariable;
 
 	UPROPERTY()
@@ -186,6 +202,7 @@ struct FRotator3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FRotator3f;
 	using VariableAssetType = URotator3fCameraVariable;
 
 	UPROPERTY()
@@ -202,6 +219,7 @@ struct FRotator3dCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FRotator3d;
 	using VariableAssetType = URotator3dCameraVariable;
 
 	UPROPERTY()
@@ -218,6 +236,7 @@ struct FTransform3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FTransform3f;
 	using VariableAssetType = UTransform3fCameraVariable;
 
 	UPROPERTY()
@@ -234,6 +253,7 @@ struct FTransform3dCameraVariableReference
 {
 	GENERATED_BODY()
 
+	using ValueType = FTransform3d;
 	using VariableAssetType = UTransform3dCameraVariable;
 
 	UPROPERTY()

@@ -8,12 +8,19 @@
 
 #include "CameraParameters.generated.h"
 
+namespace UE::Cameras
+{
+	class FCameraVariableTable;
+}
+
 #define UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(ParameterClass)\
 	ParameterClass(typename TCallTraits<ParameterClass::ValueType>::ParamType InValue)\
 		: Value(InValue)\
 	{}\
+	bool HasOverride() const { return VariableID.IsValid(); }\
 	bool HasUserOverride() const { return Variable != nullptr; }\
 	bool HasNonUserOverride() const { return VariableID.IsValid() && (!Variable || Variable->GetVariableID() != VariableID); }\
+	ParameterClass::ValueType GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const;\
 	void PostSerialize(const FArchive& Ar);
 
 #define UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(ParameterClass)\
