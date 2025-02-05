@@ -38,6 +38,7 @@
                 <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraVariableType::Rotator3d">*(FRotator3d*)(Memory + EntryPtr->Offset)</Item>
                 <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraVariableType::Transform3f">*(FTransform3f*)(Memory + EntryPtr->Offset)</Item>
                 <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraVariableType::Transform3d">*(FTransform3d*)(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraVariableType::BlendableStruct">(void*)(Memory + EntryPtr->Offset)</Item>
 
                 <Exec>EntryIndex = EntryIndex + 1</Exec>
               </Loop>
