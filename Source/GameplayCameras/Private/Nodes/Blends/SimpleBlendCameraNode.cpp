@@ -29,7 +29,7 @@ void FSimpleBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 void FSimpleBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
 {
 	const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
-	OutResult.VariableTable.Lerp(ChildVariableTable, ECameraVariableTableFilter::Input | Params.ExtraVariableTableFilter, BlendFactor);
+	OutResult.VariableTable.Lerp(ChildVariableTable, Params.VariableTableFilter, BlendFactor);
 
 	OutResult.bIsBlendFull = BlendFactor >= 1.f;
 	OutResult.bIsBlendFinished = bIsBlendFinished;

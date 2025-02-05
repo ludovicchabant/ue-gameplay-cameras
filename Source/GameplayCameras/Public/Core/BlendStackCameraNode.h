@@ -302,6 +302,10 @@ private:
 	void PushVariantEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 
+private:
+
+	/** Variable table for pre-blending. */
+	FCameraVariableTable PreBlendVariableTable;
 };
 
 /**

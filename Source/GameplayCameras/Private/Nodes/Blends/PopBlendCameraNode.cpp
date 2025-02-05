@@ -36,7 +36,7 @@ void FPopBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParams& 
 void FPopBlendCameraNodeHelper::PopParameters(const UE::Cameras::FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult)
 {
 	const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
-	OutResult.VariableTable.Override(ChildVariableTable, ECameraVariableTableFilter::Input);
+	OutResult.VariableTable.Override(ChildVariableTable, Params.VariableTableFilter);
 
 	OutResult.bIsBlendFull = true;
 	OutResult.bIsBlendFinished = true;

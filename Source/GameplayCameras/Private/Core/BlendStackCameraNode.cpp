@@ -17,6 +17,7 @@
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "HAL/IConsoleManager.h"
+#include "Helpers/CameraParameterOverrideHelper.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "Math/ColorList.h"
@@ -96,6 +97,9 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	// Allocate variable table and context data table.
 	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
 	NewEntry.Result.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
+
+	// Set the default values.
+	FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.Result.VariableTable);
 
 	// Set all the data from the context.
 	const FCameraNodeEvaluationResult& ContextResult = EvaluationContext->GetInitialResult();
@@ -668,8 +672,8 @@ void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationP
 
 void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private | ECameraVariableTableFilter::ChangedOnly;
-	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
+	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::InputOutput | ECameraVariableTableFilter::Private;
+	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::None;
 
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
@@ -740,6 +744,11 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 
 void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	// Blend all the camera rigs' input variables (include private variables such as camera rig parameters).
+	PreBlendVariableTable.ClearAllWrittenThisFrameFlags();
+
+	const ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::Input | ECameraVariableTableFilter::Private;
+
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
@@ -751,8 +760,9 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 			CurParams.EvaluationContext = ResolvedEntry.Context;
 			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+			PreBlendParams.VariableTableFilter = VariableTableFilter;
 
-			FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
+			FCameraNodePreBlendResult PreBlendResult(PreBlendVariableTable);
 
 			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
 			if (EntryBlendEvaluator)
@@ -761,13 +771,26 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 			}
 			else
 			{
-				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+				PreBlendVariableTable.Override(CurResult.VariableTable, PreBlendParams.VariableTableFilter);
 			}
 		}
 		else
 		{
 			// Frozen entries still contribute to the blend using their last evaluated values.
-			OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::Input);
+			PreBlendVariableTable.Override(CurResult.VariableTable, VariableTableFilter);
+		}
+	}
+
+	// Write the values back to each entry table, so that each of these camera rigs will run with
+	// the pre-blended values. We limit this writing to the variables each of them knows, since
+	// there's no need to add entries they don't use to their variable table.
+	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
+	{
+		FCameraRigEntry& Entry(ResolvedEntry.Entry);
+
+		if (!Entry.bIsFrozen)
+		{
+			Entry.Result.VariableTable.Override(PreBlendVariableTable, VariableTableFilter | ECameraVariableTableFilter::KnownOnly);
 		}
 	}
 }
@@ -807,6 +830,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 				CurResult.bIsCameraCut |= ActiveOnlyResult->bIsCameraCut;
 			}
 		}
+		
 		CurResult.bIsValid = true;
 
 #if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG

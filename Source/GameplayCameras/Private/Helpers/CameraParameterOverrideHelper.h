@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Core/CameraVariableTableFwd.h"
 #include "StructUtils/PropertyBag.h"
 
 class UCameraRigAsset;
@@ -29,12 +28,12 @@ struct FCameraParameterOverrideHelper
 			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 			bool bDrivenOverridesOnly);
 
+	static void ApplyDefaultBlendableParameters(const UCameraRigAsset* CameraRig, FCameraVariableTable& OutVariableTable);
+
 private:
 
 	FCameraVariableTable& VariableTable;
 	FCameraContextDataTable& ContextDataTable;
-
-	TArray<FBlendableStructInfo> BlendableStructs;
 };
 
 }  // namespace UE::Cameras

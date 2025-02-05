@@ -10,6 +10,7 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "Helpers/CameraParameterOverrideHelper.h"
 #include "Helpers/CameraRigParameterOverrideEvaluator.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 
@@ -171,7 +172,7 @@ void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluat
 
 void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStack()
 {
-	if (!ensureMsgf(BlendablePrefabCameraRig, TEXT("The blended parameter overiddes stack has already been initialized.")))
+	if (!ensureMsgf(BlendablePrefabCameraRig, TEXT("The blended parameter overrides stack has already been initialized.")))
 	{
 		return;
 	}
@@ -224,33 +225,6 @@ void FBlendStackRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	}
 }
 
-void FBlendStackRootCameraNodeEvaluator::SetDefaultBlendableParameterValues(FCameraVariableTable& OutVariableTable)
-{
-	const FInstancedPropertyBag& DefaultParameters = BlendablePrefabCameraRig->GetDefaultParameters();
-	const uint8* RawDefaultParametersContainer = DefaultParameters.GetValue().GetMemory();
-
-	for (const FCameraRigParameterDefinition& Definition : BlendablePrefabCameraRig->GetParameterDefinitions())
-	{
-		if (Definition.ParameterType != ECameraRigInterfaceParameterType::Blendable)
-		{
-			continue;
-		}
-		if (!Definition.VariableID.IsValid())
-		{
-			continue;
-		}
-
-		const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
-		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
-		{
-			continue;
-		}
-
-		const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
-		OutVariableTable.SetValue(Definition.VariableID, Definition.VariableType, Definition.BlendableStructType, (const uint8*)RawValuePtr);
-	}
-}
-
 void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	if (BlendedParameterOverridesStack.IsEmpty())
@@ -271,7 +245,7 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 
 		// Start by setting the default values of all parameters. If we don't do this, parameter overrides
 		// wouldn't have a base value to blend from.
-		SetDefaultBlendableParameterValues(CurResult.VariableTable);
+		FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(BlendablePrefabCameraRig, CurResult.VariableTable);
 
 		// Next, override the defaults with the specific values of this entry.
 		FCameraRigParameterOverrideEvaluator OverrideEvaluator(BlendedParameterOverrides.PrefabNode->CameraRigReference);
@@ -283,7 +257,7 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 			BlendedParameterOverrides.BlendEvaluator->Run(Params.EvaluationParams, CurResult);
 
 			FCameraNodePreBlendParams BlendParams(Params.EvaluationParams, Params.LastCameraPose, CurResult.VariableTable);
-			BlendParams.ExtraVariableTableFilter = ECameraVariableTableFilter::Private;
+			BlendParams.VariableTableFilter = ECameraVariableTableFilter::Input | ECameraVariableTableFilter::Private;
 			FCameraNodePreBlendResult BlendResult(OutResult.VariableTable);
 			BlendedParameterOverrides.BlendEvaluator->BlendParameters(BlendParams, BlendResult);
 

@@ -7,7 +7,6 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigParameterDefinition.h"
 #include "Core/CameraVariableTable.h"
-#include "IGameplayCamerasModule.h"
 
 namespace UE::Cameras
 {
@@ -216,8 +215,6 @@ FCameraParameterOverrideHelper::FCameraParameterOverrideHelper(FCameraVariableTa
 	: VariableTable(OutVariableTable)
 	, ContextDataTable(OutContextDataTable)
 {
-	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
-	BlendableStructs = GameplayCamerasModule.GetBlendableStructs();
 }
 
 void FCameraParameterOverrideHelper::ApplyParameterOverride(
@@ -249,6 +246,38 @@ void FCameraParameterOverrideHelper::ApplyParameterOverride(
 						ContextDataTable);
 			}
 			break;
+	}
+}
+
+void FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(const UCameraRigAsset* CameraRig, FCameraVariableTable& OutVariableTable)
+{
+	if (!ensure(CameraRig))
+	{
+		return;
+	}
+
+	const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
+	const uint8* RawDefaultParametersContainer = DefaultParameters.GetValue().GetMemory();
+
+	for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+	{
+		if (Definition.ParameterType != ECameraRigInterfaceParameterType::Blendable)
+		{
+			continue;
+		}
+		if (!Definition.VariableID.IsValid())
+		{
+			continue;
+		}
+
+		const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
+		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
+		{
+			continue;
+		}
+
+		const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
+		OutVariableTable.SetValue(Definition.VariableID, Definition.VariableType, Definition.BlendableStructType, (const uint8*)RawValuePtr);
 	}
 }
 
