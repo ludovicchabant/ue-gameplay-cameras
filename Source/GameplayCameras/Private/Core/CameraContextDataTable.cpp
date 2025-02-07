@@ -413,7 +413,10 @@ FCameraContextDataTable::FEntry* FCameraContextDataTable::FindEntry(FCameraConte
 	return nullptr;
 }
 
-const uint8* FCameraContextDataTable::GetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject) const
+const uint8* FCameraContextDataTable::GetData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject) const
 {
 	const uint8* Data = TryGetData(DataID, ExpectedDataType, ExpectedDataTypeObject);
 	ensureMsgf(
@@ -423,7 +426,10 @@ const uint8* FCameraContextDataTable::GetData(FCameraContextDataID DataID, ECame
 	return Data;
 }
 
-const uint8* FCameraContextDataTable::TryGetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject) const
+const uint8* FCameraContextDataTable::TryGetData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject) const
 {
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
@@ -437,13 +443,40 @@ const uint8* FCameraContextDataTable::TryGetData(FCameraContextDataID DataID, EC
 	return nullptr;
 }
 
-void FCameraContextDataTable::SetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame)
+uint8* FCameraContextDataTable::TryGetMutableData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject)
+{
+	FEntry* Entry = FindEntry(DataID);
+	if (Entry)
+	{
+		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		{
+			return Memory + Entry->Offset;
+		}
+	}
+
+	return nullptr;
+}
+
+void FCameraContextDataTable::SetData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject,
+		const uint8* InRawDataPtr,
+		bool bMarkAsWrittenThisFrame)
 {
 	const bool bDidSet = TrySetData(DataID, ExpectedDataType, ExpectedDataTypeObject, InRawDataPtr, bMarkAsWrittenThisFrame);
 	ensureMsgf(bDidSet, TEXT("Can't set camera context data (ID '%d') beacuse it doesn't exist in the table."), DataID.GetValue());
 }
 
-bool FCameraContextDataTable::TrySetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame)
+bool FCameraContextDataTable::TrySetData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject,
+		const uint8* InRawDataPtr,
+		bool bMarkAsWrittenThisFrame)
 {
 	FEntry* Entry = FindEntry(DataID);
 	if (!Entry)

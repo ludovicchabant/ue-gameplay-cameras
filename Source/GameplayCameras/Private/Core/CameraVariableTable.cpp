@@ -306,6 +306,21 @@ const uint8* FCameraVariableTable::TryGetValue(
 	return nullptr;
 }
 
+uint8* FCameraVariableTable::TryGetMutableValue(
+		FCameraVariableID VariableID,
+		ECameraVariableType ExpectedVariableType,
+		const UScriptStruct* ExpectedBlendableStructType)
+{
+	FEntry* Entry = FindEntry(VariableID);
+	if (Entry)
+	{
+		ensure(Entry->Type == ExpectedVariableType && Entry->StructType == ExpectedBlendableStructType);
+		return Memory + Entry->Offset;
+	}
+
+	return nullptr;
+}
+
 void FCameraVariableTable::SetValue(
 		FCameraVariableID VariableID, 
 		ECameraVariableType ExpectedVariableType, 

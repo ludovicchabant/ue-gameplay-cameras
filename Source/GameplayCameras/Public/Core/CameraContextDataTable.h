@@ -123,11 +123,34 @@ public:
 public:
 
 	// Low-level API.
-	const uint8* GetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject) const;
-	const uint8* TryGetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject) const;
+	const uint8* GetData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject) const;
 
-	void SetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame = true);
-	bool TrySetData(FCameraContextDataID DataID, ECameraContextDataType ExpectedDataType, const UObject* ExpectedDataTypeObject, const uint8* InRawDataPtr, bool bMarkAsWrittenThisFrame = true);
+	const uint8* TryGetData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject) const;
+
+	uint8* TryGetMutableData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject);
+
+	void SetData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject,
+			const uint8* InRawDataPtr,
+			bool bMarkAsWrittenThisFrame = true);
+
+	bool TrySetData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject,
+			const uint8* InRawDataPtr,
+			bool bMarkAsWrittenThisFrame = true);
 
 	bool IsValueWritten(FCameraContextDataID InID) const;
 	void UnsetValue(FCameraContextDataID InID);

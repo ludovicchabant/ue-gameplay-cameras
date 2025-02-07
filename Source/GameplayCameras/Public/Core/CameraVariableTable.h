@@ -163,6 +163,11 @@ public:
 			ECameraVariableType ExpectedVariableType,
 			const UScriptStruct* ExpectedBlendableStructType) const;
 
+	uint8* TryGetMutableValue(
+			FCameraVariableID VariableID,
+			ECameraVariableType ExpectedVariableType,
+			const UScriptStruct* ExpectedBlendableStructType);
+
 	void SetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 
