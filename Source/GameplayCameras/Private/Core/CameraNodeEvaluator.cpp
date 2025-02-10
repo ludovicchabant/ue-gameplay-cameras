@@ -26,6 +26,17 @@ void FCameraNodeEvaluationResult::Reset()
 
 	bIsCameraCut = false;
 	bIsValid = false;
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+	CameraPoseLocationTrail.Reset();
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+}
+
+void FCameraNodeEvaluationResult::ResetFrameFlags()
+{
+	CameraPose.ClearAllChangedFlags();
+	VariableTable.ClearAllWrittenThisFrameFlags();
+	ContextDataTable.ClearAllWrittenThisFrameFlags();
 }
 
 void FCameraNodeEvaluationResult::OverrideAll(const FCameraNodeEvaluationResult& OtherResult)
@@ -75,6 +86,34 @@ void FCameraNodeEvaluationResult::AddReferencedObjects(FReferenceCollector& Coll
 {
 	ContextDataTable.AddReferencedObjects(Collector);
 }
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FCameraNodeEvaluationResult::AddCameraPoseTrailPointIfNeeded()
+{
+	AddCameraPoseTrailPointIfNeeded(CameraPose.GetLocation());
+}
+
+void FCameraNodeEvaluationResult::AddCameraPoseTrailPointIfNeeded(const FVector3d& Point)
+{
+	if (CameraPoseLocationTrail.IsEmpty() || !CameraPoseLocationTrail.Last().Equals(Point))
+	{
+		CameraPoseLocationTrail.Add(Point);
+	}
+}
+
+void FCameraNodeEvaluationResult::AppendCameraPoseLocationTrail(const FCameraNodeEvaluationResult& InResult)
+{
+	ensure(this != &InResult);
+	CameraPoseLocationTrail.Append(InResult.CameraPoseLocationTrail);
+}
+
+TConstArrayView<FVector3d> FCameraNodeEvaluationResult::GetCameraPoseLocationTrail() const
+{
+	return CameraPoseLocationTrail;
+}
+
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 
 FCameraNodeEvaluator* FCameraNodeEvaluatorBuildParams::BuildEvaluator(const UCameraNode* InNode) const
 {
@@ -161,6 +200,13 @@ void FCameraNodeEvaluator::Run(const FCameraNodeEvaluationParams& Params, FCamer
 	if (!PrivateCameraNode || PrivateCameraNode->bIsEnabled)
 	{
 		OnRun(Params, OutResult);
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+		if (bAutoCameraPoseMovementTrail)
+		{
+			OutResult.AddCameraPoseTrailPointIfNeeded();
+		}
+#endif  // WITH_EDITOR
 	}
 }
 

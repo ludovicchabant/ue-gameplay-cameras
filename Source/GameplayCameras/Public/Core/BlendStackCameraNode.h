@@ -97,6 +97,7 @@ class FBlendStackCameraNodeEvaluator
 
 public:
 
+	FBlendStackCameraNodeEvaluator();
 	~FBlendStackCameraNodeEvaluator();
 
 	/** Returns information about the top (active) camera rig, if any. */
@@ -167,7 +168,7 @@ protected:
 	};
 
 	void ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries);
-	void OnRunFinished();
+	void OnRunFinished(FCameraNodeEvaluationResult& OutResult);
 
 protected:
 

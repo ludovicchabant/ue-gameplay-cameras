@@ -200,10 +200,9 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 {
 	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
 
-	// Reset our result' flags.
-	RootNodeResult.CameraPose.ClearAllChangedFlags();
-	RootNodeResult.VariableTable.ClearAllWrittenThisFrameFlags();
-	RootNodeResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
+	// Reset our result' flags. Don't reset the result itself yet, since we want to return
+	// last frame's values when we don't have anything to run.
+	RootNodeResult.ResetFrameFlags();
 
 	// Reset variables and data.
 	RootNodeResult.VariableTable.AutoResetValues();
@@ -383,6 +382,18 @@ void FCameraSystemEvaluator::DrawEditorPreview(const FCameraSystemEditorPreviewP
 	Renderer.BeginDrawing();
 	{
 		RootEvaluator->DrawEditorPreview(NodeParams, Renderer);
+
+		if (!Params.bIsLockedToCamera)
+		{
+			const FLinearColor TrailColor(FColorList::LightBlue);
+			TConstArrayView<FVector3d> Trail = RootNodeResult.GetCameraPoseLocationTrail();
+			for (int32 Index = 1; Index < Trail.Num(); ++Index)
+			{
+				const FVector3d& PrevPoint(Trail[Index - 1]);
+				const FVector3d& NextPoint(Trail[Index]);
+				Renderer.DrawLine(PrevPoint, NextPoint, TrailColor, 1.f);
+			}
+		}
 	}
 	Renderer.EndDrawing();
 }

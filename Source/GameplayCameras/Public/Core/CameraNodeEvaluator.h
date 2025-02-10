@@ -190,6 +190,9 @@ public:
 	/** Reset this result to its default (non-valid) state.  */
 	void Reset();
 
+	/** Reset all written-this-frame flags on the camera pose and tables. */
+	void ResetFrameFlags();
+
 	/** Override this result with the given other result. */
 	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult);
 
@@ -203,6 +206,23 @@ public:
 
 	/** Collects objects from the context data table. */
 	void AddReferencedObjects(FReferenceCollector& Collector);
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+
+public:
+
+	// Internal API.
+
+	void AddCameraPoseTrailPointIfNeeded();
+	void AddCameraPoseTrailPointIfNeeded(const FVector3d& Point);
+	void AppendCameraPoseLocationTrail(const FCameraNodeEvaluationResult& InResult);
+	TConstArrayView<FVector3d> GetCameraPoseLocationTrail() const;
+
+private:
+
+	TArray<FVector3d> CameraPoseLocationTrail;
+
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 };
 
 /**
@@ -350,6 +370,15 @@ protected:
 	/** Called to create debug blocks for this node evaluator. */
 	GAMEPLAYCAMERAS_API virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+
+protected:
+
+	/** Whether to automatically add points to the debug trail after this evaluation has run. */
+	bool bAutoCameraPoseMovementTrail = true;
+
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:
 

@@ -61,6 +61,13 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FTransientBlendStackCameraNodeEvaluator)
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FPersistentBlendStackCameraNodeEvaluator)
 
+FBlendStackCameraNodeEvaluator::FBlendStackCameraNodeEvaluator()
+{
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+	bAutoCameraPoseMovementTrail = false;
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+}
+
 FBlendStackCameraNodeEvaluator::~FBlendStackCameraNodeEvaluator()
 {
 	// Pop all our entries to unregister the live-edit callbacks.
@@ -231,9 +238,7 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 
 			// Reset this entry's flags for this frame.
 			FCameraNodeEvaluationResult& CurResult = Entry.Result;
-			CurResult.CameraPose.ClearAllChangedFlags();
-			CurResult.VariableTable.ClearAllWrittenThisFrameFlags();
-			CurResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
+			CurResult.ResetFrameFlags();
 		}
 		// else: frozen entries may have null contexts or invalid initial results
 		//       because we're not going to update them anyway. We will however blend
@@ -247,7 +252,7 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 	}
 }
 
-void FBlendStackCameraNodeEvaluator::OnRunFinished()
+void FBlendStackCameraNodeEvaluator::OnRunFinished(FCameraNodeEvaluationResult& OutResult)
 {
 	// Reset transient flags.
 	for (FCameraRigEntry& Entry : Entries)
@@ -257,6 +262,22 @@ void FBlendStackCameraNodeEvaluator::OnRunFinished()
 		Entry.bBlendRunThisFrame = false;
 		Entry.bForceCameraCut = false;
 	}
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+
+	// Append the motion trail of the active entry so that we see all the steps it took
+	// to get to the end result. Also add an extra point for the actual final result,
+	// to represent the difference between the active result and the blended result.
+	// In theory, this extra segment should blend into nothingness over time.
+	if (Entries.Num() > 0)
+	{
+		const FCameraRigEntry& ActiveEntry = Entries.Last();
+		OutResult.AppendCameraPoseLocationTrail(ActiveEntry.Result);
+
+		OutResult.AddCameraPoseTrailPointIfNeeded();
+	}
+
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 void FBlendStackCameraNodeEvaluator::PopEntry(int32 EntryIndex)
@@ -642,7 +663,7 @@ void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationP
 	InternalPostBlendExecute(ResolvedEntries, Params, OutResult);
 
 	// Tidy up.
-	OnRunFinished();
+	OnRunFinished(OutResult);
 }
 
 void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -769,6 +790,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
 		// Start with the input given to us.
+		CurResult.Reset();
 		CurResult.CameraPose = OutResult.CameraPose;
 		CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
 		CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
@@ -786,6 +808,10 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 			}
 		}
 		CurResult.bIsValid = true;
+
+#if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
+		CurResult.AddCameraPoseTrailPointIfNeeded(ContextResult.CameraPose.GetLocation());
+#endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 
 		// Run the camera rig's root node.
 		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
@@ -1055,7 +1081,7 @@ void FPersistentBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 	InternalUpdate(ResolvedEntries, Params, OutResult);
 
 	// Tidy things up.
-	OnRunFinished();
+	OnRunFinished(OutResult);
 }
 
 void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
