@@ -25,7 +25,7 @@ struct FCameraContextDataDefinition
 
 	/** The type of the data. */
 	UPROPERTY()
-	ECameraContextDataType DataType;
+	ECameraContextDataType DataType = ECameraContextDataType::Name;
 
 	/** An extra type object for the data. */
 	UPROPERTY()
