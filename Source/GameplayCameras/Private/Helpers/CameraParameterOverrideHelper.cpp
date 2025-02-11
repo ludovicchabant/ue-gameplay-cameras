@@ -179,16 +179,22 @@ void ApplyDataParameterOverride(
 			break;
 		case ECameraContextDataType::Enum:
 			{
-				const UEnum* EnumType = CastChecked<const UEnum>(ParameterDefinition.DataTypeObject);
-				TValueOrError<uint8, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueEnum(PropertyBagPropertyDesc, EnumType);
-				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+				const UEnum* EnumType = Cast<const UEnum>(ParameterDefinition.DataTypeObject);
+				if (ensure(EnumType))
+				{
+					TValueOrError<uint8, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueEnum(PropertyBagPropertyDesc, EnumType);
+					ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+				}
 			}
 			break;
 		case ECameraContextDataType::Struct:
 			{
-				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(ParameterDefinition.DataTypeObject);
-				TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc, StructType);
-				ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+				const UScriptStruct* StructType = Cast<const UScriptStruct>(ParameterDefinition.DataTypeObject);
+				if (ensure(StructType))
+				{
+					TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc, StructType);
+					ApplyDataParameterOverride(CameraRig, ParameterDefinition, ParameterValueOrError, ContextDataTable);
+				}
 			}
 			break;
 		case ECameraContextDataType::Object:
