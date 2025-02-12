@@ -48,8 +48,7 @@ void FCameraRigCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 void FCameraRigCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	// Keep applying overrides in case they are driven by a variable.
-	const bool bDrivenOverridesOnly = true; //(Params.EvaluationParams.EvaluationType == ECameraNodeEvaluationType::Standard);
-	ApplyParameterOverrides(OutResult.VariableTable, bDrivenOverridesOnly);
+	ApplyParameterOverrides(OutResult.VariableTable, false);
 }
 
 void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
