@@ -25,15 +25,6 @@
 
 #define LOCTEXT_NAMESPACE "GameplayCameraComponent"
 
-namespace UE::Cameras
-{
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-extern bool GGameplayCamerasDebugEnable;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
-}  // namespace UE::Cameras
-
 UGameplayCameraComponent::UGameplayCameraComponent(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {

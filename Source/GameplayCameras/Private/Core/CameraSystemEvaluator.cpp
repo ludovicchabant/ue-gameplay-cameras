@@ -380,6 +380,12 @@ void FCameraSystemEvaluator::DrawEditorPreview(const FCameraSystemEditorPreviewP
 	FCameraDebugRenderer Renderer(OwnerWorld, Params.SceneView, Params.Canvas, !Params.bIsLockedToCamera);
 
 	Renderer.BeginDrawing();
+
+	if (GGameplayCamerasDebugEnable && RootDebugBlock)
+	{
+		RootDebugBlock->RootDebugDraw(Renderer);
+	}
+	else
 	{
 		RootEvaluator->DrawEditorPreview(NodeParams, Renderer);
 
