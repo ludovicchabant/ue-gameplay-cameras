@@ -488,9 +488,10 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 	}
 }
 
-void FCameraVariableTable::OverrideAll(const FCameraVariableTable& OtherTable)
+void FCameraVariableTable::OverrideAll(const FCameraVariableTable& OtherTable, bool bIncludePrivateValues)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::InputOutput;
+	const ECameraVariableTableFilter Filter = !bIncludePrivateValues ? 
+		ECameraVariableTableFilter::PublicOnly : ECameraVariableTableFilter::None;
 	InternalOverride(OtherTable, Filter, nullptr, false, nullptr);
 }
 
@@ -508,9 +509,8 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 {
 	using namespace UE::Cameras::Private;
 
-	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
-	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
-	const bool bPrivates = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Private);
+	const bool bPublicOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::PublicOnly);
+	const bool bInputOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::InputOnly);
 	const bool bKnownOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::KnownOnly);
 	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
 
@@ -518,11 +518,10 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 	{
 		// Look for entries in the other table that have been written to, and aren't private.
 		const EEntryFlags OtherFlags = OtherEntry.Flags;
-		const bool bOtherEntryIsInput = EnumHasAnyFlags(OtherFlags, EEntryFlags::Input);
 		if (EnumHasAnyFlags(OtherFlags, EEntryFlags::Written)
+				&& (!bPublicOnly || !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private))
+				&& (!bInputOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::Input))
 				&& (!bChangedOnly || EnumHasAnyFlags(OtherFlags, EEntryFlags::WrittenThisFrame))
-				&& ((bInputs && bOtherEntryIsInput) || (bOutputs && !bOtherEntryIsInput))
-				&& (bPrivates || !EnumHasAnyFlags(OtherFlags, EEntryFlags::Private))
 				&& IsVariableInMask(OtherEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.
@@ -589,9 +588,10 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 	}
 }
 
-void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor)
+void FCameraVariableTable::LerpAll(const FCameraVariableTable& ToTable, float Factor, bool bIncludePrivateValues)
 {
-	const ECameraVariableTableFilter Filter = ECameraVariableTableFilter::InputOutput;
+	const ECameraVariableTableFilter Filter = !bIncludePrivateValues ? 
+		ECameraVariableTableFilter::PublicOnly : ECameraVariableTableFilter::None;
 	InternalLerp(ToTable, Filter, Factor, nullptr, false, nullptr);
 }
 
@@ -609,9 +609,8 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 {
 	using namespace UE::Cameras::Private;
 
-	const bool bInputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Input);
-	const bool bOutputs = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Output);
-	const bool bPrivates = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::Private);
+	const bool bPublicOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::PublicOnly);
+	const bool bInputOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::InputOnly);
 	const bool bKnownOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::KnownOnly);
 	const bool bChangedOnly = EnumHasAnyFlags(Filter, ECameraVariableTableFilter::ChangedOnly);
 
@@ -619,11 +618,10 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 	{
 		// Look for entries in the other table that have been written to, and aren't private.
 		const EEntryFlags ToFlags = ToEntry.Flags;
-		const bool bToEntryIsInput = EnumHasAnyFlags(ToFlags, EEntryFlags::Input);
 		if (EnumHasAnyFlags(ToFlags, EEntryFlags::Written)
+				&& (!bPublicOnly || !EnumHasAnyFlags(ToFlags, EEntryFlags::Private))
+				&& (!bInputOnly || EnumHasAnyFlags(ToFlags, EEntryFlags::Input))
 				&& (!bChangedOnly || EnumHasAnyFlags(ToFlags, EEntryFlags::WrittenThisFrame))
-				&& ((bInputs && bToEntryIsInput) || (bOutputs && !bToEntryIsInput))
-				&& (bPrivates || !EnumHasAnyFlags(ToFlags, EEntryFlags::Private))
 				&& IsVariableInMask(ToEntry.ID, InMask, bInvertMask))
 		{
 			// See if we know this variable.

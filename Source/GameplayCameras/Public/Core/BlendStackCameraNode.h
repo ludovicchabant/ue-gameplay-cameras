@@ -137,7 +137,8 @@ protected:
 		FCameraRigEntry& NewEntry, 
 		const UCameraRigAsset* CameraRig,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
-		UBlendStackRootCameraNode* EntryRootNode);
+		UBlendStackRootCameraNode* EntryRootNode,
+		bool bSetActiveResult);
 
 	void FreezeEntry(FCameraRigEntry& Entry);
 
@@ -164,7 +165,6 @@ protected:
 		TSharedPtr<const FCameraEvaluationContext> Context;
 		int32 EntryIndex = INDEX_NONE;
 		bool bIsActiveEntry = false;
-		bool bHasPreBlendedParameters = false;
 	};
 
 	void ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries);
@@ -192,12 +192,9 @@ protected:
 		bool bIsFirstFrame = false;
 		/** Whether the context's initial result was valid last frame. */
 		bool bWasContextInitialResultValid = false;
-		/** Whether input slots were run (possibly from a preview update). */
-		bool bInputRunThisFrame = false;
-		/** Whether the blend node was run (possibly from a preview update). */
-		bool bBlendRunThisFrame = false;
 		/** Whether to force a camera cut on this entry this frame. */
 		bool bForceCameraCut = false;
+
 		/** Whether this entry is frozen. */
 		bool bIsFrozen = false;
 
@@ -283,6 +280,7 @@ protected:
 
 	// FCameraNodeEvaluator interface.
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 private:
 
@@ -291,6 +289,7 @@ private:
 	void InternalPreBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 	void InternalPostBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void InternalRunFinished(FCameraNodeEvaluationResult& OutResult);
 
 	// Utility functions for finding an appropriate transition.
 	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
@@ -299,10 +298,28 @@ private:
 			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
-	void PushVariantEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+	void PushMergedEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 
 private:
+
+	/** Extra blending-related info for each camera rig entry. */
+	struct FCameraRigEntryExtraInfo
+	{
+		/** Result without pre-blending. */
+		FCameraNodeEvaluationResult UnblendedResult;
+
+		/** Whether input slots were run. */
+		bool bInputRunThisFrame = false;
+		/** Whether the blend node was run. */
+		bool bBlendRunThisFrame = false;
+		/** Whether this camera rig has any parameters to pre-blend. */
+		bool bHasPreBlendedParameters = false;
+		/** Whether this camera rig's pre-blend was full and finished this frame. */
+		bool bIsPreBlendFull = false;
+	};
+
+	TArray<FCameraRigEntryExtraInfo> EntryExtraInfos;
 
 	/** Variable table for pre-blending. */
 	FCameraVariableTable PreBlendVariableTable;

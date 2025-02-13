@@ -194,10 +194,10 @@ public:
 	void ResetFrameFlags();
 
 	/** Override this result with the given other result. */
-	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult);
+	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult, bool bIncludePrivateValues = false);
 
 	/** Interpolate this result towards the other given result. */
-	void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor);
+	void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor, bool bIncludePrivateValues = false);
 
 	/** Serializes this result to the given archive. */
 	void Serialize(FArchive& Ar);

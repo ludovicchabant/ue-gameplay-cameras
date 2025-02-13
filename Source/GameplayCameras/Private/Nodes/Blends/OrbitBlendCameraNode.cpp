@@ -90,7 +90,7 @@ void FOrbitBlendCameraNodeEvaluator::OnBlendParameters(const FCameraNodePreBlend
 	else
 	{
 		const FCameraVariableTable& ChildVariableTable(Params.ChildVariableTable);
-		OutResult.VariableTable.Override(ChildVariableTable, ECameraVariableTableFilter::Input);
+		OutResult.VariableTable.Override(ChildVariableTable, Params.VariableTableFilter);
 
 		OutResult.bIsBlendFinished = true;
 		OutResult.bIsBlendFull = true;

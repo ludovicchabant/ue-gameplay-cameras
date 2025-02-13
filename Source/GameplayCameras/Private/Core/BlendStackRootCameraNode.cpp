@@ -16,6 +16,12 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
 
+UBlendStackRootCameraNode::UBlendStackRootCameraNode(const FObjectInitializer& ObjInit)
+	: Super(ObjInit)
+{
+	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+}
+
 FCameraNodeChildrenView UBlendStackRootCameraNode::OnGetChildren()
 {
 	FCameraNodeChildrenView Children;
@@ -84,61 +90,41 @@ void FBlendStackRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 	const UBlendStackRootCameraNode* RootNode = GetCameraNodeAs<UBlendStackRootCameraNode>();
 	if (RootNode->RootNode)
 	{
-		// See if the camera rig we are running is only made up of a prefab with some overrides.
-		InitialPrefabNode = Cast<const UCameraRigCameraNode>(RootNode->RootNode);
-		if (InitialPrefabNode)
-		{
-			BlendablePrefabCameraRig = InitialPrefabNode->CameraRigReference.GetCameraRig();
-		}
+		const UCameraRigAsset* CameraRig = RootNode->RootNode->GetTypedOuter<const UCameraRigAsset>();
+		BlendablePrefabCameraRig = FindInnermostCameraRigPrefab(CameraRig);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-		const UCameraRigAsset* CameraRig = RootNode->RootNode->GetTypedOuter<UCameraRigAsset>();
 		CameraRigAssetName = GetNameSafe(CameraRig);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	}
 }
 
-EBlendStackEntryComparison FBlendStackRootCameraNodeEvaluator::Compare(const UCameraRigAsset* CameraRig) const
+ECameraRigMergingEligibility FBlendStackRootCameraNodeEvaluator::CompareCameraRigForMerging(const UCameraRigAsset* CameraRig) const
 {
-	if (!BlendablePrefabCameraRig)
-	{
-		return EBlendStackEntryComparison::Different;
-	}
-	
-	const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(CameraRig->RootNode);
-	if (!PrefabNode)
-	{
-		return EBlendStackEntryComparison::Different;
-	}
+	const UCameraRigAsset* NewCameraRigPrefab = FindInnermostCameraRigPrefab(CameraRig);
 
-	const UCameraRigAsset* Prefab = PrefabNode->CameraRigReference.GetCameraRig();
-	if (!Prefab)
+	if (NewCameraRigPrefab != BlendablePrefabCameraRig)
 	{
-		return EBlendStackEntryComparison::Different;
-	}
-
-	if (Prefab != BlendablePrefabCameraRig)
-	{
-		return EBlendStackEntryComparison::Different;
+		return ECameraRigMergingEligibility::Different;
 	}
 
 	if (BlendedParameterOverridesStack.IsEmpty())
 	{
-		return EBlendStackEntryComparison::EligibleForMerge;
+		return ECameraRigMergingEligibility::EligibleForMerge;
 	}
 	
 	const FBlendedParameterOverrides& TopEntry = BlendedParameterOverridesStack.Top();
-	if (TopEntry.PrefabNodeAsset == CameraRig)
+	if (TopEntry.CameraRig == CameraRig)
 	{
-		return EBlendStackEntryComparison::Active;
+		return ECameraRigMergingEligibility::Active;
 	}
 
-	return EBlendStackEntryComparison::EligibleForMerge;
+	return ECameraRigMergingEligibility::EligibleForMerge;
 }
 
-void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigCameraNode* PrefabNode, const UBlendCameraNode* Blend)
+void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigAsset* CameraRig, const UBlendCameraNode* Blend)
 {
-	if (!ensureMsgf(PrefabNode, TEXT("No prefab node given.")))
+	if (!ensureMsgf(CameraRig, TEXT("No camera rig given.")))
 	{
 		return;
 	}
@@ -149,63 +135,93 @@ void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluat
 		return;
 	}
 
-	if (!ensureMsgf(PrefabNode->CameraRigReference.GetCameraRig() == BlendablePrefabCameraRig,
-				TEXT("Adding blended parameter overrides for a different camera rig.")))
-	{
-		return;
-	}
-
 	InitializeBlendedParameterOverridesStack();
 
 	FBlendedParameterOverrides BlendedParameterOverrides;
-	BlendedParameterOverrides.PrefabNodeAsset = PrefabNode->GetTypedOuter<UCameraRigAsset>();
-	BlendedParameterOverrides.PrefabNode = PrefabNode;
+	BlendedParameterOverrides.CameraRig = CameraRig;
 	BlendedParameterOverrides.Blend = Blend;
-	BlendedParameterOverrides.Result.VariableTable.Initialize(BlendedParameterOverridesTableAllocationInfo);
+
+	BuildNestedPrefabTrail(CameraRig, BlendedParameterOverrides.PrefabTrail);
+
+	const FCameraRigAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
+	BlendedParameterOverrides.Result.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+
 	if (Blend)
 	{
 		BlendedParameterOverrides.BlendEvaluator = Params.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(Blend);
 	}
 
 	BlendedParameterOverridesStack.Add(MoveTemp(BlendedParameterOverrides));
+
+	// Show the new active camera rig in the debug info.
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	CameraRigAssetName = GetNameSafe(CameraRig);
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+}
+
+const UCameraRigAsset* FBlendStackRootCameraNodeEvaluator::FindInnermostCameraRigPrefab(const UCameraRigAsset* CameraRig)
+{
+	if (const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(CameraRig->RootNode))
+	{
+		if (const UCameraRigAsset* InnerCameraRig = PrefabNode->CameraRigReference.GetCameraRig())
+		{
+			return FindInnermostCameraRigPrefab(InnerCameraRig);
+		}
+	}
+	return CameraRig;
+}
+
+FCameraNodeEvaluator* FBlendStackRootCameraNodeEvaluator::FindInnermostCameraRigEvaluator(FCameraNodeEvaluator* CameraNodeEvaluator)
+{
+	if (FCameraRigCameraNodeEvaluator* PrefabNodeEvaluator = CameraNodeEvaluator->CastThis<FCameraRigCameraNodeEvaluator>())
+	{
+		if (FCameraNodeEvaluator* InnerNodeEvaluator = PrefabNodeEvaluator->GetCameraRigRootEvaluator())
+		{
+			return FindInnermostCameraRigEvaluator(InnerNodeEvaluator);
+		}
+	}
+	return CameraNodeEvaluator;
 }
 
 void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStack()
 {
-	if (!ensureMsgf(BlendablePrefabCameraRig, TEXT("The blended parameter overrides stack has already been initialized.")))
-	{
-		return;
-	}
-
 	if (!BlendedParameterOverridesStack.IsEmpty())
 	{
 		return;
 	}
 
-	// Build the allocation info for the variable tables we keep with each set of parameter overrides.
-	for (const UCameraRigBlendableParameter* BlendableParameter : BlendablePrefabCameraRig->Interface.BlendableParameters)
-	{
-		if (!ensure(BlendableParameter))
-		{
-			continue;
-		}
-		if (!BlendableParameter->PrivateVariableID)
-		{
-			continue;
-		}
+	// Swap out the current root evaluator for the innermost rig one, because we want to apply parameter
+	// overrides ourselves from now on.
+	FCameraNodeEvaluator* InnermostRootEvaluator = FindInnermostCameraRigEvaluator(RootEvaluator);
+	RootEvaluator = InnermostRootEvaluator;
 
-		FCameraVariableDefinition Definition = BlendableParameter->GetVariableDefinition();
-		BlendedParameterOverridesTableAllocationInfo.VariableDefinitions.Add(Definition);
-	}
-
-	FCameraRigCameraNodeEvaluator* RootPrefabNodeEvaluator = RootEvaluator->CastThisChecked<FCameraRigCameraNodeEvaluator>();
-	RootPrefabNodeEvaluator->SetApplyParameterOverrides(false);
+	const UBlendStackRootCameraNode* ThisNode = GetCameraNodeAs<UBlendStackRootCameraNode>();
+	const UCameraRigAsset* OriginalCameraRig = ThisNode->RootNode->GetTypedOuter<const UCameraRigAsset>();
 
 	FBlendedParameterOverrides InitialParameterOverrides;
-	InitialParameterOverrides.PrefabNodeAsset = InitialPrefabNode->GetTypedOuter<UCameraRigAsset>();
-	InitialParameterOverrides.PrefabNode = InitialPrefabNode;
-	InitialParameterOverrides.Result.VariableTable.Initialize(BlendedParameterOverridesTableAllocationInfo);
+	InitialParameterOverrides.CameraRig = OriginalCameraRig;
+	// No blend, the initial entry is always at 100%.
+
+	BuildNestedPrefabTrail(OriginalCameraRig, InitialParameterOverrides.PrefabTrail);
+
+	const FCameraRigAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
+	InitialParameterOverrides.Result.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+
 	BlendedParameterOverridesStack.Add(MoveTemp(InitialParameterOverrides));
+}
+
+void FBlendStackRootCameraNodeEvaluator::BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes)
+{
+	if (const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(CameraRig->RootNode))
+	{
+		if (const UCameraRigAsset* InnerCameraRig = PrefabNode->CameraRigReference.GetCameraRig())
+		{
+			OutPrefabNodes.Add(PrefabNode);
+			return BuildNestedPrefabTrail(InnerCameraRig, OutPrefabNodes);
+		}
+	}
+
+	ensure(CameraRig == BlendablePrefabCameraRig);
 }
 
 void FBlendStackRootCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
@@ -232,11 +248,6 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 		return;
 	}
 
-	if (!ensure(BlendablePrefabCameraRig))
-	{
-		return;
-	}
-
 	int32 PopEntriesBelow = INDEX_NONE;
 	for (int32 EntryIndex = 0; EntryIndex < BlendedParameterOverridesStack.Num(); ++EntryIndex)
 	{
@@ -247,9 +258,13 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 		// wouldn't have a base value to blend from.
 		FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(BlendablePrefabCameraRig, CurResult.VariableTable);
 
-		// Next, override the defaults with the specific values of this entry.
-		FCameraRigParameterOverrideEvaluator OverrideEvaluator(BlendedParameterOverrides.PrefabNode->CameraRigReference);
-		OverrideEvaluator.ApplyParameterOverrides(CurResult.VariableTable, false);
+		// Next, override the defaults with the specific values of this entry, applied bottoms up.
+		for (int32 Index = BlendedParameterOverrides.PrefabTrail.Num() - 1; Index >= 0; --Index)
+		{
+			const UCameraRigCameraNode* CurPrefabNode = BlendedParameterOverrides.PrefabTrail[Index];
+			FCameraRigParameterOverrideEvaluator OverrideEvaluator(CurPrefabNode->CameraRigReference);
+			OverrideEvaluator.ApplyParameterOverrides(CurResult.VariableTable, false);
+		}
 
 		// Finally, update the parameter overrides' blend, and apply it.
 		if (BlendedParameterOverrides.BlendEvaluator)
@@ -257,7 +272,7 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 			BlendedParameterOverrides.BlendEvaluator->Run(Params.EvaluationParams, CurResult);
 
 			FCameraNodePreBlendParams BlendParams(Params.EvaluationParams, Params.LastCameraPose, CurResult.VariableTable);
-			BlendParams.VariableTableFilter = ECameraVariableTableFilter::Input | ECameraVariableTableFilter::Private;
+			BlendParams.VariableTableFilter = ECameraVariableTableFilter::InputOnly;
 			FCameraNodePreBlendResult BlendResult(OutResult.VariableTable);
 			BlendedParameterOverrides.BlendEvaluator->BlendParameters(BlendParams, BlendResult);
 
@@ -268,13 +283,12 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 		}
 		else
 		{
-			OutResult.VariableTable.Override(
-					CurResult.VariableTable, ECameraVariableTableFilter::Input | ECameraVariableTableFilter::Private);
+			OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::InputOnly);
 
 			PopEntriesBelow = EntryIndex;
 		}
 	}
-	if (PopEntriesBelow >= 0)
+	if (PopEntriesBelow > 0)
 	{
 		BlendedParameterOverridesStack.RemoveAt(0, PopEntriesBelow);
 	}
@@ -283,13 +297,13 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 void FBlendStackRootCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
 {
 	Collector.AddReferencedObject(BlendablePrefabCameraRig);
-	Collector.AddReferencedObject(InitialPrefabNode);
 
 	for (FBlendedParameterOverrides& BlendedParameterOverrides: BlendedParameterOverridesStack)
 	{
-		Collector.AddReferencedObject(BlendedParameterOverrides.PrefabNodeAsset);
-		Collector.AddReferencedObject(BlendedParameterOverrides.PrefabNode);
+		Collector.AddReferencedObject(BlendedParameterOverrides.CameraRig);
 		Collector.AddReferencedObject(BlendedParameterOverrides.Blend);
+		Collector.AddReferencedObjects(BlendedParameterOverrides.PrefabTrail);
+		BlendedParameterOverrides.Result.AddReferencedObjects(Collector);
 	}
 }
 
@@ -302,15 +316,7 @@ void FBlendStackRootCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBl
 	Algo::Transform(BlendedParameterOverridesStack, DebugBlock.BlendedParameterOverridesEntries,
 			[](const FBlendedParameterOverrides& Item)
 			{
-				if (Item.PrefabNode)
-				{
-					const UCameraRigAsset* OuterCameraRig = Item.PrefabNode->GetTypedOuter<const UCameraRigAsset>();
-					if (OuterCameraRig)
-					{
-						return GetNameSafe(OuterCameraRig);
-					}
-				}
-				return FString(TEXT("<invalid camera rig>"));
+				return GetNameSafe(Item.CameraRig);
 			});
 
 	if (BlendEvaluator)

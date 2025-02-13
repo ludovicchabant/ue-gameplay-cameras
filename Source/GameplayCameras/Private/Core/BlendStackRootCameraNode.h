@@ -21,6 +21,10 @@ class UBlendStackRootCameraNode : public UCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	UBlendStackRootCameraNode(const FObjectInitializer& ObjInit);
+
 protected:
 
 	// UCameraNode interface.
@@ -43,7 +47,7 @@ namespace UE::Cameras
 
 class FBlendCameraNodeEvaluator;
 
-enum class EBlendStackEntryComparison
+enum class ECameraRigMergingEligibility
 {
 	Different,
 	EligibleForMerge,
@@ -64,8 +68,9 @@ public:
 	FBlendCameraNodeEvaluator* GetBlendEvaluator() const { return BlendEvaluator; }
 	FCameraNodeEvaluator* GetRootEvaluator() const { return RootEvaluator; }
 
-	EBlendStackEntryComparison Compare(const UCameraRigAsset* CameraRig) const;
-	void MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigCameraNode* PrefabNode, const UBlendCameraNode* Blend);
+	ECameraRigMergingEligibility CompareCameraRigForMerging(const UCameraRigAsset* CameraRig) const;
+
+	void MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigAsset* CameraRig, const UBlendCameraNode* Blend);
 
 protected:
 
@@ -83,7 +88,13 @@ protected:
 
 private:
 
+	struct FBlendedParameterOverrides;
+
+	static const UCameraRigAsset* FindInnermostCameraRigPrefab(const UCameraRigAsset* CameraRig);
+	static FCameraNodeEvaluator* FindInnermostCameraRigEvaluator(FCameraNodeEvaluator* CameraNodeEvaluator);
+
 	void InitializeBlendedParameterOverridesStack();
+	void BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes);
 	void RunBlendedParameterOverridesStack(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
 
 private:
@@ -92,14 +103,13 @@ private:
 	FCameraNodeEvaluator* RootEvaluator = nullptr;
 
 	TObjectPtr<const UCameraRigAsset> BlendablePrefabCameraRig;
-	TObjectPtr<const UCameraRigCameraNode> InitialPrefabNode;
-	FCameraVariableTableAllocationInfo BlendedParameterOverridesTableAllocationInfo;
 
 	struct FBlendedParameterOverrides
 	{
-		TObjectPtr<const UCameraRigAsset> PrefabNodeAsset;
-		TObjectPtr<const UCameraRigCameraNode> PrefabNode;
+		TObjectPtr<const UCameraRigAsset> CameraRig;
 		TObjectPtr<const UBlendCameraNode> Blend;
+		TArray<TObjectPtr<const UCameraRigCameraNode>> PrefabTrail;
+
 		FBlendCameraNodeEvaluator* BlendEvaluator = nullptr;
 		FCameraNodeEvaluationResult Result;
 	};

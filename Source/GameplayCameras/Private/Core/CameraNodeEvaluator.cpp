@@ -39,21 +39,22 @@ void FCameraNodeEvaluationResult::ResetFrameFlags()
 	ContextDataTable.ClearAllWrittenThisFrameFlags();
 }
 
-void FCameraNodeEvaluationResult::OverrideAll(const FCameraNodeEvaluationResult& OtherResult)
+void FCameraNodeEvaluationResult::OverrideAll(const FCameraNodeEvaluationResult& OtherResult, bool bIncludePrivateValues)
 {
 	CameraPose.OverrideAll(OtherResult.CameraPose);
-	VariableTable.OverrideAll(OtherResult.VariableTable);
+	VariableTable.OverrideAll(OtherResult.VariableTable, bIncludePrivateValues);
+	ContextDataTable.OverrideAll(OtherResult.ContextDataTable);
 	CameraRigJoints.OverrideAll(OtherResult.CameraRigJoints);
 	PostProcessSettings.OverrideAll(OtherResult.PostProcessSettings);
 	bIsCameraCut = OtherResult.bIsCameraCut;
 	bIsValid = OtherResult.bIsValid;
 }
 
-void FCameraNodeEvaluationResult::LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor)
+void FCameraNodeEvaluationResult::LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor, bool bIncludePrivateValues)
 {
 	// Blend all properties.
 	CameraPose.LerpAll(ToResult.CameraPose, BlendFactor);
-	VariableTable.LerpAll(ToResult.VariableTable, BlendFactor);
+	VariableTable.LerpAll(ToResult.VariableTable, BlendFactor, bIncludePrivateValues);
 
 	// Merge/blend the joints.
 	CameraRigJoints.LerpAll(ToResult.CameraRigJoints, BlendFactor);

@@ -29,19 +29,14 @@ struct TCameraVariableInterpolation;
 enum class ECameraVariableTableFilter
 {
 	None = 0,
-	/** Include input variables. */
-	Input = 1 << 0,
-	/** Include output variables (i.e. anything not an input). */
-	Output = 1 << 1,
-	/** Include private variables. */
-	Private = 1 << 2,
+	/** Don't include private variables. */
+	PublicOnly = 1 << 0,
+	/** Only include input variables. */
+	InputOnly = 1 << 1,
 	/** Only include data that is common to both tables. */
-	KnownOnly = 1 << 3,
+	KnownOnly = 1 << 2,
 	/** Only include variables that were written this frame. */
-	ChangedOnly = 1 << 4,
-
-	/** Both input and output variables. */
-	InputOutput = Input | Output,
+	ChangedOnly = 1 << 3
 };
 ENUM_CLASS_FLAGS(ECameraVariableTableFilter)
 
@@ -143,11 +138,11 @@ public:
 
 	// Interpolation.
 	
-	void OverrideAll(const FCameraVariableTable& OtherTable);
+	void OverrideAll(const FCameraVariableTable& OtherTable, bool bIncludePrivateValues = false);
 	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter);
 	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
-	void LerpAll(const FCameraVariableTable& ToTable, float Factor);
+	void LerpAll(const FCameraVariableTable& ToTable, float Factor, bool bIncludePrivateValues = false);
 	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor);
 	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 

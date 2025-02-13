@@ -52,9 +52,7 @@ public:
 
 	FCameraRigCameraNodeEvaluator();
 
-	// Internal API.
-	bool IsApplyingParameterOverrides() const;
-	void SetApplyParameterOverrides(bool bShouldApply);
+	FCameraNodeEvaluator* GetCameraRigRootEvaluator() const { return CameraRigRootEvaluator; }
 
 protected:
 
@@ -73,7 +71,6 @@ private:
 private:
 
 	FCameraNodeEvaluator* CameraRigRootEvaluator = nullptr;
-	bool bApplyParameterOverrides = true;
 };
 
 }  // namesapce UE::Cameras
