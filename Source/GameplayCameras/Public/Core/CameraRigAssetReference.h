@@ -249,10 +249,6 @@ struct FCameraRigAssetReferenceParameterMetaData
 	UPROPERTY()
 	FGuid ParameterGuid;
 
-	/** The type of parameter. */
-	UPROPERTY()
-	ECameraRigInterfaceParameterType ParameterType = ECameraRigInterfaceParameterType::Blendable;
-
 	/** The ID to use for overriding a blendable parameter. */
 	UPROPERTY()
 	FCameraVariableID OverrideVariableID;
@@ -342,7 +338,7 @@ public:
 private:
 
 	const FCameraRigAssetReferenceParameterMetaData* FindMetaData(const FGuid& PropertyID) const;
-	FCameraRigAssetReferenceParameterMetaData* FindMetaData(const FGuid& PropertyID);
+	FCameraRigAssetReferenceParameterMetaData& FindOrAddMetaData(const FGuid& PropertyID);
 	
 	void GenerateOverriddenParameterGuidArray(TArray<FGuid>& OutOverriddenIDs) const;
 
@@ -362,6 +358,9 @@ private:
 
 
 	// Deprecated
+
+	UPROPERTY()
+	TArray<FGuid> ParameterOverrideGuids_DEPRECATED;
 
 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
