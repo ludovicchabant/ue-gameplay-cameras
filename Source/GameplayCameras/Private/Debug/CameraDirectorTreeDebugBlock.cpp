@@ -63,12 +63,13 @@ void FCameraDirectorTreeDebugBlock::InitializeEntry(TSharedPtr<FCameraEvaluation
 
 		const UObject* ContextOwner = Context->GetOwner();
 		const FCameraDirectorEvaluator* DirectorEvaluator = Context->GetDirectorEvaluator();
+		const UCameraDirector* CameraDirector = DirectorEvaluator->GetCameraDirector();
 
 		EntryDebugInfo.ContextClassName = ContextTypeName;
 		EntryDebugInfo.OwnerName = *GetPathNameSafe(ContextOwner);
 		EntryDebugInfo.OwnerClassName = ContextOwner ? ContextOwner->GetClass()->GetFName() : NAME_None;
 		EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
-		EntryDebugInfo.CameraDirectorClassName = DirectorEvaluator->GetCameraDirector()->GetFName();
+		EntryDebugInfo.CameraDirectorClassName = GetFNameSafe(CameraDirector);
 		EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
 		EntryDebugInfo.bIsValid = true;
 

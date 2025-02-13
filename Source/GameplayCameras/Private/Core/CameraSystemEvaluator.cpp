@@ -67,6 +67,8 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	}
 	WeakOwner = Owner;
 
+	Role = Params.Role;
+
 	if (Params.RootNodeFactory)
 	{
 		RootNode = Params.RootNodeFactory();

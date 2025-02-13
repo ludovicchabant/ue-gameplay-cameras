@@ -38,12 +38,27 @@ class FRootCameraDebugBlock;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
+ * An enumeration that describes what a camera system evaluator is used for.
+ */
+enum class ECameraSystemEvaluatorRole
+{
+	Game,
+
+#if WITH_EDITOR
+	EditorPreview
+#endif
+};
+
+/**
  * Parameter structure for initializing a new camera system evaluator.
  */
 struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
 {
 	/** The owner of the camera system, if any. */
 	TObjectPtr<UObject> Owner;
+
+	/** The role of the camera system. */
+	ECameraSystemEvaluatorRole Role = ECameraSystemEvaluatorRole::Game;
 
 	/** An optional factory for creating the root node. */
 	using FRootNodeFactory = TFunction<URootCameraNode*()>;
@@ -151,6 +166,9 @@ public:
 
 	/** Gets the owner of this camera system, if any, and if still valid. */
 	UObject* GetOwner() const { return WeakOwner.Get(); }
+
+	/** Gets the role of this camera system. */
+	ECameraSystemEvaluatorRole GetRole() const { return Role; }
 
 public:
 
@@ -262,6 +280,9 @@ private:
 
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationResult Result;
+
+	/** The role of this camera system. */
+	ECameraSystemEvaluatorRole Role = ECameraSystemEvaluatorRole::Game;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	/** Storage for debug drawing blocks. */

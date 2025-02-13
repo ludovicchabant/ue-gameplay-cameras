@@ -107,6 +107,7 @@ public:
 
 	// UObject interface.
 	virtual void PostLoad() override;
+	virtual void BeginDestroy() override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
@@ -130,6 +131,8 @@ private:
 
 #if WITH_EDITOR
 	void AutoManageEditorPreviewEvaluator();
+	void OnCameraAssetReferenceChanged();
+	void OnEditorPreviewCameraRigIndexChanged();
 	void OnCameraAssetBuilt(const UCameraAsset* InCameraAsset);
 
 	void UpdateEditorPreviewEvaluator(float DeltaTime);
@@ -152,6 +155,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category=Camera)
 	bool bRunInEditor = true;
+
+	UPROPERTY(EditAnywhere, Category=Camera, meta=(EditCondition="bRunInEditor"))
+	int32 EditorPreviewCameraRigIndex = 0;
 
 #endif  // WITH_EDITORONLY_DATA
 

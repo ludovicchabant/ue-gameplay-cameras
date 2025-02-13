@@ -3,11 +3,62 @@
 #include "Core/CameraEvaluationContext.h"
 
 #include "Core/CameraAsset.h"
+#include "Core/CameraRigAsset.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraDirectorEvaluator.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "GameFramework/PlayerController.h"
 
 namespace UE::Cameras
 {
+
+#if WITH_EDITOR
+
+class FEditorPreviewCameraDirectorEvaluator : public FCameraDirectorEvaluator
+{
+	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(GAMEPLAYCAMERAS_API, FEditorPreviewCameraDirectorEvaluator)
+
+public:
+
+	FEditorPreviewCameraDirectorEvaluator()
+	{}
+
+	FEditorPreviewCameraDirectorEvaluator(TConstArrayView<const UCameraRigAsset*> InCameraRigs)
+		: CameraRigs(InCameraRigs)
+	{}
+
+	int32 GetCameraRigIndex() const { return PreviewIndex; }
+	void SetCameraRigIndex(int32 Index) { PreviewIndex = Index; }
+
+protected:
+
+	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override
+	{
+		if (!CameraRigs.IsValidIndex(PreviewIndex))
+		{
+			PreviewIndex = (CameraRigs.IsEmpty() ? INDEX_NONE : 0);
+		}
+
+		if (PreviewIndex != INDEX_NONE)
+		{
+			OutResult.Add(Params.OwnerContext, CameraRigs[PreviewIndex]);
+		}
+	}
+
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override
+	{
+		Collector.AddReferencedObjects(CameraRigs);
+	}
+
+private:
+
+	TArray<TObjectPtr<const UCameraRigAsset>> CameraRigs;
+	int32 PreviewIndex = 0;
+};
+
+UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(FEditorPreviewCameraDirectorEvaluator)
+
+#endif  // WITH_EDITOR
 
 UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(FCameraEvaluationContext)
 
@@ -124,6 +175,45 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 	}
 }
 
+#if WITH_EDITOR
+
+void FCameraEvaluationContext::AutoCreateEditorPreviewDirectorEvaluator(const FCameraEvaluationContextActivateParams& Params)
+{
+	if (ensure(Params.Evaluator) && Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	{
+		FCameraDirectorRigUsageInfo UsageInfo;
+
+		if (CameraAsset && CameraAsset->GetCameraDirector())
+		{
+			UCameraDirector* CameraDirector = CameraAsset->GetCameraDirector();
+			CameraDirector->GatherRigUsageInfo(UsageInfo);
+		}
+
+		FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
+		DirectorEvaluator = DirectorBuilder.BuildEvaluator<FEditorPreviewCameraDirectorEvaluator>(UsageInfo.CameraRigs);
+
+		FCameraDirectorInitializeParams InitParams;
+		InitParams.OwnerContext = SharedThis(this);
+		DirectorEvaluator->Initialize(InitParams);
+	}
+}
+
+void FCameraEvaluationContext::SetEditorPreviewCameraRigIndex(int32 Index)
+{
+	if (!DirectorEvaluator)
+	{
+		return;
+	}
+
+	FEditorPreviewCameraDirectorEvaluator* EditorPreviewEvaluator = DirectorEvaluator->CastThis<FEditorPreviewCameraDirectorEvaluator>();
+	if (EditorPreviewEvaluator)
+	{
+		EditorPreviewEvaluator->SetCameraRigIndex(Index);
+	}
+}
+
+#endif  // WITH_EDITOR
+
 FCameraNodeEvaluationResult& FCameraEvaluationContext::GetOrAddConditionalResult(ECameraEvaluationDataCondition Condition)
 {
 	if (FCameraNodeEvaluationResult* ExistingResult = ConditionalResults.Find(Condition))
@@ -155,9 +245,11 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 		return;
 	}
 
-	CameraSystemEvaluator = Params.Evaluator;
-
 	OnActivate(Params);
+
+#if WITH_EDITOR
+	AutoCreateEditorPreviewDirectorEvaluator(Params);
+#endif  // WITH_EDITOR
 
 	AutoCreateDirectorEvaluator();
 
@@ -190,8 +282,6 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	// along with this context.
 
 	OnDeactivate(Params);
-
-	CameraSystemEvaluator = nullptr;
 
 	bActivated = false;
 }

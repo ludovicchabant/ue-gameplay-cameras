@@ -8,6 +8,7 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigBuildContext.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
 #include "Engine/World.h"
@@ -57,6 +58,13 @@ void FBlueprintCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 	{
 		return;
 	}
+
+#if WITH_EDITOR
+	if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	{
+		return;
+	}
+#endif  // WITH_EDITOR
 
 	if (const UBlueprintCameraNodeEvaluator* EvaluatorTemplate = BlueprintNode->GetCameraNodeEvaluatorTemplate())
 	{

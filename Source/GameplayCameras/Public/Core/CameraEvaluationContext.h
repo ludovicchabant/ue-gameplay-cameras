@@ -94,9 +94,6 @@ public:
 	/** Gets the camera asset that is hosted in this context. */
 	const UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
-	/** Gets the camera system evaluator. Only valid if this evaluation context is active. */
-	FCameraSystemEvaluator* GetCameraSystemEvaluator() const { return CameraSystemEvaluator; }
-
 	/** Gets the initial evaluation result for all camera rigs in this context. */
 	const FCameraNodeEvaluationResult& GetInitialResult() const { return InitialResult; }
 
@@ -143,12 +140,20 @@ public:
 	bool RegisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
 	bool UnregisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
 
+#if WITH_EDITOR
+	void SetEditorPreviewCameraRigIndex(int32 Index);
+#endif  // WITH_EDITOR
+
 protected:
 
 	virtual void OnActivate(const FCameraEvaluationContextActivateParams& Params) {}
 	virtual void OnDeactivate(const FCameraEvaluationContextDeactivateParams& Params) {}
 
 	void AutoCreateDirectorEvaluator();
+
+#if WITH_EDITOR
+	void AutoCreateEditorPreviewDirectorEvaluator(const FCameraEvaluationContextActivateParams& Params);
+#endif  // WITH_EDITOR
 
 protected:
 

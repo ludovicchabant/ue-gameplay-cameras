@@ -48,6 +48,25 @@ void UGameplayCameraComponent::PostLoad()
 	}
 }
 
+void UGameplayCameraComponent::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+#if WITH_EDITOR
+
+	if (EditorPreviewEvaluator)
+	{
+		EditorPreviewEvaluator.Reset();
+	}
+
+	if (EvaluationContext)
+	{
+		EvaluationContext.Reset();
+	}
+
+#endif  // WITH_EDITOR
+}
+
 void UGameplayCameraComponent::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
 {
 	Super::AddReferencedObjects(InThis, Collector);
@@ -452,7 +471,7 @@ void UGameplayCameraComponent::AutoManageEditorPreviewEvaluator()
 	{
 		return;
 	}
-
+	
 	if (bRunInEditor && !(EditorPreviewEvaluator && EvaluationContext))
 	{
 		// We want to run the camera logic in the editor but we haven't set things up for that.
@@ -460,12 +479,17 @@ void UGameplayCameraComponent::AutoManageEditorPreviewEvaluator()
 		if (!EditorPreviewEvaluator)
 		{
 			EditorPreviewEvaluator = MakeShared<FCameraSystemEvaluator>();
-			EditorPreviewEvaluator->Initialize(this);
+
+			FCameraSystemEvaluatorCreateParams CreateParams;
+			CreateParams.Owner = this;
+			CreateParams.Role = ECameraSystemEvaluatorRole::EditorPreview;
+			EditorPreviewEvaluator->Initialize(CreateParams);
 		}
 		if (!EvaluationContext)
 		{
 			EnsureCameraEvaluationContextCreated(nullptr);
 			EditorPreviewEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+			EvaluationContext->SetEditorPreviewCameraRigIndex(EditorPreviewCameraRigIndex);
 		}
 	}
 	else if (!bRunInEditor && (EditorPreviewEvaluator || EvaluationContext))
@@ -473,6 +497,45 @@ void UGameplayCameraComponent::AutoManageEditorPreviewEvaluator()
 		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
 		EditorPreviewEvaluator = nullptr;
 		EvaluationContext = nullptr;
+	}
+}
+
+void UGameplayCameraComponent::OnCameraAssetReferenceChanged()
+{
+	if (!bIsEditorWorld)
+	{
+		return;
+	}
+
+	if (bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	{
+		if (EvaluationContext->GetCameraAsset() != CameraReference.GetCameraAsset())
+		{
+			// The camera asset has changed! Recreate the context.
+			EditorPreviewEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+			EvaluationContext = nullptr;
+
+			EnsureCameraEvaluationContextCreated(nullptr);
+			EditorPreviewEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+		}
+		else
+		{
+			// Otherwise, maybe one of the parameter overrides has changed. Re-apply them.
+			UpdateCameraEvaluationContext(true);
+		}
+	}
+}
+
+void UGameplayCameraComponent::OnEditorPreviewCameraRigIndexChanged()
+{
+	if (!bIsEditorWorld)
+	{
+		return;
+	}
+
+	if (bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	{
+		EvaluationContext->SetEditorPreviewCameraRigIndex(EditorPreviewCameraRigIndex);
 	}
 }
 
@@ -553,27 +616,15 @@ void UGameplayCameraComponent::PostEditChangeProperty( struct FPropertyChangedEv
 	const FName MemberPropertyName = PropertyChangedEvent.GetMemberPropertyName();
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, CameraReference))
 	{
-		if (EditorPreviewEvaluator && EvaluationContext)
-		{
-			if (EvaluationContext->GetCameraAsset() != CameraReference.GetCameraAsset())
-			{
-				// The camera asset has changed! Recreate the context.
-				EditorPreviewEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
-				EvaluationContext = nullptr;
-
-				EnsureCameraEvaluationContextCreated(nullptr);
-				EditorPreviewEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
-			}
-			else
-			{
-				// Otherwise, maybe one of the parameter overrides has changed. Re-apply them.
-				UpdateCameraEvaluationContext(true);
-			}
-		}
+		OnCameraAssetReferenceChanged();
 	}
 	else if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, bRunInEditor))
 	{
 		AutoManageEditorPreviewEvaluator();
+	}
+	else if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, EditorPreviewCameraRigIndex))
+	{
+		OnEditorPreviewCameraRigIndexChanged();
 	}
 }
 
