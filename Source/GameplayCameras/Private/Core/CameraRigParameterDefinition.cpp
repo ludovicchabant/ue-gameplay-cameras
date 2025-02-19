@@ -233,7 +233,7 @@ void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset
 			FProperty* Property = TargetClass->FindPropertyByName(DataParameter->TargetPropertyName);
 			if (Property)
 			{
-				RawSourceValuePtr = (uint8*)Property->ContainerPtrToValuePtr<void>(TargetClass);
+				RawSourceValuePtr = (uint8*)Property->ContainerPtrToValuePtr<void>(DataParameter->Target);
 			}
 		}
 
