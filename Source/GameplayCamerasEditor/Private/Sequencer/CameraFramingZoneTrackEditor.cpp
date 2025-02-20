@@ -4,8 +4,6 @@
 
 #include "Channels/MovieSceneDoubleChannel.h"
 #include "KeyPropertyParams.h"
-#include "Misc/Optional.h"
-#include "Nodes/Framing/CameraFramingZone.h"
 #include "PropertyPath.h"
 #include "UObject/NameTypes.h"
 #include "UObject/UnrealNames.h"

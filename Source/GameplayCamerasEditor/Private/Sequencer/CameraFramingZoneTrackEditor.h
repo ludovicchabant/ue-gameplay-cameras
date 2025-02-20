@@ -8,12 +8,10 @@
 #include "Containers/Array.h"
 #include "Containers/ArrayView.h"
 #include "Containers/ContainerAllocationPolicies.h"
-#include "Delegates/Delegate.h"
-#include "HAL/PlatformCrt.h"
 #include "KeyframeTrackEditor.h"
 #include "MovieScene/MovieSceneCameraFramingZoneTrack.h"
+#include "Nodes/Framing/CameraFramingZone.h"
 #include "Templates/SharedPointer.h"
-#include "Templates/UnrealTemplate.h"
 
 class FName;
 class FPropertyChangedParams;
@@ -35,7 +33,7 @@ public:
 
 	static TArray<FAnimatedPropertyKey, TInlineAllocator<1>> GetAnimatedPropertyTypes()
 	{
-		return TArray<FAnimatedPropertyKey, TInlineAllocator<1>>({ FAnimatedPropertyKey::FromStructType("CameraFramingZone") });
+		return TArray<FAnimatedPropertyKey, TInlineAllocator<1>>({ FAnimatedPropertyKey::FromStructType(FCameraFramingZone::StaticStruct()) });
 	}
 
 	static TSharedRef<ISequencerTrackEditor> CreateTrackEditor(TSharedRef<ISequencer> OwningSequencer);
