@@ -41,6 +41,23 @@ void FCameraAssetReference::SetParameterOverridden(const FGuid PropertyID, bool 
 	}
 }
 
+bool FCameraAssetReference::IsParameterAnimated(const FGuid PropertyID) const
+{
+	return ParameterAnimatedGuids.Contains(PropertyID);
+}
+
+void FCameraAssetReference::SetParameterAnimated(const FGuid PropertyID, bool bIsAnimated)
+{
+	if (bIsAnimated)
+	{
+		ParameterAnimatedGuids.AddUnique(PropertyID);
+	}
+	else
+	{
+		ParameterAnimatedGuids.Remove(PropertyID);
+	}
+}
+
 bool FCameraAssetReference::NeedsRebuildParameters() const
 {
 	if ((!CameraAsset && Parameters.IsValid()) || (CameraAsset && !Parameters.IsValid()))

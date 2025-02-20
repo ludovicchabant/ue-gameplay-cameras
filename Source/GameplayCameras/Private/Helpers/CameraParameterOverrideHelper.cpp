@@ -217,7 +217,7 @@ void ApplyDataParameterOverride(
 
 }  // namespace Internal
 
-FCameraParameterOverrideHelper::FCameraParameterOverrideHelper(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable)
+FCameraParameterOverrideHelper::FCameraParameterOverrideHelper(FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable)
 	: VariableTable(OutVariableTable)
 	, ContextDataTable(OutContextDataTable)
 {
@@ -232,24 +232,32 @@ void FCameraParameterOverrideHelper::ApplyParameterOverride(
 {
 	using namespace Internal;
 
+	ensure(ParameterDefinition.ParameterGuid == PropertyBagPropertyDesc.ID);
+
 	switch (ParameterDefinition.ParameterType)
 	{
 		case ECameraRigInterfaceParameterType::Blendable:
 			{
-				ApplyBlendableParameterOverride(
-						CameraRig, 
-						ParameterDefinition,
-						PropertyBag, PropertyBagPropertyDesc, 
-						VariableTable, bDrivenOverridesOnly);
+				if (ensure(VariableTable))
+				{
+					ApplyBlendableParameterOverride(
+							CameraRig, 
+							ParameterDefinition,
+							PropertyBag, PropertyBagPropertyDesc, 
+							*VariableTable, bDrivenOverridesOnly);
+				}
 			}
 			break;
 		case ECameraRigInterfaceParameterType::Data:
 			{
-				ApplyDataParameterOverride(
-						CameraRig, 
-						ParameterDefinition,
-						PropertyBag, PropertyBagPropertyDesc, 
-						ContextDataTable);
+				if (ensure(ContextDataTable))
+				{
+					ApplyDataParameterOverride(
+							CameraRig, 
+							ParameterDefinition,
+							PropertyBag, PropertyBagPropertyDesc, 
+							*ContextDataTable);
+				}
 			}
 			break;
 	}

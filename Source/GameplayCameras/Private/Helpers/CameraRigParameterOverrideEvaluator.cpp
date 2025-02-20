@@ -40,11 +40,17 @@ void FCameraRigParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVariab
 
 	TConstArrayView<FCameraRigParameterDefinition> ParameterDefinitions = CameraRig->GetParameterDefinitions();
 
-	FCameraParameterOverrideHelper Helper(*OutVariableTable, *OutContextDataTable);
+	FCameraParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
 
 	for (const FCameraRigParameterDefinition& Definition : ParameterDefinitions)
 	{
-		if (!CameraRigReference.IsParameterOverridden(Definition.ParameterGuid))
+		if (!OutContextDataTable && Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+		{
+			continue;
+		}
+
+		const bool bIsAnimated = CameraRigReference.IsParameterAnimated(Definition.ParameterGuid);
+		if (!CameraRigReference.IsParameterOverridden(Definition.ParameterGuid) && !bIsAnimated)
 		{
 			continue;
 		}
@@ -55,7 +61,8 @@ void FCameraRigParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVariab
 			continue;
 		}
 
-		Helper.ApplyParameterOverride(CameraRig, Definition, CameraRigParameters, *PropertyDesc, bDrivenOverridesOnly);
+		const bool bThisDrivenOnly = bDrivenOverridesOnly && !bIsAnimated;
+		Helper.ApplyParameterOverride(CameraRig, Definition, CameraRigParameters, *PropertyDesc, bThisDrivenOnly);
 	}
 }
 

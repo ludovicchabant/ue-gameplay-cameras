@@ -27,8 +27,6 @@ void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVari
 
 void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable, bool bDrivenOverridesOnly)
 {
-	using namespace Internal;
-
 	check(OutVariableTable);
 
 	const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
@@ -43,12 +41,19 @@ void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVari
 	const TArray<TObjectPtr<const UCameraRigAsset>>& ParameterOwners = CameraAsset->ParameterOwners;
 	ensure(ParameterDefinitions.Num() == ParameterOwners.Num());
 
-	FCameraParameterOverrideHelper Helper(*OutVariableTable, *OutContextDataTable);
+	FCameraParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
 
 	for (int32 Index = 0, MaxIndex = FMath::Min(ParameterDefinitions.Num(), ParameterOwners.Num()); Index < MaxIndex; ++Index)
 	{
 		const FCameraRigParameterDefinition& Definition(ParameterDefinitions[Index]);
-		if (!CameraReference.IsParameterOverridden(Definition.ParameterGuid))
+
+		if (!OutContextDataTable && Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+		{
+			continue;
+		}
+
+		const bool bIsAnimated = CameraReference.IsParameterAnimated(Definition.ParameterGuid);
+		if (!CameraReference.IsParameterOverridden(Definition.ParameterGuid) && !bIsAnimated)
 		{
 			continue;
 		}
@@ -65,7 +70,8 @@ void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVari
 			continue;
 		}
 
-		Helper.ApplyParameterOverride(CameraRig, Definition, CameraParameters, *PropertyDesc, bDrivenOverridesOnly);
+		const bool bThisDrivenOnly = bDrivenOverridesOnly && !bIsAnimated;
+		Helper.ApplyParameterOverride(CameraRig, Definition, CameraParameters, *PropertyDesc, bThisDrivenOnly);
 	}
 }
 

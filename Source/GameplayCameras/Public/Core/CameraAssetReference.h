@@ -88,6 +88,9 @@ public:
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden);
 
+	GAMEPLAYCAMERAS_API bool IsParameterAnimated(const FGuid PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterAnimated(const FGuid PropertyID, bool bIsAnimated);
+
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
 	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
 	GAMEPLAYCAMERAS_API void RebuildParameters();
@@ -99,12 +102,15 @@ private:
 	TObjectPtr<UCameraAsset> CameraAsset;
 
 	/** The camera asset's parameters. */
-	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout))
+	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout=true, InterpBagProperties=true, DisplayName="Camera Parameters"))
 	FInstancedPropertyBag Parameters;
 
 	/** The list of camera rig parameters with override values. */
 	UPROPERTY(EditAnywhere, Category="")
 	TArray<FGuid> ParameterOverrideGuids;
+
+	UPROPERTY()
+	TArray<FGuid> ParameterAnimatedGuids;
 
 	friend class UE::Cameras::FCameraAssetReferenceDetailsCustomization;
 };

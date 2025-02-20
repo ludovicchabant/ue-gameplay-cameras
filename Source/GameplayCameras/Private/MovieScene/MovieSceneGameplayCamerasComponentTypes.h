@@ -17,6 +17,8 @@ struct FMovieSceneGameplayCamerasComponentTypes
 {
 	GAMEPLAYCAMERAS_API ~FMovieSceneGameplayCamerasComponentTypes();
 
+	UE::MovieScene::TComponentTypeID<FGuid> CameraParameterOverrideID;
+
 	UE::MovieScene::TPropertyComponents<FCameraFramingZoneTraits> CameraFramingZone;
 
 	UE::MovieScene::TCustomPropertyRegistration<FCameraFramingZoneTraits, 1> CustomCameraFramingZoneAccessors;

@@ -362,7 +362,7 @@ void UGameplayCameraComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	}
 }
 
-void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bApplyParameterOverrides)
+void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
 {
 	using namespace UE::Cameras;
 
@@ -379,10 +379,8 @@ void UGameplayCameraComponent::UpdateCameraEvaluationContext(bool bApplyParamete
 		bIsCameraCutNextFrame = false;
 	}
 
-	if (bApplyParameterOverrides)
-	{
-		CameraReference.ApplyParameterOverrides(InitialResult, false);
-	}
+	const bool bApplyDrivenParametersOnly = !bForceApplyParameterOverrides;
+	CameraReference.ApplyParameterOverrides(InitialResult, bApplyDrivenParametersOnly);
 }
 
 void UGameplayCameraComponent::UpdateOutputCameraComponent()

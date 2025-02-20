@@ -4,11 +4,18 @@
 
 #include "ISequencerTrackEditor.h"
 #include "MovieSceneTrackEditor.h"
+#include "Templates/SharedPointerFwd.h"
 
 class ISequencer;
 class UGameplayCameraComponent;
 class UMovieScenePropertyTrack;
 struct FCameraRigParameterDefinition;
+
+namespace UE::Sequencer
+{
+	class FObjectBindingModel;
+	class FObjectBindingPropertyMenuData;
+}
 
 class FGameplayCameraComponentTrackEditor : public FMovieSceneTrackEditor
 {
@@ -41,11 +48,26 @@ private:
 
 	void OnExtendObjectBindingTrackMenu(FMenuBuilder& MenuBuilder, TArray<FGuid> ObjectBindings);
 
-	void AddCameraParameterTrack(FCameraRigParameterDefinition Definition, TArray<FGuid> ObjectBindings);
-	bool CanAddCameraParameterTrack(FCameraRigParameterDefinition Definition, FGuid ObjectBinding) const;
+private:
 
-	void InitializeNewTrack(UMovieScenePropertyTrack* NewTrack, const FCameraRigParameterDefinition& Definition) const;
+	struct FPropertyMenuData
+	{
+		FString MenuName;
+		FPropertyPath PropertyPath;
+		int32 PropertyIndexForMenuName = INDEX_NONE;
 
-	TSubclassOf<UMovieScenePropertyTrack> GetParameterTrackFromDefinition(const FCameraRigParameterDefinition& Definition) const;
+		bool operator< (const FPropertyMenuData& Other) const
+		{
+			int32 CompareResult = MenuName.Compare(Other.MenuName);
+			return CompareResult < 0;
+		}
+	};
+
+	void BuildAddParameterTrackMenuItems(const FGuid& ObjectBinding, FMenuBuilder& MenuBuilder, TArray<FPropertyPath> KeyablePropertyPaths, int32 PropertyNameIndexStart);
+	void BuildAddParameterTrackSubMenuItems(FMenuBuilder& MenuBuilder, FGuid ObjectBinding, TArray<FPropertyPath> KeyablePropertyPaths, int32 PropertyNameIndexStart);
+	void BuildAddParameterTrackMenuItem(FMenuBuilder& MenuBuilder, const FPropertyMenuData& KeyablePropertyMenuData, const FGuid& ObjectBinding);
+
+	void AddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding);
+	bool CanAddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding) const;
 };
 

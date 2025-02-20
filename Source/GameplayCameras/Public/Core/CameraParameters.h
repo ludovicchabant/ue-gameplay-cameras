@@ -38,7 +38,7 @@ namespace UE::Cameras
 // driving the parameter, such as a camera rig parameter override.
 
 /** Boolean camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 {
 	GENERATED_BODY()
@@ -46,7 +46,7 @@ struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 	using ValueType = bool;
 	using VariableAssetType = UBooleanCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	bool Value = false;
 
 	UPROPERTY()
@@ -61,7 +61,7 @@ struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 };
 
 /** Integer camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 {
 	GENERATED_BODY()
@@ -69,7 +69,7 @@ struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 	using ValueType = int32;
 	using VariableAssetType = UInteger32CameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	int32 Value = 0;
 
 	UPROPERTY()
@@ -84,7 +84,7 @@ struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 };
 
 /** Float camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FFloatCameraParameter
 {
 	GENERATED_BODY()
@@ -92,7 +92,7 @@ struct FFloatCameraParameter
 	using ValueType = float;
 	using VariableAssetType = UFloatCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	float Value = 0.f;
 
 	UPROPERTY()
@@ -107,7 +107,7 @@ struct FFloatCameraParameter
 };
 
 /** Double camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 {
 	GENERATED_BODY()
@@ -115,7 +115,7 @@ struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 	using ValueType = double;
 	using VariableAssetType = UDoubleCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	double Value = 0.0;
 
 	UPROPERTY()
@@ -130,7 +130,7 @@ struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 };
 
 /** Vector2f camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
 {
 	GENERATED_BODY()
@@ -138,7 +138,7 @@ struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
 	using ValueType = FVector2f;
 	using VariableAssetType = UVector2fCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector2f Value;
 
 	UPROPERTY()
@@ -154,7 +154,7 @@ struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
 };
 
 /** Vector2d camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 {
 	GENERATED_BODY()
@@ -162,7 +162,7 @@ struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 	using ValueType = FVector2D;
 	using VariableAssetType = UVector2dCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector2D Value;
 
 	UPROPERTY()
@@ -178,7 +178,7 @@ struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 };
 
 /** Vector3f camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
 {
 	GENERATED_BODY()
@@ -186,7 +186,7 @@ struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
 	using ValueType = FVector3f;
 	using VariableAssetType = UVector3fCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector3f Value;
 
 	UPROPERTY()
@@ -202,16 +202,16 @@ struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
 };
 
 /** Vector3d camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 {
 	GENERATED_BODY()
 
-	using ValueType = FVector3d;
+	using ValueType = FVector;
 	using VariableAssetType = UVector3dCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	FVector3d Value;
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
+	FVector Value;
 
 	UPROPERTY()
 	FCameraVariableID VariableID;
@@ -226,7 +226,7 @@ struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 };
 
 /** Vector4f camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
 {
 	GENERATED_BODY()
@@ -234,7 +234,7 @@ struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
 	using ValueType = FVector4f;
 	using VariableAssetType = UVector4fCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector4f Value;
 
 	UPROPERTY()
@@ -250,16 +250,16 @@ struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
 };
 
 /** Vector4d camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FVector4dCameraParameter
 {
 	GENERATED_BODY()
 
-	using ValueType = FVector4d;
+	using ValueType = FVector4;
 	using VariableAssetType = UVector4dCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	FVector4d Value;
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
+	FVector4 Value;
 
 	UPROPERTY()
 	FCameraVariableID VariableID;
@@ -274,7 +274,7 @@ struct GAMEPLAYCAMERAS_API FVector4dCameraParameter
 };
 
 /** Rotator3f camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 {
 	GENERATED_BODY()
@@ -282,7 +282,7 @@ struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 	using ValueType = FRotator3f;
 	using VariableAssetType = URotator3fCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FRotator3f Value;
 
 	UPROPERTY()
@@ -298,16 +298,16 @@ struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 };
 
 /** Rotator3d camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 {
 	GENERATED_BODY()
 
-	using ValueType = FRotator3d;
+	using ValueType = FRotator;
 	using VariableAssetType = URotator3dCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	FRotator3d Value;
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
+	FRotator Value;
 
 	UPROPERTY()
 	FCameraVariableID VariableID;
@@ -322,7 +322,7 @@ struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 };
 
 /** Transform3f camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
 {
 	GENERATED_BODY()
@@ -330,7 +330,7 @@ struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
 	using ValueType = FTransform3f;
 	using VariableAssetType = UTransform3fCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FTransform3f Value;
 
 	UPROPERTY()
@@ -345,16 +345,16 @@ struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
 };
 
 /** Transform3d camera parameter. */
-USTRUCT()
+USTRUCT(BlueprintType)
 struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 {
 	GENERATED_BODY()
 
-	using ValueType = FTransform3d;
+	using ValueType = FTransform;
 	using VariableAssetType = UTransform3dCameraVariable;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	FTransform3d Value;
+	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
+	FTransform Value;
 
 	UPROPERTY()
 	FCameraVariableID VariableID;

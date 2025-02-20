@@ -6,7 +6,8 @@
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
 #include "Modules/ModuleManager.h"
-#include "MovieScene/GameplayCamerasTrackInstancePropertyBindings.h"
+#include "MovieScene/MovieSceneCameraParameterInstantiator.h"
+#include "MovieSceneSection.h"
 #include "Nodes/Framing/CameraFramingZone.h"
 #include "ShowFlags.h"
 #include "UObject/UObjectBase.h"
@@ -35,7 +36,7 @@ public:
 	virtual void StartupModule() override
 	{
 		RegisterBuiltInBlendableStructs();
-		RegisterTrackInstanceCustomPropertyBindings();
+		RegisterMovieSceneIntegration();
 		
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		UE::Cameras::FCameraDebugColors::RegisterBuiltinColorSchemes();
@@ -45,7 +46,7 @@ public:
 	virtual void ShutdownModule() override
 	{
 		UnregisterBuiltInBlendableStructs();
-		UnregisterTrackInstanceCustomPropertyBindings();
+		UnregisterMovieSceneIntegration();
 	}
 
 public:
@@ -117,20 +118,29 @@ private:
 			UnregisterBlendableStruct(FCameraFramingZone::StaticStruct());
 		}
 	}
-	
-	void RegisterTrackInstanceCustomPropertyBindings()
+
+	void RegisterMovieSceneIntegration()
 	{
-		UE::Cameras::FGameplayCamerasTrackInstancePropertyBindings::Register();
+#if WITH_EDITORONLY_DATA
+		OnMovieSceneSectionAddedToTrackHandle = UMovieSceneSection::GetOnSectionAddedToTrack().AddStatic(
+				&UMovieSceneCameraParameterInstantiator::OnMovieSceneSectionAddedToTrack);
+#endif
 	}
 
-	void UnregisterTrackInstanceCustomPropertyBindings()
+	void UnregisterMovieSceneIntegration()
 	{
-		UE::Cameras::FGameplayCamerasTrackInstancePropertyBindings::Unregister();
+#if WITH_EDITORONLY_DATA
+		UMovieSceneSection::GetOnSectionAddedToTrack().Remove(OnMovieSceneSectionAddedToTrackHandle);
+#endif
 	}
 
 private:
 
 	TArray<UE::Cameras::FBlendableStructInfo> BlendableStructs;
+
+#if WITH_EDITORONLY_DATA
+	FDelegateHandle OnMovieSceneSectionAddedToTrackHandle;
+#endif
 
 #if WITH_EDITOR
 	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;

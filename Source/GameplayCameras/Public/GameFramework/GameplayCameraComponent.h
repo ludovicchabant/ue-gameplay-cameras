@@ -125,7 +125,7 @@ private:
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
 	void EnsureCameraEvaluationContextCreated(APlayerController* PlayerController);
-	void UpdateCameraEvaluationContext(bool bApplyParameterOverrides);
+	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
 	void UpdateOutputCameraComponent();
 	void DeactivateCameraEvaluationContext();
 
@@ -141,7 +141,7 @@ private:
 public:
 
 	/** The camera asset to run. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera, meta=(SequencerHideProperty=true))
 	FCameraAssetReference CameraReference;
 
 	/**

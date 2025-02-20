@@ -3,26 +3,140 @@
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
 
 #include "Core/CameraAsset.h"
+#include "Core/CameraParameters.h"
 #include "Core/CameraRigParameterDefinition.h"
+#include "EventHandlers/MovieSceneDataEventContainer.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/GameplayCameraComponent.h"
-#include "MovieScene/MovieSceneCameraFramingZoneTrack.h"
-#include "Nodes/Framing/CameraFramingZone.h"
+#include "ISequencer.h"
+#include "KeyPropertyParams.h"
+#include "MVVM/ViewModels/ObjectBindingModel.h"
+#include "MVVM/ViewModels/SequenceModel.h"
+#include "StructUtils/PropertyBag.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
-#include "Tracks/MovieSceneActorReferenceTrack.h"
-#include "Tracks/MovieSceneBoolTrack.h"
-#include "Tracks/MovieSceneDoubleTrack.h"
-#include "Tracks/MovieSceneEnumTrack.h"
-#include "Tracks/MovieSceneFloatTrack.h"
-#include "Tracks/MovieSceneIntegerTrack.h"
-#include "Tracks/MovieSceneObjectPropertyTrack.h"
-#include "Tracks/MovieSceneRotatorTrack.h"
-#include "Tracks/MovieSceneStringTrack.h"
-#include "Tracks/MovieSceneTransformTrack.h"
-#include "Tracks/MovieSceneVectorTrack.h"
+#include "Tracks/MovieScenePropertyTrack.h"
 
 #define LOCTEXT_NAMESPACE "GameplayCameraComponentTrackEditor"
+
+namespace UE::Cameras::Internal
+{
+
+// TODO: duplicated from GetKeyablePropertyPaths in ObjectBindingModel.cpp
+void GetKeyablePropertyPathsImpl(TSharedPtr<ISequencer> Sequencer, const UClass* BaseObjectClass, const UStruct* Struct, const void* StructValuePtr, FPropertyPath PropertyPath, TArray<FPropertyPath>& KeyablePropertyPaths)
+{
+	for (TFieldIterator<FProperty> PropertyIterator(Struct); PropertyIterator; ++PropertyIterator)
+	{
+		FProperty* Property = *PropertyIterator;
+
+		if (!Property || Property->HasAnyPropertyFlags(CPF_Deprecated))
+		{
+			continue;
+		}
+
+		PropertyPath.AddProperty(FPropertyInfo(Property));
+
+		if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+		{
+			FScriptArrayHelper ArrayHelper(ArrayProperty, ArrayProperty->ContainerPtrToValuePtr<void>(StructValuePtr));
+			for (int32 Index = 0; Index < ArrayHelper.Num(); ++Index)
+			{
+				PropertyPath.AddProperty(FPropertyInfo(ArrayProperty->Inner, Index));
+
+				if (Sequencer->CanKeyProperty(FCanKeyPropertyParams(BaseObjectClass, PropertyPath)))
+				{
+					KeyablePropertyPaths.Add(PropertyPath);
+				}
+				else if (FStructProperty* StructProperty = CastField<FStructProperty>(ArrayProperty->Inner))
+				{
+					GetKeyablePropertyPathsImpl(Sequencer, BaseObjectClass, StructProperty->Struct, ArrayHelper.GetRawPtr(Index), PropertyPath, KeyablePropertyPaths);
+				}
+
+				PropertyPath = *PropertyPath.TrimPath(1);
+			}
+		}
+		else if (Sequencer->CanKeyProperty(FCanKeyPropertyParams(BaseObjectClass, PropertyPath)))
+		{
+			KeyablePropertyPaths.Add(PropertyPath);
+		}
+		else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+		{
+			GetKeyablePropertyPathsImpl(Sequencer, BaseObjectClass, StructProperty->Struct, StructProperty->ContainerPtrToValuePtr<void>(StructValuePtr), PropertyPath, KeyablePropertyPaths);
+		}
+
+		PropertyPath = *PropertyPath.TrimPath(1);
+	}
+}
+
+void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCameraComponent* CameraComponent, TArray<FPropertyPath>& KeyablePropertyPaths)
+{
+	const UCameraAsset* CameraAsset = CameraComponent->CameraReference.GetCameraAsset();
+	if (!CameraAsset)
+	{
+		return;
+	}
+
+	const FInstancedPropertyBag& CameraParameters = CameraComponent->CameraReference.GetParameters();
+	const UPropertyBag* CameraParametersStruct = CameraParameters.GetPropertyBagStruct();
+	const uint8* CameraParametersMemory = CameraParameters.GetValue().GetMemory();
+	if (!CameraParametersStruct || !CameraParametersMemory)
+	{
+		return;
+	}
+
+	// Start us off with the property path of the parameters struct.
+	const UClass* ComponentClass = UGameplayCameraComponent::StaticClass();
+	const UStruct* CameraAssetReferenceStruct = FCameraAssetReference::StaticStruct();
+	const UStruct* PropertyBagStruct = FInstancedPropertyBag::StaticStruct();
+
+	FPropertyPath PropertyPath;
+	PropertyPath.AddProperty(FPropertyInfo(ComponentClass->FindPropertyByName(TEXT("CameraReference"))));
+	PropertyPath.AddProperty(FPropertyInfo(CameraAssetReferenceStruct->FindPropertyByName(TEXT("Parameters"))));
+	PropertyPath.AddProperty(FPropertyInfo(PropertyBagStruct->FindPropertyByName(TEXT("Value"))));
+
+	GetKeyablePropertyPathsImpl(Sequencer, ComponentClass, CameraParametersStruct, CameraParametersMemory, PropertyPath, KeyablePropertyPaths);
+}
+
+class FCameraParameterTrackSetupHandler : public UE::MovieScene::TIntrusiveEventHandler<UE::MovieScene::ISequenceDataEventHandler>
+{
+public:
+
+	FCameraParameterTrackSetupHandler(const FGuid& ObjectBindingID)
+		: MonitoredObjectBindingID(ObjectBindingID)
+	{
+	}
+
+	void SetDesiredTrackName(const FText& InDesiredTrackName)
+	{
+		DesiredTrackName = InDesiredTrackName;
+	}
+
+	virtual void OnTrackAddedToBinding(UMovieSceneTrack* Track, const FGuid& ObjectBindingID) override
+	{
+		if (ObjectBindingID != MonitoredObjectBindingID)
+		{
+			return;
+		}
+
+		UMovieScenePropertyTrack* PropertyTrack = Cast<UMovieScenePropertyTrack>(Track);
+		if (!PropertyTrack)
+		{
+			return;
+		}
+
+		if (!DesiredTrackName.IsEmpty())
+		{
+			PropertyTrack->SetDisplayName(DesiredTrackName);
+		}
+	}
+	
+private:
+
+	FGuid MonitoredObjectBindingID;
+	FText DesiredTrackName;
+};
+
+}  // namespace UE::Cameras::Internal
 
 TSharedRef<ISequencerTrackEditor> FGameplayCameraComponentTrackEditor::CreateTrackEditor(TSharedRef<ISequencer> OwningSequencer)
 {
@@ -58,64 +172,23 @@ void FGameplayCameraComponentTrackEditor::ExtendObjectBindingTrackMenu(TSharedRe
 
 void FGameplayCameraComponentTrackEditor::OnExtendObjectBindingTrackMenu(FMenuBuilder& MenuBuilder, TArray<FGuid> ObjectBindings)
 {
-	TMap<FName, FCameraRigParameterDefinition> DefinitionsByName;
-	TMap<FName, int32> NumEqualDefinitions;
-
-	for (const FGuid& ObjectBinding : ObjectBindings)
+	if (ObjectBindings.Num() != 1)
 	{
-		UGameplayCameraComponent* CameraComponent = GetCameraComponentForBinding(ObjectBinding);
-		if (CameraComponent && CameraComponent->CameraReference.GetCameraAsset())
-		{
-			const UCameraAsset* CameraAsset = CameraComponent->CameraReference.GetCameraAsset();
-			for (const FCameraRigParameterDefinition& Definition : CameraAsset->GetParameterDefinitions())
-			{
-				if (FCameraRigParameterDefinition* ExistingDefinition = DefinitionsByName.Find(Definition.ParameterName))
-				{
-					if (Definition == *ExistingDefinition)
-					{
-						++NumEqualDefinitions[Definition.ParameterName];
-					}
-				}
-				else
-				{
-					DefinitionsByName.Add(Definition.ParameterName, Definition);
-					NumEqualDefinitions.Add(Definition.ParameterName, 1);
-				}
-			}
-		}
+		return;
 	}
 
-	const int32 NumObjectBindings = ObjectBindings.Num();
-	TArray<FCameraRigParameterDefinition> DefinitionsToAdd;
-
-	for (auto It = DefinitionsByName.CreateConstIterator(); It; ++It)
+	const UGameplayCameraComponent* CameraComponent = GetCameraComponentForBinding(ObjectBindings[0]);
+	if (CameraComponent)
 	{
-		if (NumEqualDefinitions.FindRef(It.Key()) == NumObjectBindings)
-		{
-			DefinitionsToAdd.Add(It.Value());
-		}
-	}
+		using namespace UE::Cameras::Internal;
 
-	DefinitionsToAdd.StableSort([](const FCameraRigParameterDefinition& A, const FCameraRigParameterDefinition& B)
-			{
-				return A.ParameterName.Compare(B.ParameterName) < 0;
-			});
+		TArray<FPropertyPath> KeyablePropertyPaths;
+		GetKeyablePropertyPaths(GetSequencer(), CameraComponent, KeyablePropertyPaths);
 
-	if (DefinitionsToAdd.Num() > 0)
-	{
 		MenuBuilder.BeginSection(TEXT("CameraParameters"), LOCTEXT("AddCameraParametersMenuSection", "Camera Parameters"));
 
-		for (const FCameraRigParameterDefinition& Definition : DefinitionsToAdd)
-		{
-			MenuBuilder.AddMenuEntry(
-					FText::FromName(Definition.ParameterName),
-					LOCTEXT("AddCameraParameterMenuToolTip", "Adds a track for controlling this camera parameter."),
-					FSlateIcon(),
-					FUIAction(
-						FExecuteAction::CreateSP(this, &FGameplayCameraComponentTrackEditor::AddCameraParameterTrack, Definition, ObjectBindings),
-						FCanExecuteAction::CreateSP(this, &FGameplayCameraComponentTrackEditor::CanAddCameraParameterTrack, Definition, ObjectBindings[0]))
-					);
-		}
+		// Start at level 3 to skip adding menus for CameraReference > Parameters > Value
+		BuildAddParameterTrackMenuItems(ObjectBindings[0], MenuBuilder, KeyablePropertyPaths, 3);
 
 		MenuBuilder.EndSection();
 	}
@@ -178,155 +251,151 @@ UGameplayCameraComponent* FGameplayCameraComponentTrackEditor::GetCameraComponen
 	return nullptr;
 }
 
-void FGameplayCameraComponentTrackEditor::AddCameraParameterTrack(FCameraRigParameterDefinition Definition, TArray<FGuid> ObjectBindings)
+void FGameplayCameraComponentTrackEditor::AddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding)
 {
-	TSubclassOf<UMovieSceneTrack> ParameterTrackType = GetParameterTrackFromDefinition(Definition);
-	if (ParameterTrackType)
-	{
-		const FScopedTransaction Transaction(LOCTEXT("AddCameraParameterTrack", "Add camera parameter track"));
+	using namespace UE::Cameras::Internal;
+	using namespace UE::MovieScene;
 
-		for (FGuid ObjectBinding : ObjectBindings)
+	TSharedPtr<ISequencer> Sequencer = GetSequencer();
+	UObject* BoundObject = Sequencer->FindSpawnedObjectOrTemplate(ObjectBinding);
+
+	if (BoundObject != nullptr)
+	{
+		UMovieSceneSequence* FocusedSequence = Sequencer->GetFocusedMovieSceneSequence();
+		FCameraParameterTrackSetupHandler TrackSetupHandler(ObjectBinding);
+		FocusedSequence->GetMovieScene()->EventHandlers.Link(&TrackSetupHandler);
+
+		if (PropertyMenuData.PropertyIndexForMenuName != INDEX_NONE)
 		{
-			FFindOrCreateTrackResult Result = FindOrCreateTrackForObject(ObjectBinding, ParameterTrackType, Definition.ParameterName, true);
-			if (Result.bWasCreated)
+			const FPropertyInfo& PropertyInfoForTrackName = PropertyMenuData.PropertyPath.GetPropertyInfo(PropertyMenuData.PropertyIndexForMenuName);
+			const FProperty* PropertyForTrackName = PropertyInfoForTrackName.Property.Get();
+			TrackSetupHandler.SetDesiredTrackName(PropertyForTrackName->GetDisplayNameText());
+		}
+
+		TArray<UObject*> KeyableBoundObjects;
+		KeyableBoundObjects.Add(BoundObject);
+
+		ESequencerKeyMode KeyMode = Sequencer->GetAutoSetTrackDefaults() == false ? ESequencerKeyMode::ManualKeyForced : ESequencerKeyMode::ManualKey;
+
+		FKeyPropertyParams KeyPropertyParams(KeyableBoundObjects, PropertyMenuData.PropertyPath, KeyMode);
+
+		Sequencer->KeyProperty(KeyPropertyParams);
+	}
+}
+
+bool FGameplayCameraComponentTrackEditor::CanAddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding) const
+{
+	return true;
+}
+
+// TODO: most of the below stuff is duplicated from ObjectBindingModel.cpp but without classifying in categories, 
+//		 and with special handling of camera parameters.
+
+void FGameplayCameraComponentTrackEditor::BuildAddParameterTrackMenuItem(FMenuBuilder& MenuBuilder, const FPropertyMenuData& KeyablePropertyMenuData, const FGuid& ObjectBinding)
+{
+	FUIAction AddTrackMenuAction(
+			FExecuteAction::CreateSP(this, &FGameplayCameraComponentTrackEditor::AddCameraParameterTrack, KeyablePropertyMenuData, ObjectBinding),
+			FCanExecuteAction::CreateSP(this, &FGameplayCameraComponentTrackEditor::CanAddCameraParameterTrack, KeyablePropertyMenuData, ObjectBinding));
+	MenuBuilder.AddMenuEntry(FText::FromString(KeyablePropertyMenuData.MenuName), FText(), FSlateIcon(), AddTrackMenuAction);
+}
+
+void FGameplayCameraComponentTrackEditor::BuildAddParameterTrackMenuItems(const FGuid& ObjectBinding, FMenuBuilder& MenuBuilder, TArray<FPropertyPath> KeyablePropertyPaths, int32 PropertyNameIndexStart)
+{
+	if (KeyablePropertyPaths.IsEmpty())
+	{
+		return;
+	}
+
+	// Create property menu data based on keyable property paths
+	TArray<FPropertyMenuData> KeyablePropertyMenuDatas;
+	for (const FPropertyPath& KeyablePropertyPath : KeyablePropertyPaths)
+	{
+		if (!ensure(KeyablePropertyPath.GetNumProperties() > PropertyNameIndexStart))
+		{
+			continue;
+		}
+
+		const FPropertyInfo& PropertyInfo = KeyablePropertyPath.GetPropertyInfo(PropertyNameIndexStart);
+		if (const FProperty* Property = PropertyInfo.Property.Get())
+		{
+			FPropertyMenuData KeyableMenuData;
+			KeyableMenuData.PropertyPath = KeyablePropertyPath;
+			if (PropertyInfo.ArrayIndex != INDEX_NONE)
 			{
-				UMovieScenePropertyTrack* NewTrack = CastChecked<UMovieScenePropertyTrack>(Result.Track);
-				NewTrack->SetPropertyNameAndPath(Definition.ParameterName, Definition.ParameterName.ToString());
-				InitializeNewTrack(NewTrack, Definition);
+				KeyableMenuData.MenuName = FText::Format(LOCTEXT("PropertyMenuTextFormat", "{0} [{1}]"), Property->GetDisplayNameText(), FText::AsNumber(PropertyInfo.ArrayIndex)).ToString();
 			}
-		}
+			else
+			{
+				KeyableMenuData.MenuName = Property->GetDisplayNameText().ToString();
+			}
 
-		GetSequencer()->NotifyMovieSceneDataChanged(EMovieSceneDataChangeType::MovieSceneStructureItemAdded);
-	}
-}
+			if (const FStructProperty* StructProperty = CastField<const FStructProperty>(Property))
+			{
+				bool bIsCameraParameter = false;
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+				if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
+				{\
+					bIsCameraParameter = true;\
+				}\
+				else
+				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+				{
+				}
 
-bool FGameplayCameraComponentTrackEditor::CanAddCameraParameterTrack(FCameraRigParameterDefinition Definition, FGuid ObjectBinding) const
-{
-	TSharedPtr<ISequencer> SequencerPtr = GetSequencer();
-	const UMovieScene* FocusedMovieScene = SequencerPtr->GetFocusedMovieSceneSequence()->GetMovieScene();
+				if (bIsCameraParameter)
+				{
+					KeyableMenuData.PropertyIndexForMenuName = PropertyNameIndexStart;
+				}
+			}
 
-	TSubclassOf<UMovieSceneTrack> ParameterTrackType = GetParameterTrackFromDefinition(Definition);
-	if (!ParameterTrackType)
-	{
-		return false;
-	}
-	
-	UMovieSceneTrack* ExistingParameterTrack = FocusedMovieScene->FindTrack(ParameterTrackType, ObjectBinding, Definition.ParameterName);
-	return ExistingParameterTrack == nullptr;
-}
-
-void FGameplayCameraComponentTrackEditor::InitializeNewTrack(UMovieScenePropertyTrack* NewTrack, const FCameraRigParameterDefinition& Definition) const
-{
-	if (Definition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
-	{
-		switch (Definition.VariableType)
-		{
-			case ECameraVariableType::Vector2f:
-				CastChecked<UMovieSceneFloatVectorTrack>(NewTrack)->SetNumChannelsUsed(2);
-				break;
-			case ECameraVariableType::Vector3f:
-				CastChecked<UMovieSceneFloatVectorTrack>(NewTrack)->SetNumChannelsUsed(3);
-				break;
-			case ECameraVariableType::Vector4f:
-				CastChecked<UMovieSceneFloatVectorTrack>(NewTrack)->SetNumChannelsUsed(4);
-				break;
-			case ECameraVariableType::Vector2d:
-				CastChecked<UMovieSceneDoubleVectorTrack>(NewTrack)->SetNumChannelsUsed(2);
-				break;
-			case ECameraVariableType::Vector3d:
-				CastChecked<UMovieSceneDoubleVectorTrack>(NewTrack)->SetNumChannelsUsed(3);
-				break;
-			case ECameraVariableType::Vector4d:
-				CastChecked<UMovieSceneDoubleVectorTrack>(NewTrack)->SetNumChannelsUsed(4);
-				break;
-			default:
-				break;
+			KeyablePropertyMenuDatas.Add(KeyableMenuData);
 		}
 	}
-	else if (Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+
+	KeyablePropertyMenuDatas.Sort();
+
+	for (int32 MenuDataIndex = 0; MenuDataIndex < KeyablePropertyMenuDatas.Num(); )
 	{
-		switch (Definition.DataType)
+		// If this menu data only has one property name left in it, add the menu item
+		if (KeyablePropertyMenuDatas[MenuDataIndex].PropertyPath.GetNumProperties() == PropertyNameIndexStart + 1 || 
+				KeyablePropertyMenuDatas[MenuDataIndex].PropertyIndexForMenuName == PropertyNameIndexStart)
 		{
-			case ECameraContextDataType::Enum:
-				{
-					const UEnum* Enum = Cast<const UEnum>(Definition.DataTypeObject);
-					CastChecked<UMovieSceneEnumTrack>(NewTrack)->SetEnum(const_cast<UEnum*>(Enum));
+			BuildAddParameterTrackMenuItem(MenuBuilder, KeyablePropertyMenuDatas[MenuDataIndex], ObjectBinding);
+			++MenuDataIndex;
+		}
+		// Otherwise, look to the next menu data to gather up new data
+		else
+		{
+			TArray<FPropertyPath> KeyableSubMenuPropertyPaths;
+			KeyableSubMenuPropertyPaths.Add(KeyablePropertyMenuDatas[MenuDataIndex].PropertyPath);
+
+			for (; MenuDataIndex < KeyablePropertyMenuDatas.Num() - 1; )
+			{
+				if (KeyablePropertyMenuDatas[MenuDataIndex].MenuName == KeyablePropertyMenuDatas[MenuDataIndex + 1].MenuName)
+				{	
+					++MenuDataIndex;
+					KeyableSubMenuPropertyPaths.Add(KeyablePropertyMenuDatas[MenuDataIndex].PropertyPath);
 				}
-				break;
-			case ECameraContextDataType::Object:
+				else
 				{
-					const UClass* ObjectClass = Cast<const UClass>(Definition.DataTypeObject);
-					if (!ObjectClass || !ObjectClass->IsChildOf<AActor>())
-					{
-						CastChecked<UMovieSceneObjectPropertyTrack>(NewTrack)->PropertyClass = const_cast<UClass*>(ObjectClass);
-					}
+					break;
 				}
-				break;
-			default:
-				break;
+			}
+
+			MenuBuilder.AddSubMenu(
+				FText::FromString(KeyablePropertyMenuDatas[MenuDataIndex].MenuName),
+				FText::GetEmpty(), 
+				FNewMenuDelegate::CreateSP(this, &FGameplayCameraComponentTrackEditor::BuildAddParameterTrackSubMenuItems, ObjectBinding, KeyableSubMenuPropertyPaths, PropertyNameIndexStart + 1));
+
+			++MenuDataIndex;
 		}
 	}
 }
 
-TSubclassOf<UMovieScenePropertyTrack> FGameplayCameraComponentTrackEditor::GetParameterTrackFromDefinition(const FCameraRigParameterDefinition& Definition) const
+void FGameplayCameraComponentTrackEditor::BuildAddParameterTrackSubMenuItems(FMenuBuilder& MenuBuilder, FGuid ObjectBinding, TArray<FPropertyPath> KeyablePropertyPaths, int32 PropertyNameIndexStart)
 {
-	if (Definition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
-	{
-		switch (Definition.VariableType)
-		{
-			case ECameraVariableType::Boolean:
-				return UMovieSceneBoolTrack::StaticClass();
-			case ECameraVariableType::Integer32:
-				return UMovieSceneIntegerTrack::StaticClass();
-			case ECameraVariableType::Float:
-				return UMovieSceneFloatTrack::StaticClass();
-			case ECameraVariableType::Double:
-				return UMovieSceneDoubleTrack::StaticClass();
-			case ECameraVariableType::Vector2f:
-			case ECameraVariableType::Vector3f:
-			case ECameraVariableType::Vector4f:
-				return UMovieSceneFloatVectorTrack::StaticClass();
-			case ECameraVariableType::Vector2d:
-			case ECameraVariableType::Vector3d:
-			case ECameraVariableType::Vector4d:
-				return UMovieSceneDoubleVectorTrack::StaticClass();
-			case ECameraVariableType::Rotator3f:
-			case ECameraVariableType::Rotator3d:
-				return UMovieSceneRotatorTrack::StaticClass();
-			case ECameraVariableType::Transform3f:
-			case ECameraVariableType::Transform3d:
-				return UMovieSceneTransformTrack::StaticClass();
-			case ECameraVariableType::BlendableStruct:
-				if (Definition.BlendableStructType == FCameraFramingZone::StaticStruct())
-				{
-					return UMovieSceneCameraFramingZoneTrack::StaticClass();
-				}
-				break;
-			default:
-				break;
-		}
-	}
-	else if (Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
-	{
-		switch (Definition.DataType)
-		{
-			case ECameraContextDataType::String:
-				return UMovieSceneStringTrack::StaticClass();
-			case ECameraContextDataType::Enum:
-				return UMovieSceneEnumTrack::StaticClass();
-			case ECameraContextDataType::Object:
-				if (Definition.DataTypeObject)
-				{
-					const UClass* ObjectClass = Cast<const UClass>(Definition.DataTypeObject);
-					if (ObjectClass && ObjectClass->IsChildOf<AActor>())
-					{
-						return UMovieSceneActorReferenceTrack::StaticClass();
-					}
-				}
-				return UMovieSceneObjectPropertyTrack::StaticClass();
-		}
-	}
-	return nullptr;
+	BuildAddParameterTrackMenuItems(ObjectBinding, MenuBuilder, KeyablePropertyPaths, PropertyNameIndexStart);
 }
 
 #undef LOCTEXT_NAMESPACE

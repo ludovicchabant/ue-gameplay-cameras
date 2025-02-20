@@ -23,6 +23,8 @@ FMovieSceneGameplayCamerasComponentTypes::FMovieSceneGameplayCamerasComponentTyp
 	FBuiltInComponentTypes* BuiltInComponents = FBuiltInComponentTypes::Get();
 	FComponentRegistry* ComponentRegistry = UMovieSceneEntitySystemLinker::GetComponents();
 
+	CameraParameterOverrideID = ComponentRegistry->NewComponentType<FGuid>(TEXT("Camera Parameter ID"), EComponentTypeFlags::CopyToChildren);
+
 	ComponentRegistry->NewPropertyType(CameraFramingZone, TEXT("Camera Framing Zone"));
 
 	BuiltInComponents->PropertyRegistry.DefineCompositeProperty(CameraFramingZone, TEXT("Apply FCameraFramingZone Properties"))

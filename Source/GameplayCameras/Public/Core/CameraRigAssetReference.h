@@ -260,6 +260,10 @@ struct FCameraRigAssetReferenceParameterMetaData
 	/** Whether this parameter has an override value. */
 	UPROPERTY()
 	bool bIsOverridden = false;
+
+	/** Whether this parameter is being animated. */
+	UPROPERTY()
+	bool bIsAnimated = false;
 };
 
 /**
@@ -328,6 +332,9 @@ public:
 
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
+
+	GAMEPLAYCAMERAS_API bool IsParameterAnimated(const FGuid& PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterAnimated(const FGuid& PropertyID, bool bIsAnimated);
 
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
 	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();

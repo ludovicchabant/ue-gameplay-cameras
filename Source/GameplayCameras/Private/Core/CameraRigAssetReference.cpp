@@ -81,6 +81,21 @@ void FCameraRigAssetReference::SetParameterOverridden(const FGuid& PropertyID, b
 	MetaData.bIsOverridden = bIsOverridden;
 }
 
+bool FCameraRigAssetReference::IsParameterAnimated(const FGuid& PropertyID) const
+{
+	if (const FCameraRigAssetReferenceParameterMetaData* MetaData = FindMetaData(PropertyID))
+	{
+		return MetaData->bIsAnimated;
+	}
+	return false;
+}
+
+void FCameraRigAssetReference::SetParameterAnimated(const FGuid& PropertyID, bool bIsAnimated)
+{
+	FCameraRigAssetReferenceParameterMetaData& MetaData = FindOrAddMetaData(PropertyID);
+	MetaData.bIsAnimated = bIsAnimated;
+}
+
 bool FCameraRigAssetReference::NeedsRebuildParameters() const
 {
 	if ((!CameraRig && Parameters.IsValid()) || (CameraRig && !Parameters.IsValid()))

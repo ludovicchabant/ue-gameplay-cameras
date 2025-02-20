@@ -19,7 +19,7 @@ class FCameraVariableTable;
  */
 struct FCameraParameterOverrideHelper
 {
-	FCameraParameterOverrideHelper(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable);
+	FCameraParameterOverrideHelper(FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable);
 
 	void ApplyParameterOverride(
 			const UCameraRigAsset* CameraRig,
@@ -32,8 +32,8 @@ struct FCameraParameterOverrideHelper
 
 private:
 
-	FCameraVariableTable& VariableTable;
-	FCameraContextDataTable& ContextDataTable;
+	FCameraVariableTable* VariableTable;
+	FCameraContextDataTable* ContextDataTable;
 };
 
 }  // namespace UE::Cameras
