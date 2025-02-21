@@ -4,12 +4,11 @@
 
 #include "Core/CameraContextDataTable.h"
 #include "CoreTypes.h"
-#include "Templates/UnrealTypeTraits.h"
 
 namespace UE::Cameras
 {
 
-template<typename DataType, ECameraContextDataType DataTypeEnum>
+template<typename DataType>
 struct TCameraContextDataReader
 {
 	TCameraContextDataReader() {}

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoreTypes.h"
-#include "Math/MathFwd.h"
+#include "Containers/ContainersFwd.h"
+#include "Math/UnrealMath.h"
 
 class FArchive;
 struct FCameraFramingZone;
@@ -28,6 +28,21 @@ struct FFramingZone
 
 	/** Builds an empty framing zone. */
 	FFramingZone();
+
+	/** Gets the width of the framing zone. */
+	double Width() const { return FMath::Max(0.0, RightBound - LeftBound); }
+
+	/** Gets the height of the framing zone. */
+	double Height() const { return FMath::Max(0.0, BottomBound - TopBound); }
+
+	/** Gets the center of the framing zone. */
+	FVector2d Center() const { return FVector2d((LeftBound + RightBound) / 2.0, (TopBound + BottomBound) / 2.0); }
+
+	/** 
+	 * Returns whether this framing zone is well-formed (bounds in 0..1 UI space, 
+	 * with left/top bounds lesser than or equal to right/bottom bounds).
+	 */
+	bool IsValid() const;
 
 	/** Makes sure all the bounds have valid values between 0 and 1. */
 	void ClampBounds();
@@ -70,6 +85,9 @@ public:
 
 	/** Build a framing zone from a set of margins relative to a screen location. */
 	static FFramingZone FromRelativeMargins(const FVector2d& ScreenLocation, const FCameraFramingZone& Margins);
+
+	/** Build a framing zone that encompasses all the given points (in 0..1 UI space). */
+	static FFramingZone FromPoints(TConstArrayView<FVector2d> ScreenPoints);
 
 private:
 

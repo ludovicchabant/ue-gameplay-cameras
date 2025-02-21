@@ -54,6 +54,8 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 {
 	const UBaseFramingCameraNode* BaseFramingNode = GetCameraNodeAs<UBaseFramingCameraNode>();
 
+	Readers.TargetInfo.Initialize(BaseFramingNode->TargetInfo, BaseFramingNode->TargetInfoDataID);
+
 	Readers.IdealFramingLocation.Initialize(BaseFramingNode->IdealFramingLocation);
 	Readers.SetTargetDistance.Initialize(BaseFramingNode->SetTargetDistance);
 
@@ -69,38 +71,48 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 	Anticipation.History.Reserve(GFramingNumTargetMovementSamples);
 }
 
-TOptional<FVector3d> FBaseFramingCameraNodeEvaluator::AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult)
+bool FBaseFramingCameraNodeEvaluator::AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, FAcquiredTargetInfo& OutInfo)
 {
 	const UBaseFramingCameraNode* FramingNode = GetCameraNodeAs<UBaseFramingCameraNode>();
 	if (FramingNode->TargetLocation.IsValid())
 	{
 		const FVector3d* TargetLocation = FramingNode->TargetLocation.GetValue(InResult.VariableTable);
-		return TargetLocation ? TOptional<FVector3d>(*TargetLocation) : TOptional<FVector3d>();
-	}
-	else if (FramingNode->TargetInfo.Value.Actor || FramingNode->TargetInfo.HasOverride())
-	{
-		const FCameraTargetInfo& TargetInfo = FramingNode->TargetInfo.GetValue(InResult.ContextDataTable);
-
-		FTransform3d TargetTransform;
-		FCameraTargetInfoReader Reader(TargetInfo);
-		if (Reader.GetTargetTransform(TargetTransform))
+		if (TargetLocation)
 		{
-			return TOptional<FVector3d>(TargetTransform.GetLocation());
+			OutInfo.WorldTransform = FTransform3d(*TargetLocation);
+			OutInfo.LocalBounds = FBoxSphereBounds3d(EForceInit::ForceInit);
+			return true;
+		}
+	}
+	else if (FramingNode->TargetInfo.IsValid() || FramingNode->TargetInfoDataID.IsValid())
+	{
+		FTransform3d TargetTransform;
+		FBoxSphereBounds3d TargetBounds;
+		if (Readers.TargetInfo.GetTargetInfo(InResult.ContextDataTable, TargetTransform, TargetBounds))
+		{
+			OutInfo.WorldTransform = TargetTransform;
+			OutInfo.LocalBounds = TargetBounds;
+			return true;
 		}
 	}
 	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 	{
 		APawn* Pawn = PlayerController->GetPawn();
-		FVector3d TargetLocation = Pawn->GetActorLocation();
-		return TOptional<FVector3d>(TargetLocation);
+		OutInfo.WorldTransform = FTransform3d(Pawn->GetActorLocation());
+		OutInfo.LocalBounds = FBoxSphereBounds3d(EForceInit::ForceInit);
+		if (USceneComponent* RootComponent = Pawn->GetRootComponent())
+		{
+			OutInfo.LocalBounds = RootComponent->Bounds;
+		}
+		return true;
 	}
 
-	return TOptional<FVector3d>();
+	return false;
 }
 
-void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming)
+void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming)
 {
-	ComputeCurrentState(Params, OutResult, TargetLocation, LastFraming);
+	ComputeCurrentState(Params, OutResult, TargetInfo, LastFraming);
 	ComputeDesiredState(Params.DeltaTime);
 }
 
@@ -114,7 +126,7 @@ void FBaseFramingCameraNodeEvaluator::EndFramingUpdate(const FCameraNodeEvaluati
 	}
 }
 
-void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming)
+void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming)
 {
 	// Get screen-space coordinates of the ideal framing point. These are in 0..1 UI space.
 	State.IdealTarget = Readers.IdealFramingLocation.Get(OutResult.VariableTable);
@@ -140,7 +152,7 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 	State.SoftZone.ClampBounds(State.DeadZone);
 
 	// See if we need to extrapolate where the target will be in "anticipation time" seconds.
-	const FVector3d EffectiveTargetLocation = ComputeAnticipatedScreenTarget(Params.DeltaTime, TargetLocation);
+	const FVector3d EffectiveTargetLocation = ComputeAnticipatedScreenTarget(Params.DeltaTime, TargetInfo.WorldTransform.GetLocation());
 
 	// We are going to reframe things iteratively, so we'll use a temporary pose defined by last frame's
 	// shot transform.
@@ -152,7 +164,32 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 	const double AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(TempPose, PlayerController);
 	const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectWorldToScreen(TempPose, AspectRatio, EffectiveTargetLocation, true);
 	State.WorldTarget = EffectiveTargetLocation;
+	State.LocalTargetBounds = TargetInfo.LocalBounds;
 	State.ScreenTarget = ScreenTarget.Get(FVector2d(0.5, 0.5));
+
+	// Get the target's bounds in screen-space.
+	FTransform3d EffectiveTargetTransform(TargetInfo.WorldTransform.GetRotation(), EffectiveTargetLocation);
+	State.ScreenTargetBounds = ComputeScreenTargetBounds(TempPose, AspectRatio, EffectiveTargetTransform, TargetInfo.LocalBounds);
+
+	// Compute the effective dead-zone, which is the subset of the dead-zone that encompasses as much
+	// of the target's bound as possible.
+	FFramingZone EffectiveDeadZone = State.DeadZone;
+	const FVector2d DeadZoneCenter = State.DeadZone.Center();
+	const double TargetBoundsHalfWidth = State.ScreenTargetBounds.Width() / 2.0;
+	const double TargetBoundsHalfHeight = State.ScreenTargetBounds.Height() / 2.0;
+	EffectiveDeadZone.LeftBound += TargetBoundsHalfWidth;
+	EffectiveDeadZone.TopBound += TargetBoundsHalfHeight;
+	EffectiveDeadZone.RightBound -= TargetBoundsHalfWidth;
+	EffectiveDeadZone.BottomBound -= TargetBoundsHalfHeight;
+	if (EffectiveDeadZone.LeftBound > EffectiveDeadZone.RightBound)
+	{
+		EffectiveDeadZone.LeftBound = EffectiveDeadZone.RightBound = DeadZoneCenter.X;
+	}
+	if (EffectiveDeadZone.TopBound > EffectiveDeadZone.BottomBound)
+	{
+		EffectiveDeadZone.TopBound = EffectiveDeadZone.BottomBound = DeadZoneCenter.Y;
+	}
+	State.EffectiveDeadZone = EffectiveDeadZone;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	State.DeadZoneEdgePoint = State.ScreenTarget;
@@ -198,7 +235,7 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 
 	const bool bWasReframing = State.bIsReframingTarget;
 	const bool bIsInSoftZone = State.SoftZone.Contains(State.ScreenTarget);
-	const bool bIsInDeadZone = State.DeadZone.Contains(State.ScreenTarget);
+	const bool bIsInDeadZone = State.EffectiveDeadZone.Contains(State.ScreenTarget);
 	if (!ScreenTarget.IsSet() || !bIsInSoftZone)
 	{
 		// Target is out of view or outside the soft zone -- it's therefore in the hard zone and we will
@@ -332,6 +369,29 @@ FVector3d FBaseFramingCameraNodeEvaluator::ComputeAnticipatedScreenTarget(float 
 	}
 }
 
+FFramingZone FBaseFramingCameraNodeEvaluator::ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds)
+{
+	const FVector3d BoxExtent = LocalBounds.BoxExtent;
+	FVector3d BoxCorners[8];
+	BoxCorners[0] = TargetTransform.TransformPositionNoScale({ BoxExtent.X, BoxExtent.Y, BoxExtent.Z });
+	BoxCorners[1] = TargetTransform.TransformPositionNoScale({ -BoxExtent.X, BoxExtent.Y, BoxExtent.Z });
+	BoxCorners[2] = TargetTransform.TransformPositionNoScale({ BoxExtent.X, -BoxExtent.Y, BoxExtent.Z });
+	BoxCorners[3] = TargetTransform.TransformPositionNoScale({ -BoxExtent.X, -BoxExtent.Y, BoxExtent.Z });
+	BoxCorners[4] = TargetTransform.TransformPositionNoScale({ BoxExtent.X, BoxExtent.Y, -BoxExtent.Z });
+	BoxCorners[5] = TargetTransform.TransformPositionNoScale({ -BoxExtent.X, BoxExtent.Y, -BoxExtent.Z });
+	BoxCorners[6] = TargetTransform.TransformPositionNoScale({ BoxExtent.X, -BoxExtent.Y, -BoxExtent.Z });
+	BoxCorners[7] = TargetTransform.TransformPositionNoScale({ -BoxExtent.X, -BoxExtent.Y, -BoxExtent.Z });
+
+	FVector2d ScreenBoxCorners[8];
+	for (int32 Index = 0; Index < 8; ++Index)
+	{
+		TOptional<FVector2d> ScreenCorner = FCameraPoseMath::ProjectWorldToScreen(CameraPose, AspectRatio, BoxCorners[Index], true);
+		ScreenBoxCorners[Index] = ScreenCorner.GetValue();
+	}
+
+	return FFramingZone::FromPoints(ScreenBoxCorners);
+}
+
 void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 {
 	// If we  don't have any reframing to do, bail out.
@@ -414,6 +474,16 @@ void FBaseFramingCameraNodeEvaluator::DrawFramingState(const FState& State, cons
 				State.DeadZone.GetCanvasPosition(CanvasSize), 
 				State.DeadZone.GetCanvasSize(CanvasSize),
 				FLinearColor::Green,
+				1.f);
+		Renderer.Draw2DBox(
+				State.EffectiveDeadZone.GetCanvasPosition(CanvasSize), 
+				State.EffectiveDeadZone.GetCanvasSize(CanvasSize),
+				FColorList::LightGrey,
+				1.f);
+		Renderer.Draw2DBox(
+				State.ScreenTargetBounds.GetCanvasPosition(CanvasSize),
+				State.ScreenTargetBounds.GetCanvasSize(CanvasSize),
+				FLinearColor::Gray,
 				1.f);
 
 		if (State.LowReframeDampingFactor > 0)
@@ -501,6 +571,8 @@ void FBaseFramingCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 	Renderer.RemoveIndent();
 
 	FBaseFramingCameraNodeEvaluator::DrawFramingState(State, Desired, Renderer);
+
+	Renderer.DrawBox(State.WorldTarget, State.LocalTargetBounds.BoxExtent, FLinearColor::Yellow, 0.5f);
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
@@ -560,13 +632,6 @@ UBaseFramingCameraNode::UBaseFramingCameraNode(const FObjectInitializer& ObjectI
 
 void UBaseFramingCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
 {
-	OutParameterInfos.AddDataParameter(
-			GET_MEMBER_NAME_CHECKED(UBaseFramingCameraNode, TargetInfo),
-			ECameraContextDataType::Struct,
-			FCameraTargetInfo::StaticStruct(),
-			reinterpret_cast<const uint8*>(&TargetInfo.Value),
-			&TargetInfo.DataID);
-
 	OutParameterInfos.AddBlendableParameter(
 			GET_MEMBER_NAME_CHECKED(UBaseFramingCameraNode, DeadZone),
 			ECameraVariableType::BlendableStruct,

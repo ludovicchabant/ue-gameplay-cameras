@@ -8,7 +8,7 @@
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "Nodes/Framing/CameraFramingZone.h"
-#include "Nodes/Framing/CameraTargetInfo.h"
+#include "Nodes/Framing/CameraActorTargetInfo.h"
 #include "Math/CameraFramingZoneMath.h"
 #include "Math/CriticalDamper.h"
 
@@ -35,8 +35,11 @@ public:
 	UPROPERTY(EditAnywhere, Category="Target")
 	FVector3dCameraVariableReference TargetLocation;
 
-	UPROPERTY(EditAnywhere, Category="Target")
-	FCameraTargetInfoParameter TargetInfo;
+	UPROPERTY(EditAnywhere, Category="Target", meta=(CameraContextData=true))
+	FCameraActorTargetInfo TargetInfo;
+
+	UPROPERTY()
+	FCameraContextDataID TargetInfoDataID;
 
 	/**
 	 * Whether the camera pose's target distance should be set to the distance between
@@ -155,11 +158,12 @@ protected:
 
 	struct FState;
 	struct FDesired;
+	struct FAcquiredTargetInfo;
 
 	/** Gets the target location. */
-	TOptional<FVector3d> AcquireTargetLocation(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult);
+	bool AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, FAcquiredTargetInfo& OutInfo);
 	/** Updates the framing state for the current tick, see State member field. */
-	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
+	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming);
 	/** Wraps-up the update with optional operations. */
 	void EndFramingUpdate(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
@@ -171,8 +175,9 @@ private:
 
 	FVector2d GetHardReframeCoords() const;
 
-	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FVector3d& TargetLocation, const FTransform3d& LastFraming);
+	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming);
 	FVector3d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector3d& InTargetLocation);
+	FFramingZone ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds);
 	void ComputeDesiredState(float DeltaTime);
 
 protected:
@@ -197,9 +202,17 @@ protected:
 		InHardZone
 	};
 
+	struct FAcquiredTargetInfo
+	{
+		FTransform3d WorldTransform;
+		FBoxSphereBounds3d LocalBounds;
+	};
+
 	/** Utility structure for all the parameter readers we need every frame. */
 	struct FReaders
 	{
+		FCameraActorTargetInfoReader TargetInfo;
+
 		TCameraParameterReader<FVector2d> IdealFramingLocation;
 		TCameraParameterReader<bool> SetTargetDistance;
 
@@ -219,6 +232,8 @@ protected:
 	{
 		/** World position of the tracked target. */
 		FVector3d WorldTarget;
+		/** Bounds of the tracked target. */
+		FBoxSphereBounds3d LocalTargetBounds;
 
 		/** Screen-space position of the ideal framing position. */
 		FVector2d IdealTarget;
@@ -238,6 +253,10 @@ protected:
 		float ToggleEngageAlpha;
 		/** Current look-ahead time for anticipating target movement */
 		float TargetMovementAnticipationTime;
+		/** Current target bounds zone. */
+		FFramingZone ScreenTargetBounds;
+		/** Dead zone minus the screen target bounds. */
+		FFramingZone EffectiveDeadZone;
 		/** Current coordinates of the dead zone. */
 		FFramingZone DeadZone;
 		/** Current coordinates of the soft zone. */

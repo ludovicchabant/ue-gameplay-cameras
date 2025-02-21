@@ -36,12 +36,49 @@ FFramingZone FFramingZone::FromRelativeMargins(const FVector2d& ScreenLocation, 
 	return NewZone;
 }
 
+FFramingZone FFramingZone::FromPoints(TConstArrayView<FVector2d> ScreenPoints)
+{
+	FFramingZone NewZone;
+
+	if (!ensure(ScreenPoints.Num() > 0))
+	{
+		return NewZone;
+	}
+
+	const FVector2d& FirstPoint = ScreenPoints[0];
+	NewZone.LeftBound = FirstPoint.X;
+	NewZone.TopBound = FirstPoint.Y;
+	NewZone.RightBound = FirstPoint.X;
+	NewZone.BottomBound = FirstPoint.Y;
+
+	for (int32 Index = 1; Index < ScreenPoints.Num(); ++Index)
+	{
+		const FVector2d& Point(ScreenPoints[Index]);
+		NewZone.LeftBound = FMath::Min(NewZone.LeftBound, Point.X);
+		NewZone.TopBound = FMath::Min(NewZone.TopBound, Point.Y);
+		NewZone.RightBound = FMath::Max(NewZone.RightBound, Point.X);
+		NewZone.BottomBound = FMath::Max(NewZone.BottomBound, Point.Y);
+	}
+
+	return NewZone;
+}
+
 FFramingZone::FFramingZone()
 {
 	LeftBound = 0;
 	TopBound = 0;
 	RightBound = 1;
 	BottomBound = 1;
+}
+
+bool FFramingZone::IsValid() const
+{
+	return LeftBound >= 0 && LeftBound <= 1 &&
+		TopBound >= 0 && TopBound <= 1 &&
+		RightBound >= 0 && RightBound <= 1 &&
+		BottomBound >= 0 && BottomBound <= 1 &&
+		LeftBound <= RightBound &&
+		TopBound <= BottomBound;
 }
 
 void FFramingZone::ClampBounds()
