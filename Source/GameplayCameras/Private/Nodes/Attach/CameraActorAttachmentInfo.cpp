@@ -30,9 +30,19 @@ void FCameraActorAttachmentInfoReader::CacheAttachmentInfo(const FCameraActorAtt
 		CachedAttachmentInfo = InAttachmentInfo;
 
 		CachedSkeletalMeshComponent = nullptr;
-		if (InAttachmentInfo.Actor && !InAttachmentInfo.SocketName.IsNone())
+		if (InAttachmentInfo.Actor && (!InAttachmentInfo.SocketName.IsNone() || !InAttachmentInfo.BoneName.IsNone()))
 		{
 			CachedSkeletalMeshComponent = InAttachmentInfo.Actor->FindComponentByClass<USkeletalMeshComponent>();
+		}
+
+		CachedBoneName = NAME_None;
+		if (CachedSkeletalMeshComponent)
+		{
+			CachedBoneName = InAttachmentInfo.BoneName;
+			if (!InAttachmentInfo.SocketName.IsNone())
+			{
+				CachedBoneName = CachedSkeletalMeshComponent->GetSocketBoneName(InAttachmentInfo.SocketName);
+			}
 		}
 	}
 }
@@ -51,7 +61,7 @@ bool FCameraActorAttachmentInfoReader::GetAttachmentTransform(const FCameraConte
 		}
 	}
 
-	if (!CachedAttachmentInfo.SocketName.IsNone() && CachedSkeletalMeshComponent)
+	if (CachedSkeletalMeshComponent && !CachedBoneName.IsNone())
 	{
 		OutTransform = CachedSkeletalMeshComponent->GetSocketTransform(CachedAttachmentInfo.SocketName);
 		return true;
@@ -64,39 +74,77 @@ bool FCameraActorAttachmentInfoReader::GetAttachmentTransform(const FCameraConte
 	return false;
 }
 
-bool FCameraActorAttachmentInfoReader::GetAttachmentTransform(TArrayView<FCameraActorAttachmentInfoReader> Readers, const FCameraContextDataTable& ContextDataTable,FTransform3d& OutTransform)
+FCameraActorAttachmentInfoArrayReader::FCameraActorAttachmentInfoArrayReader(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos, FCameraContextDataID InDataID)
 {
-	using FWeightedTransform = TTuple<FTransform3d, float>;
-	
+	Initialize(InAttachmentInfos, InDataID);
+}
+
+void FCameraActorAttachmentInfoArrayReader::Initialize(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos, FCameraContextDataID InDataID)
+{
+	DataID = InDataID;
+
+	CacheAttachmentInfos(InAttachmentInfos);
+}
+
+void FCameraActorAttachmentInfoArrayReader::CacheAttachmentInfos(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos)
+{
+	Readers.SetNum(InAttachmentInfos.Num());
+
+	for (int32 Index = 0; Index < InAttachmentInfos.Num(); ++Index)
+	{
+		Readers[Index].CacheAttachmentInfo(InAttachmentInfos[Index]);
+	}
+}
+
+bool FCameraActorAttachmentInfoArrayReader::GetAttachmentTransform(const FCameraContextDataTable& ContextDataTable, FTransform3d& OutTransform)
+{
+	if (DataID.IsValid())
+	{
+		TConstArrayView<FCameraActorAttachmentInfo> NewAttachmentInfos;
+		if (ContextDataTable.TryGetArrayData<FCameraActorAttachmentInfo>(DataID, NewAttachmentInfos))
+		{
+			CacheAttachmentInfos(NewAttachmentInfos);
+		}
+	}
+
 	if (Readers.IsEmpty())
 	{
 		return false;
 	}
 
-	TArray<FWeightedTransform> WeightedTransforms;
-
-	for (FCameraActorAttachmentInfoReader& Reader : Readers)
+	struct FComputedAttachmentInfo
 	{
-		FTransform3d CurTransform;
-		if (Reader.GetAttachmentTransform(ContextDataTable, CurTransform))
-		{
-			WeightedTransforms.Emplace(CurTransform, Reader.CachedAttachmentInfo.Weight);
-		}
+		FTransform3d Transform;
+		float Weight = 1.f;
+	};
+
+	TArray<FComputedAttachmentInfo> ComputedAttachments;
+	ComputedAttachments.SetNum(Readers.Num());
+
+	for (int32 Index = 0; Index < Readers.Num(); ++Index)
+	{
+		FCameraActorAttachmentInfoReader& Reader(Readers[Index]);
+		FComputedAttachmentInfo& ComputedAttachment(ComputedAttachments[Index]);
+		const bool bGotAttachment = Reader.GetAttachmentTransform(ContextDataTable, ComputedAttachment.Transform);
+		ComputedAttachment.Weight = bGotAttachment ? Reader.CachedAttachmentInfo.Weight : 0.f;
 	}
 
 	float TotalWeight = Algo::Accumulate(
-			WeightedTransforms, 
+			ComputedAttachments, 
 			0.f,
-			[](float Cur, const FWeightedTransform& Item) { return Cur + Item.Get<1>(); });
+			[](float Cur, const FComputedAttachmentInfo& Item) { return Cur + Item.Weight; });
 	if (TotalWeight == 0.f)
 	{
 		return false;
 	}
 
 	OutTransform = FTransform3d::Identity;
-	for (const FWeightedTransform& WeightedTransform : WeightedTransforms)
+	for (const FComputedAttachmentInfo& ComputedAttachment : ComputedAttachments)
 	{
-		OutTransform.BlendWith(WeightedTransform.Get<0>(), WeightedTransform.Get<1>() / TotalWeight);
+		if (ComputedAttachment.Weight > 0.f)
+		{
+			OutTransform.BlendWith(ComputedAttachment.Transform, ComputedAttachment.Weight / TotalWeight);
+		}
 	}
 
 	return true;

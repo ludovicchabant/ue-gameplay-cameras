@@ -25,6 +25,10 @@ struct GAMEPLAYCAMERAS_API FCameraActorAttachmentInfo
 	UPROPERTY(EditAnywhere, Interp, Category="Attachment")
 	FName SocketName;
 
+	/** An optional bone to attach to on the actor. */
+	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	FName BoneName;
+
 	/** The weight of this attachment. Unused if only one attachment is used. */
 	UPROPERTY(EditAnywhere, Interp, Category="Attachment")
 	float Weight = 1.f;
@@ -45,8 +49,6 @@ struct FCameraActorAttachmentInfoReader
 
 	bool GetAttachmentTransform(const FCameraContextDataTable& ContextDataTable, FTransform3d& OutTransform);
 
-	static bool GetAttachmentTransform(TArrayView<FCameraActorAttachmentInfoReader> Readers, const FCameraContextDataTable& ContextDataTable, FTransform3d& OutTransform);
-
 private:
 
 	void CacheAttachmentInfo(const FCameraActorAttachmentInfo& InAttachmentInfo);
@@ -58,6 +60,29 @@ private:
 
 	FCameraActorAttachmentInfo CachedAttachmentInfo;
 	const USkeletalMeshComponent* CachedSkeletalMeshComponent = nullptr;
+	FName CachedBoneName;
+
+	friend struct FCameraActorAttachmentInfoArrayReader;
+};
+
+/** A special reader class for multiple attachment information. */
+struct FCameraActorAttachmentInfoArrayReader
+{
+	FCameraActorAttachmentInfoArrayReader() {}
+	FCameraActorAttachmentInfoArrayReader(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos, FCameraContextDataID InDataID);
+
+	void Initialize(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos, FCameraContextDataID InDataID);
+
+	bool GetAttachmentTransform(const FCameraContextDataTable& ContextDataTable, FTransform3d& OutTransform);
+
+private:
+
+	void CacheAttachmentInfos(TConstArrayView<FCameraActorAttachmentInfo> InAttachmentInfos);
+
+private:
+
+	TArray<FCameraActorAttachmentInfoReader> Readers;
+	FCameraContextDataID DataID;
 };
 
 }  // namespace UE::Cameras
