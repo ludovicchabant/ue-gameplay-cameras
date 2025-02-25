@@ -193,10 +193,10 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVari
 
 FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(const UCameraRigDataParameter* DataParameter)
 {
-	return MakeDataParameterPinType(DataParameter->DataType, DataParameter->DataTypeObject);
+	return MakeDataParameterPinType(DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
 }
 
-FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, const UObject* CameraContextDataTypeObject)
+FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject)
 {
 	FName PinCategory;
 	UObject* PinSubCategoryObject = const_cast<UObject*>(CameraContextDataTypeObject);
@@ -222,9 +222,19 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDa
 			break;
 	}
 
+	EPinContainerType PinContainerType = EPinContainerType::None;
+	switch (CameraContextDataContainerType)
+	{
+		case ECameraContextDataContainerType::Array:
+			PinContainerType = EPinContainerType::Array;
+		default:
+			break;
+	}
+
 	FEdGraphPinType PinType;
 	PinType.PinCategory = PinCategory;
 	PinType.PinSubCategoryObject = PinSubCategoryObject;
+	PinType.ContainerType = PinContainerType;
 	return PinType;
 }
 
@@ -282,35 +292,62 @@ FName UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(const UC
 {
 	if (ensure(DataParameter && DataParameter->PrivateDataID.IsValid()))
 	{
-		return GetDataParameterInteropSettingFunctionName(DataParameter->DataType, DataParameter->DataTypeObject);
+		return GetDataParameterInteropSettingFunctionName(DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
 	}
 	return NAME_None;
 }
 
-FName UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(ECameraContextDataType CameraContextDataType, const UObject* CameraContextDataTypeObject)
+FName UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject)
 {
 	// Figure out the sort of SetXxxParameter function we want to call for this parameter.
 	FName CallSetParameterFuncName;
-	switch (CameraContextDataType)
+	if (CameraContextDataContainerType == ECameraContextDataContainerType::None)
 	{
-		case ECameraContextDataType::Name:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetNameParameter);
-			break;
-		case ECameraContextDataType::String:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStringParameter);
-			break;
-		case ECameraContextDataType::Enum:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetEnumParameter);
-			break;
-		case ECameraContextDataType::Struct:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStructParameter);
-			break;
-		case ECameraContextDataType::Object:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetObjectParameter);
-			break;
-		case ECameraContextDataType::Class:
-			CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetClassParameter);
-			break;
+		switch (CameraContextDataType)
+		{
+			case ECameraContextDataType::Name:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetNameParameter);
+				break;
+			case ECameraContextDataType::String:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStringParameter);
+				break;
+			case ECameraContextDataType::Enum:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetEnumParameter);
+				break;
+			case ECameraContextDataType::Struct:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStructParameter);
+				break;
+			case ECameraContextDataType::Object:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetObjectParameter);
+				break;
+			case ECameraContextDataType::Class:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetClassParameter);
+				break;
+		}
+	}
+	else
+	{
+		switch (CameraContextDataType)
+		{
+			case ECameraContextDataType::Name:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetNameArrayParameter);
+				break;
+			case ECameraContextDataType::String:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStringArrayParameter);
+				break;
+			case ECameraContextDataType::Enum:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetEnumArrayParameter);
+				break;
+			case ECameraContextDataType::Struct:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetStructArrayParameter);
+				break;
+			case ECameraContextDataType::Object:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetObjectArrayParameter);
+				break;
+			case ECameraContextDataType::Class:
+				CallSetParameterFuncName = GET_FUNCTION_NAME_CHECKED(UCameraRigParameterInterop, SetClassArrayParameter);
+				break;
+		}
 	}
 
 	return CallSetParameterFuncName;

@@ -3,7 +3,7 @@
 #include "Toolkits/CameraRigInterfaceParametersToolkit.h"
 
 #include "Core/CameraRigAsset.h"
-#include "EdGraphSchema_K2.h"
+#include "EdGraph/EdGraphNode.h"
 #include "Editor.h"
 #include "Editors/CameraNodeGraphDragDropOp.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
@@ -154,7 +154,7 @@ protected:
 		{
 			TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
 
-			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_CameraNodeK2>();
 
 			return SNew(SBox)
 				.MinDesiredWidth(125.f)
@@ -188,7 +188,7 @@ protected:
 	{
 		using FPinTypeTreeInfo = UEdGraphSchema_K2::FPinTypeTreeInfo;
 
-		const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+		const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_CameraNodeK2>();
 
 		TypeTree.Reset();
 
@@ -452,7 +452,7 @@ protected:
 		{
 			TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
 
-			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
+			const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_CameraNodeK2>();
 			TArray<TSharedPtr<IPinTypeSelectorFilter>> PinTypeSelectorFilters{ MakeShared<FDataParameterPinTypeSelectorFilter>() };
 
 			return SNew(SBox)
@@ -465,7 +465,7 @@ protected:
 					.ReadOnly(this, &SCameraRigDataParameterTableRow::IsPinTypeSelectorReadOnly)
 					.Schema(K2Schema)
 					.CustomFilters(PinTypeSelectorFilters)
-					.bAllowArrays(false)
+					.bAllowArrays(true)
 				];
 		}
 
@@ -505,6 +505,13 @@ protected:
 				break;
 		}
 
+		switch (Item->DataContainerType)
+		{
+			case ECameraContextDataContainerType::Array:
+				PinType.ContainerType = EPinContainerType::Array;
+				break;
+		}
+
 		return PinType;
 	}
 
@@ -512,6 +519,7 @@ protected:
 	{
 		bool bIsValidType = true;
 		ECameraContextDataType NewDataType = ECameraContextDataType::Name;
+		ECameraContextDataContainerType NewDataContainerType = ECameraContextDataContainerType::None;
 		const UObject* NewDataTypeObject = PinType.PinSubCategoryObject.Get();
 
 		if (PinType.PinCategory == UEdGraphSchema_K2::PC_Name)
@@ -543,7 +551,20 @@ protected:
 			bIsValidType = false;
 		}
 
-		if (ensure(bIsValidType) && (NewDataType != Item->DataType || NewDataTypeObject != Item->DataTypeObject))
+		switch (PinType.ContainerType)
+		{
+			case EPinContainerType::None:
+				NewDataContainerType = ECameraContextDataContainerType::None;
+				break;
+			case EPinContainerType::Array:
+				NewDataContainerType = ECameraContextDataContainerType::Array;
+				break;
+			default:
+				bIsValidType = false;
+				break;
+		}
+
+		if (ensure(bIsValidType) && (NewDataType != Item->DataType || NewDataContainerType != Item->DataContainerType || NewDataTypeObject != Item->DataTypeObject))
 		{
 			const FScopedTransaction Transaction(LOCTEXT("ChangeDataParameterType", "Change Data Parameter Type"));
 
@@ -556,13 +577,6 @@ protected:
 	{
 		return !IsHovered();
 	}
-
-private:
-
-	mutable ECameraContextDataType CachedDataType;
-	mutable const UObject* CachedDataTypeObject = nullptr;
-	mutable const FSlateBrush* CachedDataTypeImage = nullptr;
-	mutable FSlateColor CachedDataTypeImageColor;
 };
 
 /**

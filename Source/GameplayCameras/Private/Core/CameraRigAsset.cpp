@@ -92,6 +92,7 @@ FCameraContextDataDefinition UCameraRigDataParameter::GetDataDefinition() const
 	FCameraContextDataDefinition Definition;
 	Definition.DataID = PrivateDataID;
 	Definition.DataType = DataType;
+	Definition.DataContainerType = DataContainerType;
 	Definition.DataTypeObject = DataTypeObject;
 #if WITH_EDITORONLY_DATA
 	Definition.DataName = GetDataName();
@@ -463,6 +464,10 @@ void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) co
 			FAssetRegistryTag DataParameterTag;
 			DataParameterTag.Name = FName(DataParameter->InterfaceParameterName);
 			DataParameterTag.Value = ContextDataTypeEnum->GetNameStringByValue((int64)DataParameter->DataType);
+			if (DataParameter->DataContainerType == ECameraContextDataContainerType::Array)
+			{
+				DataParameterTag.Value += TEXT("[]");
+			}
 			DataParameterTag.Type = FAssetRegistryTag::TT_Alphabetical;
 			Context.AddTag(DataParameterTag);
 		}

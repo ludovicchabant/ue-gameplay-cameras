@@ -34,7 +34,7 @@ void UK2Node_SetCameraRigParameter::Initialize(const FAssetData& UnloadedCameraR
 		}
 		else if (const UCameraRigDataParameter* DataParameter = LoadedCameraRig->Interface.FindDataParameterByName(InCameraParameterName))
 		{
-			Initialize(LoadedCameraRig, InCameraParameterName, DataParameter->DataType, DataParameter->DataTypeObject);
+			Initialize(LoadedCameraRig, InCameraParameterName, DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
 		}
 		// else, no parameter of that name found...
 	}
@@ -49,12 +49,13 @@ void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, con
 	BlendableStructType = InBlendableStructType;
 }
 
-void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, const UObject* InCameraContextDataTypeObject)
+void UK2Node_SetCameraRigParameter::Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, ECameraContextDataContainerType InCameraContextDataContainerType, const UObject* InCameraContextDataTypeObject)
 {
 	CameraRig = InCameraRig;
 	CameraParameterName = InCameraParameterName;
 	CameraParameterType = EK2Node_CameraParameterType::Data;
 	DataCameraParameterType = InCameraContextDataType;
+	DataCameraParameterContainerType = InCameraContextDataContainerType;
 	DataCameraParameterTypeObject = const_cast<UObject*>(InCameraContextDataTypeObject);
 }
 
@@ -70,7 +71,7 @@ void UK2Node_SetCameraRigParameter::AllocateDefaultPins()
 			PinType = UK2Node_CameraRigBase::MakeBlendableParameterPinType(BlendableCameraParameterType, BlendableStructType);
 			break;
 		case EK2Node_CameraParameterType::Data:
-			PinType = UK2Node_CameraRigBase::MakeDataParameterPinType(DataCameraParameterType, DataCameraParameterTypeObject);
+			PinType = UK2Node_CameraRigBase::MakeDataParameterPinType(DataCameraParameterType, DataCameraParameterContainerType, DataCameraParameterTypeObject);
 			break;
 		default:
 			PinType.PinCategory = UEdGraphSchema_K2::PC_Wildcard;
@@ -160,7 +161,7 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 			break;
 		case EK2Node_CameraParameterType::Data:
 			CallSetParameterFuncName = UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(
-					DataCameraParameterType, DataCameraParameterTypeObject);
+					DataCameraParameterType, DataCameraParameterContainerType, DataCameraParameterTypeObject);
 			break;
 		default:
 			break;

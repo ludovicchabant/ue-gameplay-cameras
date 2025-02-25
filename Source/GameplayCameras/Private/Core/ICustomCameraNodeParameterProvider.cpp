@@ -27,11 +27,12 @@ void FCustomCameraNodeParameterInfos::AddBlendableParameter(FCustomCameraNodeBle
 void FCustomCameraNodeParameterInfos::AddDataParameter(
 		FName ParameterName, 
 		ECameraContextDataType ParameterType,
+		ECameraContextDataContainerType ParameterContainerType,
 		const UObject* ParameterTypeObject,
 		const uint8* DefaultValue,
 		FCameraContextDataID* OverrideDataID)
 {
-	DataParameters.Add({ ParameterName, ParameterType, ParameterTypeObject, DefaultValue, OverrideDataID });
+	DataParameters.Add({ ParameterName, ParameterType, ParameterContainerType, ParameterTypeObject, DefaultValue, OverrideDataID });
 }
 
 void FCustomCameraNodeParameterInfos::AddDataParameter(FCustomCameraNodeDataParameter& Parameter, const uint8* DefaultValue)
@@ -39,6 +40,7 @@ void FCustomCameraNodeParameterInfos::AddDataParameter(FCustomCameraNodeDataPara
 	AddDataParameter(
 			Parameter.ParameterName,
 			Parameter.ParameterType,
+			Parameter.ParameterContainerType,
 			Parameter.ParameterTypeObject,
 			DefaultValue,
 			&Parameter.OverrideDataID);
@@ -67,6 +69,7 @@ void FCustomCameraNodeParameterInfos::GetDataParameters(TArray<FCustomCameraNode
 		FCustomCameraNodeDataParameter& OutParameter = OutDataParameters.Emplace_GetRef();
 		OutParameter.ParameterName = DataParameter.ParameterName;
 		OutParameter.ParameterType = DataParameter.ParameterType;
+		OutParameter.ParameterContainerType = DataParameter.ParameterContainerType;
 		OutParameter.ParameterTypeObject = DataParameter.ParameterTypeObject;
 		if (DataParameter.OverrideDataID)
 		{
@@ -102,6 +105,7 @@ bool FCustomCameraNodeParameterInfos::FindDataParameter(FName ParameterName, FCu
 		{
 			OutParameter.ParameterName = DataParameter.ParameterName;
 			OutParameter.ParameterType = DataParameter.ParameterType;
+			OutParameter.ParameterContainerType = DataParameter.ParameterContainerType;
 			OutParameter.ParameterTypeObject = DataParameter.ParameterTypeObject;
 			if (DataParameter.OverrideDataID)
 			{

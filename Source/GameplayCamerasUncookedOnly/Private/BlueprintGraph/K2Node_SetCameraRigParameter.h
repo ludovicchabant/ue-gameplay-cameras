@@ -32,7 +32,7 @@ public:
 
 	void Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName);
 	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType, const UScriptStruct* InBlendableStructType);
-	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, const UObject* InCameraContextDataTypeObject);
+	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, ECameraContextDataContainerType InCameraContextDataContainerType, const UObject* InCameraContextDataTypeObject);
 
 public:
 
@@ -64,6 +64,9 @@ private:
 
 	UPROPERTY()
 	ECameraContextDataType DataCameraParameterType;
+
+	UPROPERTY()
+	ECameraContextDataContainerType DataCameraParameterContainerType;
 
 	UPROPERTY()
 	TObjectPtr<UObject> DataCameraParameterTypeObject;

@@ -267,14 +267,14 @@ void FCameraRigAssetReference::GetCustomCameraNodeParameters(FCustomCameraNodePa
 					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Name))
 					{
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueName(*PropertyDesc).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Name, nullptr, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Name, ECameraContextDataContainerType::None, nullptr, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 				case ECameraContextDataType::String:
 					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::String))
 					{
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueString(*PropertyDesc).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::String, nullptr, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::String, ECameraContextDataContainerType::None, nullptr, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 				case ECameraContextDataType::Enum:
@@ -283,7 +283,7 @@ void FCameraRigAssetReference::GetCustomCameraNodeParameters(FCustomCameraNodePa
 					{
 						const UEnum* EnumType = CastChecked<const UEnum>(Definition.DataTypeObject);
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueEnum(*PropertyDesc, EnumType).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Enum, EnumType, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Enum, ECameraContextDataContainerType::None, EnumType, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 				case ECameraContextDataType::Struct:
@@ -292,21 +292,21 @@ void FCameraRigAssetReference::GetCustomCameraNodeParameters(FCustomCameraNodePa
 					{
 						const UScriptStruct* DataType = CastChecked<const UScriptStruct>(Definition.DataTypeObject);
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueStruct(*PropertyDesc, DataType).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Struct, DataType, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Struct, ECameraContextDataContainerType::None, DataType, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 				case ECameraContextDataType::Object:
 					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Object))
 					{
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueObject(*PropertyDesc).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Object, Definition.DataTypeObject, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Object, ECameraContextDataContainerType::None, Definition.DataTypeObject, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 				case ECameraContextDataType::Class:
 					if (ensure(PropertyDesc->ValueType == EPropertyBagPropertyType::Class))
 					{
 						const uint8* DefaultValue = reinterpret_cast<uint8*>(DefaultParameters.GetValueClass(*PropertyDesc).TryGetValue());
-						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Class, Definition.DataTypeObject, DefaultValue, &MetaData.OverrideDataID);
+						OutParameterInfos.AddDataParameter(Definition.ParameterName, ECameraContextDataType::Class, ECameraContextDataContainerType::None, Definition.DataTypeObject, DefaultValue, &MetaData.OverrideDataID);
 					}
 					break;
 			}

@@ -5,12 +5,11 @@
 #include "Core/CameraContextDataTableFwd.h"
 #include "Containers/Array.h"
 #include "Containers/Map.h"
+#include "Containers/ScriptArray.h"
 #include "GameplayCameras.h"
-#include "Math/NumericLimits.h"
 #include "StructUtils/InstancedStruct.h"
 #include "StructUtils/StructView.h"
 #include "Templates/PointerIsConvertibleFromTo.h"
-#include "Templates/Requires.h"
 #include <type_traits>
 
 struct FCameraContextDataDefinition;
@@ -90,6 +89,15 @@ public:
 	template<typename ValueType>
 	const ValueType* TryGetData(FCameraContextDataID InID) const;
 
+	template<typename ValueType>
+	TConstArrayView<ValueType> TryGetArrayData(FCameraContextDataID InID) const;
+
+	template<typename ValueType>
+	bool TryGetArrayData(FCameraContextDataID InID, TConstArrayView<ValueType>& OutValues) const;
+
+	template<typename ValueType>
+	const ValueType* TryGetArrayData(FCameraContextDataID InID, int32 ArrayIndex) const;
+
 	// Setter methods.
 
 	void SetNameData(FCameraContextDataID InID, const FName& InData);
@@ -107,6 +115,21 @@ public:
 	void SetStructViewData(FCameraContextDataID InID, const FStructView& InData);
 	void SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData);
 
+	void SetNameArrayData(FCameraContextDataID InID, TConstArrayView<FName> InData);
+	void SetStringArrayData(FCameraContextDataID InID, TConstArrayView<FString> InData);
+	void SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint8> InData);
+	void SetObjectArrayData(FCameraContextDataID InID, TConstArrayView<UObject*> InData);
+	void SetClassArrayData(FCameraContextDataID InID, TConstArrayView<UClass*> InData);
+
+	template<typename EnumType>
+	void SetEnumArrayData(FCameraContextDataID InID, TConstArrayView<EnumType> InData);
+
+	template<typename StructType>
+	void SetStructArrayData(FCameraContextDataID InID, TConstArrayView<StructType> InData);
+
+	void SetStructViewArrayData(FCameraContextDataID InID, TConstArrayView<FStructView> InData);
+	void SetInstancedStructArrayData(FCameraContextDataID InID, TConstArrayView<FInstancedStruct> InData);
+
 public:
 
 	// Overriding.
@@ -121,6 +144,9 @@ public:
 	void AddReferencedObjects(FReferenceCollector& ReferenceCollector);
 
 public:
+
+	/** Type of data for array entries. */
+	using FEntryScriptArray = FScriptArray;
 
 	// Low-level API.
 	const uint8* GetData(
@@ -138,6 +164,11 @@ public:
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject);
 
+	const FEntryScriptArray* TryGetArrayData(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject) const;
+
 	void SetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
@@ -149,6 +180,19 @@ public:
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
+			const uint8* InRawDataPtr,
+			bool bMarkAsWrittenThisFrame = true);
+
+	bool TrySetArrayDataNum(
+			FCameraContextDataID DataID, 
+			int32 Count,
+			bool bMarkAsWrittenThisFrame = true);
+
+	bool TrySetArrayData(
+			FCameraContextDataID DataID, 
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject,
+			int32 Index,
 			const uint8* InRawDataPtr,
 			bool bMarkAsWrittenThisFrame = true);
 
@@ -173,6 +217,7 @@ private:
 	{
 		FCameraContextDataID ID;
 		ECameraContextDataType Type;
+		ECameraContextDataContainerType ContainerType;
 		TObjectPtr<const UObject> TypeObject;
 		uint32 Offset;
 		EEntryFlags Flags;
@@ -181,8 +226,34 @@ private:
 #endif
 	};
 
+	struct FArrayEntryHelper
+	{
+		FArrayEntryHelper(const FEntry& Entry, uint8* TableMemory);
+		FArrayEntryHelper(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* RawPtr);
+
+		bool IsValidIndex(int32 Index) const;
+		int32 Num() const;
+		uint8* GetRawPtr(int32 Index);
+		void Resize(int32 Count);
+
+		ECameraContextDataType ElementType;
+		TObjectPtr<const UObject> ElementTypeObject;
+
+		uint32 ElementSizeOf;
+		uint32 ElementAlignOf;
+
+		FEntryScriptArray* ScriptArray;
+	};
+
 	static bool GetDataTypeAllocationInfo(ECameraContextDataType DataType, const UObject* DataTypeObject, uint32& OutSizeOf, uint32& OutAlignOf);
-	static bool InitializeDefaultDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr);
+	static bool GetDataTypeAllocationInfo(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint32& OutSizeOf, uint32& OutAlignOf);
+
+	static bool ConstructDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr);
+	static bool ConstructDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DataPtr);
+	static bool DestroyDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr);
+	static bool DestroyDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DataPtr);
+
+	static bool SetDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr);
 	static bool SetDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr);
 
 	const FEntry* FindEntry(FCameraContextDataID InID) const;
@@ -198,6 +269,12 @@ private:
 
 	template<typename StorageType>
 	bool SetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, const StorageType& InData);
+
+	template<typename StorageType>
+	TConstArrayView<StorageType> GetArrayDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject) const;
+
+	template<typename StorageType>
+	bool SetArrayDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, TConstArrayView<StorageType> InData);
 
 private:
 
@@ -269,6 +346,42 @@ const ValueType* FCameraContextDataTable::TryGetData(FCameraContextDataID InID) 
 	return nullptr;
 }
 
+template<typename ValueType>
+TConstArrayView<ValueType> FCameraContextDataTable::TryGetArrayData(FCameraContextDataID InID) const
+{
+	TConstArrayView<ValueType> Values;
+	if (TryGetArrayData(InID, Values))
+	{
+		return Values;
+	}
+	return TConstArrayView<ValueType>();
+}
+
+template<typename ValueType>
+bool FCameraContextDataTable::TryGetArrayData(FCameraContextDataID InID, TConstArrayView<ValueType>& OutValues) const
+{
+	ECameraContextDataType DataType = TCameraContextDataTraits<ValueType>::GetDataType();
+	const UObject* DataTypeObject = TCameraContextDataTraits<ValueType>::GetDataTypeObject();
+	if (const FEntryScriptArray* Array = TryGetArrayData(InID, DataType, DataTypeObject))
+	{
+		const ValueType* ArrayData = reinterpret_cast<const ValueType*>(Array->GetData());
+		OutValues = TConstArrayView<ValueType>(ArrayData, Array->Num());
+		return true;
+	}
+	return false;
+}
+
+template<typename ValueType>
+const ValueType* FCameraContextDataTable::TryGetArrayData(FCameraContextDataID InID, int32 ArrayIndex) const
+{
+	TConstArrayView<ValueType> TypedArrayView = TryGetArrayData<ValueType>(InID);
+	if (TypedArrayView.IsValidIndex(ArrayIndex))
+	{
+		return &TypedArrayView[ArrayIndex];
+	}
+	return nullptr;
+}
+
 template<typename EnumType>
 void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, EnumType InData)
 {
@@ -281,11 +394,26 @@ void FCameraContextDataTable::SetStructData(FCameraContextDataID InID, const Str
 	SetDataImpl(InID, ECameraContextDataType::Struct, StructType::StaticStruct(), InData);
 }
 
+template<typename EnumType>
+void FCameraContextDataTable::SetEnumArrayData(FCameraContextDataID InID, TConstArrayView<EnumType> InData)
+{
+	SetArrayDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), InData);
+}
+
+template<typename StructType>
+void FCameraContextDataTable::SetStructArrayData(FCameraContextDataID InID, TConstArrayView<StructType> InData)
+{
+	SetArrayDataImpl(InID, ECameraContextDataType::Struct, StructType::StaticStruct(), InData);
+}
+
 template<typename StorageType>
 const StorageType* FCameraContextDataTable::GetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject) const
 {
 	const FEntry* Entry = FindEntry(InID);
-	if (Entry && Entry->Type == DataType && Entry->TypeObject == DataTypeObject)
+	if (Entry && 
+			Entry->Type == DataType && 
+			Entry->ContainerType == ECameraContextDataContainerType::None && 
+			Entry->TypeObject == DataTypeObject)
 	{
 		const uint8* RawData = Memory + Entry->Offset;
 		return reinterpret_cast<const StorageType*>(RawData);
@@ -297,10 +425,51 @@ template<typename StorageType>
 bool FCameraContextDataTable::SetDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, const StorageType& InData)
 {
 	FEntry* Entry = FindEntry(InID);
-	if (Entry && Entry->Type == DataType && Entry->TypeObject == DataTypeObject)
+	if (Entry && 
+			Entry->Type == DataType && 
+			Entry->ContainerType == ECameraContextDataContainerType::None && 
+			Entry->TypeObject == DataTypeObject)
 	{
 		uint8* RawData = Memory + Entry->Offset;
 		*reinterpret_cast<StorageType*>(RawData) = InData;
+		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+		return true;
+	}
+	return false;
+}
+
+template<typename StorageType>
+TConstArrayView<StorageType> FCameraContextDataTable::GetArrayDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject) const
+{
+	const FEntry* Entry = FindEntry(InID);
+	if (Entry && 
+			Entry->Type == DataType && 
+			Entry->ContainerType == ECameraContextDataContainerType::Array && 
+			Entry->TypeObject == DataTypeObject)
+	{
+		FEntryScriptArray* Array = (FEntryScriptArray*)(Memory + Entry->Offset);
+		const StorageType* ArrayData = reinterpret_cast<const StorageType*>(Array->GetData());
+		return TConstArrayView<StorageType>(ArrayData, Array->Num());
+	}
+	return TConstArrayView<StorageType>();
+}
+
+template<typename StorageType>
+bool FCameraContextDataTable::SetArrayDataImpl(FCameraContextDataID InID, ECameraContextDataType DataType, const UObject* DataTypeObject, TConstArrayView<StorageType> InData)
+{
+	FEntry* Entry = FindEntry(InID);
+	if (Entry && 
+			Entry->Type == DataType && 
+			Entry->ContainerType == ECameraContextDataContainerType::Array && 
+			Entry->TypeObject == DataTypeObject)
+	{
+		FArrayEntryHelper Helper(*Entry, Memory);
+		Helper.Resize(InData.Num());
+		for (int32 Index = 0; Index < InData.Num(); ++Index)
+		{
+			uint8* RawData = Helper.GetRawPtr(Index);
+			*reinterpret_cast<StorageType*>(RawData) = InData[Index];
+		}
 		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
 		return true;
 	}

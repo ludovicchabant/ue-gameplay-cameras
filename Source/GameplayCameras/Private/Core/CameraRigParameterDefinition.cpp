@@ -7,6 +7,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "StructUtils/PropertyBag.h"
+#include "UObject/UnrealType.h"
 
 namespace UE::Cameras
 {
@@ -25,6 +26,7 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 	{
 		bool bIsValidProperty = true;
 		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;
+		EPropertyBagContainerType ContainerType = EPropertyBagContainerType::None;
 		const UObject* PropertyTypeObject = nullptr;
 		EPropertyFlags PropertyFlags = CPF_None;
 
@@ -82,6 +84,13 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 					bIsValidProperty = false;
 					break;
 			}
+
+			switch (Definition.DataContainerType)
+			{
+				case ECameraContextDataContainerType::Array:
+					ContainerType = EPropertyBagContainerType::Array;
+					break;
+			}
 		}
 		else
 		{
@@ -90,7 +99,7 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 
 		if (ensure(bIsValidProperty))
 		{
-			FPropertyBagPropertyDesc NewProperty(Definition.ParameterName, PropertyType, PropertyTypeObject);
+			FPropertyBagPropertyDesc NewProperty(Definition.ParameterName, ContainerType, PropertyType, PropertyTypeObject);
 			// Make the property bag match the camera interface parameter GUIDs.
 			NewProperty.ID = Definition.ParameterGuid;
 			NewProperty.PropertyFlags |= PropertyFlags;
@@ -256,37 +265,46 @@ void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset
 			continue;
 		}
 
-		void* RawDestinationValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(PropertyBagValue);
-
-		if (!ensure(RawDestinationValuePtr))
+		if (DataParameter->DataContainerType == ECameraContextDataContainerType::None)
 		{
-			continue;
+			void* RawDestinationValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(PropertyBagValue);
+			if (ensure(RawDestinationValuePtr))
+			{
+				SetDefaultParameterValue(DataParameter, RawDestinationValuePtr, RawSourceValuePtr);
+			}
 		}
-
-		switch (DataParameter->DataType)
+		else if (DataParameter->DataContainerType == ECameraContextDataContainerType::Array)
 		{
-			case ECameraContextDataType::Name:
-				*((FName*)RawDestinationValuePtr) = *((FName*)RawSourceValuePtr);
-				break;
-			case ECameraContextDataType::String:
-				*((FString*)RawDestinationValuePtr) = *((FString*)RawSourceValuePtr);
-				break;
-			case ECameraContextDataType::Enum:
-				*((uint8*)RawDestinationValuePtr) = *((uint8*)RawSourceValuePtr);
-				break;
-			case ECameraContextDataType::Struct:
-				{
-					const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataParameter->DataTypeObject);
-					StructType->CopyScriptStruct(RawDestinationValuePtr, RawSourceValuePtr);
-				}
-				break;
-			case ECameraContextDataType::Object:
-				*((FObjectPtr*)RawDestinationValuePtr) = *((FObjectPtr*)RawSourceValuePtr);
-				break;
-			case ECameraContextDataType::Class:
-				*((FObjectPtr*)RawDestinationValuePtr) = *((FObjectPtr*)RawSourceValuePtr);
-				break;
+			// Array properties are empty by default.
 		}
+	}
+}
+
+void FCameraRigParameterBuilder::SetDefaultParameterValue(const UCameraRigDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr)
+{
+	switch (DataParameter->DataType)
+	{
+		case ECameraContextDataType::Name:
+			*((FName*)DestValuePtr) = *((FName*)SrcValuePtr);
+			break;
+		case ECameraContextDataType::String:
+			*((FString*)DestValuePtr) = *((FString*)SrcValuePtr);
+			break;
+		case ECameraContextDataType::Enum:
+			*((uint8*)DestValuePtr) = *((uint8*)SrcValuePtr);
+			break;
+		case ECameraContextDataType::Struct:
+			{
+				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataParameter->DataTypeObject);
+				StructType->CopyScriptStruct(DestValuePtr, SrcValuePtr);
+			}
+			break;
+		case ECameraContextDataType::Object:
+			*((FObjectPtr*)DestValuePtr) = *((FObjectPtr*)SrcValuePtr);
+			break;
+		case ECameraContextDataType::Class:
+			*((FObjectPtr*)DestValuePtr) = *((FObjectPtr*)SrcValuePtr);
+			break;
 	}
 }
 

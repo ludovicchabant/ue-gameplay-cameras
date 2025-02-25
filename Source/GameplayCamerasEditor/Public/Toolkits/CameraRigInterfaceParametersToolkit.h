@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "EdGraphSchema_K2.h"
 #include "EditorUndoClient.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectPtr.h"
+
+#include "CameraRigInterfaceParametersToolkit.generated.h"
 
 class SBox;
 class SWidget;
@@ -58,4 +61,21 @@ private:
 };
 
 }  // namespace UE::Cameras
+
+UCLASS(MinimalAPI, Hidden)
+class UEdGraphSchema_CameraNodeK2 : public UEdGraphSchema_K2
+{
+	GENERATED_BODY()
+
+public:
+
+	virtual bool SupportsPinTypeContainer(TWeakPtr<const FEdGraphSchemaAction> SchemaAction, const FEdGraphPinType& PinType, const EPinContainerType& ContainerType) const
+	{
+		if (ContainerType == EPinContainerType::None || ContainerType == EPinContainerType::Array)
+		{
+			return Super::SupportsPinTypeContainer(SchemaAction, PinType, ContainerType);
+		}
+		return false;
+	}
+};
 

@@ -36,6 +36,16 @@ enum class ECameraContextDataType
 };
 
 /**
+ * Supported container types for a camera node's context data.
+ */
+UENUM()
+enum class ECameraContextDataContainerType
+{
+	None,
+	Array
+};
+
+/**
  * The ID of a context data, used to refer to it in a camera context data table.
  */
 USTRUCT(BlueprintType)

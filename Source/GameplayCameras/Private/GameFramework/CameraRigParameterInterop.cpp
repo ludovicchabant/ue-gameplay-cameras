@@ -254,5 +254,65 @@ void UCameraRigParameterInterop::SetClassParameter(FBlueprintCameraNodeEvaluatio
 	}
 }
 
+void UCameraRigParameterInterop::SetNameArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FName>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetNameArrayData(DataID, ParameterValue);
+	}
+}
+
+void UCameraRigParameterInterop::SetStringArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FString>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetStringArrayData(DataID, ParameterValue);
+	}
+}
+
+void UCameraRigParameterInterop::SetEnumArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const UEnum* EnumType, const TArray<uint8>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetEnumArrayData(DataID, EnumType, ParameterValue);
+	}
+}
+
+void UCameraRigParameterInterop::SetStructArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FInstancedStruct>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetInstancedStructArrayData(DataID, ParameterValue);
+	}
+}
+
+void UCameraRigParameterInterop::SetObjectArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<UObject*>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetObjectArrayData(DataID, ParameterValue);
+	}
+}
+
+void UCameraRigParameterInterop::SetClassArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<UClass*>& ParameterValue)
+{
+	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
+	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
+	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	{
+		ContextDataTable.GetContextDataTable()->SetClassArrayData(DataID, ParameterValue);
+	}
+}
+
 #undef LOCTEXT_NAMESPACE
 

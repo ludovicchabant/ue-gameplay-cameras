@@ -21,30 +21,72 @@ void FCameraContextDataTable::AddReferencedObjects(FReferenceCollector& Referenc
 	{
 		ReferenceCollector.AddReferencedObject(Entry.TypeObject);
 
-		uint8* RawData = Memory + Entry.Offset;
-		switch (Entry.Type)
+		if (Entry.ContainerType == ECameraContextDataContainerType::None)
 		{
-			case ECameraContextDataType::Struct:
-				{
-					const UScriptStruct* StructType = Cast<const UScriptStruct>(Entry.TypeObject);
-					if (ensure(StructType))
+			uint8* RawData = Memory + Entry.Offset;
+
+			switch (Entry.Type)
+			{
+				case ECameraContextDataType::Struct:
 					{
-						ReferenceCollector.AddPropertyReferencesWithStructARO(StructType, RawData);
+						const UScriptStruct* StructType = Cast<const UScriptStruct>(Entry.TypeObject);
+						if (ensure(StructType))
+						{
+							ReferenceCollector.AddPropertyReferencesWithStructARO(StructType, RawData);
+						}
 					}
-				}
-				break;
-			case ECameraContextDataType::Object:
-				{
-					TObjectPtr<UObject>* TypedData = reinterpret_cast<TObjectPtr<UObject>*>(RawData);
-					ReferenceCollector.AddReferencedObject(*TypedData);
-				}
-				break;
-			case ECameraContextDataType::Class:
-				{
-					TObjectPtr<UClass>* TypedData = reinterpret_cast<TObjectPtr<UClass>*>(RawData);
-					ReferenceCollector.AddReferencedObject(*TypedData);
-				}
-				break;
+					break;
+				case ECameraContextDataType::Object:
+					{
+						TObjectPtr<UObject>* TypedData = reinterpret_cast<TObjectPtr<UObject>*>(RawData);
+						ReferenceCollector.AddReferencedObject(*TypedData);
+					}
+					break;
+				case ECameraContextDataType::Class:
+					{
+						TObjectPtr<UClass>* TypedData = reinterpret_cast<TObjectPtr<UClass>*>(RawData);
+						ReferenceCollector.AddReferencedObject(*TypedData);
+					}
+					break;
+			}
+		}
+		else if (Entry.ContainerType == ECameraContextDataContainerType::Array)
+		{
+			FArrayEntryHelper Helper(Entry, Memory);
+
+			switch (Entry.Type)
+			{
+				case ECameraContextDataType::Struct:
+					{
+						const UScriptStruct* StructType = Cast<const UScriptStruct>(Entry.TypeObject);
+						if (ensure(StructType))
+						{
+							for (int32 Index = 0; Index < Helper.Num(); ++Index)
+							{
+								ReferenceCollector.AddPropertyReferencesWithStructARO(StructType, Helper.GetRawPtr(Index));
+							}
+						}
+					}
+					break;
+				case ECameraContextDataType::Object:
+					{
+						for (int32 Index = 0; Index < Helper.Num(); ++Index)
+						{
+							TObjectPtr<UObject>* TypedData = reinterpret_cast<TObjectPtr<UObject>*>(Helper.GetRawPtr(Index));
+							ReferenceCollector.AddReferencedObject(*TypedData);
+						}
+					}
+					break;
+				case ECameraContextDataType::Class:
+					{
+						for (int32 Index = 0; Index < Helper.Num(); ++Index)
+						{
+							TObjectPtr<UClass>* TypedData = reinterpret_cast<TObjectPtr<UClass>*>(Helper.GetRawPtr(Index));
+							ReferenceCollector.AddReferencedObject(*TypedData);
+						}
+					}
+					break;
+			}
 		}
 	}
 }
@@ -63,13 +105,14 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 
 	for (const FCameraContextDataDefinition& DataDefinition : AllocationInfo.DataDefinitions)
 	{
-		GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataTypeObject, CurSizeOf, CurAlignOf);
+		GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataContainerType, DataDefinition.DataTypeObject, CurSizeOf, CurAlignOf);
 		const uint32 NewEntryOffset = Align(TotalSizeOf, CurAlignOf);
 		TotalSizeOf = NewEntryOffset + CurSizeOf;
 
 		FEntry NewEntry;
 		NewEntry.ID = DataDefinition.DataID;
 		NewEntry.Type = DataDefinition.DataType;
+		NewEntry.ContainerType = DataDefinition.DataContainerType;
 		NewEntry.TypeObject = DataDefinition.DataTypeObject;
 		NewEntry.Offset = NewEntryOffset;
 		NewEntry.Flags = EEntryFlags::None;
@@ -90,7 +133,7 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 	for (const FEntry& Entry : Entries)
 	{
 		uint8* DataPtr = Memory + Entry.Offset;
-		InitializeDefaultDataValue(Entry.Type, Entry.TypeObject, DataPtr);
+		ConstructDataValue(Entry.Type, Entry.ContainerType, Entry.TypeObject, DataPtr);
 	}
 }
 
@@ -102,7 +145,7 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	}
 
 	uint32 SizeOf, AlignOf;
-	GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataTypeObject, SizeOf, AlignOf);
+	GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataContainerType, DataDefinition.DataTypeObject, SizeOf, AlignOf);
 
 	uint8* DataPtr = Align(Memory + Used, AlignOf);
 	uint32 NewUsed = (DataPtr + SizeOf) - Memory;
@@ -119,6 +162,7 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	FEntry NewEntry;
 	NewEntry.ID = DataDefinition.DataID;
 	NewEntry.Type = DataDefinition.DataType;
+	NewEntry.ContainerType = DataDefinition.DataContainerType;
 	NewEntry.TypeObject = DataDefinition.DataTypeObject;
 	NewEntry.Offset = DataPtr - Memory;
 	NewEntry.Flags = EEntryFlags::None;
@@ -129,7 +173,7 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	Entries.Add(NewEntry);
 	EntryLookup.Add(DataDefinition.DataID, Entries.Num() - 1);
 
-	InitializeDefaultDataValue(NewEntry.Type, NewEntry.TypeObject, Memory + NewEntry.Offset);
+	ConstructDataValue(NewEntry.Type, NewEntry.ContainerType, NewEntry.TypeObject, Memory + NewEntry.Offset);
 }
 
 bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType DataType, const UObject* DataTypeObject, uint32& OutSizeOf, uint32& OutAlignOf)
@@ -173,7 +217,22 @@ bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType D
 	return true;
 }
 
-bool FCameraContextDataTable::InitializeDefaultDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr)
+bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint32& OutSizeOf, uint32& OutAlignOf)
+{
+	if (DataContainerType == ECameraContextDataContainerType::None)
+	{
+		return GetDataTypeAllocationInfo(DataType, DataTypeObject, OutSizeOf, OutAlignOf);
+	}
+	else if (DataContainerType == ECameraContextDataContainerType::Array)
+	{
+		OutSizeOf = sizeof(FEntryScriptArray);
+		OutAlignOf = alignof(FEntryScriptArray);
+		return true;
+	}
+	return false;
+}
+
+bool FCameraContextDataTable::ConstructDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr)
 {
 	switch (DataType)
 	{
@@ -214,6 +273,73 @@ bool FCameraContextDataTable::InitializeDefaultDataValue(ECameraContextDataType 
 	return true;
 }
 
+bool FCameraContextDataTable::ConstructDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DataPtr)
+{
+	if (DataContainerType == ECameraContextDataContainerType::None)
+	{
+		return ConstructDataValue(DataType, DataTypeObject, DataPtr);
+	}
+	else if (DataContainerType == ECameraContextDataContainerType::Array)
+	{
+		new (DataPtr) FEntryScriptArray();
+	}
+	return false;
+}
+
+bool FCameraContextDataTable::DestroyDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DataPtr)
+{
+	switch (DataType)
+	{
+		case ECameraContextDataType::Name:
+			((FName*)DataPtr)->~FName();
+			break;
+		case ECameraContextDataType::String:
+			((FString*)DataPtr)->~FString();
+			break;
+		case ECameraContextDataType::Enum:
+			// Nothing to do.
+			break;
+		case ECameraContextDataType::Struct:
+			{
+				const UScriptStruct* StructType = Cast<const UScriptStruct>(DataTypeObject);
+				if (ensure(StructType))
+				{
+					StructType->DestroyStruct(DataPtr);
+				}
+			}
+			break;
+		case ECameraContextDataType::Object:
+			((TObjectPtr<UObject>*)DataPtr)->~TObjectPtr<UObject>();
+			break;
+		case ECameraContextDataType::Class:
+			((TObjectPtr<UClass>*)DataPtr)->~TObjectPtr<UClass>();
+			break;
+		default:
+			ensure(false);
+			return false;
+	}
+	return true;
+}
+
+bool FCameraContextDataTable::DestroyDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DataPtr)
+{
+	if (DataContainerType == ECameraContextDataContainerType::None)
+	{
+		return DestroyDataValue(DataType, DataTypeObject, DataPtr);
+	}
+	else if (DataContainerType == ECameraContextDataContainerType::Array)
+	{
+		FArrayEntryHelper Helper(DataType, DataTypeObject, DataPtr);
+		for (int32 Index = 0; Index < Helper.Num(); ++Index)
+		{
+			uint8* RawElementPtr = Helper.GetRawPtr(Index);
+			DestroyDataValue(DataType, DataTypeObject, RawElementPtr);
+		}
+		((FEntryScriptArray*)DataPtr)->~FEntryScriptArray();
+	}
+	return false;
+}
+
 void FCameraContextDataTable::ReallocateBuffer(uint32 MinRequired)
 {
 	static const uint32 DefaultCapacity = 64u;
@@ -250,37 +376,7 @@ void FCameraContextDataTable::DestroyBuffer()
 	for (const FEntry& Entry : Entries)
 	{
 		uint8* DataPtr = Memory + Entry.Offset;
-
-		switch (Entry.Type)
-		{
-			case ECameraContextDataType::Name:
-				reinterpret_cast<FName*>(DataPtr)->~FName();
-				break;
-			case ECameraContextDataType::String:
-				reinterpret_cast<FString*>(DataPtr)->~FString();
-				break;
-			case ECameraContextDataType::Enum:
-				// Nothing to do.
-				break;
-			case ECameraContextDataType::Struct:
-				{
-					const UScriptStruct* StructType = Cast<const UScriptStruct>(Entry.TypeObject);
-					if (ensure(StructType))
-					{
-						StructType->DestroyStruct(DataPtr);
-					}
-				}
-				break;
-			case ECameraContextDataType::Object:
-				reinterpret_cast<TObjectPtr<UObject>*>(DataPtr)->~TObjectPtr<UObject>();
-				break;
-			case ECameraContextDataType::Class:
-				reinterpret_cast<TObjectPtr<UClass>*>(DataPtr)->~TObjectPtr<UClass>();
-				break;
-			default:
-				ensure(false);
-				break;
-		}
+		DestroyDataValue(Entry.Type, Entry.ContainerType, Entry.TypeObject, DataPtr);
 	}
 
 	FMemory::Free(Memory);
@@ -392,7 +488,10 @@ void FCameraContextDataTable::SetClassData(FCameraContextDataID InID, UClass* In
 void FCameraContextDataTable::SetStructViewData(FCameraContextDataID InID, const FStructView& InData)
 {
 	FEntry* Entry = FindEntry(InID);
-	if (ensure(Entry && Entry->Type == ECameraContextDataType::Struct && InData.GetScriptStruct() == Entry->TypeObject))
+	if (ensure(Entry && 
+				Entry->Type == ECameraContextDataType::Struct && 
+				Entry->ContainerType == ECameraContextDataContainerType::None &&
+				InData.GetScriptStruct() == Entry->TypeObject))
 	{
 		uint8* DataPtr = Memory + Entry->Offset;
 		const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry->TypeObject);
@@ -404,11 +503,87 @@ void FCameraContextDataTable::SetStructViewData(FCameraContextDataID InID, const
 void FCameraContextDataTable::SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData)
 {
 	FEntry* Entry = FindEntry(InID);
-	if (ensure(Entry && Entry->Type == ECameraContextDataType::Struct && InData.GetScriptStruct() == Entry->TypeObject))
+	if (ensure(Entry && 
+				Entry->Type == ECameraContextDataType::Struct && 
+				Entry->ContainerType == ECameraContextDataContainerType::None &&
+				InData.GetScriptStruct() == Entry->TypeObject))
 	{
 		uint8* DataPtr = Memory + Entry->Offset;
 		const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry->TypeObject);
 		StructType->CopyScriptStruct(DataPtr, InData.GetMemory());
+		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+	}
+}
+
+void FCameraContextDataTable::SetNameArrayData(FCameraContextDataID InID, TConstArrayView<FName> InData)
+{
+	SetArrayDataImpl(InID, ECameraContextDataType::Name, nullptr, InData);
+}
+
+void FCameraContextDataTable::SetStringArrayData(FCameraContextDataID InID, TConstArrayView<FString> InData)
+{
+	SetArrayDataImpl(InID, ECameraContextDataType::String, nullptr, InData);
+}
+
+void FCameraContextDataTable::SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint8> InData)
+{
+	SetArrayDataImpl(InID, ECameraContextDataType::Enum, EnumType, InData);
+}
+
+void FCameraContextDataTable::SetObjectArrayData(FCameraContextDataID InID, TConstArrayView<UObject*> InData)
+{
+	TArray<TObjectPtr<UObject>> InDataPtrs(InData);
+	SetArrayDataImpl(InID, ECameraContextDataType::Object, nullptr, TConstArrayView<TObjectPtr<UObject>>(InDataPtrs));
+}
+
+void FCameraContextDataTable::SetClassArrayData(FCameraContextDataID InID, TConstArrayView<UClass*> InData)
+{
+	TArray<TObjectPtr<UClass>> InDataPtrs(InData);
+	SetArrayDataImpl(InID, ECameraContextDataType::Class, nullptr, TConstArrayView<TObjectPtr<UClass>>(InDataPtrs));
+}
+
+void FCameraContextDataTable::SetStructViewArrayData(FCameraContextDataID InID, TConstArrayView<FStructView> InData)
+{
+	FEntry* Entry = FindEntry(InID);
+	if (ensure(Entry && 
+				Entry->Type == ECameraContextDataType::Struct && 
+				Entry->ContainerType == ECameraContextDataContainerType::Array))
+	{
+		const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry->TypeObject);
+
+		FArrayEntryHelper Helper(*Entry, Memory);
+		Helper.Resize(InData.Num());
+		for (int32 Index = 0; Index < InData.Num(); ++Index)
+		{
+			uint8* RawData = Helper.GetRawPtr(Index);
+			if (ensure(StructType == InData[Index].GetScriptStruct()))
+			{
+				StructType->CopyScriptStruct(RawData, InData[Index].GetMemory());
+			}
+		}
+		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+	}
+}
+
+void FCameraContextDataTable::SetInstancedStructArrayData(FCameraContextDataID InID, TConstArrayView<FInstancedStruct> InData)
+{
+	FEntry* Entry = FindEntry(InID);
+	if (ensure(Entry && 
+				Entry->Type == ECameraContextDataType::Struct && 
+				Entry->ContainerType == ECameraContextDataContainerType::Array))
+	{
+		const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry->TypeObject);
+
+		FArrayEntryHelper Helper(*Entry, Memory);
+		Helper.Resize(InData.Num());
+		for (int32 Index = 0; Index < InData.Num(); ++Index)
+		{
+			uint8* RawData = Helper.GetRawPtr(Index);
+			if (ensure(StructType == InData[Index].GetScriptStruct()))
+			{
+				StructType->CopyScriptStruct(RawData, InData[Index].GetMemory());
+			}
+		}
 		EnumAddFlags(Entry->Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
 	}
 }
@@ -454,7 +629,9 @@ const uint8* FCameraContextDataTable::TryGetData(
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
-		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		if (Entry->Type == ExpectedDataType && 
+				Entry->ContainerType == ECameraContextDataContainerType::None && 
+				Entry->TypeObject == ExpectedDataTypeObject)
 		{
 			return Memory + Entry->Offset;
 		}
@@ -471,9 +648,30 @@ uint8* FCameraContextDataTable::TryGetMutableData(
 	FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
-		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		if (Entry->Type == ExpectedDataType && 
+				Entry->ContainerType == ECameraContextDataContainerType::None && 
+				Entry->TypeObject == ExpectedDataTypeObject)
 		{
 			return Memory + Entry->Offset;
+		}
+	}
+
+	return nullptr;
+}
+
+const FCameraContextDataTable::FEntryScriptArray* FCameraContextDataTable::TryGetArrayData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject) const
+{
+	const FEntry* Entry = FindEntry(DataID);
+	if (Entry)
+	{
+		if (Entry->Type == ExpectedDataType && 
+				Entry->ContainerType == ECameraContextDataContainerType::Array && 
+				Entry->TypeObject == ExpectedDataTypeObject)
+		{
+			return (FEntryScriptArray*)(Memory + Entry->Offset);
 		}
 	}
 
@@ -504,7 +702,9 @@ bool FCameraContextDataTable::TrySetData(
 		return false;
 	}
 
-	if (!ensure(ExpectedDataType == Entry->Type && ExpectedDataTypeObject == Entry->TypeObject))
+	if (!ensure(Entry->Type == ExpectedDataType && 
+				Entry->ContainerType == ECameraContextDataContainerType::None &&
+				Entry->TypeObject == ExpectedDataTypeObject))
 	{
 		return false;
 	}
@@ -519,6 +719,87 @@ bool FCameraContextDataTable::TrySetData(
 	}
 	
 	return true;
+}
+
+bool FCameraContextDataTable::TrySetArrayDataNum(
+		FCameraContextDataID DataID, 
+		int32 Count,
+		bool bMarkAsWrittenThisFrame)
+{
+	FEntry* Entry = FindEntry(DataID);
+	if (!Entry)
+	{
+		return false;
+	}
+
+	if (!ensure(Entry->ContainerType == ECameraContextDataContainerType::Array))
+	{
+		return false;
+	}
+
+	FArrayEntryHelper Helper(*Entry, Memory);
+	Helper.Resize(Count);
+
+	Entry->Flags |= EEntryFlags::Written;
+	if (bMarkAsWrittenThisFrame)
+	{
+		Entry->Flags |= EEntryFlags::WrittenThisFrame;
+	}
+
+	return true;
+}
+
+bool FCameraContextDataTable::TrySetArrayData(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject,
+		int32 Index,
+		const uint8* InRawDataPtr,
+		bool bMarkAsWrittenThisFrame)
+{
+	FEntry* Entry = FindEntry(DataID);
+	if (!Entry)
+	{
+		return false;
+	}
+
+	if (!ensure(Entry->ContainerType == ECameraContextDataContainerType::Array))
+	{
+		return false;
+	}
+
+	FArrayEntryHelper Helper(*Entry, Memory);
+	uint8* DataPtr = Helper.GetRawPtr(Index);
+	SetDataValue(Entry->Type, Entry->TypeObject, DataPtr, InRawDataPtr);
+
+	Entry->Flags |= EEntryFlags::Written;
+	if (bMarkAsWrittenThisFrame)
+	{
+		Entry->Flags |= EEntryFlags::WrittenThisFrame;
+	}
+	
+	return true;
+}
+
+bool FCameraContextDataTable::SetDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr)
+{
+	if (DataContainerType == ECameraContextDataContainerType::None)
+	{
+		return SetDataValue(DataType, DataTypeObject, DestDataPtr, SrcDataPtr);
+	}
+	else if (DataContainerType == ECameraContextDataContainerType::Array)
+	{
+		FArrayEntryHelper DestHelper(DataType, DataTypeObject, DestDataPtr);
+		FArrayEntryHelper SrcHelper(DataType, DataTypeObject, const_cast<uint8*>(SrcDataPtr));
+		DestHelper.Resize(SrcHelper.Num());
+		for (int32 Index = 0; Index < SrcHelper.Num(); ++Index)
+		{
+			uint8* DestElementPtr = DestHelper.GetRawPtr(Index);
+			const uint8* SrcElementPtr = SrcHelper.GetRawPtr(Index);
+			SetDataValue(DataType, DataTypeObject, DestElementPtr, SrcElementPtr);
+		}
+	}
+	return false;
 }
 
 bool FCameraContextDataTable::SetDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr)
@@ -635,6 +916,7 @@ void FCameraContextDataTable::InternalOverride(const FCameraContextDataTable& Ot
 				FCameraContextDataDefinition OtherEntryDefinition;
 				OtherEntryDefinition.DataID = OtherEntry.ID;
 				OtherEntryDefinition.DataType = OtherEntry.Type;
+				OtherEntryDefinition.DataContainerType = OtherEntry.ContainerType;
 				OtherEntryDefinition.DataTypeObject = OtherEntry.TypeObject;
 				AddData(OtherEntryDefinition);
 				ThisIndex = Entries.Num() - 1;
@@ -650,10 +932,70 @@ void FCameraContextDataTable::InternalOverride(const FCameraContextDataTable& Ot
 
 			uint8* ThisDataPtr = Memory + ThisEntry.Offset;
 			uint8* OtherDataPtr = OtherTable.Memory + OtherEntry.Offset;
-			SetDataValue(ThisEntry.Type, ThisEntry.TypeObject, ThisDataPtr, OtherDataPtr);
+			SetDataValue(ThisEntry.Type, ThisEntry.ContainerType, ThisEntry.TypeObject, ThisDataPtr, OtherDataPtr);
 
 			EnumAddFlags(ThisEntry.Flags, EEntryFlags::Written | (OtherFlags & EEntryFlags::WrittenThisFrame));
 		}
+	}
+}
+
+FCameraContextDataTable::FArrayEntryHelper::FArrayEntryHelper(const FEntry& Entry, uint8* TableMemory)
+	: FArrayEntryHelper(Entry.Type, Entry.TypeObject, TableMemory + Entry.Offset)
+{
+	check(Entry.ContainerType == ECameraContextDataContainerType::Array);
+}
+
+FCameraContextDataTable::FArrayEntryHelper::FArrayEntryHelper(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* RawPtr)
+{
+	ElementType = DataType;
+	ElementTypeObject = DataTypeObject;
+
+	uint32 SizeOf, AlignOf;
+	FCameraContextDataTable::GetDataTypeAllocationInfo(DataType, DataTypeObject, SizeOf, AlignOf);
+
+	// ElementSizeOf is the total size of an array entry, including padding.
+	ElementSizeOf = Align(SizeOf, AlignOf);
+	ElementAlignOf = AlignOf;
+
+	ScriptArray = (FEntryScriptArray*)RawPtr;
+}
+
+bool FCameraContextDataTable::FArrayEntryHelper::IsValidIndex(int32 Index) const
+{
+	return Index >= 0 && Index < Num();
+}
+
+int32 FCameraContextDataTable::FArrayEntryHelper::Num() const
+{
+	return ScriptArray->Num();
+}
+
+uint8* FCameraContextDataTable::FArrayEntryHelper::GetRawPtr(int32 Index)
+{
+	checkSlow(IsValidIndex(Index));
+	return (uint8*)ScriptArray->GetData() + Index * ElementSizeOf;
+}
+
+void FCameraContextDataTable::FArrayEntryHelper::Resize(int32 Count)
+{
+	int32 OldNum = Num();
+	if (Count > OldNum)
+	{
+		ScriptArray->Add(Count - OldNum, (int32)ElementSizeOf, ElementAlignOf);
+		for (int32 Index = OldNum; Index < Count; ++Index)
+		{
+			uint8* ElementPtr = GetRawPtr(Index);
+			FCameraContextDataTable::ConstructDataValue(ElementType, ElementTypeObject, ElementPtr);
+		}
+	}
+	else if (Count < OldNum)
+	{
+		for (int32 Index = Count; Index < OldNum; ++Index)
+		{
+			uint8* ElementPtr = GetRawPtr(Index);
+			FCameraContextDataTable::DestroyDataValue(ElementType, ElementTypeObject, ElementPtr);
+		}
+		ScriptArray->Remove(Count, OldNum - Count, (int32)ElementSizeOf, ElementAlignOf);
 	}
 }
 

@@ -61,6 +61,10 @@ struct FCustomCameraNodeDataParameter
 	UPROPERTY()
 	ECameraContextDataType ParameterType = ECameraContextDataType::Name;
 
+	/** The type of the parameter container. */
+	UPROPERTY()
+	ECameraContextDataContainerType ParameterContainerType = ECameraContextDataContainerType::None;
+
 	/** An extra type object for the parameter. */
 	UPROPERTY()
 	TObjectPtr<const UObject> ParameterTypeObject;
@@ -125,6 +129,7 @@ struct FCustomCameraNodeParameterInfos
 	GAMEPLAYCAMERAS_API void AddDataParameter(
 			FName ParameterName, 
 			ECameraContextDataType ParameterType,
+			ECameraContextDataContainerType ParameterContainerType,
 			const UObject* ParameterTypeObject,
 			const uint8* DefaultValue,
 			FCameraContextDataID* OverrideDataID);
@@ -157,6 +162,7 @@ private:
 	{
 		FName ParameterName;
 		ECameraContextDataType ParameterType;
+		ECameraContextDataContainerType ParameterContainerType;
 		const UObject* ParameterTypeObject;
 		const uint8* DefaultValue = nullptr;
 		FCameraContextDataID* OverrideDataID = nullptr;

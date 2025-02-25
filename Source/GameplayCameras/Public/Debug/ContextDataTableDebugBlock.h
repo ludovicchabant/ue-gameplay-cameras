@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraContextDataTableFwd.h"
 #include "Debug/CameraDebugBlock.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -31,6 +32,17 @@ protected:
 	virtual void OnSerialize(FArchive& Ar) override;
 
 	void Initialize(const FCameraContextDataTable& InContextDataTable);
+
+	static FString GetDebugValueString(
+			ECameraContextDataType DataType, 
+			ECameraContextDataContainerType DataContainerType,
+			const UObject* DataTypeObject,
+			const uint8* DataPtr);
+
+	static FString GetDebugValueString(
+			ECameraContextDataType DataType, 
+			const UObject* DataTypeObject,
+			const uint8* DataPtr);
 
 private:
 

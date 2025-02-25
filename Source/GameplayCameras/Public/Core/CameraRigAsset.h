@@ -219,7 +219,11 @@ public:
 
 	/** The type of this parameter. */
 	UPROPERTY()
-	ECameraContextDataType DataType;
+	ECameraContextDataType DataType = ECameraContextDataType::Name;
+
+	/** The type of container for this parameter. */
+	UPROPERTY()
+	ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
 
 	/** An additional type object for this parameter. */
 	UPROPERTY()

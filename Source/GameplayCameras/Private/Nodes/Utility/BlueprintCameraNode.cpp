@@ -340,6 +340,7 @@ void UBlueprintCameraNode::RebuildOverrides()
 
 		bool bIsDataProperty = false;
 		ECameraContextDataType DataPropertyType = ECameraContextDataType::Name;
+		ECameraContextDataContainerType DataPropertyContainerType = ECameraContextDataContainerType::None;
 		const UObject* DataPropertyTypeObject = nullptr;
 
 		if (FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))

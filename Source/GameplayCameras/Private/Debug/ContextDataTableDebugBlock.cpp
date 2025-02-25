@@ -40,39 +40,8 @@ void FContextDataTableDebugBlock::Initialize(const FCameraContextDataTable& InCo
 			EntryTypeName = Entry.TypeObject->GetFName();
 		}
 
-		FString EntryValueStr;
 		const uint8* EntryData = InContextDataTable.Memory + Entry.Offset;
-		switch (Entry.Type)
-		{
-			case ECameraContextDataType::Name:
-				EntryValueStr = reinterpret_cast<const FName*>(EntryData)->ToString();
-				break;
-			case ECameraContextDataType::String:
-				EntryValueStr = *reinterpret_cast<const FString*>(EntryData);
-				break;
-			case ECameraContextDataType::Enum:
-				{
-					const UEnum* EnumType = CastChecked<const UEnum>(Entry.TypeObject);
-					EntryValueStr = EnumType->GetNameStringByValue((int64)*reinterpret_cast<const uint8*>(EntryData));
-				}
-				break;
-			case ECameraContextDataType::Struct:
-				{
-					const UScriptStruct* StructType = CastChecked<const UScriptStruct>(Entry.TypeObject);
-					const int32 ExportFlags = PPF_Delimited | PPF_IncludeTransient | PPF_ExternalEditor;
-					StructType->ExportText(EntryValueStr, EntryData, nullptr, nullptr, ExportFlags, nullptr);
-				}
-				break;
-			case ECameraContextDataType::Object:
-				EntryValueStr = reinterpret_cast<const TObjectPtr<UObject>*>(EntryData)->GetPathName();
-				break;
-			case ECameraContextDataType::Class:
-				EntryValueStr = reinterpret_cast<const TObjectPtr<UClass>*>(EntryData)->GetPathName();
-				break;
-			default:
-				ensure(false);
-				break;
-		}
+		FString EntryValueStr = GetDebugValueString(Entry.Type, Entry.ContainerType, Entry.TypeObject, EntryData);
 
 		FEntryDebugInfo EntryDebugInfo{ Entry.ID.GetValue(), EntryName, EntryTypeName, EntryValueStr};
 		EntryDebugInfo.bWritten = EnumHasAnyFlags(Entry.Flags, FCameraContextDataTable::EEntryFlags::Written);
@@ -84,6 +53,70 @@ void FContextDataTableDebugBlock::Initialize(const FCameraContextDataTable& InCo
 			{
 				return A.Name.Compare(B.Name) < 0;
 			});
+}
+
+FString FContextDataTableDebugBlock::GetDebugValueString(
+		ECameraContextDataType DataType, 
+		ECameraContextDataContainerType DataContainerType,
+		const UObject* DataTypeObject,
+		const uint8* DataPtr)
+{
+	if (DataContainerType == ECameraContextDataContainerType::None)
+	{
+		return GetDebugValueString(DataType, DataTypeObject, DataPtr);
+	}
+	else if (DataContainerType == ECameraContextDataContainerType::Array)
+	{
+		FString ArrayStr;
+		FCameraContextDataTable::FArrayEntryHelper Helper(DataType, DataTypeObject, const_cast<uint8*>(DataPtr));
+		for (int32 Index = 0; Index < Helper.Num(); ++Index)
+		{
+			const uint8* ElementPtr = Helper.GetRawPtr(Index);
+			ArrayStr += FString::Printf(TEXT("[%d] %s\n"), Index, *GetDebugValueString(DataType, DataTypeObject, ElementPtr));
+		}
+		return ArrayStr;
+	}
+	return FString();
+}
+
+FString FContextDataTableDebugBlock::GetDebugValueString(
+		ECameraContextDataType DataType, 
+		const UObject* DataTypeObject,
+		const uint8* DataPtr)
+{
+	FString EntryValueStr;
+	switch (DataType)
+	{
+		case ECameraContextDataType::Name:
+			EntryValueStr = reinterpret_cast<const FName*>(DataPtr)->ToString();
+			break;
+		case ECameraContextDataType::String:
+			EntryValueStr = *reinterpret_cast<const FString*>(DataPtr);
+			break;
+		case ECameraContextDataType::Enum:
+			{
+				const UEnum* EnumType = CastChecked<const UEnum>(DataTypeObject);
+				EntryValueStr = EnumType->GetNameStringByValue((int64)*reinterpret_cast<const uint8*>(DataPtr));
+			}
+			break;
+		case ECameraContextDataType::Struct:
+			{
+				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataTypeObject);
+				const int32 ExportFlags = PPF_Delimited | PPF_IncludeTransient | PPF_ExternalEditor;
+				StructType->ExportText(EntryValueStr, DataPtr, nullptr, nullptr, ExportFlags, nullptr);
+			}
+			break;
+		case ECameraContextDataType::Object:
+			EntryValueStr = reinterpret_cast<const TObjectPtr<UObject>*>(DataPtr)->GetPathName();
+			break;
+		case ECameraContextDataType::Class:
+			EntryValueStr = reinterpret_cast<const TObjectPtr<UClass>*>(DataPtr)->GetPathName();
+			break;
+		default:
+			ensure(false);
+			break;
+	}
+	return EntryValueStr;
 }
 
 void FContextDataTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)

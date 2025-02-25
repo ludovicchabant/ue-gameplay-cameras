@@ -265,16 +265,24 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 			else if (DraggedPin->PinType.PinCategory == PC_CameraContextData)
 			{
 				ECameraContextDataType DataType;
+				ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
 				const UObject* DataTypeObject = nullptr;
 				
 				FCustomCameraNodeDataParameter DataParameter;
 				if (CustomParameters.FindDataParameter(DraggedPin->PinName, DataParameter))
 				{
 					DataType = DataParameter.ParameterType;
+					DataContainerType = DataParameter.ParameterContainerType;
 					DataTypeObject = DataParameter.ParameterTypeObject;
 				}
 				else if (Property)
 				{
+					if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+					{
+						DataContainerType = ECameraContextDataContainerType::Array;
+						Property = ArrayProperty->Inner;
+					}
+
 					if (FNameProperty* NameProperty = CastField<FNameProperty>(Property))
 					{
 						DataType = ECameraContextDataType::Name;
@@ -320,6 +328,7 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 				FCameraRigParameterDefinition NewParameterDefinition;
 				NewParameterDefinition.ParameterType = ECameraRigInterfaceParameterType::Data;
 				NewParameterDefinition.DataType = DataType;
+				NewParameterDefinition.DataContainerType = DataContainerType;
 				NewParameterDefinition.DataTypeObject = DataTypeObject;
 				Action->ParameterDefinition = NewParameterDefinition;
 			}
@@ -591,6 +600,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 	{
 		UCameraRigDataParameter* NewDataParameter = NewObject<UCameraRigDataParameter>(CameraRig, NAME_None, RF_Transactional);
 		NewDataParameter->DataType = ParameterDefinition.DataType;
+		NewDataParameter->DataContainerType = ParameterDefinition.DataContainerType;
 		NewDataParameter->DataTypeObject = ParameterDefinition.DataTypeObject;
 		CameraRig->Interface.DataParameters.Add(NewDataParameter);
 		NewInterfaceParameter = NewDataParameter;

@@ -9,6 +9,7 @@
 #include "CameraRigParameterDefinition.generated.h"
 
 class UCameraRigAsset;
+class UCameraRigDataParameter;
 struct FInstancedPropertyBag;
 struct FPropertyBagPropertyDesc;
 
@@ -74,6 +75,10 @@ struct FCameraRigParameterDefinition
 	UPROPERTY()
 	ECameraContextDataType DataType = ECameraContextDataType::Name;
 
+	/** The type of container that drives this blendable parameter. */
+	UPROPERTY()
+	ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
+
 	/** The type object of the data that drives this blendable parameter. */
 	UPROPERTY()
 	TObjectPtr<const UObject> DataTypeObject;
@@ -115,6 +120,10 @@ public:
 	static void AppendDefaultParameterProperties(const UCameraRigAsset* CameraRig, TArray<FPropertyBagPropertyDesc>& OutProperties);
 	/** Sets the default value of the property bag properties that correspond to parameters on the given camera rig. */
 	static void SetDefaultParameterValues(const UCameraRigAsset* CameraRig, FInstancedPropertyBag& PropertyBag);
+
+private:
+
+	static void SetDefaultParameterValue(const UCameraRigDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr);
 };
 
 }  // namespace UE::Cameras

@@ -27,6 +27,10 @@ struct FCameraContextDataDefinition
 	UPROPERTY()
 	ECameraContextDataType DataType = ECameraContextDataType::Name;
 
+	/** The type of container for the data. */
+	UPROPERTY()
+	ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
+
 	/** An extra type object for the data. */
 	UPROPERTY()
 	TObjectPtr<const UObject> DataTypeObject;

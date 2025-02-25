@@ -334,18 +334,6 @@ void AddVariableToAllocationInfo(FCameraVariableID VariableID, ECameraVariableTy
 	}
 }
 
-void AddContextDataToAllocationInfo(FCameraContextDataID DataID, ECameraContextDataType DataType, const UObject* DataTypeObject, FCameraContextDataTableAllocationInfo& AllocationInfo)
-{
-	if (DataID)
-	{
-		FCameraContextDataDefinition DataDefinition;
-		DataDefinition.DataID = DataID;
-		DataDefinition.DataType = DataType;
-		DataDefinition.DataTypeObject = DataTypeObject;
-		AllocationInfo.DataDefinitions.Add(DataDefinition);
-	}
-}
-
 }  // namespace Internal
 
 FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog)
@@ -1114,6 +1102,7 @@ void FCameraRigAssetBuilder::BuildParameterDefinitions()
 			Definition.ParameterType = ECameraRigInterfaceParameterType::Data;
 			Definition.DataID = DataParameter->PrivateDataID;
 			Definition.DataType = DataParameter->DataType;
+			Definition.DataContainerType = DataParameter->DataContainerType;
 			Definition.DataTypeObject = DataParameter->DataTypeObject;
 			ParameterDefinitions.Add(Definition);
 		}
