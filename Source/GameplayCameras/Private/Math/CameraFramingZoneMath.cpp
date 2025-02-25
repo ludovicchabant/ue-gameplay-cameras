@@ -108,6 +108,14 @@ void FFramingZone::ClampBounds(const FFramingZone& MustContain)
 	BottomBound = FMath::Clamp(BottomBound, MustContain.BottomBound, 1.0);
 }
 
+void FFramingZone::Add(const FFramingZone& Other)
+{
+	LeftBound = FMath::Min(LeftBound, Other.LeftBound);
+	TopBound = FMath::Min(TopBound, Other.TopBound);
+	RightBound = FMath::Max(RightBound, Other.RightBound);
+	BottomBound = FMath::Max(BottomBound, Other.BottomBound);
+}
+
 bool FFramingZone::Contains(const FVector2d& Point) const
 {
 	return Point.X >= LeftBound && Point.X <= RightBound &&

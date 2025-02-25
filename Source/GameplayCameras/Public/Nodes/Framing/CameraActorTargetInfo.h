@@ -8,6 +8,7 @@
 #include "CameraActorTargetInfo.generated.h"
 
 class AActor;
+struct FCameraPose;
 
 namespace UE::Cameras
 {
@@ -89,6 +90,41 @@ private:
 	const USkeletalMeshComponent* CachedSkeletalMeshComponent = nullptr;
 	FName CachedBoneName;
 	FName CachedParentBoneName;
+
+	friend struct FCameraActorTargetInfoArrayReader;
+};
+
+struct FCameraActorComputedTargetInfo
+{
+	FTransform3d Transform;
+	FBoxSphereBounds3d LocalBounds;
+	float NormalizedWeight = 1.f;
+};
+
+FArchive& operator <<(FArchive& Ar, FCameraActorComputedTargetInfo& TargetInfo);
+
+/** A special reader class for multiple targeting information. */
+struct FCameraActorTargetInfoArrayReader
+{
+	FCameraActorTargetInfoArrayReader() {}
+	FCameraActorTargetInfoArrayReader(TConstArrayView<FCameraActorTargetInfo> InTargetInfos, FCameraContextDataID InDataID);
+
+	void Initialize(TConstArrayView<FCameraActorTargetInfo> InTargetInfos, FCameraContextDataID InDataID);
+
+	bool ComputeTargetInfos(const FCameraContextDataTable& ContextDataTable, TArray<FCameraActorComputedTargetInfo>& ComputedTargets);
+
+#if WITH_EDITOR
+	void Refresh(TConstArrayView<FCameraActorTargetInfo> InTargetInfos);
+#endif
+
+private:
+
+	void CacheTargetInfos(TConstArrayView<FCameraActorTargetInfo> InTargetInfos);
+
+private:
+
+	TArray<FCameraActorTargetInfoReader> Readers;
+	FCameraContextDataID DataID;
 };
 
 }  // namespace UE::Cameras

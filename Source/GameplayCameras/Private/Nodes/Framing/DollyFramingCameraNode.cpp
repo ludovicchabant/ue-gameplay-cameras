@@ -75,15 +75,9 @@ void FDollyFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIn
 
 void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	FAcquiredTargetInfo TargetInfo;
-	if (!AcquireTargetInfo(Params, OutResult, TargetInfo))
-	{
-		return;
-	}
-
 	// Let the base class figure out all the screen-space framing stuff.
 	const FTransform3d LastShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
-	UpdateFramingState(Params, OutResult, TargetInfo, LastShotTransform);
+	UpdateFramingState(Params, OutResult, LastShotTransform);
 
 	// If we need to reframe the target this tick, figure out how much we need to move the dolly
 	// to accomplish that.

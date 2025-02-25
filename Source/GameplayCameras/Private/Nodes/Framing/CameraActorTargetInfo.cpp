@@ -2,6 +2,7 @@
 
 #include "Nodes/Framing/CameraActorTargetInfo.h"
 
+#include "Algo/Accumulate.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Core/CameraContextDataTable.h"
 #include "GameFramework/Actor.h"
@@ -111,6 +112,89 @@ void FCameraActorTargetInfoReader::ComputeTargetBounds(const FVector3d& TargetLo
 			}
 			break;
 	}
+}
+
+FCameraActorTargetInfoArrayReader::FCameraActorTargetInfoArrayReader(TConstArrayView<FCameraActorTargetInfo> InTargetInfos, FCameraContextDataID InDataID)
+{
+	Initialize(InTargetInfos, InDataID);
+}
+
+void FCameraActorTargetInfoArrayReader::Initialize(TConstArrayView<FCameraActorTargetInfo> InTargetInfos, FCameraContextDataID InDataID)
+{
+	DataID = InDataID;
+
+	CacheTargetInfos(InTargetInfos);
+}
+
+void FCameraActorTargetInfoArrayReader::CacheTargetInfos(TConstArrayView<FCameraActorTargetInfo> InTargetInfos)
+{
+	Readers.SetNum(InTargetInfos.Num());
+
+	for (int32 Index = 0; Index < InTargetInfos.Num(); ++Index)
+	{
+		Readers[Index].CacheTargetInfo(InTargetInfos[Index]);
+	}
+}
+
+bool FCameraActorTargetInfoArrayReader::ComputeTargetInfos(const FCameraContextDataTable& ContextDataTable, TArray<FCameraActorComputedTargetInfo>& ComputedTargets)
+{
+	if (DataID.IsValid())
+	{
+		TConstArrayView<FCameraActorTargetInfo> NewTargetInfos;
+		if (ContextDataTable.TryGetArrayData<FCameraActorTargetInfo>(DataID, NewTargetInfos))
+		{
+			CacheTargetInfos(NewTargetInfos);
+		}
+	}
+
+	if (Readers.IsEmpty())
+	{
+		return false;
+	}
+
+	ComputedTargets.SetNum(Readers.Num());
+
+	for (int32 Index = 0; Index < Readers.Num(); ++Index)
+	{
+		FCameraActorTargetInfoReader& Reader(Readers[Index]);
+		FCameraActorComputedTargetInfo& ComputedTarget(ComputedTargets[Index]);
+		Reader.GetTargetInfo(ContextDataTable, ComputedTarget.Transform, ComputedTarget.LocalBounds);
+		ComputedTarget.NormalizedWeight = Reader.CachedTargetInfo.Weight;
+	}
+
+	float TotalWeight = Algo::Accumulate(
+			ComputedTargets, 
+			0.f,
+			[](float Cur, const FCameraActorComputedTargetInfo& Item) { return Cur + Item.NormalizedWeight; });
+	if (TotalWeight == 0.f)
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < Readers.Num(); ++Index)
+	{
+		FCameraActorComputedTargetInfo& ComputedTarget(ComputedTargets[Index]);
+		ComputedTarget.NormalizedWeight /= TotalWeight;
+	}
+
+	return true;
+}
+
+#if WITH_EDITOR
+
+void FCameraActorTargetInfoArrayReader::Refresh(TConstArrayView<FCameraActorTargetInfo> InTargetInfos)
+{
+	CacheTargetInfos(InTargetInfos);
+}
+
+#endif  // WITH_EDITOR
+
+FArchive& operator <<(FArchive& Ar, FCameraActorComputedTargetInfo& TargetInfo)
+{
+	Ar << TargetInfo.Transform;
+	Ar << TargetInfo.LocalBounds;
+	Ar << TargetInfo.NormalizedWeight;
+	return Ar;
 }
 
 }  // namespace UE::Cameras

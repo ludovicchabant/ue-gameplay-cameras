@@ -59,6 +59,11 @@ struct FFramingZone
 	 */
 	void ClampBounds(const FFramingZone& MustContain);
 
+	/**
+	 * Expands this framing zone to include the other framing zone.
+	 */
+	void Add(const FFramingZone& Other);
+
 	/** Checks whether the given point (in 0..1 UI space) is inside this zone. */
 	bool Contains(const FVector2d& Point) const;
 

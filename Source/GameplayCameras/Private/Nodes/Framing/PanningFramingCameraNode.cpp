@@ -69,15 +69,9 @@ void FPanningFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	FAcquiredTargetInfo TargetInfo;
-	if (!AcquireTargetInfo(Params, OutResult, TargetInfo))
-	{
-		return;
-	}
-
 	// Let the base class figure out all the screen-space framing stuff.
 	const FTransform3d LastShotTransform = BuildPanningShotTransform(OutResult.CameraPose);
-	UpdateFramingState(Params, OutResult, TargetInfo, LastShotTransform);
+	UpdateFramingState(Params, OutResult, LastShotTransform);
 
 	// If we need to reframe the target this tick, figure out how much we need to rotate the camera
 	// to accomplish that.

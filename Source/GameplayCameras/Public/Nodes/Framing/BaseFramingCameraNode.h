@@ -30,16 +30,17 @@ public:
 	/** 
 	 * A variable whose value is the desired target's location in world space.
 	 * If set, and if the variable has been set, the obtained value takes priority
-	 * over the TargetInfo property.
+	 * over the TargetInfos property.
 	 */
 	UPROPERTY(EditAnywhere, Category="Target")
 	FVector3dCameraVariableReference TargetLocation;
 
+	/** Specifies one or more target actors to frame. */
 	UPROPERTY(EditAnywhere, Category="Target", meta=(CameraContextData=true))
-	FCameraActorTargetInfo TargetInfo;
+	TArray<FCameraActorTargetInfo> TargetInfos;
 
 	UPROPERTY()
-	FCameraContextDataID TargetInfoDataID;
+	FCameraContextDataID TargetInfosDataID;
 
 	/**
 	 * Whether the camera pose's target distance should be set to the distance between
@@ -102,11 +103,19 @@ public:
 	UPROPERTY(EditAnywhere, Category="Framing Zones")
 	FCameraFramingZoneParameter SoftZone;
 
+private:
+
+	UPROPERTY()
+	FCameraActorTargetInfo TargetInfo_DEPRECATED;
+
 public:
 
 	UBaseFramingCameraNode(const FObjectInitializer& ObjectInit);
 
 public:
+
+	// UObject interface.
+	virtual void PostLoad() override;
 
 	// ICustomCameraNodeParameterProvider interface.
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
@@ -158,12 +167,9 @@ protected:
 
 	struct FState;
 	struct FDesired;
-	struct FAcquiredTargetInfo;
 
-	/** Gets the target location. */
-	bool AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, FAcquiredTargetInfo& OutInfo);
 	/** Updates the framing state for the current tick, see State member field. */
-	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming);
+	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FTransform3d& LastFraming);
 	/** Wraps-up the update with optional operations. */
 	void EndFramingUpdate(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
@@ -175,10 +181,15 @@ private:
 
 	FVector2d GetHardReframeCoords() const;
 
-	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FAcquiredTargetInfo& TargetInfo, const FTransform3d& LastFraming);
-	FVector3d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector3d& InTargetLocation);
-	FFramingZone ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds);
+	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FTransform3d& LastFraming);
 	void ComputeDesiredState(float DeltaTime);
+
+	bool AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos);
+	bool ComputeFinalTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
+	FVector2d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector2d& InPreviousAnticipatedScreenTarget, const FVector2d& InScreenTarget);
+	FFramingZone ComputeEffectiveDeadZone();
+
+	static FFramingZone ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds);
 
 protected:
 
@@ -202,16 +213,10 @@ protected:
 		InHardZone
 	};
 
-	struct FAcquiredTargetInfo
-	{
-		FTransform3d WorldTransform;
-		FBoxSphereBounds3d LocalBounds;
-	};
-
 	/** Utility structure for all the parameter readers we need every frame. */
 	struct FReaders
 	{
-		FCameraActorTargetInfoReader TargetInfo;
+		FCameraActorTargetInfoArrayReader TargetInfos;
 
 		TCameraParameterReader<FVector2d> IdealFramingLocation;
 		TCameraParameterReader<bool> SetTargetDistance;
@@ -230,11 +235,6 @@ protected:
 	/** Utility struct for storing the current known state. */
 	struct FState
 	{
-		/** World position of the tracked target. */
-		FVector3d WorldTarget;
-		/** Bounds of the tracked target. */
-		FBoxSphereBounds3d LocalTargetBounds;
-
 		/** Screen-space position of the ideal framing position. */
 		FVector2d IdealTarget;
 		/** Current reframing damping factor. */
@@ -253,17 +253,20 @@ protected:
 		float ToggleEngageAlpha;
 		/** Current look-ahead time for anticipating target movement */
 		float TargetMovementAnticipationTime;
-		/** Current target bounds zone. */
-		FFramingZone ScreenTargetBounds;
-		/** Dead zone minus the screen target bounds. */
-		FFramingZone EffectiveDeadZone;
 		/** Current coordinates of the dead zone. */
 		FFramingZone DeadZone;
 		/** Current coordinates of the soft zone. */
 		FFramingZone SoftZone;
 
+		/** Current world-space position of the tracked target. */
+		FVector3d WorldTarget;
 		/** Current screen-space position of the tracked target. */
 		FVector2d ScreenTarget;
+		/** Current target bounds zone. */
+		FFramingZone ScreenTargetBounds;
+		/** Dead zone minus the screen target bounds. */
+		FFramingZone EffectiveDeadZone;
+
 		/** Current state of the tracked target. */
 		ETargetFramingState TargetFramingState;
 		/** Whether we are actively trying to bring the target back to the ideal position. */
@@ -274,9 +277,11 @@ protected:
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		/** Intersection of the reframing vector with the dead zone box. */
-		FVector2d DeadZoneEdgePoint;
+		FVector2d DebugDeadZoneEdgePoint;
 		/** Intersection of the reframing vector with the hard zone box. */
-		FVector2d HardZoneEdgePoint;
+		FVector2d DebugHardZoneEdgePoint;
+		/** Screen bounds for all the targets. */
+		TArray<FFramingZone, TInlineAllocator<4>> DebugAllScreenTargetBounds;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 		void Serialize(FArchive& Ar);
@@ -306,15 +311,25 @@ protected:
 	};
 	FDesired Desired;
 
-	struct FWorldTargetAnticipation
+	struct FWorldTargetInfos
 	{
-		TArray<TTuple<FVector3d, float>, TInlineAllocator<10>> History;
+		TArray<FCameraActorComputedTargetInfo, TInlineAllocator<4>> TargetInfos;
+
+		void Serialize(FArchive& Ar);
 	};
-	FWorldTargetAnticipation Anticipation;
+	FWorldTargetInfos WorldTargets;
+
+	struct FScreenTargetHistory
+	{
+		FVector2d UnanticipatedScreenTarget;
+		TArray<TTuple<FVector2d, float>, TInlineAllocator<10>> History;
+	};
+	FScreenTargetHistory ScreenTargetHistory;
 
 	friend class FBaseFramingCameraDebugBlock;
 	friend FArchive& operator <<(FArchive& Ar, FState& State);
 	friend FArchive& operator <<(FArchive& Ar, FDesired& Desired);
+	friend FArchive& operator <<(FArchive& Ar, FWorldTargetInfos& WorldTargets);
 };
 
 FArchive& operator <<(FArchive& Ar, FBaseFramingCameraNodeEvaluator::FState& State);
