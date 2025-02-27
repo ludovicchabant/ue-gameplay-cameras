@@ -55,6 +55,12 @@ struct FFramingZone
 
 	/**
 	 * Makes sure all the bounds have valid values between 0 and 1, and that the
+	 * enclosed rectangle contains the given target point, with a uniform margin.
+	 */
+	void ClampBounds(const FVector2d& MustContain, double Margin);
+
+	/**
+	 * Makes sure all the bounds have valid values between 0 and 1, and that the
 	 * enclosed rectangle contains the given inner rectangle.
 	 */
 	void ClampBounds(const FFramingZone& MustContain);

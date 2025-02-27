@@ -454,7 +454,7 @@ FFramingZone FBaseFramingCameraNodeEvaluator::ComputeEffectiveDeadZone()
 	EffectiveDeadZone.RightBound -= RelativeTargetBounds.RightBound;
 	EffectiveDeadZone.BottomBound -= RelativeTargetBounds.BottomBound;
 
-	EffectiveDeadZone.ClampBounds(State.IdealTarget);
+	EffectiveDeadZone.ClampBounds(State.IdealTarget, UE_DOUBLE_KINDA_SMALL_NUMBER);
 	
 	return EffectiveDeadZone;
 }
@@ -490,7 +490,6 @@ void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 	const double ReframingSpeed = State.ReframeDamper.GetX0Derivative();
 	if (!State.bIsReframingTarget || (DistanceToGo <= GFramingIdealReachedEpsilon && ReframingSpeed <= GFramingIdealReachedEpsilon))
 	{
-		ensure(State.TargetFramingState == ETargetFramingState::InDeadZone);
 		Desired.ScreenTarget = State.ScreenTarget;
 		Desired.FramingCorrection = FVector2d::ZeroVector;
 		Desired.bHasCorrection = false;

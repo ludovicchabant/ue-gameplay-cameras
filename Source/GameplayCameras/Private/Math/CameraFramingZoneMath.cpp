@@ -100,6 +100,14 @@ void FFramingZone::ClampBounds(const FVector2d& MustContain)
 	BottomBound = FMath::Clamp(BottomBound, MustContain.Y, 1.0);
 }
 
+void FFramingZone::ClampBounds(const FVector2d& MustContain, double Margin)
+{
+	LeftBound = FMath::Clamp(LeftBound, 0.0, MustContain.X - Margin);
+	TopBound = FMath::Clamp(TopBound, 0.0, MustContain.Y - Margin);
+	RightBound = FMath::Clamp(RightBound, MustContain.X + Margin, 1.0);
+	BottomBound = FMath::Clamp(BottomBound, MustContain.Y + Margin, 1.0);
+}
+
 void FFramingZone::ClampBounds(const FFramingZone& MustContain)
 {
 	LeftBound = FMath::Clamp(LeftBound, 0.0, MustContain.LeftBound);
