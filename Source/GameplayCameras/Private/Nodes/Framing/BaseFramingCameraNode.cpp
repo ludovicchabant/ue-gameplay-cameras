@@ -683,7 +683,7 @@ void FBaseFramingCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 
 	for (const FCameraActorComputedTargetInfo& TargetInfo : WorldTargets.TargetInfos)
 	{
-		Renderer.DrawBox(TargetInfo.Transform.GetLocation(), TargetInfo.LocalBounds.BoxExtent, FLinearColor::Yellow, 0.5f);
+		Renderer.DrawBox(TargetInfo.Transform, TargetInfo.LocalBounds.BoxExtent, FColorList::LightSteelBlue, 0.1f);
 	}
 }
 
