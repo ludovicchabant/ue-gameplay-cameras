@@ -106,6 +106,9 @@ public:
 	/** Gets the children evaluation contexts running inside this context. */
 	TArrayView<const TSharedPtr<FCameraEvaluationContext>> GetChildrenContexts() const { return ChildrenContexts; }
 
+	/** Gets the size of the viewport that cameras inside the context are being viewed through. */
+	FIntPoint GetViewportSize() const;
+
 public:
 
 	/** Gets an evaluation result that will be conditionally overlaid on some camera rigs in this context. */
@@ -149,6 +152,8 @@ protected:
 	virtual void OnActivate(const FCameraEvaluationContextActivateParams& Params) {}
 	virtual void OnDeactivate(const FCameraEvaluationContextDeactivateParams& Params) {}
 
+	FCameraSystemEvaluator* GetCameraSystemEvaluator() const { return CameraSystemEvaluator; }
+
 	void AutoCreateDirectorEvaluator();
 
 #if WITH_EDITOR
@@ -172,18 +177,26 @@ protected:
 	/** The initial result for all camera rigs in this context. */
 	FCameraNodeEvaluationResult InitialResult;
 
+	/** An optional viewport size, if there is no PlayerController, or its viewport should not be used. */
+	TOptional<FIntPoint> OverrideViewportSize;
+
 private:
 
+	/** The camera director evaluator, usually only valid if this context has been activated. */
 	FCameraDirectorEvaluatorStorage DirectorEvaluatorStorage;
 	FCameraDirectorEvaluator* DirectorEvaluator = nullptr;
 
+	/** The camera system that this context has been activated for, or null if the context isn't currently active. */
 	FCameraSystemEvaluator* CameraSystemEvaluator = nullptr;
 
+	/** The parent context, if any. */
 	TWeakPtr<FCameraEvaluationContext> WeakParent;
 
+	/** The children contexts, if any. */
 	using FChildrenContexts = TArray<TSharedPtr<FCameraEvaluationContext>>;
 	FChildrenContexts ChildrenContexts;
 
+	/** Conditional camera data for camera rigs running inside this context. */
 	using FConditionalResults = TMap<ECameraEvaluationDataCondition, FCameraNodeEvaluationResult>;
 	FConditionalResults ConditionalResults;
 

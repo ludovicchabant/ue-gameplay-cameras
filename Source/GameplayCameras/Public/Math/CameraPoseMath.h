@@ -6,12 +6,13 @@
 #include "Math/MathFwd.h"
 #include "Math/Matrix.h"
 
-class APlayerController;
 struct FCameraFieldsOfView;
 struct FCameraPose;
 
 namespace UE::Cameras
 {
+
+class FCameraEvaluationContext;
 
 /**
  * Simple struct for holding horizontal and vertical fields of view.
@@ -33,13 +34,13 @@ public:
 	static FCameraFieldsOfView GetEffectiveFieldsOfView(const FCameraPose& CameraPose);
 
 	/** Gets both horizontal and vertical effective fields of view, using the given player controller's viewport aspect ratio. */
-	static FCameraFieldsOfView GetEffectiveFieldsOfView(const FCameraPose& CameraPose, const APlayerController* PlayerController);
+	static FCameraFieldsOfView GetEffectiveFieldsOfView(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext);
 
 	/** Gets both horizontal and vertical effective fields of view, using the given aspect ratio. */
 	static FCameraFieldsOfView GetEffectiveFieldsOfView(const FCameraPose& CameraPose, double AspectRatio);
 
 	/** Gets the aspect ratio of the viewport associated with the given player controller. */
-	static double GetEffectiveAspectRatio(const FCameraPose& CameraPose, const APlayerController* PlayerController);
+	static double GetEffectiveAspectRatio(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext);
 
 	/** 
 	 * Builds the projection matrix of the given camera pose. 

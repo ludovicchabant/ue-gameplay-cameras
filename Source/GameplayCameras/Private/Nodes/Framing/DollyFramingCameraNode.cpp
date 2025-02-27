@@ -36,7 +36,7 @@ protected:
 private:
 
 	FTransform3d BuildDollyShotTransform(const FCameraPose& CameraPose) const;
-	FVector3d ComputeFramingTranslation(const FCameraPose& CameraPose, APlayerController* PlayerController);
+	FVector3d ComputeFramingTranslation(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext);
 
 private:
 
@@ -86,8 +86,7 @@ void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& 
 		FCameraPose LastShotPose(OutResult.CameraPose);
 		LastShotPose.SetTransform(LastShotTransform);
 
-		APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-		FVector3d DesiredLocalOffset = ComputeFramingTranslation(LastShotPose, PlayerController);
+		FVector3d DesiredLocalOffset = ComputeFramingTranslation(LastShotPose, Params.EvaluationContext);
 
 		// We never bring the dolly forward or backward (we only move it vertically or horizontally).
 		DesiredLocalOffset.X = 0.f;
@@ -128,9 +127,9 @@ FTransform3d FDollyFramingCameraNodeEvaluator::BuildDollyShotTransform(const FCa
 	return Transform;
 }
 
-FVector3d FDollyFramingCameraNodeEvaluator::ComputeFramingTranslation(const FCameraPose& CameraPose, APlayerController* PlayerController)
+FVector3d FDollyFramingCameraNodeEvaluator::ComputeFramingTranslation(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
 {
-	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, PlayerController);
+	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, EvaluationContext);
 	const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(CameraPose, AspectRatio));
 
 	// Get the position of the current target in camera space.

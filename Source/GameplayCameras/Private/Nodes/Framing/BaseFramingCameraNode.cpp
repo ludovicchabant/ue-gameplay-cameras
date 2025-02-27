@@ -326,8 +326,7 @@ bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraNodeEv
 	}
 
 	// Start with projecting all the targets, and their bounds, on screen.
-	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-	const double AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, PlayerController);
+	const double AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, Params.EvaluationContext);
 
 	struct FComputedTargetScreenInfo
 	{

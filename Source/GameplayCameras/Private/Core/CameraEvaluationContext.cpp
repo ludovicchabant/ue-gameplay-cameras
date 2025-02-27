@@ -108,6 +108,23 @@ UWorld* FCameraEvaluationContext::GetWorld() const
 	return nullptr;
 }
 
+FIntPoint FCameraEvaluationContext::GetViewportSize() const
+{
+	if (OverrideViewportSize.IsSet())
+	{
+		return OverrideViewportSize.GetValue();
+	}
+
+	if (APlayerController* PlayerController = GetPlayerController())
+	{
+		int32 ViewportSizeX = 0, ViewportSizeY = 0;
+		PlayerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
+		return FIntPoint(ViewportSizeX, ViewportSizeY);
+	}
+
+	return FIntPoint(EForceInit::ForceInit);
+}
+
 void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	Collector.AddReferencedObject(CameraAsset);
@@ -261,6 +278,7 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 		DirectorEvaluator->Activate(DirectorParams);
 	}
 
+	CameraSystemEvaluator = Params.Evaluator;
 	bActivated = true;
 }
 
@@ -283,6 +301,7 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 
 	OnDeactivate(Params);
 
+	CameraSystemEvaluator = nullptr;
 	bActivated = false;
 }
 

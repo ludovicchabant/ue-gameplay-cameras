@@ -80,8 +80,7 @@ void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 		FCameraPose LastShotPose(OutResult.CameraPose);
 		LastShotPose.SetTransform(LastShotTransform);
 
-		APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-		const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(LastShotPose, PlayerController);
+		const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(LastShotPose, Params.EvaluationContext);
 		const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(LastShotPose, AspectRatio));
 
 		// Get yaw/pitch angles for where the target is currently at, and where we want it to be at.

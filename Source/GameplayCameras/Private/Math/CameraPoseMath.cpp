@@ -3,12 +3,11 @@
 #include "Math/CameraPoseMath.h"
 
 #include "Core/CameraPose.h"
+#include "Core/CameraEvaluationContext.h"
 #include "CoreGlobals.h"
-#include "GameFramework/PlayerController.h"
 #include "Math/InverseRotationMatrix.h"
 #include "Math/PerspectiveMatrix.h"
 #include "Math/TranslationMatrix.h"
-#include "RHI.h"
 
 namespace UE::Cameras
 {
@@ -18,22 +17,14 @@ FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose&
 	return GetEffectiveFieldsOfView(CameraPose, CameraPose.GetSensorAspectRatio());
 }
 
-FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, const APlayerController* PlayerController)
+FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
 {
-	const double AspectRatio = GetEffectiveAspectRatio(CameraPose, PlayerController);
+	const double AspectRatio = GetEffectiveAspectRatio(CameraPose, EvaluationContext);
 	return GetEffectiveFieldsOfView(CameraPose, AspectRatio);
 }
 
 FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose& CameraPose, double AspectRatio)
 {
-	if (CameraPose.GetConstrainAspectRatio() || 
-			!ensureMsgf(AspectRatio > 0.0, TEXT("Invalid aspect ratio! Using sensor aspect ratio instead.")))
-	{
-		// Aspect ratio is constrained, there will be black bars to enforce it to be equal to
-		// our sensor aspect ratio.
-		return GetEffectiveFieldsOfView(CameraPose, CameraPose.GetSensorAspectRatio());
-	}
-
 	const double HorizontalFOV = CameraPose.GetEffectiveFieldOfView();
 
 	// Check the sort of aspect ratio axis constraint we have.
@@ -69,20 +60,19 @@ FCameraFieldsOfView FCameraPoseMath::GetEffectiveFieldsOfView(const FCameraPose&
 	}
 }
 
-double FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, const APlayerController* PlayerController)
+double FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
 {
-	if (CameraPose.GetConstrainAspectRatio() || PlayerController == nullptr)
+	if (CameraPose.GetConstrainAspectRatio() || !EvaluationContext)
 	{
 		return CameraPose.GetSensorAspectRatio();
 	}
 	else
 	{
-		int32 ViewportSizeX = 0, ViewportSizeY = 0;
-		PlayerController->GetViewportSize(ViewportSizeX, ViewportSizeY);
-		if (ensureMsgf(ViewportSizeX > 0 && ViewportSizeY > 0,
+		FIntPoint ViewportSize = EvaluationContext->GetViewportSize();
+		if (ensureMsgf(ViewportSize.X > 0 && ViewportSize.Y > 0,
 				TEXT("Can't get viewport aspect ratio! Using sensor aspect ratio instead.")))
 		{
-			return (double)ViewportSizeX / (double)ViewportSizeY;
+			return (double)ViewportSize.X / (double)ViewportSize.Y;
 		}
 		else
 		{
