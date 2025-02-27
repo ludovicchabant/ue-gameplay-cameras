@@ -202,6 +202,14 @@ namespace UE::Cameras
 class FGameplayCameraComponentEvaluationContext : public FCameraEvaluationContext
 {
 	UE_DECLARE_CAMERA_EVALUATION_CONTEXT(GAMEPLAYCAMERAS_API, FGameplayCameraComponentEvaluationContext)
+
+#if WITH_EDITOR
+
+public:
+
+	void UpdateForEditorPreview();
+
+#endif  // WITH_EDITOR
 };
 
 }  // namespace UE::Cameras
