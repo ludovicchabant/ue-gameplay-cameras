@@ -194,7 +194,8 @@ FText FObjectTreeGraphConfig::GetDisplayNameText(const UObject* InObject) const
 		const FObjectTreeGraphClassConfigs ClassConfig = GetObjectClassConfigs(InObject->GetClass());
 
 		const IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
-		if (GraphObject && GraphObject->HasSupportFlags(GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename))
+		if (GraphObject && GraphObject->HasAnySupportFlags(
+					GraphName, EObjectTreeGraphObjectSupportFlags::CustomTitle | EObjectTreeGraphObjectSupportFlags::CustomRename))
 		{
 			GraphObject->GetGraphNodeName(GraphName, DisplayNameText);
 		}

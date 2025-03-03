@@ -23,8 +23,10 @@ enum class EObjectTreeGraphObjectSupportFlags
 	None,
 	/** Supports storing a comment text. */
 	CommentText = 1 << 0,
+	/** Has a custom graph node title. */
+	CustomTitle = 1 << 1,
 	/** Supports custom renaming the graph node. */
-	CustomRename = 1 << 1
+	CustomRename = 1 << 2
 };
 ENUM_CLASS_FLAGS(EObjectTreeGraphObjectSupportFlags);
 
@@ -54,7 +56,7 @@ public:
 	/** Gets optional APIs support flags. */
 	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const { return EObjectTreeGraphObjectSupportFlags::None; }
 	/** Gets whether this object supports the given optional API. */
-	bool HasSupportFlags(FName InGraphName, EObjectTreeGraphObjectSupportFlags InFlags) const { return EnumHasAllFlags(GetSupportFlags(InGraphName), InFlags); }
+	bool HasAnySupportFlags(FName InGraphName, EObjectTreeGraphObjectSupportFlags InFlags) const { return EnumHasAnyFlags(GetSupportFlags(InGraphName), InFlags); }
 
 	/** Gets the graph node's comment text. */
 	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const { static const FString EmptyString; return EmptyString; }

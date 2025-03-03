@@ -28,7 +28,7 @@ void UObjectTreeGraphNode::Initialize(UObject* InObject)
 
 	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(InObject);
-	if (GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText))
+	if (GraphObject && GraphObject->HasAnySupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText))
 	{
 		NodeComment = GraphObject->GetGraphNodeCommentText(NodeContext.GraphConfig.GraphName);
 	}
@@ -703,7 +703,7 @@ bool UObjectTreeGraphNode::GetCanRenameNode() const
 	UObject* Object = WeakObject.Get();
 	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
-	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename);
+	return GraphObject && GraphObject->HasAnySupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CustomRename);
 }
 
 void UObjectTreeGraphNode::OnRenameNode(const FString& NewName)
@@ -747,7 +747,7 @@ bool UObjectTreeGraphNode::SupportsCommentBubble() const
 	UObject* Object = WeakObject.Get();
 	const FNodeContext NodeContext = GetNodeContext();
 	IObjectTreeGraphObject* GraphObject = Cast<IObjectTreeGraphObject>(Object);
-	return GraphObject && GraphObject->HasSupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText);
+	return GraphObject && GraphObject->HasAnySupportFlags(NodeContext.GraphConfig.GraphName, EObjectTreeGraphObjectSupportFlags::CommentText);
 }
 
 void UObjectTreeGraphNode::OnUpdateCommentText(const FString& NewComment)
