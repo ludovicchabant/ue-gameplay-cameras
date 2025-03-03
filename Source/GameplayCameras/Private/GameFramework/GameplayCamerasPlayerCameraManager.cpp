@@ -18,6 +18,7 @@
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameFramework/PlayerController.h"
+#include "Services/CameraModifierService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -183,6 +184,43 @@ void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
 	ReleaseCameraSystemHost();
 
 	PCOwner = nullptr;
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Global, OrderKey);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Visual, OrderKey);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
+	}
 }
 
 void AGameplayCamerasPlayerCameraManager::InitializeFor(APlayerController* PlayerController)

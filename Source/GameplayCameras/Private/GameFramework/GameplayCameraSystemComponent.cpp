@@ -3,13 +3,17 @@
 #include "GameFramework/GameplayCameraSystemComponent.h"
 
 #include "Components/BillboardComponent.h"
+#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/PersistentBlendStackCameraNode.h"
+#include "Core/RootCameraNode.h"
 #include "Engine/Canvas.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "Kismet/GameplayStatics.h"
+#include "Services/CameraModifierService.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/ICookInfo.h"
 
@@ -209,6 +213,43 @@ void UGameplayCameraSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayR
 	DeactivateCameraSystem();
 
 	Super::EndPlay(EndPlayReason);
+}
+
+FCameraRigInstanceID UGameplayCameraSystemComponent::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Global, OrderKey);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+FCameraRigInstanceID UGameplayCameraSystemComponent::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Visual);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+void UGameplayCameraSystemComponent::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

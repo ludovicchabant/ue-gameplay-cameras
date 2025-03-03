@@ -10,6 +10,7 @@
 
 class AGameplayCameraSystemActor;
 class UGameplayCameraSystemHost;
+struct FCameraRigInstanceID;
 
 namespace UE::Cameras
 {
@@ -57,6 +58,17 @@ public:
 	/** Restore an originally stolen camera manager (see StealPlayerController). */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	void ReleasePlayerController();
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraRigInstanceID StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraRigInstanceID StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
 
 public:
 

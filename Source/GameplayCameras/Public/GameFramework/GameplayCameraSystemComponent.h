@@ -11,6 +11,7 @@ class APlayerController;
 class UCameraRigAsset;
 class UCanvas;
 class UGameplayCameraSystemHost;
+struct FCameraRigInstanceID;
 struct FMinimalViewInfo;
 
 namespace UE::Cameras
@@ -53,6 +54,17 @@ public:
 	/** Removes this component's actor from being the view target. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void DeactivateCameraSystem(AActor* NextViewTarget = nullptr);
+
+public:
+
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API FCameraRigInstanceID StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API FCameraRigInstanceID StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	GAMEPLAYCAMERAS_API void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
 
 public:
 
