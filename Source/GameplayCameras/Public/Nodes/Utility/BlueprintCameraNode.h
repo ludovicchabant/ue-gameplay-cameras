@@ -4,8 +4,8 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraVariableTableFwd.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "Core/ObjectTreeGraphObject.h"
 #include "GameFramework/BlueprintCameraPose.h"
 #include "GameFramework/BlueprintCameraVariableTable.h"
 
@@ -120,6 +120,12 @@ protected:
 	virtual void OnPreBuild(FCameraBuildLog& BuildLog) override;
 	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
+
+	// IObjectTreeGraphObject interface.
+#if WITH_EDITOR
+	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override;
+	virtual void GetGraphNodeName(FName InGraphName, FText& OutName) const override;
+#endif  // WITH_EDITOR
 
 	// ICustomCameraNodeParameterProvider interface.
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
