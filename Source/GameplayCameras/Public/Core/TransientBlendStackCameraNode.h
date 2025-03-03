@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/BlendStackCameraNode.h"
+#include "Core/BlendStackEntryID.h"
 
 namespace UE::Cameras
 {
@@ -30,6 +31,9 @@ struct FBlendStackCameraPushParams
  */
 struct FBlendStackCameraFreezeParams
 {
+	/** The ID of the blend stack entry to freeze. */
+	FBlendStackEntryID EntryID;
+
 	/** The evaluation context within which a camera rig's node tree is running. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
@@ -52,7 +56,7 @@ class FTransientBlendStackCameraNodeEvaluator
 public:
 
 	/** Push a new camera rig onto the blend stack. */
-	void Push(const FBlendStackCameraPushParams& Params);
+	FBlendStackEntryID Push(const FBlendStackCameraPushParams& Params);
 
 	/** Freeze a camera rig. */
 	void Freeze(const FBlendStackCameraFreezeParams& Params);
@@ -82,8 +86,8 @@ private:
 			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
 			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
-	void PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
-	void PushMergedEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+	FBlendStackEntryID PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
+	FBlendStackEntryID PushMergedEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 
 private:
 

@@ -5,24 +5,12 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigEvaluationInfo.h"
+#include "Core/CameraRigInstanceID.h"
 
 #include "RootCameraNode.generated.h"
 
 class UCameraRigAsset;
 class UCameraRigTransition;
-
-/**
- * Defines evaluation layers for camera rigs.
- */
-UENUM(BlueprintType)
-enum class ECameraRigLayer : uint8
-{
-	Base UMETA(DisplayName="Base Layer"),
-	Main UMETA(DisplayName="Main Layer"),
-	Global UMETA(DisplayName="Global Layer"),
-	Visual UMETA(DisplayName="Visual Layer")
-};
-ENUM_CLASS_FLAGS(ECameraRigLayer)
 
 /**
  * The base class for a camera node that can act as the root of the
@@ -63,10 +51,13 @@ struct FActivateCameraRigParams
 };
 
 /**
- * Parameter structure for deaactivating a running camera rig.
+ * Parameter structure for deactivating a running camera rig.
  */
 struct FDeactivateCameraRigParams
 {
+	/** The instance to deactivate. */
+	FCameraRigInstanceID InstanceID;
+
 	/** The evaluation context in which the camera rig runs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
@@ -110,14 +101,23 @@ class FRootCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 public:
 
-	/** Activates a camera rig. */
-	void ActivateCameraRig(const FActivateCameraRigParams& Params);
+	/** 
+	 * Activates a camera rig.
+	 * What it means to activate a camera rig may differ depending on the layer it runs on.
+	 */
+	FCameraRigInstanceID ActivateCameraRig(const FActivateCameraRigParams& Params);
 
-	/** Deactivates a camera rig. */
+	/** 
+	 * Deactivates a camera rig. 
+	 * What it means to deactivate a camera rig may differ depending on the layer it runs on.
+	 */
 	void DeactivateCameraRig(const FDeactivateCameraRigParams& Params);
 
 	/** Gets information about the active camera rig in the main layer. */
 	void GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const;
+
+	/** Gets information about a specified camera rig. */
+	void GetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const;
 
 	/** Gets whether any camera rig is running. */
 	bool HasAnyActiveCameraRig() const;
@@ -148,13 +148,16 @@ protected:
 protected:
 
 	/** Activates a camera rig. */
-	virtual void OnActivateCameraRig(const FActivateCameraRigParams& Params) {}
+	virtual FCameraRigInstanceID OnActivateCameraRig(const FActivateCameraRigParams& Params) { return FCameraRigInstanceID(); }
 	
 	/** Deactivates a camera rig. */
 	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) {}
 
 	/** Gets information about the active camera rig in the main layer. */
 	virtual void OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const {}
+
+	/** Gets information about a specified camera rig. */
+	virtual void OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const {}
 
 	/* Builds the hierarchy of the system for a given single camera rig. */
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) {}

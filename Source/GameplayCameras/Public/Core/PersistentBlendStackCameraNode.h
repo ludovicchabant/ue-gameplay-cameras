@@ -27,13 +27,18 @@ struct FBlendStackCameraInsertParams
 
 /**
  * Parameter structure for removing a camera rig from a persistent blend stack.
+ * The camera rig to remove is identified first by a given ID or, if no ID is given,
+ * by finding a camera rig matching the provided EvaluationContext and CameraRig.
  */
 struct FBlendStackCameraRemoveParams
 {
-	/** The evaluation context within which a camera rig's node tree should run. */
+	/** The ID of the blend stack entry to remove. */
+	FBlendStackEntryID EntryID;
+
+	/** The evaluation context within which the camera rig to remove is being run. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 
-	/** The source camera rig asset to instantiate and push on the blend stack. */
+	/** The source camera rig asset used by the instanced to remove. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
 };
 
@@ -50,7 +55,7 @@ class FPersistentBlendStackCameraNodeEvaluator
 public:
 
 	/** Insert a new camera rig onto the blend stack. */
-	void Insert(const FBlendStackCameraInsertParams& Params);
+	FBlendStackEntryID Insert(const FBlendStackCameraInsertParams& Params);
 
 	/** Remove an existing camera rig from the blend stack. */
 	void Remove(const FBlendStackCameraRemoveParams& Params);

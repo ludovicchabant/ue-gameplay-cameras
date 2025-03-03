@@ -18,7 +18,7 @@ namespace UE::Cameras
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FTransientBlendStackCameraNodeEvaluator)
 
-void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
+FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
 {
 	bool bSearchedForTransition = false;
 	const UCameraRigTransition* Transition = nullptr;
@@ -33,7 +33,7 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 			// camera rig.
 			if (!Params.bForcePush && TopEntry.CameraRig == Params.CameraRig)
 			{
-				return;
+				return FBlendStackEntryID();
 			}
 
 			// See if we can merge the new camera rig onto the active camera rig.
@@ -42,7 +42,7 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 			if (!Params.bForcePush && Eligibility == ECameraRigMergingEligibility::Active)
 			{
 				// This camera rig is already the active one on the merged stack.
-				return;
+				return FBlendStackEntryID();
 			}
 
 			if (Eligibility == ECameraRigMergingEligibility::EligibleForMerge)
@@ -54,8 +54,7 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 
 				if (Transition && Transition->bAllowCameraRigMerging)
 				{
-					PushMergedEntry(Params, Transition);
-					return;
+					return PushMergedEntry(Params, Transition);
 				}
 			}
 		}
@@ -68,10 +67,10 @@ void FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushPa
 		Transition = FindTransition(Params);
 	}
 
-	PushNewEntry(Params, Transition);
+	return PushNewEntry(Params, Transition);
 }
 
-void FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition)
+FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition)
 {
 	// Create the new root node to wrap the new camera rig's root node, and the specific
 	// blend node for this transition.
@@ -108,7 +107,7 @@ void FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCame
 			true);
 	if (!bInitialized)
 	{
-		return;
+		return FBlendStackEntryID();
 	}
 	
 	// Take a snapshot of the initial result for having base values during pre-blending.
@@ -132,6 +131,8 @@ void FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCame
 	AddPackageListeners(NewEntry);
 #endif  // WITH_EDITOR
 
+	const FBlendStackEntryID AddedEntryID(NewEntry.EntryID);
+
 	// Important: we need to move the new entry here because copying evaluator storage
 	// is disabled.
 	Entries.Add(MoveTemp(NewEntry));
@@ -141,9 +142,11 @@ void FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const FBlendStackCame
 	{
 		BroadcastCameraRigEvent(EBlendStackCameraRigEventType::Pushed, Entries.Last(), UsedTransition);
 	}
+
+	return AddedEntryID;
 }
 
-void FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(const FBlendStackCameraPushParams& PushParams, const UCameraRigTransition* Transition)
+FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(const FBlendStackCameraPushParams& PushParams, const UCameraRigTransition* Transition)
 {
 	const UBlendCameraNode* Blend = Transition ? Transition->Blend : nullptr;
 
@@ -166,17 +169,33 @@ void FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(const FBlendStackC
 #if WITH_EDITOR
 	AddPackageListeners(TopEntry);
 #endif
+
+	return TopEntry.EntryID;
 }
 
 void FTransientBlendStackCameraNodeEvaluator::Freeze(const FBlendStackCameraFreezeParams& Params)
 {
-	for (FCameraRigEntry& Entry : Entries)
+	if (Params.EntryID.IsValid())
 	{
-		if (!Entry.bIsFrozen && 
-				Entry.CameraRig == Params.CameraRig &&
-				Entry.EvaluationContext == Params.EvaluationContext)
+		// Freeze the entry by ID.
+		const int32 EntryIndex = IndexOfEntry(Params.EntryID);
+		if (EntryIndex != INDEX_NONE)
 		{
-			FreezeEntry(Entry);
+			FreezeEntry(Entries[EntryIndex]);
+		}
+	}
+	else
+	{
+
+		// Freeze any entries matching the given context and rig asset.
+		for (FCameraRigEntry& Entry : Entries)
+		{
+			if (!Entry.bIsFrozen && 
+					Entry.CameraRig == Params.CameraRig &&
+					Entry.EvaluationContext == Params.EvaluationContext)
+			{
+				FreezeEntry(Entry);
+			}
 		}
 	}
 }

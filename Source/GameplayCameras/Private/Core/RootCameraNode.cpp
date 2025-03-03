@@ -16,9 +16,9 @@ void FRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitialize
 	OwningEvaluator = Params.Evaluator;
 }
 
-void FRootCameraNodeEvaluator::ActivateCameraRig(const FActivateCameraRigParams& Params)
+FCameraRigInstanceID FRootCameraNodeEvaluator::ActivateCameraRig(const FActivateCameraRigParams& Params)
 {
-	OnActivateCameraRig(Params);
+	return OnActivateCameraRig(Params);
 }
 
 void FRootCameraNodeEvaluator::DeactivateCameraRig(const FDeactivateCameraRigParams& Params)
@@ -29,6 +29,11 @@ void FRootCameraNodeEvaluator::DeactivateCameraRig(const FDeactivateCameraRigPar
 void FRootCameraNodeEvaluator::GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const
 {
 	OnGetActiveCameraRigInfo(OutCameraRigInfo);
+}
+
+void FRootCameraNodeEvaluator::GetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const
+{
+	OnGetCameraRigInfo(InstanceID, OutCameraRigInfo);
 }
 
 bool FRootCameraNodeEvaluator::HasAnyActiveCameraRig() const

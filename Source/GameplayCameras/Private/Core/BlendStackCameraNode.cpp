@@ -123,6 +123,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	RootEvaluator->Initialize(InitParams, NewEntry.Result);
 
 	// Wrap up!
+	NewEntry.EntryID = FBlendStackEntryID(NextEntryID++);
 	NewEntry.EvaluationContext = EvaluationContext;
 	NewEntry.CameraRig = CameraRig;
 	NewEntry.RootNode = EntryRootNode;
@@ -131,6 +132,14 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.bIsFirstFrame = true;
 
 	return true;
+}
+
+int32 FBlendStackCameraNodeEvaluator::IndexOfEntry(const FBlendStackEntryID EntryID) const
+{
+	return Entries.IndexOfByPredicate([EntryID](const FCameraRigEntry& Item)
+			{
+				return Item.EntryID == EntryID;
+			});
 }
 
 void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
@@ -157,10 +166,28 @@ FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetActiveCameraRigEvalu
 	{
 		const FCameraRigEntry& ActiveEntry = Entries[0];
 		FCameraRigEvaluationInfo Info(
+				FCameraRigInstanceID::FromBlendStackEntryID(ActiveEntry.EntryID, Layer),
 				ActiveEntry.EvaluationContext.Pin(),
 				ActiveEntry.CameraRig, 
 				&ActiveEntry.Result,
 				ActiveEntry.RootEvaluator ? ActiveEntry.RootEvaluator->GetRootEvaluator() : nullptr);
+		return Info;
+	}
+	return FCameraRigEvaluationInfo();
+}
+
+FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetCameraRigEvaluationInfo(FBlendStackEntryID EntryID) const
+{
+	const int32 EntryIndex = IndexOfEntry(EntryID);
+	if (EntryIndex != INDEX_NONE)
+	{
+		const FCameraRigEntry& Entry = Entries[EntryIndex];
+		FCameraRigEvaluationInfo Info(
+				FCameraRigInstanceID::FromBlendStackEntryID(Entry.EntryID, Layer),
+				Entry.EvaluationContext.Pin(),
+				Entry.CameraRig, 
+				&Entry.Result,
+				Entry.RootEvaluator ? Entry.RootEvaluator->GetRootEvaluator() : nullptr);
 		return Info;
 	}
 	return FCameraRigEvaluationInfo();
@@ -182,6 +209,9 @@ FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	OwningEvaluator = Params.Evaluator;
+
+	const UBlendStackCameraNode* BlendStack = GetCameraNodeAs<UBlendStackCameraNode>();
+	Layer = BlendStack->Layer;
 }
 
 void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries)
@@ -413,6 +443,7 @@ void FBlendStackCameraNodeEvaluator::BroadcastCameraRigEvent(EBlendStackCameraRi
 	Event.EventType = EventType;
 	Event.BlendStackEvaluator = this;
 	Event.CameraRigInfo = FCameraRigEvaluationInfo(
+			FCameraRigInstanceID::FromBlendStackEntryID(Entry.EntryID, Layer),
 			Entry.EvaluationContext.Pin(),
 			Entry.CameraRig,
 			&Entry.Result,

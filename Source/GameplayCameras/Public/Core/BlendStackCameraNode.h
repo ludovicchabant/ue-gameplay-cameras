@@ -2,12 +2,14 @@
 
 #pragma once
 
+#include "Core/BlendStackEntryID.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorHierarchy.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigEvaluationInfo.h"
+#include "Core/CameraRigInstanceID.h"
 #include "Debug/CameraDebugBlock.h"
 #include "IGameplayCamerasLiveEditListener.h"
 
@@ -72,11 +74,13 @@ protected:
 
 public:
 
-	/** 
-	 * The type of blend stack this should run as.
-	 */
+	/** The type of blend stack this should run as. */
 	UPROPERTY()
 	ECameraBlendStackType BlendStackType = ECameraBlendStackType::IsolatedTransient;
+
+	/** The layer that this blend stack represents, if any. */
+	UPROPERTY()
+	ECameraRigLayer Layer = ECameraRigLayer::None;
 };
 
 namespace UE::Cameras
@@ -102,6 +106,9 @@ public:
 
 	/** Returns information about the top (active) camera rig, if any. */
 	FCameraRigEvaluationInfo GetActiveCameraRigEvaluationInfo() const;
+
+	/** Returns information about a given camera rig, if any. */
+	FCameraRigEvaluationInfo GetCameraRigEvaluationInfo(FBlendStackEntryID EntryID) const;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
@@ -140,6 +147,8 @@ protected:
 		UBlendStackRootCameraNode* EntryRootNode,
 		bool bSetActiveResult);
 
+	int32 IndexOfEntry(const FBlendStackEntryID EntryID) const;
+
 	void FreezeEntry(FCameraRigEntry& Entry);
 
 	void PopEntry(int32 EntryIndex);
@@ -174,6 +183,8 @@ protected:
 
 	struct FCameraRigEntry
 	{
+		/** The ID for this entry. */
+		FBlendStackEntryID EntryID;
 		/** Evaluation context in which this entry runs. */
 		TWeakPtr<const FCameraEvaluationContext> EvaluationContext;
 		/** The camera rig asset that this entry runs. */
@@ -212,6 +223,12 @@ protected:
 
 	/** Entries in the blend stack. */
 	TArray<FCameraRigEntry> Entries;
+
+	/** Next entry ID to use. */
+	uint32 NextEntryID = 0;
+
+	/** The layer that this blend stack represents, if any. */
+	ECameraRigLayer Layer = ECameraRigLayer::None;
 
 	/** The delegate to invoke when an event occurs in this blend stack. */
 	FOnBlendStackCameraRigEvent OnCameraRigEventDelegate;

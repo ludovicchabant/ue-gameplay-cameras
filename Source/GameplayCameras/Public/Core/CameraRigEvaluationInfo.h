@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraRigInstanceID.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectPtr.h"
 
@@ -22,6 +23,8 @@ struct FCameraNodeEvaluationResult;
  */
 struct GAMEPLAYCAMERAS_API FCameraRigEvaluationInfo
 {
+	/** The instance ID of this camera rig. */
+	FCameraRigInstanceID InstanceID;
 	/** The context inside which the evaluation occurs. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** The camera rig being evaluated. */
@@ -35,11 +38,13 @@ struct GAMEPLAYCAMERAS_API FCameraRigEvaluationInfo
 	{}
 
 	FCameraRigEvaluationInfo(
+			FCameraRigInstanceID InInstanceID,
 			TSharedPtr<const FCameraEvaluationContext> InEvaluationContext,
 			TObjectPtr<const UCameraRigAsset> InCameraRig,
 			const FCameraNodeEvaluationResult* InLastResult,
 			FCameraNodeEvaluator* InRootEvaluator)
-		: EvaluationContext(InEvaluationContext)
+		: InstanceID(InInstanceID)
+		, EvaluationContext(InEvaluationContext)
 		, CameraRig(InCameraRig)
 		, LastResult(InLastResult)
 		, RootEvaluator(InRootEvaluator)

@@ -12,7 +12,7 @@ namespace UE::Cameras
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FPersistentBlendStackCameraNodeEvaluator)
 
-void FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraInsertParams& Params)
+FBlendStackEntryID FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraInsertParams& Params)
 {
 	// See if we already have this camera rig and evaluation context in the stack.
 	if (!Params.bForceInsert)
@@ -23,7 +23,7 @@ void FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraIns
 					Entry.CameraRig == Params.CameraRig &&
 					Entry.EvaluationContext == Params.EvaluationContext)
 			{
-				return;
+				return FBlendStackEntryID();
 			}
 		}
 	}
@@ -45,7 +45,7 @@ void FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraIns
 			false);
 	if (!bInitialized)
 	{
-		return;
+		return FBlendStackEntryID();
 	}
 
 #if WITH_EDITOR
@@ -53,23 +53,46 @@ void FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraIns
 #endif  // WITH_EDITOR
 
 	Entries.Add(MoveTemp(NewEntry));
+	const FBlendStackEntryID AddedEntryID(NewEntry.EntryID);
 
 	if (OnCameraRigEventDelegate.IsBound())
 	{
 		BroadcastCameraRigEvent(EBlendStackCameraRigEventType::Pushed, Entries.Last(), nullptr);
 	}
+
+	return AddedEntryID;
 }
 
 void FPersistentBlendStackCameraNodeEvaluator::Remove(const FBlendStackCameraRemoveParams& Params)
 {
-	for (int32 Index = Entries.Num() - 1; Index >= 0; --Index)
+	TArray<int32, TInlineAllocator<4>> EntriesToRemove;
+
+	if (Params.EntryID.IsValid())
 	{
-		FCameraRigEntry& Entry(Entries[Index]);
-		if (Entry.CameraRig == Params.CameraRig &&
-				Entry.EvaluationContext == Params.EvaluationContext)
+		// Remove the entry by ID.
+		const int32 EntryIndex = IndexOfEntry(Params.EntryID);
+		if (EntryIndex != INDEX_NONE)
 		{
-			PopEntry(Index);
+			EntriesToRemove.Add(EntryIndex);
 		}
+	}
+	else
+	{
+		// Remove any entries matching the given context and rig asset.
+		for (int32 Index = Entries.Num() - 1; Index >= 0; --Index)
+		{
+			FCameraRigEntry& Entry(Entries[Index]);
+			if (Entry.CameraRig == Params.CameraRig &&
+					Entry.EvaluationContext == Params.EvaluationContext)
+			{
+				EntriesToRemove.Add(Index);
+			}
+		}
+	}
+
+	for (int32 Index : EntriesToRemove)
+	{
+		PopEntry(Index);
 	}
 }
 

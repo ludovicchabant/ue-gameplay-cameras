@@ -19,11 +19,12 @@ namespace UE::Cameras::Private
 
 TObjectPtr<UBlendStackCameraNode> CreateBlendStack(
 		UObject* This, const FObjectInitializer& ObjectInit,
-		const FName& Name, ECameraBlendStackType BlendStackType)
+		const FName& Name, ECameraBlendStackType BlendStackType, ECameraRigLayer Layer)
 {
 	TObjectPtr<UBlendStackCameraNode> NewBlendStack = ObjectInit.CreateDefaultSubobject<UBlendStackCameraNode>(
 			This, Name);
 	NewBlendStack->BlendStackType = BlendStackType;
+	NewBlendStack->Layer = Layer;
 	return NewBlendStack;
 }
 
@@ -34,10 +35,10 @@ UDefaultRootCameraNode::UDefaultRootCameraNode(const FObjectInitializer& ObjectI
 {
 	using namespace UE::Cameras::Private;
 
-	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), ECameraBlendStackType::AdditivePersistent);
-	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"), ECameraBlendStackType::IsolatedTransient);
-	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), ECameraBlendStackType::AdditivePersistent);
-	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), ECameraBlendStackType::AdditivePersistent);
+	BaseLayer = CreateBlendStack(this, ObjectInit, TEXT("BaseLayer"), ECameraBlendStackType::AdditivePersistent, ECameraRigLayer::Base);
+	MainLayer = CreateBlendStack(this, ObjectInit, TEXT("MainLayer"), ECameraBlendStackType::IsolatedTransient, ECameraRigLayer::Main);
+	GlobalLayer = CreateBlendStack(this, ObjectInit, TEXT("GlobalLayer"), ECameraBlendStackType::AdditivePersistent, ECameraRigLayer::Global);
+	VisualLayer = CreateBlendStack(this, ObjectInit, TEXT("VisualLayer"), ECameraBlendStackType::AdditivePersistent, ECameraRigLayer::Visual);
 }
 
 FCameraNodeEvaluatorPtr UDefaultRootCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
@@ -81,7 +82,7 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	VisualLayer->Run(Params, OutResult);
 }
 
-void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
+FCameraRigInstanceID FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
 {
 	if (Params.Layer == ECameraRigLayer::Main)
 	{
@@ -90,7 +91,9 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 		PushParams.CameraRig = Params.CameraRig;
 		PushParams.TransitionOverride = Params.TransitionOverride;
 		PushParams.bForcePush = Params.bForceActivate;
-		MainLayer->Push(PushParams);
+		
+		const FBlendStackEntryID EntryID = MainLayer->Push(PushParams);
+		return FCameraRigInstanceID::FromBlendStackEntryID(EntryID, ECameraRigLayer::Main);
 	}
 	else
 	{
@@ -114,16 +117,22 @@ void FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraR
 			InsertParams.CameraRig = Params.CameraRig;
 			InsertParams.TransitionOverride = Params.TransitionOverride;
 			InsertParams.bForceInsert = Params.bForceActivate;
-			TargetLayer->Insert(InsertParams);
+
+			const FBlendStackEntryID EntryID = TargetLayer->Insert(InsertParams);
+			return FCameraRigInstanceID::FromBlendStackEntryID(EntryID, Params.Layer);
 		}
 	}
+
+	return FCameraRigInstanceID();
 }
 
 void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params)
 {
-	if (Params.Layer == ECameraRigLayer::Main)
+	ECameraRigLayer Layer = (Params.InstanceID.IsValid() ? Params.InstanceID.GetLayer() : Params.Layer);
+	if (Layer == ECameraRigLayer::Main)
 	{
 		FBlendStackCameraFreezeParams FreezeParams;
+		FreezeParams.EntryID = Params.InstanceID.ToBlendStackEntryID();
 		FreezeParams.CameraRig = Params.CameraRig;
 		FreezeParams.EvaluationContext = Params.EvaluationContext;
 		MainLayer->Freeze(FreezeParams);
@@ -131,7 +140,7 @@ void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCam
 	else
 	{
 		FPersistentBlendStackCameraNodeEvaluator* TargetLayer = nullptr;
-		switch (Params.Layer)
+		switch (Layer)
 		{
 			case ECameraRigLayer::Base:
 				TargetLayer = BaseLayer;
@@ -146,6 +155,7 @@ void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCam
 		if (ensure(TargetLayer))
 		{
 			FBlendStackCameraRemoveParams RemoveParams;
+			RemoveParams.EntryID = Params.InstanceID.ToBlendStackEntryID();
 			RemoveParams.EvaluationContext = Params.EvaluationContext;
 			RemoveParams.CameraRig = Params.CameraRig;
 			TargetLayer->Remove(RemoveParams);
@@ -156,6 +166,27 @@ void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCam
 void FDefaultRootCameraNodeEvaluator::OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const
 {
 	OutCameraRigInfo = MainLayer->GetActiveCameraRigEvaluationInfo();
+}
+
+void FDefaultRootCameraNodeEvaluator::OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const
+{
+	FPersistentBlendStackCameraNodeEvaluator* TargetLayer = nullptr;
+	switch (InstanceID.GetLayer())
+	{
+		case ECameraRigLayer::Base:
+			TargetLayer = BaseLayer;
+			break;
+		case ECameraRigLayer::Global:
+			TargetLayer = GlobalLayer;
+			break;
+		case ECameraRigLayer::Visual:
+			TargetLayer = VisualLayer;
+			break;
+	}
+	if (ensure(TargetLayer))
+	{
+		OutCameraRigInfo = TargetLayer->GetCameraRigEvaluationInfo(InstanceID.ToBlendStackEntryID());
+	}
 }
 
 void FDefaultRootCameraNodeEvaluator::OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
