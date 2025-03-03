@@ -19,6 +19,8 @@ class UBlendCameraNode : public UCameraNode
 namespace UE::Cameras
 {
 
+class FBlendCameraNodeEvaluator;
+
 /**
  * Parameter struct for blending camera node parameters.
  */
@@ -100,6 +102,15 @@ struct FCameraNodeBlendResult
 };
 
 /**
+ * Parameter struct for initializing a blend from an interrupted blend.
+ */
+struct FCameraNodeBlendInterruptionParams
+{
+	/** The existing blend that was interrupted. */
+	const FBlendCameraNodeEvaluator* InterruptedBlend = nullptr;
+};
+
+/**
  * Base evaluator class for blend camera nodes.
  */
 class FBlendCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -114,6 +125,26 @@ public:
 	/** Blend the result of a camera node tree over another result. */
 	GAMEPLAYCAMERAS_API void BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult);
 
+public:
+
+	/**
+	 * Initialize this blend from an interrupted blend.
+	 *
+	 * @return If true, the blend sub-class fully supports seamless transition from the interrupted blend.
+	 *		   If false, the blend will be wrapped in an Interrupted Blend node that will freeze the
+	 *		   interrupted blend to ensure a seamless transition.
+	 */
+	bool InitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params);
+
+	/**
+	 * Reverse the direction of this blend.
+	 *
+	 * @return If true, the blend sub-class fully supports reverse blending.
+	 *         If false, the blend will be wrapped in a Reverse Blend node that will cache and swap the
+	 *         "from" and "to" results given to the BlendParameters and BlendResults methods.
+	 */
+	bool SetReversed(bool bInReverse);
+
 protected:
 
 	/** Blend the parameters produced by a camera node tree over another set of values. */
@@ -121,6 +152,12 @@ protected:
 
 	/** Blend the result of a camera node tree over another result. */
 	virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) {}
+
+	/** Initialize this blend from an interrupted blend. See comments from InitializeFromInterruption. */
+	virtual bool OnInitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params) { return false; }
+
+	/** Reverse the direction of this blend. See comments from SetReversed. */
+	virtual bool OnSetReversed(bool bInReverse) { return false; }
 };
 
 }  // namespace UE::Cameras

@@ -46,6 +46,9 @@ struct FActivateCameraRigParams
 	/** The evaluation layer on which to instantiate the camera rig. */
 	ECameraRigLayer Layer = ECameraRigLayer::Main;
 
+	/** If the given layer supports ordering, this specifies a priority key. */
+	int32 OrderKey = 0;
+
 	/** Whether a new instance of the camera rig should be created, even if it is already active in the given layer. */
 	bool bForceActivate = false;
 };
@@ -66,6 +69,12 @@ struct FDeactivateCameraRigParams
 
 	/** The evaluation layer on which the camera rig is running. */
 	ECameraRigLayer Layer = ECameraRigLayer::Main;
+
+	/** If deactivation uses a transition (e.g. blending out), then force using the given transition. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
+
+	/** If deactivation can take time (e.g. blending out), then force an immediate deactivation. */
+	bool bDeactiveImmediately = false;
 };
 
 /**

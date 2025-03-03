@@ -79,12 +79,7 @@ private:
 	void InternalPostBlendExecute(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 	void InternalRunFinished(FCameraNodeEvaluationResult& OutResult);
 
-	// Utility functions for finding an appropriate transition.
 	const UCameraRigTransition* FindTransition(const FBlendStackCameraPushParams& Params) const;
-	const UCameraRigTransition* FindTransition(
-			TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
-			const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
-			const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset) const;
 
 	FBlendStackEntryID PushNewEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);
 	FBlendStackEntryID PushMergedEntry(const FBlendStackCameraPushParams& Params, const UCameraRigTransition* Transition);

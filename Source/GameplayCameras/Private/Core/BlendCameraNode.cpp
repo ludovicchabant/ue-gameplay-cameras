@@ -19,5 +19,15 @@ void FBlendCameraNodeEvaluator::BlendResults(const FCameraNodeBlendParams& Param
 	OnBlendResults(Params, OutResult);
 }
 
+bool FBlendCameraNodeEvaluator::InitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params)
+{
+	return OnInitializeFromInterruption(Params);
+}
+
+bool FBlendCameraNodeEvaluator::SetReversed(bool bInReverse)
+{
+	return OnSetReversed(bInReverse);
+}
+
 }  // namespace UE::Cameras
 

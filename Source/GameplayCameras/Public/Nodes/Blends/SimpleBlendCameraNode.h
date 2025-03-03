@@ -67,10 +67,12 @@ public:
 
 protected:
 
+	// FBlendCameraNodeEvaluator interface.
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	GAMEPLAYCAMERAS_API virtual void OnBlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult) override;
 	GAMEPLAYCAMERAS_API virtual void OnBlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult) override;
 	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
+	GAMEPLAYCAMERAS_API virtual bool OnSetReversed(bool bInReverse) override;
 
 	virtual void OnComputeBlendFactor(const FCameraNodeEvaluationParams& Params, FSimpleBlendCameraNodeEvaluationResult& OutResult) {}
 
@@ -84,6 +86,7 @@ private:
 
 	float BlendFactor = 0.f;
 	bool bIsBlendFinished = false;
+	bool bReverse = false;
 };
 
 class FSimpleFixedTimeBlendCameraNodeEvaluator : public FSimpleBlendCameraNodeEvaluator
@@ -92,12 +95,16 @@ class FSimpleFixedTimeBlendCameraNodeEvaluator : public FSimpleBlendCameraNodeEv
 
 protected:
 
+	// FBlendCameraNodeEvaluator interface.
+	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	GAMEPLAYCAMERAS_API virtual bool OnInitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params) override;
 
 	float GetTimeFactor() const;
 
 private:
 
+	float TotalTime = 0.f;
 	float CurrentTime = 0.f;
 };
 

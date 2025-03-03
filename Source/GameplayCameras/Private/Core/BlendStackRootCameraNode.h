@@ -68,6 +68,8 @@ public:
 	FBlendCameraNodeEvaluator* GetBlendEvaluator() const { return BlendEvaluator; }
 	FCameraNodeEvaluator* GetRootEvaluator() const { return RootEvaluator; }
 
+	void SetBlendEvaluator(FBlendCameraNodeEvaluator* InBlendEvaluator);
+
 	ECameraRigMergingEligibility CompareCameraRigForMerging(const UCameraRigAsset* CameraRig) const;
 
 	void MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigAsset* CameraRig, const UBlendCameraNode* Blend);

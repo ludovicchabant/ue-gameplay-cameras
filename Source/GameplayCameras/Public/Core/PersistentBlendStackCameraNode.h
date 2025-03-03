@@ -21,7 +21,19 @@ struct FBlendStackCameraInsertParams
 	/** A transition to use, instead of looking one up. */
 	TObjectPtr<const UCameraRigTransition> TransitionOverride;
 
-	/** Whether to force insert a new instance of the camera rig, even if there is already one in the stack. */
+	/**
+	 * An ordering value for where to insert the camera rig in the stack.
+	 * Higher values place the camera rig higher in the stack (i.e. evaluating later)
+	 * Lower values place the camera rig lower in the stack (i.e. evluating earlier)
+	 * Insertion of an equal pre-existing value will be done on top of (after) existing 
+	 * entries in the stack.
+	 */
+	int32 StackOrder = 0;
+
+	/** 
+	 * Whether to force insert a new instance of the camera rig, even if there is already 
+	 * one in the stack with the same StackOrder.
+	 */
 	bool bForceInsert = false;
 };
 
@@ -40,6 +52,15 @@ struct FBlendStackCameraRemoveParams
 
 	/** The source camera rig asset used by the instanced to remove. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
+
+	/** A transition to use, instead of looking one up. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
+
+	/** 
+	 * Whether to immediately remove the given camera rig instead of blending it out.
+	 * Equivalent to passing a pop blend as the TransitionOverride.
+	 */
+	bool bRemoveImmediately = false;
 };
 
 /**
@@ -67,11 +88,29 @@ protected:
 
 private:
 
-	// Update methods.
 	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
-	// Utility functions for finding an appropriate transition.
-	const UCameraRigTransition* FindTransition(const FBlendStackCameraInsertParams& Params) const;
+	const UCameraRigTransition* FindEnterTransition(const FBlendStackCameraInsertParams& Params) const;
+	const UCameraRigTransition* FindExitTransition(const FBlendStackCameraRemoveParams& Params, const FCameraRigEntry& Entry) const;
+
+private:
+
+	enum class EBlendStatus
+	{
+		None,
+		BlendIn,
+		BlendOut
+	};
+
+	struct FCameraRigEntryExtraInfo
+	{
+		int32 StackOrder = 0;
+		EBlendStatus BlendStatus = EBlendStatus::None;
+		bool bIsBlendFull = false;
+		bool bIsBlendFinished = false;
+	};
+
+	TArray<FCameraRigEntryExtraInfo> EntryExtraInfos;
 };
 
 }  // namespace UE::Cameras

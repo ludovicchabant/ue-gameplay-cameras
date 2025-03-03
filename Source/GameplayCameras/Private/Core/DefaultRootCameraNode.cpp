@@ -86,6 +86,7 @@ FCameraRigInstanceID FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const 
 {
 	if (Params.Layer == ECameraRigLayer::Main)
 	{
+		ensure(Params.OrderKey == 0);
 		FBlendStackCameraPushParams PushParams;
 		PushParams.EvaluationContext = Params.EvaluationContext;
 		PushParams.CameraRig = Params.CameraRig;
@@ -116,6 +117,7 @@ FCameraRigInstanceID FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const 
 			InsertParams.EvaluationContext = Params.EvaluationContext;
 			InsertParams.CameraRig = Params.CameraRig;
 			InsertParams.TransitionOverride = Params.TransitionOverride;
+			InsertParams.StackOrder = Params.OrderKey;
 			InsertParams.bForceInsert = Params.bForceActivate;
 
 			const FBlendStackEntryID EntryID = TargetLayer->Insert(InsertParams);
@@ -158,6 +160,8 @@ void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCam
 			RemoveParams.EntryID = Params.InstanceID.ToBlendStackEntryID();
 			RemoveParams.EvaluationContext = Params.EvaluationContext;
 			RemoveParams.CameraRig = Params.CameraRig;
+			RemoveParams.TransitionOverride = Params.TransitionOverride;
+			RemoveParams.bRemoveImmediately = Params.bDeactiveImmediately;
 			TargetLayer->Remove(RemoveParams);
 		}
 	}
