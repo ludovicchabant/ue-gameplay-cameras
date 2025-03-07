@@ -5,7 +5,7 @@
 #include "DragAndDrop/DecoratedDragDropOp.h"
 
 class SGraphEditor;
-class UCameraRigInterfaceParameterBase;
+class UCameraObjectInterfaceParameterBase;
 
 class FCameraNodeGraphInterfaceParameterDragDropOp : public FDecoratedDragDropOp
 {
@@ -13,13 +13,13 @@ public:
 	
 	DRAG_DROP_OPERATOR_TYPE(FCameraNodeGraphInterfaceParameterDragDropOp, FDecoratedDragDropOp)
 
-	static TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> New(UCameraRigInterfaceParameterBase* InInterfaceParameter);
+	static TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> New(UCameraObjectInterfaceParameterBase* InInterfaceParameter);
 
 	FReply ExecuteDragOver(TSharedPtr<SGraphEditor> GraphEditor);
 	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FVector2D& NewLocation);
 
 private:
 
-	UCameraRigInterfaceParameterBase* InterfaceParameter;
+	UCameraObjectInterfaceParameterBase* InterfaceParameter;
 };
 

@@ -19,8 +19,8 @@ namespace UE::Cameras
 
 class FBuildButtonToolkit;
 class FCameraBuildLogToolkit;
+class FCameraObjectInterfaceParametersToolkit;
 class FCameraRigAssetEditorToolkitBase;
-class FCameraRigInterfaceParametersToolkit;
 class FCurveEditorToolkit;
 class IGameplayCamerasLiveEditManager;
 
@@ -65,7 +65,7 @@ private:
 
 	void OnCurvesTabClosed(TSharedRef<SDockTab> InTab);
 
-	void OnCameraRigInterfaceParameterSelected(UCameraRigInterfaceParameterBase* Object);
+	void OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object);
 
 	void OnBuild();
 	void OnFindInCameraRig();
@@ -97,7 +97,7 @@ private:
 	/** The curve editor */
 	TSharedPtr<FCurveEditorToolkit> CurveEditorToolkit;
 	/** The interface parameters panel */
-	TSharedPtr<FCameraRigInterfaceParametersToolkit> InterfaceParametersToolkit;
+	TSharedPtr<FCameraObjectInterfaceParametersToolkit> InterfaceParametersToolkit;
 
 	/** Search widget */
 	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;

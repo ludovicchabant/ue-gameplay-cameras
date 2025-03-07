@@ -4,7 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetReference.h"
-#include "Core/CameraRigParameterDefinition.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "EntitySystem/BuiltInComponentTypes.h"
 #include "EntitySystem/MovieSceneEntityManager.h"
 #include "EntitySystem/MovieSceneEntitySystemTask.h"
@@ -131,7 +131,7 @@ struct FSetupCameraParameterOverrideTask
 			}
 		}
 
-		for (const FCameraRigParameterDefinition& ParameterDefintion : CameraAsset->GetParameterDefinitions())
+		for (const FCameraObjectInterfaceParameterDefinition& ParameterDefintion : CameraAsset->GetParameterDefinitions())
 		{
 			if (ParameterDefintion.ParameterName == ParameterName)
 			{

@@ -2,12 +2,12 @@
 
 #include "Nodes/Utility/BlueprintCameraNode.h"
 
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraObjectBuildContext.h"
 #include "Components/ActorComponent.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
-#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
@@ -550,7 +550,7 @@ void UBlueprintCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
 	RebuildOverrides();
 }
 
-void UBlueprintCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
+void UBlueprintCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 {
 	if (!CameraNodeEvaluatorTemplate)
 	{

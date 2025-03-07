@@ -2,164 +2,14 @@
 
 #include "Core/CameraRigAsset.h"
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraRigAssetBuilder.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraRigAssetBuilder.h"
 #include "Core/CameraVariableAssets.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAsset)
-
-void FCameraRigAllocationInfo::Append(const FCameraRigAllocationInfo& OtherAllocationInfo)
-{
-	const FCameraNodeEvaluatorAllocationInfo& OtherEvaluatorInfo(OtherAllocationInfo.EvaluatorInfo);
-	EvaluatorInfo.MaxAlignof = FMath::Max(EvaluatorInfo.MaxAlignof, OtherEvaluatorInfo.MaxAlignof);
-	EvaluatorInfo.TotalSizeof = Align(EvaluatorInfo.TotalSizeof, OtherEvaluatorInfo.MaxAlignof) + OtherEvaluatorInfo.TotalSizeof;
-
-	const FCameraVariableTableAllocationInfo& OtherVariableTableInfo(OtherAllocationInfo.VariableTableInfo);
-	VariableTableInfo.VariableDefinitions.Append(OtherVariableTableInfo.VariableDefinitions);
-
-	const FCameraContextDataTableAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);
-	ContextDataTableInfo.DataDefinitions.Append(OtherContextDataTableInfo.DataDefinitions);
-}
-
-#if WITH_EDITOR
-
-void UCameraRigInterfaceParameterBase::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
-{
-	NodePosX = GraphNodePos.X;
-	NodePosY = GraphNodePos.Y;
-}
-
-void UCameraRigInterfaceParameterBase::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
-{
-	Modify(bMarkDirty);
-
-	GraphNodePos.X = NodePosX;
-	GraphNodePos.Y = NodePosY;
-}
-
-#endif
-
-void UCameraRigInterfaceParameterBase::PostLoad()
-{
-	if (!Guid.IsValid())
-	{
-		Guid = FGuid::NewGuid();
-	}
-
-	Super::PostLoad();
-}
-
-void UCameraRigInterfaceParameterBase::PostInitProperties()
-{
-	Super::PostInitProperties();
-
-	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
-			!Guid.IsValid())
-	{
-		Guid = FGuid::NewGuid();
-	}
-}
-
-void UCameraRigInterfaceParameterBase::PostDuplicate(EDuplicateMode::Type DuplicateMode)
-{
-	Super::PostDuplicate(DuplicateMode);
-
-	if (DuplicateMode == EDuplicateMode::Normal)
-	{
-		Guid = FGuid::NewGuid();
-	}
-}
-
-FCameraVariableDefinition UCameraRigBlendableParameter::GetVariableDefinition() const
-{
-	FCameraVariableDefinition Definition;
-	Definition.VariableID = PrivateVariableID;
-	Definition.VariableType = ParameterType;
-	Definition.BlendableStructType = BlendableStructType;
-	Definition.bIsPrivate = true;
-	Definition.bIsInput = bIsPreBlended;
-#if WITH_EDITORONLY_DATA
-	Definition.VariableName = GetVariableName();
-#endif
-	return Definition;
-}
-
-FCameraContextDataDefinition UCameraRigDataParameter::GetDataDefinition() const
-{
-	FCameraContextDataDefinition Definition;
-	Definition.DataID = PrivateDataID;
-	Definition.DataType = DataType;
-	Definition.DataContainerType = DataContainerType;
-	Definition.DataTypeObject = DataTypeObject;
-#if WITH_EDITORONLY_DATA
-	Definition.DataName = GetDataName();
-#endif
-	return Definition;
-}
-
-#if WITH_EDITORONLY_DATA
-
-FString UCameraRigBlendableParameter::GetVariableName() const
-{
-	const UCameraRigAsset* Owner = GetTypedOuter<UCameraRigAsset>();
-	return FString::Printf(TEXT("Override_%s_%s"), *GetNameSafe(Owner), *InterfaceParameterName);
-}
-
-FString UCameraRigDataParameter::GetDataName() const
-{
-	const UCameraRigAsset* Owner = GetTypedOuter<UCameraRigAsset>();
-	return FString::Printf(TEXT("Override_%s_%s"), *GetNameSafe(Owner), *InterfaceParameterName);
-}
-
-#endif  // WITH_EDITORONLY_DATA
-
-UCameraRigBlendableParameter* FCameraRigInterface::FindBlendableParameterByName(const FString& ParameterName) const
-{
-	const TObjectPtr<UCameraRigBlendableParameter>* FoundItem = BlendableParameters.FindByPredicate(
-			[&ParameterName](UCameraRigBlendableParameter* Item)
-			{
-				return Item->InterfaceParameterName == ParameterName;
-			});
-	return FoundItem ? *FoundItem : nullptr;
-}
-
-UCameraRigDataParameter* FCameraRigInterface::FindDataParameterByName(const FString& ParameterName) const
-{
-	const TObjectPtr<UCameraRigDataParameter>* FoundItem = DataParameters.FindByPredicate(
-			[&ParameterName](UCameraRigDataParameter* Item)
-			{
-				return Item->InterfaceParameterName == ParameterName;
-			});
-	return FoundItem ? *FoundItem : nullptr;
-}
-
-UCameraRigBlendableParameter* FCameraRigInterface::FindBlendableParameterByGuid(const FGuid& ParameterGuid) const
-{
-	const TObjectPtr<UCameraRigBlendableParameter>* FoundItem = BlendableParameters.FindByPredicate(
-			[&ParameterGuid](UCameraRigBlendableParameter* Item)
-			{
-				return Item->GetGuid() == ParameterGuid;
-			});
-	return FoundItem ? *FoundItem : nullptr;
-}
-
-UCameraRigDataParameter* FCameraRigInterface::FindDataParameterByGuid(const FGuid& ParameterGuid) const
-{
-	const TObjectPtr<UCameraRigDataParameter>* FoundItem = DataParameters.FindByPredicate(
-			[&ParameterGuid](UCameraRigDataParameter* Item)
-			{
-				return Item->GetGuid() == ParameterGuid;
-			});
-	return FoundItem ? *FoundItem : nullptr;
-}
-
-bool FCameraRigInterface::HasBlendableParameter(const FString& ParameterName) const
-{
-	return FindBlendableParameterByName(ParameterName) != nullptr;
-}
 
 const FName UCameraRigAsset::NodeTreeGraphName(TEXT("NodeTree"));
 const FName UCameraRigAsset::TransitionsGraphName(TEXT("Transitions"));
@@ -187,7 +37,7 @@ void UCameraRigAsset::PostLoad()
 			It.RemoveCurrent();
 			continue;
 		}
-		if (UCameraRigInterfaceParameterBase* InterfaceParameter = Cast<UCameraRigInterfaceParameterBase>(Item))
+		if (UCameraObjectInterfaceParameterBase* InterfaceParameter = Cast<UCameraObjectInterfaceParameterBase>(Item))
 		{
 			InterfaceParameter->bHasGraphNode = true;
 			It.RemoveCurrent();
@@ -204,7 +54,7 @@ void UCameraRigAsset::PostLoad()
 
 	// Initialize the ParameterType of blendable parameters that pre-existed the new interface data.
 	// The type defaults to Boolean so check only those.
-	for (UCameraRigBlendableParameter* BlendableParameter : Interface.BlendableParameters)
+	for (UCameraObjectInterfaceBlendableParameter* BlendableParameter : Interface.BlendableParameters)
 	{
 		if (BlendableParameter->ParameterType == ECameraVariableType::Boolean)
 		{
@@ -342,15 +192,7 @@ void UCameraRigAsset::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 
 
 EObjectTreeGraphObjectSupportFlags UCameraRigAsset::GetSupportFlags(FName InGraphName) const
 {
-	if (UPackage* OuterPackage = Cast<UPackage>(GetOuter()))
-	{
-		// Can't rename a standalone rig prefab -- you have to rename it in the content browser.
-		return EObjectTreeGraphObjectSupportFlags::CommentText;
-	}
-	else
-	{
-		return EObjectTreeGraphObjectSupportFlags::CommentText | EObjectTreeGraphObjectSupportFlags::CustomRename;
-	}
+	return EObjectTreeGraphObjectSupportFlags::CommentText;
 }
 
 const FString& UCameraRigAsset::GetGraphNodeCommentText(FName InGraphName) const
@@ -444,7 +286,7 @@ void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObje
 void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {
 	const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
-	for (const UCameraRigBlendableParameter* BlendableParameter : Interface.BlendableParameters)
+	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : Interface.BlendableParameters)
 	{
 		if (BlendableParameter)
 		{
@@ -457,7 +299,7 @@ void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) co
 	}
 
 	const UEnum* ContextDataTypeEnum = StaticEnum<ECameraContextDataType>();
-	for (const UCameraRigDataParameter* DataParameter : Interface.DataParameters)
+	for (const UCameraObjectInterfaceDataParameter* DataParameter : Interface.DataParameters)
 	{
 		if (DataParameter)
 		{

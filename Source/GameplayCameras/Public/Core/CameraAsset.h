@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Core/CameraBuildStatus.h"
+#include "Build/CameraBuildStatus.h"
 #include "Core/CameraContextDataTableAllocationInfo.h"
 #include "Core/CameraEventHandler.h"
-#include "Core/CameraRigParameterDefinition.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraVariableTableAllocationInfo.h"
 #include "Core/ObjectTreeGraphObject.h"
@@ -103,7 +103,7 @@ public:
 	FInstancedPropertyBag& GetDefaultParameters() { return DefaultParameters; }
 
 	/** Gets the definitions of parameters exposed on this camera asset. */
-	TConstArrayView<FCameraRigParameterDefinition> GetParameterDefinitions() const { return ParameterDefinitions; }
+	TConstArrayView<FCameraObjectInterfaceParameterDefinition> GetParameterDefinitions() const { return ParameterDefinitions; }
 
 public:
 
@@ -188,7 +188,7 @@ private:
 
 	/** Generated list of all the camera rigs' parameters. */
 	UPROPERTY()
-	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
+	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
 
 	/** Owner rigs for each parameter definition. */
 	UPROPERTY()

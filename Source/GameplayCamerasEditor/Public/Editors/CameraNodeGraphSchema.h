@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "Core/CameraContextDataTableFwd.h"
-#include "Core/CameraRigParameterDefinition.h"
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraObjectInterface.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphPinColors.h"
 #include "Editors/ObjectTreeGraphSchema.h"
@@ -12,8 +11,8 @@
 #include "CameraNodeGraphSchema.generated.h"
 
 class UCameraNode;
-class UCameraRigInterfaceParameterBase;
-class UCameraRigInterfaceParameterGraphNode;
+class UCameraObjectInterfaceParameterBase;
+class UCameraObjectInterfaceParameterGraphNode;
 struct FObjectTreeGraphConfig;
 
 /**
@@ -32,9 +31,7 @@ public:
 
 	UCameraNodeGraphSchema(const FObjectInitializer& ObjInit);
 
-	FObjectTreeGraphConfig BuildGraphConfig() const;
-
-	UCameraRigInterfaceParameterGraphNode* CreateInterfaceParameterNode(UEdGraph* InGraph, UCameraRigInterfaceParameterBase* InterfaceParameter) const;
+	UCameraObjectInterfaceParameterGraphNode* CreateInterfaceParameterNode(UEdGraph* InGraph, UCameraObjectInterfaceParameterBase* InterfaceParameter) const;
 
 protected:
 
@@ -50,6 +47,10 @@ protected:
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const override;
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const override;
+
+protected:
+
+	void BuildBaseGraphConfig(FObjectTreeGraphConfig& OutGraphConfig) const;
 
 private:
 
@@ -70,7 +71,7 @@ public:
 
 	/** The new parameter's definition. */
 	UPROPERTY()
-	FCameraRigParameterDefinition ParameterDefinition;
+	FCameraObjectInterfaceParameterDefinition ParameterDefinition;
 
 public:
 
@@ -91,7 +92,7 @@ struct FCameraNodeGraphSchemaAction_AddInterfaceParameterNode : public FEdGraphS
 	GENERATED_BODY()
 	
 	UPROPERTY()
-	TObjectPtr<UCameraRigInterfaceParameterBase> InterfaceParameter;
+	TObjectPtr<UCameraObjectInterfaceParameterBase> InterfaceParameter;
 
 public:
 	

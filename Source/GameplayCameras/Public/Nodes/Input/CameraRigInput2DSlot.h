@@ -59,7 +59,7 @@ public:
 protected:
 
 	// UCameraNode interface.
-	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
+	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 private:

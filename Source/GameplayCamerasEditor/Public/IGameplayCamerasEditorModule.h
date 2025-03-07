@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
 #include "CoreTypes.h"
 #include "Delegates/Delegate.h"
 #include "Modules/ModuleInterface.h"

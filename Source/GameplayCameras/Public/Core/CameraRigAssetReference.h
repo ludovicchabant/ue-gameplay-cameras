@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "Core/CameraContextDataTableFwd.h"
+#include "BaseCameraObjectReference.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigParameterDefinition.h"
-#include "StructUtils/PropertyBag.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraRigAssetReference.generated.h"
 
+class UBaseCameraObject;
 class UCameraRigAsset;
 struct FCameraRigAssetReference;
 struct FCustomCameraNodeParameterInfos;
@@ -17,11 +17,9 @@ struct FPropertyTag;
 
 namespace UE::Cameras
 {
-	class FCameraRigAssetBuilder;
 	class FCameraRigAssetReferenceDetailsCustomization;
 	struct FCameraNodeEvaluationResult;
 }
-
 
 struct UE_DEPRECATED(5.7, "Camera rig references now use instanced property bags.") FCameraRigParameterOverrideBase;
 
@@ -238,40 +236,11 @@ private:
 };
 
 /**
- * Metadata for a referenced camera rig's parameters.
- */
-USTRUCT()
-struct FCameraRigAssetReferenceParameterMetaData
-{
-	GENERATED_BODY()
-
-	/** The GUID of the parameter. */
-	UPROPERTY()
-	FGuid ParameterGuid;
-
-	/** The ID to use for overriding a blendable parameter. */
-	UPROPERTY()
-	FCameraVariableID OverrideVariableID;
-
-	/** The ID to use for overriding a data parameter. */
-	UPROPERTY()
-	FCameraContextDataID OverrideDataID;
-
-	/** Whether this parameter has an override value. */
-	UPROPERTY()
-	bool bIsOverridden = false;
-
-	/** Whether this parameter is being animated. */
-	UPROPERTY()
-	bool bIsAnimated = false;
-};
-
-/**
  * A structure holding a reference to a camera rig asset, along with the interface parameter
  * override values.
  */
 USTRUCT(BlueprintType)
-struct FCameraRigAssetReference
+struct FCameraRigAssetReference : public FBaseCameraObjectReference
 {
 	GENERATED_BODY()
 
@@ -308,60 +277,24 @@ public:
 		}
 	}
 
-	/** Gets the parameters for this camera rig, some of which containing overrides. */
-	const FInstancedPropertyBag& GetParameters() const
-	{
-		return Parameters;
-	}
-
-	/** Gets the parameters for this camera rig, some of which containing overrides. */
-	FInstancedPropertyBag& GetParameters()
-	{
-		return Parameters;
-	}
-
 	/** Applies the parameter override values to the given evaluation result. */
 	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly);
 
 public:
 
-	// Internal API.
+	// FBaseCameraObjectReference interface.
+	GAMEPLAYCAMERAS_API virtual const UBaseCameraObject* GetCameraObject() const override;
+
+public:
 
 	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
 	void PostSerialize(const FArchive& Ar);
-
-	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
-
-	GAMEPLAYCAMERAS_API bool IsParameterAnimated(const FGuid& PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterAnimated(const FGuid& PropertyID, bool bIsAnimated);
-
-	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
-	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
-	GAMEPLAYCAMERAS_API void RebuildParameters();
-
-	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos);
-
-private:
-
-	const FCameraRigAssetReferenceParameterMetaData* FindMetaData(const FGuid& PropertyID) const;
-	FCameraRigAssetReferenceParameterMetaData& FindOrAddMetaData(const FGuid& PropertyID);
-	
-	void GenerateOverriddenParameterGuidArray(TArray<FGuid>& OutOverriddenIDs) const;
 
 private:
 
 	/** The referenced camera rig. */
 	UPROPERTY(EditAnywhere, Category="")
 	TObjectPtr<UCameraRigAsset> CameraRig;
-
-	/** The camera rig's parameters. */
-	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout))
-	FInstancedPropertyBag Parameters;
-
-	/** Metadata for the parameters. */
-	UPROPERTY()
-	TArray<FCameraRigAssetReferenceParameterMetaData> ParameterMetaData;
 
 
 	// Deprecated

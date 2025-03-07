@@ -13,8 +13,9 @@ class UCameraNode;
 
 namespace UE::Cameras
 {
-	class FCameraRigAssetBuilder;
-	class FCameraRigParameterBuilder;
+	class FCameraNodeHierarchyBuilder;
+	class FCameraObjectInterfaceBuilder;
+	class FCameraObjectInterfaceParameterBuilder;
 	namespace Internal { struct FInterfaceParameterBindingBuilder; }
 }
 
@@ -171,8 +172,9 @@ private:
 	TArray<FBlendableParameterInfo> BlendableParameters;
 	TArray<FDataParameterInfo> DataParameters;
 
-	friend class UE::Cameras::FCameraRigAssetBuilder;
-	friend class UE::Cameras::FCameraRigParameterBuilder;
+	friend class UE::Cameras::FCameraNodeHierarchyBuilder;
+	friend class UE::Cameras::FCameraObjectInterfaceBuilder;
+	friend class UE::Cameras::FCameraObjectInterfaceParameterBuilder;
 	friend struct UE::Cameras::Internal::FInterfaceParameterBindingBuilder;
 };
 

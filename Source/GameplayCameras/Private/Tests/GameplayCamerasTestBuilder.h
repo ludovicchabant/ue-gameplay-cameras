@@ -487,7 +487,7 @@ public:
 	 */
 	ThisType& AddBlendableParameter(const FString& ParameterName, ECameraVariableType ParameterType, UCameraNode* Target, FName TargetPropertyName)
 	{
-		UCameraRigBlendableParameter* BlendableParameter = NewObject<UCameraRigBlendableParameter>(CameraRig);
+		UCameraObjectInterfaceBlendableParameter* BlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraRig);
 		BlendableParameter->InterfaceParameterName = ParameterName;
 		BlendableParameter->ParameterType = ParameterType;
 		BlendableParameter->Target = Target;

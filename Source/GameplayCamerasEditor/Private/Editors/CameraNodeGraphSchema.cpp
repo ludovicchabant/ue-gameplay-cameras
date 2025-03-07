@@ -2,25 +2,19 @@
 
 #include "Editors/CameraNodeGraphSchema.h"
 
-#include "Core/BlendCameraNode.h"
+#include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraNodeHierarchy.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphSchema_K2.h"
 #include "Editors/CameraNodeGraphNode.h"
-#include "Editors/CameraRigInterfaceParameterGraphNode.h"
+#include "Editors/CameraObjectInterfaceParameterGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
-#include "Framework/Notifications/NotificationManager.h"
 #include "GameplayCamerasEditorSettings.h"
-#include "Nodes/Common/ArrayCameraNode.h"
-#include "Widgets/Notifications/SNotificationList.h"
-
 #include "ScopedTransaction.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNodeGraphSchema)
@@ -37,41 +31,21 @@ UCameraNodeGraphSchema::UCameraNodeGraphSchema(const FObjectInitializer& ObjInit
 	PinColors.Initialize();
 }
 
-FObjectTreeGraphConfig UCameraNodeGraphSchema::BuildGraphConfig() const
+void UCameraNodeGraphSchema::BuildBaseGraphConfig(FObjectTreeGraphConfig& OutGraphConfig) const
 {
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 
-	FObjectTreeGraphConfig GraphConfig;
-	GraphConfig.GraphName = UCameraRigAsset::NodeTreeGraphName;
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigAsset::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraNode::StaticClass());
-	GraphConfig.NonConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
-	GraphConfig.GraphDisplayInfo.PlainName = LOCTEXT("NodeGraphPlainName", "CameraNodes");
-	GraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("NodeGraphDisplayName", "Camera Nodes");
-	GraphConfig.DefaultSelfPinName = NAME_None;
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigAsset::StaticClass())
-		.OnlyAsRoot()
-		.HasSelfPin(false)
-		.NodeTitleUsesObjectName(true)
-		.NodeTitleColor(Settings->CameraRigAssetTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
+	OutGraphConfig.GraphDisplayInfo.PlainName = LOCTEXT("NodeGraphPlainName", "CameraNodes");
+	OutGraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("NodeGraphDisplayName", "Camera Nodes");
+	OutGraphConfig.DefaultSelfPinName = NAME_None;
+	OutGraphConfig.ObjectClassConfigs.Emplace(UCameraNode::StaticClass())
 		.StripDisplayNameSuffix(TEXT("Camera Node"))
 		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
 		.NodeTitleColor(Settings->CameraNodeTitleColor)
 		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
-	GraphConfig.ObjectClassConfigs.Emplace(UArrayCameraNode::StaticClass())
-		.OnSetupNewObject(FOnSetupNewObject::CreateLambda([](UObject* NewObject)
-				{
-					// Add two new pins by default.
-					UArrayCameraNode* ArrayNode = CastChecked<UArrayCameraNode>(NewObject);
-					ArrayNode->Children.AddDefaulted();
-					ArrayNode->Children.AddDefaulted();
-				}));
 
 	// Note that we don't add the interface parameter types to the config, we will manage
 	// them ourselves.
-
-	return GraphConfig;
 }
 
 void UCameraNodeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
@@ -80,34 +54,6 @@ void UCameraNodeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<U
 
 	// Only get the graph objects from the root interface.
 	CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, false);
-
-	// See if we are missing objects from AllNodeTreeObjects... if so, add them and notify the user.
-	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
-	if (CameraRig)
-	{
-		FCameraNodeHierarchy Hierarchy(CameraRig);
-
-		TSet<UObject*> AllNodeTreeObjects;
-		((IObjectTreeGraphRootObject*)CameraRig)->GetConnectableObjects(UCameraRigAsset::NodeTreeGraphName, AllNodeTreeObjects);
-
-		TSet<UObject*> MissingNodeTreeObjects;
-		if (Hierarchy.FindMissingConnectableObjects(AllNodeTreeObjects, MissingNodeTreeObjects))
-		{
-			FNotificationInfo NotificationInfo(
-					FText::Format(
-						LOCTEXT("AllNodeTreeObjectsMismatch", 
-							"Found {0} nodes missing from the internal list. Please re-save the asset."),
-						MissingNodeTreeObjects.Num()));
-			NotificationInfo.ExpireDuration = 4.0f;
-			FSlateNotificationManager::Get().AddNotification(NotificationInfo);
-
-			for (UObject* MissingObject : MissingNodeTreeObjects)
-			{
-				((IObjectTreeGraphRootObject*)CameraRig)->AddConnectableObject(UCameraRigAsset::NodeTreeGraphName, MissingObject);
-				OutAllObjects.Add(MissingObject);
-			}
-		}
-	}
 }
 
 void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const
@@ -120,8 +66,8 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 		return;
 	}
 
-	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(InGraph->GetRootObject());
-	if (!ensure(CameraRig))
+	UBaseCameraObject* CameraObject = Cast<UBaseCameraObject>(InGraph->GetRootObject());
+	if (!ensure(CameraObject))
 	{
 		return;
 	}
@@ -129,18 +75,18 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 	// Add nodes for all interface parameters that have been added to the graph.
 	// These nodes are UObjectTreeGraphNode instances, but they are "unmanaged" by the UObjectTreeGraphSchema since
 	// their object types are not in the ConnectableObjectClasses. Instead, we manage them ourselves in this schema.
-	TArray<TObjectPtr<UCameraRigInterfaceParameterBase>> InterfaceParameters;
-	InterfaceParameters.Append(CameraRig->Interface.BlendableParameters);
-	InterfaceParameters.Append(CameraRig->Interface.DataParameters);
+	TArray<TObjectPtr<UCameraObjectInterfaceParameterBase>> InterfaceParameters;
+	InterfaceParameters.Append(CameraObject->Interface.BlendableParameters);
+	InterfaceParameters.Append(CameraObject->Interface.DataParameters);
 
-	for (UCameraRigInterfaceParameterBase* InterfaceParameter : InterfaceParameters)
+	for (UCameraObjectInterfaceParameterBase* InterfaceParameter : InterfaceParameters)
 	{
 		if (!InterfaceParameter->bHasGraphNode)
 		{
 			continue;
 		}
 		
-		UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = CreateInterfaceParameterNode(InGraph, InterfaceParameter);
+		UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = CreateInterfaceParameterNode(InGraph, InterfaceParameter);
 		UObjectTreeGraphNode* CameraNodeNode = InCreatedNodes.CreatedNodes.FindRef(InterfaceParameter->Target);
 		if (CameraNodeNode)
 		{
@@ -156,11 +102,11 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 			else
 			{
 				FName ErrorPinCategory = NAME_None;
-				if (InterfaceParameter->IsA<UCameraRigBlendableParameter>())
+				if (InterfaceParameter->IsA<UCameraObjectInterfaceBlendableParameter>())
 				{
 					ErrorPinCategory = PC_CameraParameter;
 				}
-				else if (InterfaceParameter->IsA<UCameraRigDataParameter>())
+				else if (InterfaceParameter->IsA<UCameraObjectInterfaceDataParameter>())
 				{
 					ErrorPinCategory = PC_CameraContextData;
 				}
@@ -174,10 +120,10 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 	}
 }
 
-UCameraRigInterfaceParameterGraphNode* UCameraNodeGraphSchema::CreateInterfaceParameterNode(UEdGraph* InGraph, UCameraRigInterfaceParameterBase* InterfaceParameter) const
+UCameraObjectInterfaceParameterGraphNode* UCameraNodeGraphSchema::CreateInterfaceParameterNode(UEdGraph* InGraph, UCameraObjectInterfaceParameterBase* InterfaceParameter) const
 {
-	FGraphNodeCreator<UCameraRigInterfaceParameterGraphNode> GraphNodeCreator(*InGraph);
-	UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = GraphNodeCreator.CreateNode(false);
+	FGraphNodeCreator<UCameraObjectInterfaceParameterGraphNode> GraphNodeCreator(*InGraph);
+	UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = GraphNodeCreator.CreateNode(false);
 	InterfaceParameterNode->Initialize(InterfaceParameter);
 	GraphNodeCreator.Finalize();
 	return InterfaceParameterNode;
@@ -216,8 +162,8 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 			TSharedRef<FCameraNodeGraphSchemaAction_NewInterfaceParameterNode> Action = 
 				MakeShared<FCameraNodeGraphSchemaAction_NewInterfaceParameterNode>(
 						FText::GetEmpty(),
-						LOCTEXT("NewInterfaceParameterAction", "Camera Rig Parameter"),
-						LOCTEXT("NewInterfaceParameterActionToolTip", "Exposes this parameter on the camera rig"));
+						LOCTEXT("NewInterfaceParameterAction", "Camera Interface Parameter"),
+						LOCTEXT("NewInterfaceParameterActionToolTip", "Exposes this parameter on the camera object"));
 
 			if (DraggedPin->PinType.PinCategory == PC_CameraParameter ||
 				DraggedPin->PinType.PinCategory == PC_CameraVariableReference)
@@ -256,8 +202,8 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 					return;
 				}
 
-				FCameraRigParameterDefinition NewParameterDefinition;
-				NewParameterDefinition.ParameterType = ECameraRigInterfaceParameterType::Blendable;
+				FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
+				NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
 				NewParameterDefinition.VariableType = VariableType;
 				NewParameterDefinition.BlendableStructType = BlendableStructType;
 				Action->ParameterDefinition = NewParameterDefinition;
@@ -325,8 +271,8 @@ void UCameraNodeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 					return;
 				}
 
-				FCameraRigParameterDefinition NewParameterDefinition;
-				NewParameterDefinition.ParameterType = ECameraRigInterfaceParameterType::Data;
+				FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
+				NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Data;
 				NewParameterDefinition.DataType = DataType;
 				NewParameterDefinition.DataContainerType = DataContainerType;
 				NewParameterDefinition.DataTypeObject = DataTypeObject;
@@ -351,16 +297,16 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 			B->PinType.PinCategory == PC_Self &&
 			!A->bOrphanedPin)
 	{
-		UCameraRigInterfaceParameterGraphNode* NodeB = Cast<UCameraRigInterfaceParameterGraphNode>(B->GetOwningNode());
+		UCameraObjectInterfaceParameterGraphNode* NodeB = Cast<UCameraObjectInterfaceParameterGraphNode>(B->GetOwningNode());
 		if (NodeB)
 		{
-			UCameraRigBlendableParameter* BlendableParameter = NodeB->CastObject<UCameraRigBlendableParameter>();
+			UCameraObjectInterfaceBlendableParameter* BlendableParameter = NodeB->CastObject<UCameraObjectInterfaceBlendableParameter>();
 			if (BlendableParameter && 
 					A->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->ParameterType))
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_AB, TEXT("Compatible pin types"));
 			}
-			UCameraRigDataParameter* DataParameter = NodeB->CastObject<UCameraRigDataParameter>();
+			UCameraObjectInterfaceDataParameter* DataParameter = NodeB->CastObject<UCameraObjectInterfaceDataParameter>();
 			if (DataParameter && 
 					A->PinType.PinSubCategory == UEnum::GetValueAsName(DataParameter->DataType) &&
 					A->PinType.PinSubCategoryObject == DataParameter->DataTypeObject)
@@ -375,16 +321,16 @@ const FPinConnectionResponse UCameraNodeGraphSchema::CanCreateConnection(const U
 			 B->PinType.PinCategory == PC_CameraContextData) &&
 			!B->bOrphanedPin)
 	{
-		UCameraRigInterfaceParameterGraphNode* NodeA = Cast<UCameraRigInterfaceParameterGraphNode>(A->GetOwningNode());
+		UCameraObjectInterfaceParameterGraphNode* NodeA = Cast<UCameraObjectInterfaceParameterGraphNode>(A->GetOwningNode());
 		if (NodeA)
 		{
-			UCameraRigBlendableParameter* BlendableParameter = NodeA->CastObject<UCameraRigBlendableParameter>();
+			UCameraObjectInterfaceBlendableParameter* BlendableParameter = NodeA->CastObject<UCameraObjectInterfaceBlendableParameter>();
 			if (BlendableParameter && 
 					B->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->ParameterType))
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_AB, TEXT("Compatible pin types"));
 			}
-			UCameraRigDataParameter* DataParameter = NodeA->CastObject<UCameraRigDataParameter>();
+			UCameraObjectInterfaceDataParameter* DataParameter = NodeA->CastObject<UCameraObjectInterfaceDataParameter>();
 			if (DataParameter && 
 					B->PinType.PinSubCategory == UEnum::GetValueAsName(DataParameter->DataType) &&
 					B->PinType.PinSubCategoryObject == DataParameter->DataTypeObject)
@@ -402,7 +348,7 @@ bool UCameraNodeGraphSchema::OnTryCreateCustomConnection(UEdGraphPin* A, UEdGrap
 	// See if we are in the situation of connecting an interface parameter to a camera node property.
 	UEdGraphPin* TargetPin = nullptr;
 	UObjectTreeGraphNode* TargetNode = nullptr;
-	UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
+	UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
 
 	if ((A->PinType.PinCategory == PC_CameraParameter || 
 				A->PinType.PinCategory == PC_CameraVariableReference ||
@@ -411,14 +357,14 @@ bool UCameraNodeGraphSchema::OnTryCreateCustomConnection(UEdGraphPin* A, UEdGrap
 	{
 		TargetPin = A;
 		TargetNode = Cast<UObjectTreeGraphNode>(A->GetOwningNode());
-		InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(B->GetOwningNode());
+		InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(B->GetOwningNode());
 	}
 	else if (A->PinType.PinCategory == PC_Self && 
 			(B->PinType.PinCategory == PC_CameraParameter || 
 			 B->PinType.PinCategory == PC_CameraVariableReference ||
 			 B->PinType.PinCategory == PC_CameraContextData))
 	{
-		InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(A->GetOwningNode());
+		InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(A->GetOwningNode());
 		TargetNode = Cast<UObjectTreeGraphNode>(B->GetOwningNode());
 		TargetPin = B;
 	}
@@ -426,7 +372,7 @@ bool UCameraNodeGraphSchema::OnTryCreateCustomConnection(UEdGraphPin* A, UEdGrap
 	if (TargetNode && TargetPin && InterfaceParameterNode)
 	{
 		UCameraNode* Target = TargetNode->CastObject<UCameraNode>();
-		UCameraRigInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
+		UCameraObjectInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
 		if (Target && InterfaceParameter)
 		{
 			InterfaceParameter->Modify();
@@ -445,7 +391,7 @@ bool UCameraNodeGraphSchema::OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const
 {
 	// See if we are in the situation of an interface parameter node being disconnected from 
 	// a camera node property pin.
-	UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
+	UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
 
 	if (TargetPin.PinType.PinCategory == PC_CameraParameter ||
 			TargetPin.PinType.PinCategory == PC_CameraVariableReference ||
@@ -453,17 +399,17 @@ bool UCameraNodeGraphSchema::OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const
 	{
 		if (TargetPin.LinkedTo.Num() > 0)
 		{
-			InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(TargetPin.LinkedTo[0]->GetOwningNode());
+			InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(TargetPin.LinkedTo[0]->GetOwningNode());
 		}
 	}
 	else if (TargetPin.PinType.PinCategory == PC_Self)
 	{
-		InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(TargetPin.GetOwningNode());
+		InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(TargetPin.GetOwningNode());
 	}
 
 	if (InterfaceParameterNode)
 	{
-		UCameraRigInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
+		UCameraObjectInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
 		if (InterfaceParameter)
 		{
 			InterfaceParameter->Modify();
@@ -482,19 +428,19 @@ bool UCameraNodeGraphSchema::OnBreakSingleCustomPinLink(UEdGraphPin* SourcePin, 
 {
 	// See if we are in the situation of an interface parameter node being disconnected from 
 	// a camera node property pin.
-	UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
+	UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = nullptr;
 	if (SourcePin->PinType.PinCategory == PC_Self)
 	{
-		InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(SourcePin->GetOwningNode());
+		InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(SourcePin->GetOwningNode());
 	}
 	else if (TargetPin->PinType.PinCategory == PC_Self)
 	{
-		InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(TargetPin->GetOwningNode());
+		InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(TargetPin->GetOwningNode());
 	}
 
 	if (InterfaceParameterNode)
 	{
-		UCameraRigInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
+		UCameraObjectInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter();
 		if (InterfaceParameter)
 		{
 			InterfaceParameter->Modify();
@@ -530,9 +476,9 @@ bool UCameraNodeGraphSchema::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNo
 
 	// Deleting an interface parameter node simply removes its bHasGraphNode flag.
 	// To actually delete the parameter, the user needs to remove it from the "parameters" panel.
-	if (UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode = Cast<UCameraRigInterfaceParameterGraphNode>(Node))
+	if (UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(Node))
 	{
-		if (UCameraRigInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter())
+		if (UCameraObjectInterfaceParameterBase* InterfaceParameter = InterfaceParameterNode->GetInterfaceParameter())
 		{
 			InterfaceParameter->Modify();
 			InterfaceParameter->bHasGraphNode = false;
@@ -574,8 +520,8 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 		return nullptr;
 	}
 
-	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(ObjectTreeGraph->GetRootObject());
-	if (!ensure(CameraRig))
+	UBaseCameraObject* CameraObject = Cast<UBaseCameraObject>(ObjectTreeGraph->GetRootObject());
+	if (!ensure(CameraObject))
 	{
 		return nullptr;
 	}
@@ -584,25 +530,25 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	const UCameraNodeGraphSchema* Schema = CastChecked<UCameraNodeGraphSchema>(ParentGraph->GetSchema());
 
-	CameraRig->Modify();
+	CameraObject->Modify();
 
 	// Create a new interface parameter and set it up based on the pin we're creating it from, if any.
-	UCameraRigInterfaceParameterBase* NewInterfaceParameter = nullptr;
-	if (ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
+	UCameraObjectInterfaceParameterBase* NewInterfaceParameter = nullptr;
+	if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 	{
-		UCameraRigBlendableParameter* NewBlendableParameter = NewObject<UCameraRigBlendableParameter>(CameraRig, NAME_None, RF_Transactional);
+		UCameraObjectInterfaceBlendableParameter* NewBlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraObject, NAME_None, RF_Transactional);
 		NewBlendableParameter->ParameterType = ParameterDefinition.VariableType;
 		NewBlendableParameter->BlendableStructType = ParameterDefinition.BlendableStructType;
-		CameraRig->Interface.BlendableParameters.Add(NewBlendableParameter);
+		CameraObject->Interface.BlendableParameters.Add(NewBlendableParameter);
 		NewInterfaceParameter = NewBlendableParameter;
 	}
-	else if (ParameterDefinition.ParameterType == ECameraRigInterfaceParameterType::Data)
+	else if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 	{
-		UCameraRigDataParameter* NewDataParameter = NewObject<UCameraRigDataParameter>(CameraRig, NAME_None, RF_Transactional);
+		UCameraObjectInterfaceDataParameter* NewDataParameter = NewObject<UCameraObjectInterfaceDataParameter>(CameraObject, NAME_None, RF_Transactional);
 		NewDataParameter->DataType = ParameterDefinition.DataType;
 		NewDataParameter->DataContainerType = ParameterDefinition.DataContainerType;
 		NewDataParameter->DataTypeObject = ParameterDefinition.DataTypeObject;
-		CameraRig->Interface.DataParameters.Add(NewDataParameter);
+		CameraObject->Interface.DataParameters.Add(NewDataParameter);
 		NewInterfaceParameter = NewDataParameter;
 	}
 
@@ -617,7 +563,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	ObjectTreeGraph->Modify();
 
-	UCameraRigInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ObjectTreeGraph, NewInterfaceParameter);
+	UCameraObjectInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ObjectTreeGraph, NewInterfaceParameter);
 
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
@@ -625,7 +571,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	NewGraphNode->AutowireNewNode(FromPin);
 
-	CameraRig->EventHandlers.Notify(&UE::Cameras::ICameraRigAssetEventHandler::OnCameraRigInterfaceChanged);
+	CameraObject->EventHandlers.Notify(&UE::Cameras::ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	return NewGraphNode;
 }
@@ -652,8 +598,8 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_AddInterfaceParameterNode::PerformAct
 		return nullptr;
 	}
 
-	UCameraRigAsset* CameraRig = Cast<UCameraRigAsset>(ObjectTreeGraph->GetRootObject());
-	if (!ensure(CameraRig))
+	UBaseCameraObject* CameraObject = Cast<UBaseCameraObject>(ObjectTreeGraph->GetRootObject());
+	if (!ensure(CameraObject))
 	{
 		return nullptr;
 	}
@@ -668,7 +614,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_AddInterfaceParameterNode::PerformAct
 
 	ParentGraph->Modify();
 	
-	UCameraRigInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ParentGraph, InterfaceParameter);
+	UCameraObjectInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ParentGraph, InterfaceParameter);
 
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
@@ -676,7 +622,7 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_AddInterfaceParameterNode::PerformAct
 
 	NewGraphNode->AutowireNewNode(FromPin);
 
-	CameraRig->EventHandlers.Notify(&UE::Cameras::ICameraRigAssetEventHandler::OnCameraRigInterfaceChanged);
+	CameraObject->EventHandlers.Notify(&UE::Cameras::ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	return NewGraphNode;
 }

@@ -9,7 +9,7 @@
 class ISequencer;
 class UGameplayCameraComponent;
 class UMovieScenePropertyTrack;
-struct FCameraRigParameterDefinition;
+struct FCameraObjectInterfaceParameterDefinition;
 
 namespace UE::Sequencer
 {

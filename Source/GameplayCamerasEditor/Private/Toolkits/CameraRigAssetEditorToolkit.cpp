@@ -2,18 +2,17 @@
 
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
 
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraRigAssetBuilder.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigAssetBuilder.h"
 #include "Customizations/RichCurveDetailsCustomizations.h"
-#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraRigCameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/SCameraRigAssetEditor.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
-#include "GraphEditAction.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditManager.h"
@@ -23,8 +22,8 @@
 #include "ToolMenus.h"
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
+#include "Toolkits/CameraObjectInterfaceParametersToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
-#include "Toolkits/CameraRigInterfaceParametersToolkit.h"
 #include "Toolkits/CurveEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -48,7 +47,7 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 	BuildButtonToolkit = MakeShared<FBuildButtonToolkit>();
 	BuildLogToolkit = MakeShared<FCameraBuildLogToolkit>();
 	CurveEditorToolkit = MakeShared<FCurveEditorToolkit>();
-	InterfaceParametersToolkit = MakeShared<FCameraRigInterfaceParametersToolkit>();
+	InterfaceParametersToolkit = MakeShared<FCameraObjectInterfaceParametersToolkit>();
 
 	// Override base class default layout.
 	TSharedPtr<FStandardToolkitLayout> StandardLayout = Impl->GetStandardLayout();
@@ -60,8 +59,8 @@ FCameraRigAssetEditorToolkit::FCameraRigAssetEditorToolkit(UAssetEditor* InOwnin
 	}
 	StandaloneDefaultLayout = StandardLayout->GetLayout();
 
-	UClass* NodeGraphSchemaClass = UCameraNodeGraphSchema::StaticClass();
-	UCameraNodeGraphSchema* DefaultNodeGraphSchema = Cast<UCameraNodeGraphSchema>(NodeGraphSchemaClass->GetDefaultObject());
+	UClass* NodeGraphSchemaClass = UCameraRigCameraNodeGraphSchema::StaticClass();
+	UCameraRigCameraNodeGraphSchema* DefaultNodeGraphSchema = Cast<UCameraRigCameraNodeGraphSchema>(NodeGraphSchemaClass->GetDefaultObject());
 	NodeGraphConfig = DefaultNodeGraphSchema->BuildGraphConfig();
 
 	UClass* TransitionSchemaClass = UCameraRigTransitionGraphSchema::StaticClass();
@@ -80,7 +79,7 @@ void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRi
 
 	Impl->SetCameraRigAsset(InCameraRig);
 	BuildButtonToolkit->SetTarget(InCameraRig);
-	InterfaceParametersToolkit->SetCameraRigAsset(InCameraRig);
+	InterfaceParametersToolkit->SetCameraObject(InCameraRig);
 
 	if (InCameraRig)
 	{
@@ -225,7 +224,7 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
 
 	// Hook-up the selection of interface parameters.
-	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraRigAssetEditorToolkit::OnCameraRigInterfaceParameterSelected);
+	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
 }
 
 void FCameraRigAssetEditorToolkit::RegisterToolbar()
@@ -307,7 +306,7 @@ void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()
 	SetMenuOverlay(FAssetTypeMenuOverlayHelper::CreateMenuOverlay(UCameraRigAsset::StaticClass()));
 }
 
-void FCameraRigAssetEditorToolkit::OnCameraRigInterfaceParameterSelected(UCameraRigInterfaceParameterBase* Object)
+void FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object)
 {
 	OnJumpToObject(Object, NAME_None);
 }

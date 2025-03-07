@@ -2,10 +2,10 @@
 
 #include "Nodes/Input/CameraRigInput2DSlot.h"
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraObjectBuildContext.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
 #include "Nodes/Input/Input2DCameraNode.h"
@@ -97,7 +97,7 @@ void FCameraRigInput2DSlotEvaluator::OnSerialize(const FCameraNodeEvaluatorSeria
 
 }  // namespace UE::Cameras
 
-void UCameraRigInput2DSlot::OnBuild(FCameraRigBuildContext& BuildContext)
+void UCameraRigInput2DSlot::OnBuild(FCameraObjectBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 

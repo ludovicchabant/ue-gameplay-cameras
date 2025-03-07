@@ -2,7 +2,7 @@
 
 #include "Toolkits/CameraBuildLogToolkit.h"
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
 #include "IMessageLogListing.h"
 #include "Logging/TokenizedMessage.h"
 #include "MessageLogModule.h"

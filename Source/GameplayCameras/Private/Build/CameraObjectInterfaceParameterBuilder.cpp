@@ -1,10 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Core/CameraRigParameterDefinition.h"
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
 
+#include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigAsset.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/UnrealType.h"
@@ -12,17 +13,89 @@
 namespace UE::Cameras
 {
 
-void FCameraRigParameterBuilder::BuildDefaultParameters(const UCameraRigAsset* CameraRig, FInstancedPropertyBag& OutPropertyBag)
+FCameraObjectInterfaceParameterBuilder::FCameraObjectInterfaceParameterBuilder()
 {
-	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
-	AppendDefaultParameterProperties(CameraRig, DefaultParameterProperties);
-	OutPropertyBag.AddProperties(DefaultParameterProperties);
-	SetDefaultParameterValues(CameraRig, OutPropertyBag);
 }
 
-void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraRigAsset* CameraRig, TArray<FPropertyBagPropertyDesc>& OutProperties)
+void FCameraObjectInterfaceParameterBuilder::BuildParameters(UBaseCameraObject* InCameraObject)
 {
-	for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+	CameraObject = InCameraObject;
+	{
+		BuildParametersImpl();
+	}
+	CameraObject = nullptr;
+}
+
+void FCameraObjectInterfaceParameterBuilder::BuildParametersImpl()
+{
+	BuildParameterDefinitions();
+	BuildDefaultParameters();
+}
+
+void FCameraObjectInterfaceParameterBuilder::BuildParameterDefinitions()
+{
+	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
+
+	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraObject->Interface.BlendableParameters)
+	{
+		if (BlendableParameter && BlendableParameter->PrivateVariableID)
+		{
+			FCameraObjectInterfaceParameterDefinition Definition;
+			Definition.ParameterName = FName(BlendableParameter->InterfaceParameterName);
+			Definition.ParameterGuid = BlendableParameter->GetGuid();
+			Definition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
+			Definition.VariableID = BlendableParameter->PrivateVariableID;
+			Definition.VariableType = BlendableParameter->ParameterType;
+			Definition.BlendableStructType = BlendableParameter->BlendableStructType;
+			ParameterDefinitions.Add(Definition);
+		}
+	}
+
+	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraObject->Interface.DataParameters)
+	{
+		if (DataParameter && DataParameter->PrivateDataID)
+		{
+			FCameraObjectInterfaceParameterDefinition Definition;
+			Definition.ParameterName = FName(DataParameter->InterfaceParameterName);
+			Definition.ParameterGuid = DataParameter->GetGuid();
+			Definition.ParameterType = ECameraObjectInterfaceParameterType::Data;
+			Definition.DataID = DataParameter->PrivateDataID;
+			Definition.DataType = DataParameter->DataType;
+			Definition.DataContainerType = DataParameter->DataContainerType;
+			Definition.DataTypeObject = DataParameter->DataTypeObject;
+			ParameterDefinitions.Add(Definition);
+		}
+	}
+
+	if (ParameterDefinitions != CameraObject->ParameterDefinitions)
+	{
+		CameraObject->Modify();
+		CameraObject->ParameterDefinitions = ParameterDefinitions;
+	}
+}
+
+void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters()
+{
+	FInstancedPropertyBag DefaultParameters;
+	BuildDefaultParameters(CameraObject, DefaultParameters);
+	if (!DefaultParameters.Identical(&CameraObject->DefaultParameters, 0))
+	{
+		CameraObject->Modify();
+		CameraObject->DefaultParameters = DefaultParameters;
+	}
+}
+
+void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag)
+{
+	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
+	AppendDefaultParameterProperties(CameraObject, DefaultParameterProperties);
+	OutPropertyBag.AddProperties(DefaultParameterProperties);
+	SetDefaultParameterValues(CameraObject, OutPropertyBag);
+}
+
+void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties)
+{
+	for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraObject->GetParameterDefinitions())
 	{
 		bool bIsValidProperty = true;
 		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;
@@ -30,7 +103,7 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 		const UObject* PropertyTypeObject = nullptr;
 		EPropertyFlags PropertyFlags = CPF_None;
 
-		if (Definition.ParameterType == ECameraRigInterfaceParameterType::Blendable)
+		if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 		{
 			switch (Definition.VariableType)
 			{
@@ -49,7 +122,7 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 					break;
 			}
 		}
-		else if (Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+		else if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
 			PropertyTypeObject = Definition.DataTypeObject;
 
@@ -109,7 +182,7 @@ void FCameraRigParameterBuilder::AppendDefaultParameterProperties(const UCameraR
 	}
 }
 
-void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset* CameraRig, FInstancedPropertyBag& PropertyBag)
+void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag)
 {
 	uint8* PropertyBagValue = PropertyBag.GetMutableValue().GetMemory();
 	const UPropertyBag* PropertyBagStruct = PropertyBag.GetPropertyBagStruct();
@@ -118,7 +191,7 @@ void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset
 		return;
 	}
 
-	for (const UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
+	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraObject->Interface.BlendableParameters)
 	{
 		if (!ensure(BlendableParameter))
 		{
@@ -229,7 +302,7 @@ void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset
 		}
 	}
 
-	for (const UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
+	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraObject->Interface.DataParameters)
 	{
 		if (!ensure(DataParameter && DataParameter->Target))
 		{
@@ -293,7 +366,7 @@ void FCameraRigParameterBuilder::SetDefaultParameterValues(const UCameraRigAsset
 	}
 }
 
-void FCameraRigParameterBuilder::SetDefaultParameterValue(const UCameraRigDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr)
+void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(const UCameraObjectInterfaceDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr)
 {
 	switch (DataParameter->DataType)
 	{

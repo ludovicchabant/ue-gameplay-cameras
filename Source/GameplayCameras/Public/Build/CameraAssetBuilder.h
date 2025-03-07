@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
 #include "CoreTypes.h"
 #include "GameplayCameras.h"
 #include "Templates/Tuple.h"

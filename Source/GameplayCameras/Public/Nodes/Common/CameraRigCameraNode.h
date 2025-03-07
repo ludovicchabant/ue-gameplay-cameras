@@ -23,7 +23,7 @@ protected:
 
 	// UCameraNode interface.
 	virtual void OnPreBuild(FCameraBuildLog& BuildLog) override;
-	virtual void OnBuild(FCameraRigBuildContext& BuildContext) override;
+	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 	// ICustomCameraNodeParameterProvider interface.

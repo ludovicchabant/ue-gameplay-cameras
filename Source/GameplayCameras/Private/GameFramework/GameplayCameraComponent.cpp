@@ -2,10 +2,10 @@
 
 #include "GameFramework/GameplayCameraComponent.h"
 
+#include "Build/CameraAssetBuilder.h"
+#include "Build/CameraBuildLog.h"
 #include "CineCameraComponent.h"
 #include "Core/CameraAsset.h"
-#include "Core/CameraAssetBuilder.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Debug/CameraDebugRenderer.h"

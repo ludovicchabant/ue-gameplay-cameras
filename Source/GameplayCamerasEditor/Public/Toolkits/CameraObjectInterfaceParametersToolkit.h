@@ -7,42 +7,42 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectPtr.h"
 
-#include "CameraRigInterfaceParametersToolkit.generated.h"
+#include "CameraObjectInterfaceParametersToolkit.generated.h"
 
 class SBox;
 class SWidget;
-class UCameraRigAsset;
-class UCameraRigInterfaceParameterBase;
+class UBaseCameraObject;
+class UCameraObjectInterfaceParameterBase;
 
 namespace UE::Cameras
 {
 
-class SCameraRigInterfaceParametersPanel;
+class SCameraObjectInterfaceParametersPanel;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraRigInterfaceParameterEvent, UCameraRigInterfaceParameterBase*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraObjectInterfaceParameterEvent, UCameraObjectInterfaceParameterBase*);
 
 /**
- * Utility toolkit for the "interface parameters" panel of the camera rig editor.
+ * Utility toolkit for the "interface parameters" panel of any camera object editor.
  */
-class FCameraRigInterfaceParametersToolkit 
-	: public TSharedFromThis<FCameraRigInterfaceParametersToolkit>
+class FCameraObjectInterfaceParametersToolkit 
+	: public TSharedFromThis<FCameraObjectInterfaceParametersToolkit>
 	, public FEditorUndoClient
 {
 public:
 
-	FCameraRigInterfaceParametersToolkit();
-	~FCameraRigInterfaceParametersToolkit();
+	FCameraObjectInterfaceParametersToolkit();
+	~FCameraObjectInterfaceParametersToolkit();
 
-	/** Gets the camera rig asset to edit. */
-	UCameraRigAsset* GetCameraRigAsset() const { return CameraRigAsset; }
-	/** Sets the camera rig asset to edit. This re-creates the panel widget. */
-	void SetCameraRigAsset(UCameraRigAsset* InCameraRigAsset);
+	/** Gets the camera object asset to edit. */
+	UBaseCameraObject* GetCameraObject() const { return CameraObject; }
+	/** Sets the camera object to edit. This re-creates the panel widget. */
+	void SetCameraObject(UBaseCameraObject* InCameraObject);
 
 	/** Gets the panel widget. */
 	TSharedPtr<SWidget> GetInterfaceParametersPanel() const;
 
 	/** Delegate invoked when a parmeter is selected in the panel. */
-	FOnCameraRigInterfaceParameterEvent& OnInterfaceParameterSelected() { return OnInterfaceParameterSelectedDelegate; }
+	FOnCameraObjectInterfaceParameterEvent& OnInterfaceParameterSelected() { return OnInterfaceParameterSelectedDelegate; }
 
 protected:
 
@@ -52,12 +52,12 @@ protected:
 
 private:
 
-	TObjectPtr<UCameraRigAsset> CameraRigAsset;
+	TObjectPtr<UBaseCameraObject> CameraObject;
 
-	FOnCameraRigInterfaceParameterEvent OnInterfaceParameterSelectedDelegate;
+	FOnCameraObjectInterfaceParameterEvent OnInterfaceParameterSelectedDelegate;
 
 	TSharedPtr<SBox> PanelContainer;
-	TSharedPtr<SCameraRigInterfaceParametersPanel> Panel;
+	TSharedPtr<SCameraObjectInterfaceParametersPanel> Panel;
 };
 
 }  // namespace UE::Cameras

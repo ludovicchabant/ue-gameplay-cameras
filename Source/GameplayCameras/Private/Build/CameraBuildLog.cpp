@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
 
 #include "GameplayCameras.h"
 #include "Logging/TokenizedMessage.h"

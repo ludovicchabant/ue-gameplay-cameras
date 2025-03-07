@@ -17,7 +17,7 @@
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "HAL/IConsoleManager.h"
-#include "Helpers/CameraParameterOverrideHelper.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "Math/ColorList.h"
@@ -97,7 +97,7 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.Result.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
 
 	// Set the default values, so that pre-blending from default values works.
-	FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.Result.VariableTable);
+	FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.Result.VariableTable);
 
 	// Set all the data from the context.
 	const FCameraNodeEvaluationResult& ContextResult = EvaluationContext->GetInitialResult();

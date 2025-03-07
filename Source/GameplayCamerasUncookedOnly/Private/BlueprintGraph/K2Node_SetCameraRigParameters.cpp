@@ -51,7 +51,7 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 	if (CameraRig)
 	{
 		PreloadObject(CameraRig);
-		for (UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
+		for (UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
 		{
 			PreloadObject(BlendableParameter);
 			if (BlendableParameter)
@@ -59,7 +59,7 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 				PreloadObject(const_cast<UScriptStruct*>(BlendableParameter->BlendableStructType.Get()));
 			}
 		}
-		for (UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
+		for (UCameraObjectInterfaceDataParameter* DataParameter : CameraRig->Interface.DataParameters)
 		{
 			PreloadObject(DataParameter);
 			if (DataParameter)
@@ -145,7 +145,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 	FindBlendableParameterPins(BlendableParameterPins);
 	for (UEdGraphPin* RigParameterPin : BlendableParameterPins)
 	{
-		const UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(RigParameterPin->GetName());
+		const UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(RigParameterPin->GetName());
 		if (!BlendableParameter)
 		{
 			CompilerContext.MessageLog.Error(*LOCTEXT("ErrorMissingParameter", "SetCameraRigParameters node @@ is trying to set parameter @@ but camera rig @@ has no such parameter.").ToString(), this, *RigParameterPin->GetName(), CameraRig);
@@ -213,7 +213,7 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 	FindDataParameterPins(DataParameterPins);
 	for (UEdGraphPin* RigParameterPin : DataParameterPins)
 	{
-		const UCameraRigDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByName(RigParameterPin->GetName());
+		const UCameraObjectInterfaceDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByName(RigParameterPin->GetName());
 		if (!DataParameter)
 		{
 			CompilerContext.MessageLog.Error(*LOCTEXT("ErrorMissingParameter", "SetCameraRigParameters node @@ is trying to set parameter @@ but camera rig @@ has no such parameter.").ToString(), this, *RigParameterPin->GetName(), CameraRig);
@@ -323,7 +323,7 @@ void UK2Node_SetCameraRigParameters::CreateParameterPins()
 		return;
 	}
 
-	for (const UCameraRigBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
+	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
 	{
 		if (!ensure(BlendableParameter))
 		{
@@ -347,7 +347,7 @@ void UK2Node_SetCameraRigParameters::CreateParameterPins()
 		BlendableParameterPinNames.Add(NewPin->PinName);
 	}
 
-	for (const UCameraRigDataParameter* DataParameter : CameraRig->Interface.DataParameters)
+	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraRig->Interface.DataParameters)
 	{
 		if (!ensure(DataParameter))
 		{

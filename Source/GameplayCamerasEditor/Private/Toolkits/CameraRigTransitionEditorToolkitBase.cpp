@@ -2,8 +2,8 @@
 
 #include "Toolkits/CameraRigTransitionEditorToolkitBase.h"
 
+#include "Build/CameraBuildStatus.h"
 #include "Commands/CameraRigTransitionEditorCommands.h"
-#include "Core/CameraBuildStatus.h"
 #include "Editors/CameraRigTransitionGraphSchemaBase.h"
 #include "Editors/SCameraRigTransitionEditor.h"
 #include "Editors/SObjectTreeGraphToolbox.h"

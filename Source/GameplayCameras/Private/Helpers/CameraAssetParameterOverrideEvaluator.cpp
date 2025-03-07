@@ -4,8 +4,9 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetReference.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraRigAsset.h"
-#include "Helpers/CameraParameterOverrideHelper.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 namespace UE::Cameras
 {
@@ -37,17 +38,17 @@ void FCameraAssetParameterOverrideEvaluator::ApplyParameterOverrides(FCameraVari
 		return;
 	}
 
-	TConstArrayView<FCameraRigParameterDefinition> ParameterDefinitions = CameraAsset->GetParameterDefinitions();
+	TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions = CameraAsset->GetParameterDefinitions();
 	const TArray<TObjectPtr<const UCameraRigAsset>>& ParameterOwners = CameraAsset->ParameterOwners;
 	ensure(ParameterDefinitions.Num() == ParameterOwners.Num());
 
-	FCameraParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
+	FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
 
 	for (int32 Index = 0, MaxIndex = FMath::Min(ParameterDefinitions.Num(), ParameterOwners.Num()); Index < MaxIndex; ++Index)
 	{
-		const FCameraRigParameterDefinition& Definition(ParameterDefinitions[Index]);
+		const FCameraObjectInterfaceParameterDefinition& Definition(ParameterDefinitions[Index]);
 
-		if (!OutContextDataTable && Definition.ParameterType == ECameraRigInterfaceParameterType::Data)
+		if (!OutContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
 			continue;
 		}

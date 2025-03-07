@@ -6,8 +6,8 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
 #include "EdGraph/EdGraphPin.h"
-#include "Editors/CameraNodeGraphSchema.h"
-#include "Editors/CameraRigInterfaceParameterGraphNode.h"
+#include "Editors/CameraObjectInterfaceParameterGraphNode.h"
+#include "Editors/CameraRigCameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
@@ -32,7 +32,7 @@ void SCameraRigAssetEditor::Construct(const FArguments& InArgs)
 
 	CreateGraphEditors();
 
-	CameraRigAsset->EventHandlers.Register(EventHandler, this);
+	CameraRigAsset->UBaseCameraObject::EventHandlers.Register(EventHandler, this);
 
 	ChildSlot
 	[
@@ -65,7 +65,7 @@ void SCameraRigAssetEditor::SetCameraRigAsset(UCameraRigAsset* InCameraRig)
 
 		SetEditorModeImpl(CurrentMode, true);
 
-		CameraRigAsset->EventHandlers.Register(EventHandler, this);
+		CameraRigAsset->UBaseCameraObject::EventHandlers.Register(EventHandler, this);
 	}
 }
 
@@ -77,8 +77,8 @@ void SCameraRigAssetEditor::CreateGraphEditors()
 
 void SCameraRigAssetEditor::CreateNodeGraphEditor()
 {
-	UClass* SchemaClass = UCameraNodeGraphSchema::StaticClass();
-	UCameraNodeGraphSchema* DefaultSchemaObject = Cast<UCameraNodeGraphSchema>(SchemaClass->GetDefaultObject());
+	UClass* SchemaClass = UCameraRigCameraNodeGraphSchema::StaticClass();
+	UCameraRigCameraNodeGraphSchema* DefaultSchemaObject = Cast<UCameraRigCameraNodeGraphSchema>(SchemaClass->GetDefaultObject());
 	FObjectTreeGraphConfig GraphConfig = DefaultSchemaObject->BuildGraphConfig();
 
 	NodeGraph = NewObject<UObjectTreeGraph>(GetTransientPackage(), NAME_None, RF_Transactional | RF_Standalone);
@@ -304,18 +304,18 @@ void SCameraRigAssetEditor::RemoveOnAnyGraphChanged(FDelegateUserObjectConst InU
 	OnAnyGraphChanged.RemoveAll(InUserObject);
 }
 
-void SCameraRigAssetEditor::OnCameraRigInterfaceChanged()
+void SCameraRigAssetEditor::OnCameraObjectInterfaceChanged()
 {
 	// List all the interface parameters that want a node.
-	TSet<UCameraRigInterfaceParameterBase*> InterfaceParametersWithNodes;
-	for (UCameraRigInterfaceParameterBase* InterfaceParameter : CameraRigAsset->Interface.BlendableParameters)
+	TSet<UCameraObjectInterfaceParameterBase*> InterfaceParametersWithNodes;
+	for (UCameraObjectInterfaceParameterBase* InterfaceParameter : CameraRigAsset->Interface.BlendableParameters)
 	{
 		if (InterfaceParameter->bHasGraphNode)
 		{
 			InterfaceParametersWithNodes.Add(InterfaceParameter);
 		}
 	}
-	for (UCameraRigInterfaceParameterBase* InterfaceParameter : CameraRigAsset->Interface.DataParameters)
+	for (UCameraObjectInterfaceParameterBase* InterfaceParameter : CameraRigAsset->Interface.DataParameters)
 	{
 		if (InterfaceParameter->bHasGraphNode)
 		{
@@ -324,12 +324,12 @@ void SCameraRigAssetEditor::OnCameraRigInterfaceChanged()
 	}
 
 	// Find all the interface parameter nodes that already exist.
-	TArray<UCameraRigInterfaceParameterGraphNode*> InterfaceParameterNodes;
+	TArray<UCameraObjectInterfaceParameterGraphNode*> InterfaceParameterNodes;
 	NodeGraph->GetNodesOfClass(InterfaceParameterNodes);
-	TMap<UCameraRigInterfaceParameterBase*, UCameraRigInterfaceParameterGraphNode*> InterfaceParameterToNodeMap;
+	TMap<UCameraObjectInterfaceParameterBase*, UCameraObjectInterfaceParameterGraphNode*> InterfaceParameterToNodeMap;
 
 	// Remove nodes that aren't needed anymore.
-	for (UCameraRigInterfaceParameterGraphNode* InterfaceParameterNode : InterfaceParameterNodes)
+	for (UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode : InterfaceParameterNodes)
 	{
 		InterfaceParameterToNodeMap.Add(InterfaceParameterNode->GetInterfaceParameter(), InterfaceParameterNode);
 		if (!InterfaceParametersWithNodes.Contains(InterfaceParameterNode->GetInterfaceParameter()))
@@ -340,8 +340,8 @@ void SCameraRigAssetEditor::OnCameraRigInterfaceChanged()
 	}
 
 	// Add nodes that are newly needed.
-	const UCameraNodeGraphSchema* Schema = CastChecked<UCameraNodeGraphSchema>(NodeGraph->GetSchema());
-	for (UCameraRigInterfaceParameterBase* InterfaceParameter : InterfaceParametersWithNodes)
+	const UCameraRigCameraNodeGraphSchema* Schema = CastChecked<UCameraRigCameraNodeGraphSchema>(NodeGraph->GetSchema());
+	for (UCameraObjectInterfaceParameterBase* InterfaceParameter : InterfaceParametersWithNodes)
 	{
 		if (!InterfaceParameterToNodeMap.Contains(InterfaceParameter))
 		{

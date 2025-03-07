@@ -2,7 +2,7 @@
 
 #include "Toolkits/BuildButtonToolkit.h"
 
-#include "Core/CameraBuildStatus.h"
+#include "Build/CameraBuildStatus.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Textures/SlateIcon.h"
 #include "ToolMenuEntry.h"

@@ -2,9 +2,9 @@
 
 #include "Core/CameraRigTransition.h"
 
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraObjectBuildContext.h"
 #include "Core/BlendCameraNode.h"
-#include "Core/CameraBuildLog.h"
-#include "Core/CameraRigBuildContext.h"
 #include "Logging/TokenizedMessage.h"
 #include "Nodes/Blends/SimpleBlendCameraNode.h"
 
@@ -34,7 +34,7 @@ bool UCameraRigTransitionCondition::TransitionMatches(const FCameraRigTransition
 	return OnTransitionMatches(Params);
 }
 
-void UCameraRigTransitionCondition::Build(FCameraRigBuildContext& BuildContext)
+void UCameraRigTransitionCondition::Build(FCameraObjectBuildContext& BuildContext)
 {
 	OnBuild(BuildContext);
 }
@@ -99,7 +99,7 @@ bool UCameraRigTransition::AllConditionsMatch(const FCameraRigTransitionConditio
 	return true;
 }
 
-void UCameraRigTransition::Build(FCameraRigBuildContext& BuildContext)
+void UCameraRigTransition::Build(FCameraObjectBuildContext& BuildContext)
 {
 	if (Blend)
 	{

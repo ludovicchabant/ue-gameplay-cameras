@@ -1,8 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Toolkits/CameraRigInterfaceParametersToolkit.h"
+#include "Toolkits/CameraObjectInterfaceParametersToolkit.h"
 
-#include "Core/CameraRigAsset.h"
+#include "Core/BaseCameraObject.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Editor.h"
 #include "Editors/CameraNodeGraphDragDropOp.h"
@@ -26,7 +26,7 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 
-#define LOCTEXT_NAMESPACE "CameraRigInterfaceParametersToolkit"
+#define LOCTEXT_NAMESPACE "CameraObjectInterfaceParametersToolkit"
 
 namespace UE::Cameras
 {
@@ -40,11 +40,11 @@ static const FName ParameterIsPreBlendedColumn(TEXT("ParameterIsPreBlended"));
  * List entry for any interface parameter panel.
  */
 template<typename ParameterType>
-class SCameraRigInterfaceParameterTableRowBase : public SMultiColumnTableRow<TObjectPtr<ParameterType>>
+class SCameraObjectInterfaceParameterTableRowBase : public SMultiColumnTableRow<TObjectPtr<ParameterType>>
 {
 public:
 
-	SLATE_BEGIN_ARGS(SCameraRigInterfaceParameterTableRowBase<ParameterType>)
+	SLATE_BEGIN_ARGS(SCameraObjectInterfaceParameterTableRowBase<ParameterType>)
 	{}
 		SLATE_ARGUMENT(TObjectPtr<ParameterType>, Item)
 	SLATE_END_ARGS()
@@ -73,19 +73,19 @@ protected:
 		if (InColumnName == ParameterNameColumn)
 		{
 			return SAssignNew(NameTextBlock, SInlineEditableTextBlock)
-				.IsSelected(this, &SCameraRigInterfaceParameterTableRowBase<ParameterType>::IsSelected)
+				.IsSelected(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::IsSelected)
 				.Text_Lambda([this]() { return FText::FromString(Item->InterfaceParameterName); })
-				.OnTextCommitted(this, &SCameraRigInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted);
+				.OnTextCommitted(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted);
 		}
 		else if (InColumnName == ParameterMessageColumn)
 		{
 			TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
-			const FTextBlockStyle& MessageStyle = GameplayCamerasEditorStyle->GetWidgetStyle<FTextBlockStyle>("CameraRigAssetEditor.InterfaceParameter.Message");
+			const FTextBlockStyle& MessageStyle = GameplayCamerasEditorStyle->GetWidgetStyle<FTextBlockStyle>("CameraObjectEditor.InterfaceParameter.Message");
 
 			return SNew(STextBlock)
 				.TextStyle(&MessageStyle)
-				.Text(this, &SCameraRigInterfaceParameterTableRowBase<ParameterType>::GetParameterMessageText)
-				.ToolTipText(this, &SCameraRigInterfaceParameterTableRowBase<ParameterType>::GetParameterMessageToolTip);
+				.Text(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::GetParameterMessageText)
+				.ToolTipText(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::GetParameterMessageToolTip);
 		}
 
 		return SNullWidget::NullWidget;
@@ -137,13 +137,13 @@ protected:
 /**
  * List entry for the blendable parameters panel.
  */
-class SCameraRigBlendableParameterTableRow : public SCameraRigInterfaceParameterTableRowBase<UCameraRigBlendableParameter>
+class SCameraObjectInterfaceBlendableParameterTableRow : public SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceBlendableParameter>
 {
 public:
 
 	void Construct(const FArguments& Args, const TSharedRef<STableViewBase>& OwnerTable)
 	{
-		SCameraRigInterfaceParameterTableRowBase<UCameraRigBlendableParameter>::Construct(Args, OwnerTable);
+		SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceBlendableParameter>::Construct(Args, OwnerTable);
 	}
 
 protected:
@@ -158,12 +158,12 @@ protected:
 
 			return SNew(SBox)
 				.MinDesiredWidth(125.f)
-				.Padding(this, &SCameraRigBlendableParameterTableRow::GetPinTypeSelectorPadding)
+				.Padding(this, &SCameraObjectInterfaceBlendableParameterTableRow::GetPinTypeSelectorPadding)
 				[
-					SNew(SPinTypeSelector, FGetPinTypeTree::CreateSP(this, &SCameraRigBlendableParameterTableRow::GetPinTypeTreeInfos))
-					.OnPinTypeChanged(this, &SCameraRigBlendableParameterTableRow::OnBlendableParameterPinTypeChanged)
-					.TargetPinType(this, &SCameraRigBlendableParameterTableRow::GetBlendableParameterPinType)
-					.ReadOnly(this, &SCameraRigBlendableParameterTableRow::IsPinTypeSelectorReadOnly)
+					SNew(SPinTypeSelector, FGetPinTypeTree::CreateSP(this, &SCameraObjectInterfaceBlendableParameterTableRow::GetPinTypeTreeInfos))
+					.OnPinTypeChanged(this, &SCameraObjectInterfaceBlendableParameterTableRow::OnBlendableParameterPinTypeChanged)
+					.TargetPinType(this, &SCameraObjectInterfaceBlendableParameterTableRow::GetBlendableParameterPinType)
+					.ReadOnly(this, &SCameraObjectInterfaceBlendableParameterTableRow::IsPinTypeSelectorReadOnly)
 					.Schema(K2Schema)
 					.bAllowArrays(false)
 				];
@@ -171,11 +171,11 @@ protected:
 		else if (InColumnName == ParameterIsPreBlendedColumn)
 		{
 			return SNew(SCheckBox)
-				.IsChecked(this, &SCameraRigBlendableParameterTableRow::IsBlendableParameterPreBlended)
-				.OnCheckStateChanged(this, &SCameraRigBlendableParameterTableRow::OnBlendableParameterPreBlendedChanged);
+				.IsChecked(this, &SCameraObjectInterfaceBlendableParameterTableRow::IsBlendableParameterPreBlended)
+				.OnCheckStateChanged(this, &SCameraObjectInterfaceBlendableParameterTableRow::OnBlendableParameterPreBlendedChanged);
 		}
 
-		return SCameraRigInterfaceParameterTableRowBase<UCameraRigBlendableParameter>::GenerateWidgetForColumn(InColumnName);
+		return SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceBlendableParameter>::GenerateWidgetForColumn(InColumnName);
 	}
 
 	FMargin GetPinTypeSelectorPadding() const
@@ -442,7 +442,7 @@ class FDataParameterPinTypeSelectorFilter : public IPinTypeSelectorFilter
 /**
  * List entry for the data parameters panel.
  */
-class SCameraRigDataParameterTableRow : public SCameraRigInterfaceParameterTableRowBase<UCameraRigDataParameter>
+class SCameraObjectInterfaceDataParameterTableRow : public SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceDataParameter>
 {
 protected:
 
@@ -457,19 +457,19 @@ protected:
 
 			return SNew(SBox)
 				.MinDesiredWidth(125.f)
-				.Padding(this, &SCameraRigDataParameterTableRow::GetPinTypeSelectorPadding)
+				.Padding(this, &SCameraObjectInterfaceDataParameterTableRow::GetPinTypeSelectorPadding)
 				[
 					SNew(SPinTypeSelector, FGetPinTypeTree::CreateUObject(K2Schema, &UEdGraphSchema_K2::GetVariableTypeTree))
-					.OnPinTypeChanged(this, &SCameraRigDataParameterTableRow::OnDataParameterPinTypeChanged)
-					.TargetPinType(this, &SCameraRigDataParameterTableRow::GetDataParameterPinType)
-					.ReadOnly(this, &SCameraRigDataParameterTableRow::IsPinTypeSelectorReadOnly)
+					.OnPinTypeChanged(this, &SCameraObjectInterfaceDataParameterTableRow::OnDataParameterPinTypeChanged)
+					.TargetPinType(this, &SCameraObjectInterfaceDataParameterTableRow::GetDataParameterPinType)
+					.ReadOnly(this, &SCameraObjectInterfaceDataParameterTableRow::IsPinTypeSelectorReadOnly)
 					.Schema(K2Schema)
 					.CustomFilters(PinTypeSelectorFilters)
 					.bAllowArrays(true)
 				];
 		}
 
-		return SCameraRigInterfaceParameterTableRowBase<UCameraRigDataParameter>::GenerateWidgetForColumn(InColumnName);
+		return SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceDataParameter>::GenerateWidgetForColumn(InColumnName);
 	}
 
 	FMargin GetPinTypeSelectorPadding() const
@@ -583,17 +583,17 @@ protected:
  * The overall interface parameters panel, showing two sub-panels, one for blendable parameters, and
  * one for data parameters.
  */
-class SCameraRigInterfaceParametersPanel 
+class SCameraObjectInterfaceParametersPanel 
 	: public SCompoundWidget
-	, public ICameraRigAssetEventHandler
+	, public ICameraObjectEventHandler
 {
 public:
 
-	SLATE_BEGIN_ARGS(SCameraRigInterfaceParametersPanel)
+	SLATE_BEGIN_ARGS(SCameraObjectInterfaceParametersPanel)
 	{}
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& Args, FCameraRigInterfaceParametersToolkit* OwnerToolkit);
+	void Construct(const FArguments& Args, FCameraObjectInterfaceParametersToolkit* OwnerToolkit);
 
 	void RequestListRefresh();
 
@@ -602,16 +602,16 @@ protected:
 	// SWidget interface.
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 
-	// ICameraRigAssetEventHandler interface.
-	virtual void OnCameraRigInterfaceChanged() override;
+	// ICameraObjectEventHandler interface.
+	virtual void OnCameraObjectInterfaceChanged() override;
 
 private:
 
-	TSharedRef<ITableRow> OnGenerateBlendableParameterRow(TObjectPtr<UCameraRigBlendableParameter> Item, const TSharedRef<STableViewBase>& OwnerTable);
-	TSharedRef<ITableRow> OnGenerateDataParameterRow(TObjectPtr<UCameraRigDataParameter> Item, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGenerateBlendableParameterRow(TObjectPtr<UCameraObjectInterfaceBlendableParameter> Item, const TSharedRef<STableViewBase>& OwnerTable);
+	TSharedRef<ITableRow> OnGenerateDataParameterRow(TObjectPtr<UCameraObjectInterfaceDataParameter> Item, const TSharedRef<STableViewBase>& OwnerTable);
 
-	void OnBlendableSelectionChanged(TObjectPtr<UCameraRigBlendableParameter> Item, ESelectInfo::Type Type);
-	void OnDataParameterSelectionChanged(TObjectPtr<UCameraRigDataParameter> Item, ESelectInfo::Type Type);
+	void OnBlendableSelectionChanged(TObjectPtr<UCameraObjectInterfaceBlendableParameter> Item, ESelectInfo::Type Type);
+	void OnDataParameterSelectionChanged(TObjectPtr<UCameraObjectInterfaceDataParameter> Item, ESelectInfo::Type Type);
 
 	TSharedPtr<SWidget> OnBlendableParameterContextMenuOpening();
 	TSharedPtr<SWidget> OnDataParameterContextMenuOpening();
@@ -631,21 +631,21 @@ private:
 
 private:
 
-	UCameraRigAsset* CameraRigAsset = nullptr;
-	FCameraRigInterfaceParametersToolkit* Toolkit = nullptr;
+	UBaseCameraObject* CameraObject = nullptr;
+	FCameraObjectInterfaceParametersToolkit* Toolkit = nullptr;
 
-	TCameraEventHandler<ICameraRigAssetEventHandler> EventHandler;
+	TCameraEventHandler<ICameraObjectEventHandler> EventHandler;
 
-	TSharedPtr<SListView<TObjectPtr<UCameraRigBlendableParameter>>> BlendableParametersListView;
-	TSharedPtr<SListView<TObjectPtr<UCameraRigDataParameter>>> DataParametersListView;
+	TSharedPtr<SListView<TObjectPtr<UCameraObjectInterfaceBlendableParameter>>> BlendableParametersListView;
+	TSharedPtr<SListView<TObjectPtr<UCameraObjectInterfaceDataParameter>>> DataParametersListView;
 
 	bool bListRefreshRequested = false;
 };
 
-void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCameraRigInterfaceParametersToolkit* OwnerToolkit)
+void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FCameraObjectInterfaceParametersToolkit* OwnerToolkit)
 {
-	CameraRigAsset = OwnerToolkit->GetCameraRigAsset();
-	CameraRigAsset->EventHandlers.Register(EventHandler, this);
+	CameraObject = OwnerToolkit->GetCameraObject();
+	CameraObject->EventHandlers.Register(EventHandler, this);
 
 	Toolkit = OwnerToolkit;
 
@@ -685,7 +685,7 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 						.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 						.ContentPadding(FMargin(1, 0))
 						.ToolTipText(LOCTEXT("AddBlendableToolTip", "Add a blendable parameter"))
-						.OnClicked(this, &SCameraRigInterfaceParametersPanel::OnAddBlendableParameter)
+						.OnClicked(this, &SCameraObjectInterfaceParametersPanel::OnAddBlendableParameter)
 						[
 							SNew(SImage)
 							.Image(FAppStyle::Get().GetBrush("Icons.PlusCircle"))
@@ -697,11 +697,11 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 			+SVerticalBox::Slot()
 			.FillHeight(1.f)
 			[
-				SAssignNew(BlendableParametersListView, SListView<TObjectPtr<UCameraRigBlendableParameter>>)
-				.ListItemsSource(&CameraRigAsset->Interface.BlendableParameters)
-				.OnGenerateRow(this, &SCameraRigInterfaceParametersPanel::OnGenerateBlendableParameterRow)
-				.OnSelectionChanged(this, &SCameraRigInterfaceParametersPanel::OnBlendableSelectionChanged)
-				.OnContextMenuOpening(this, &SCameraRigInterfaceParametersPanel::OnBlendableParameterContextMenuOpening)
+				SAssignNew(BlendableParametersListView, SListView<TObjectPtr<UCameraObjectInterfaceBlendableParameter>>)
+				.ListItemsSource(&CameraObject->Interface.BlendableParameters)
+				.OnGenerateRow(this, &SCameraObjectInterfaceParametersPanel::OnGenerateBlendableParameterRow)
+				.OnSelectionChanged(this, &SCameraObjectInterfaceParametersPanel::OnBlendableSelectionChanged)
+				.OnContextMenuOpening(this, &SCameraObjectInterfaceParametersPanel::OnBlendableParameterContextMenuOpening)
 				.HeaderRow
 				(
 					SNew(SHeaderRow)
@@ -756,7 +756,7 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 						.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 						.ContentPadding(FMargin(1, 0))
 						.ToolTipText(LOCTEXT("AddDataParameterToolTip", "Add a data parameter"))
-						.OnClicked(this, &SCameraRigInterfaceParametersPanel::OnAddDataParameter)
+						.OnClicked(this, &SCameraObjectInterfaceParametersPanel::OnAddDataParameter)
 						[
 							SNew(SImage)
 							.Image(FAppStyle::Get().GetBrush("Icons.PlusCircle"))
@@ -768,11 +768,11 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 			+SVerticalBox::Slot()
 			.FillHeight(1.f)
 			[
-				SAssignNew(DataParametersListView, SListView<TObjectPtr<UCameraRigDataParameter>>)
-				.ListItemsSource(&CameraRigAsset->Interface.DataParameters)
-				.OnGenerateRow(this, &SCameraRigInterfaceParametersPanel::OnGenerateDataParameterRow)
-				.OnSelectionChanged(this, &SCameraRigInterfaceParametersPanel::OnDataParameterSelectionChanged)
-				.OnContextMenuOpening(this, &SCameraRigInterfaceParametersPanel::OnDataParameterContextMenuOpening)
+				SAssignNew(DataParametersListView, SListView<TObjectPtr<UCameraObjectInterfaceDataParameter>>)
+				.ListItemsSource(&CameraObject->Interface.DataParameters)
+				.OnGenerateRow(this, &SCameraObjectInterfaceParametersPanel::OnGenerateDataParameterRow)
+				.OnSelectionChanged(this, &SCameraObjectInterfaceParametersPanel::OnDataParameterSelectionChanged)
+				.OnContextMenuOpening(this, &SCameraObjectInterfaceParametersPanel::OnDataParameterContextMenuOpening)
 				.HeaderRow
 				(
 					SNew(SHeaderRow)
@@ -794,12 +794,12 @@ void SCameraRigInterfaceParametersPanel::Construct(const FArguments& Args, FCame
 	];
 }
 
-void SCameraRigInterfaceParametersPanel::RequestListRefresh()
+void SCameraObjectInterfaceParametersPanel::RequestListRefresh()
 {
 	bListRefreshRequested = true;
 }
 
-void SCameraRigInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+void SCameraObjectInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 
@@ -812,31 +812,31 @@ void SCameraRigInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry,
 	}
 }
 
-TSharedRef<ITableRow> SCameraRigInterfaceParametersPanel::OnGenerateBlendableParameterRow(TObjectPtr<UCameraRigBlendableParameter> Item, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> SCameraObjectInterfaceParametersPanel::OnGenerateBlendableParameterRow(TObjectPtr<UCameraObjectInterfaceBlendableParameter> Item, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(SCameraRigBlendableParameterTableRow, OwnerTable)
+	return SNew(SCameraObjectInterfaceBlendableParameterTableRow, OwnerTable)
 		.Item(Item);
 }
 
-TSharedRef<ITableRow> SCameraRigInterfaceParametersPanel::OnGenerateDataParameterRow(TObjectPtr<UCameraRigDataParameter> Item, const TSharedRef<STableViewBase>& OwnerTable)
+TSharedRef<ITableRow> SCameraObjectInterfaceParametersPanel::OnGenerateDataParameterRow(TObjectPtr<UCameraObjectInterfaceDataParameter> Item, const TSharedRef<STableViewBase>& OwnerTable)
 {
-	return SNew(SCameraRigDataParameterTableRow, OwnerTable)
+	return SNew(SCameraObjectInterfaceDataParameterTableRow, OwnerTable)
 		.Item(Item);
 }
 
-void SCameraRigInterfaceParametersPanel::OnBlendableSelectionChanged(TObjectPtr<UCameraRigBlendableParameter> Item, ESelectInfo::Type Type)
+void SCameraObjectInterfaceParametersPanel::OnBlendableSelectionChanged(TObjectPtr<UCameraObjectInterfaceBlendableParameter> Item, ESelectInfo::Type Type)
 {
 	Toolkit->OnInterfaceParameterSelected().Broadcast(Item);
 }
 
-void SCameraRigInterfaceParametersPanel::OnDataParameterSelectionChanged(TObjectPtr<UCameraRigDataParameter> Item, ESelectInfo::Type Type)
+void SCameraObjectInterfaceParametersPanel::OnDataParameterSelectionChanged(TObjectPtr<UCameraObjectInterfaceDataParameter> Item, ESelectInfo::Type Type)
 {
 	Toolkit->OnInterfaceParameterSelected().Broadcast(Item);
 }
 
-TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnBlendableParameterContextMenuOpening()
+TSharedPtr<SWidget> SCameraObjectInterfaceParametersPanel::OnBlendableParameterContextMenuOpening()
 {
-	TArray<TObjectPtr<UCameraRigBlendableParameter>> SelectedItems = BlendableParametersListView->GetSelectedItems();
+	TArray<TObjectPtr<UCameraObjectInterfaceBlendableParameter>> SelectedItems = BlendableParametersListView->GetSelectedItems();
 	if (SelectedItems.Num() > 0)
 	{
 		return OnInterfaceParameterContextMenuOpening(BlendableParametersListView, SelectedItems[0]);
@@ -844,9 +844,9 @@ TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnBlendableParameterCont
 	return nullptr;
 }
 
-TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnDataParameterContextMenuOpening()
+TSharedPtr<SWidget> SCameraObjectInterfaceParametersPanel::OnDataParameterContextMenuOpening()
 {
-	TArray<TObjectPtr<UCameraRigDataParameter>> SelectedItems = DataParametersListView->GetSelectedItems();
+	TArray<TObjectPtr<UCameraObjectInterfaceDataParameter>> SelectedItems = DataParametersListView->GetSelectedItems();
 	if (SelectedItems.Num() > 0)
 	{
 		return OnInterfaceParameterContextMenuOpening(DataParametersListView, SelectedItems[0]);
@@ -855,7 +855,7 @@ TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnDataParameterContextMe
 }
 
 template<typename ItemType>
-TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnInterfaceParameterContextMenuOpening(
+TSharedPtr<SWidget> SCameraObjectInterfaceParametersPanel::OnInterfaceParameterContextMenuOpening(
 		TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView, TObjectPtr<ItemType> Item)
 {
 	FMenuBuilder MenuBuilder(true, nullptr);
@@ -864,18 +864,18 @@ TSharedPtr<SWidget> SCameraRigInterfaceParametersPanel::OnInterfaceParameterCont
 			LOCTEXT("RenameInterfaceParameter", "Rename"),
 			LOCTEXT("RenameInterfaceParameterToolTip", "Renames this interface parameter"),
 			FSlateIcon(),
-			FExecuteAction::CreateSP(this, &SCameraRigInterfaceParametersPanel::OnRenameInterfaceParameter, ListView, Item));
+			FExecuteAction::CreateSP(this, &SCameraObjectInterfaceParametersPanel::OnRenameInterfaceParameter, ListView, Item));
 	MenuBuilder.AddMenuEntry(
 			LOCTEXT("DeleteInterfaceParameter", "Delete"),
 			LOCTEXT("DeleteInterfaceParameterToolTip", "Deletes this interface parameter"),
 			FSlateIcon(),
-			FExecuteAction::CreateSP(this, &SCameraRigInterfaceParametersPanel::OnDeleteInterfaceParameter, ListView, Item));
+			FExecuteAction::CreateSP(this, &SCameraObjectInterfaceParametersPanel::OnDeleteInterfaceParameter, ListView, Item));
 
 	return MenuBuilder.MakeWidget();
 }
 
 template<typename ItemType>
-void SCameraRigInterfaceParametersPanel::OnRenameInterfaceParameter(
+void SCameraObjectInterfaceParametersPanel::OnRenameInterfaceParameter(
 		TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView, TObjectPtr<ItemType> Item)
 {
 	TSharedPtr<ITableRow> RowWidget = ListView->WidgetFromItem(Item);
@@ -884,69 +884,69 @@ void SCameraRigInterfaceParametersPanel::OnRenameInterfaceParameter(
 		return;
 	}
 
-	TSharedPtr<SCameraRigInterfaceParameterTableRowBase<ItemType>> TypedRowWidget = 
-		StaticCastSharedPtr<SCameraRigInterfaceParameterTableRowBase<ItemType>>(RowWidget);
+	TSharedPtr<SCameraObjectInterfaceParameterTableRowBase<ItemType>> TypedRowWidget = 
+		StaticCastSharedPtr<SCameraObjectInterfaceParameterTableRowBase<ItemType>>(RowWidget);
 	TypedRowWidget->EnterNameEditingMode();
 }
 
 template<typename ItemType>
-void SCameraRigInterfaceParametersPanel::OnDeleteInterfaceParameter(
+void SCameraObjectInterfaceParametersPanel::OnDeleteInterfaceParameter(
 		TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView, TObjectPtr<ItemType> Item)
 {
 	const FScopedTransaction Transaction(LOCTEXT("RemoveInterfaceParameter", "Remove Interface Parameter"));
 
-	CameraRigAsset->Modify();
+	CameraObject->Modify();
 
-	if constexpr (std::is_same_v<ItemType, UCameraRigBlendableParameter>)
+	if constexpr (std::is_same_v<ItemType, UCameraObjectInterfaceBlendableParameter>)
 	{
-		const int32 NumRemoved = CameraRigAsset->Interface.BlendableParameters.Remove(Item);
+		const int32 NumRemoved = CameraObject->Interface.BlendableParameters.Remove(Item);
 		ensure(NumRemoved == 1);
 	}
-	else if constexpr (std::is_same_v<ItemType, UCameraRigDataParameter>)
+	else if constexpr (std::is_same_v<ItemType, UCameraObjectInterfaceDataParameter>)
 	{
-		const int32 NumRemoved = CameraRigAsset->Interface.DataParameters.Remove(Item);
+		const int32 NumRemoved = CameraObject->Interface.DataParameters.Remove(Item);
 		ensure(NumRemoved == 1);
 	}
 
-	CameraRigAsset->EventHandlers.Notify(&ICameraRigAssetEventHandler::OnCameraRigInterfaceChanged);
+	CameraObject->EventHandlers.Notify(&ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	ListView->RequestListRefresh();
 }
 
-FReply SCameraRigInterfaceParametersPanel::OnAddBlendableParameter()
+FReply SCameraObjectInterfaceParametersPanel::OnAddBlendableParameter()
 {
 	const FScopedTransaction Transaction(LOCTEXT("AddBlendableParameter", "Add Blendable Parameter"));
 
-	UCameraRigBlendableParameter* NewBlendableParameter = NewObject<UCameraRigBlendableParameter>(CameraRigAsset, NAME_None, RF_Transactional);
+	UCameraObjectInterfaceBlendableParameter* NewBlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraObject, NAME_None, RF_Transactional);
 	NewBlendableParameter->InterfaceParameterName = NewBlendableParameter->GetName();
 
-	CameraRigAsset->Modify();
-	CameraRigAsset->Interface.BlendableParameters.Add(NewBlendableParameter);
-	CameraRigAsset->EventHandlers.Notify(&ICameraRigAssetEventHandler::OnCameraRigInterfaceChanged);
+	CameraObject->Modify();
+	CameraObject->Interface.BlendableParameters.Add(NewBlendableParameter);
+	CameraObject->EventHandlers.Notify(&ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	return FReply::Handled();
 }
 
-FReply SCameraRigInterfaceParametersPanel::OnAddDataParameter()
+FReply SCameraObjectInterfaceParametersPanel::OnAddDataParameter()
 {
 	const FScopedTransaction Transaction(LOCTEXT("AddDataParameter", "Add Data Parameter"));
 
-	UCameraRigDataParameter* NewDataParameter = NewObject<UCameraRigDataParameter>(CameraRigAsset, NAME_None, RF_Transactional);
+	UCameraObjectInterfaceDataParameter* NewDataParameter = NewObject<UCameraObjectInterfaceDataParameter>(CameraObject, NAME_None, RF_Transactional);
 	NewDataParameter->InterfaceParameterName = NewDataParameter->GetName();
 
-	CameraRigAsset->Modify();
-	CameraRigAsset->Interface.DataParameters.Add(NewDataParameter);
-	CameraRigAsset->EventHandlers.Notify(&ICameraRigAssetEventHandler::OnCameraRigInterfaceChanged);
+	CameraObject->Modify();
+	CameraObject->Interface.DataParameters.Add(NewDataParameter);
+	CameraObject->EventHandlers.Notify(&ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	return FReply::Handled();
 }
 
-void SCameraRigInterfaceParametersPanel::OnCameraRigInterfaceChanged()
+void SCameraObjectInterfaceParametersPanel::OnCameraObjectInterfaceChanged()
 {
 	bListRefreshRequested = true;
 }
 
-FCameraRigInterfaceParametersToolkit::FCameraRigInterfaceParametersToolkit()
+FCameraObjectInterfaceParametersToolkit::FCameraObjectInterfaceParametersToolkit()
 {
 	SAssignNew(PanelContainer, SBox);
 
@@ -956,7 +956,7 @@ FCameraRigInterfaceParametersToolkit::FCameraRigInterfaceParametersToolkit()
 	}
 }
 
-FCameraRigInterfaceParametersToolkit::~FCameraRigInterfaceParametersToolkit()
+FCameraObjectInterfaceParametersToolkit::~FCameraObjectInterfaceParametersToolkit()
 {
 	if (GEditor)
 	{
@@ -964,33 +964,33 @@ FCameraRigInterfaceParametersToolkit::~FCameraRigInterfaceParametersToolkit()
 	}
 }
 
-void FCameraRigInterfaceParametersToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRigAsset)
+void FCameraObjectInterfaceParametersToolkit::SetCameraObject(UBaseCameraObject* InCameraObject)
 {
-	if (CameraRigAsset != InCameraRigAsset)
+	if (CameraObject != InCameraObject)
 	{
 		PanelContainer->SetContent(SNullWidget::NullWidget);
 
-		CameraRigAsset = InCameraRigAsset;
+		CameraObject = InCameraObject;
 
-		if (CameraRigAsset)
+		if (CameraObject)
 		{
-			Panel = SNew(SCameraRigInterfaceParametersPanel, this);
+			Panel = SNew(SCameraObjectInterfaceParametersPanel, this);
 			PanelContainer->SetContent(Panel.ToSharedRef());
 		}
 	}
 }
 
-TSharedPtr<SWidget> FCameraRigInterfaceParametersToolkit::GetInterfaceParametersPanel() const
+TSharedPtr<SWidget> FCameraObjectInterfaceParametersToolkit::GetInterfaceParametersPanel() const
 {
 	return PanelContainer;
 }
 
-void FCameraRigInterfaceParametersToolkit::PostUndo(bool bSuccess)
+void FCameraObjectInterfaceParametersToolkit::PostUndo(bool bSuccess)
 {
 	Panel->RequestListRefresh();
 }
 
-void FCameraRigInterfaceParametersToolkit::PostRedo(bool bSuccess)
+void FCameraObjectInterfaceParametersToolkit::PostRedo(bool bSuccess)
 {
 	Panel->RequestListRefresh();
 }

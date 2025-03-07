@@ -2,8 +2,8 @@
 
 #include "Directors/SingleCameraDirector.h"
 
+#include "Build/CameraBuildLog.h"
 #include "Core/CameraAsset.h"
-#include "Core/CameraBuildLog.h"
 #include "Logging/TokenizedMessage.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SingleCameraDirector)

@@ -5,7 +5,7 @@
 #include "Containers/Array.h"
 #include "Core/CameraNode.h"
 
-class UCameraRigAsset;
+class UBaseCameraObject;
 
 namespace UE::Cameras
 {
@@ -20,8 +20,8 @@ public:
 
 	/** Build an empty hierarchy. */
 	FCameraNodeHierarchy();
-	/** Build a hierarchy starting from the given camera rig's root node. */
-	FCameraNodeHierarchy(UCameraRigAsset* InCameraRig);
+	/** Build a hierarchy starting from the given camera object's root node. */
+	FCameraNodeHierarchy(UBaseCameraObject* InCameraObject);
 	/** Build a hierarchy starting from the given root node. */
 	FCameraNodeHierarchy(UCameraNode* InRootCameraNode);
 
@@ -33,8 +33,8 @@ public:
 
 public:
 
-	/** Build a hierarchy starting from the given camera rig's root node. */
-	void Build(UCameraRigAsset* InCameraRig);
+	/** Build a hierarchy starting from the given camera object's root node. */
+	void Build(UBaseCameraObject* InCameraObject);
 	/** Build a hierarchy starting from the given root node. */
 	void Build(UCameraNode* InRootCameraNode);
 	/** Resets this object to an empty hierarchy. */

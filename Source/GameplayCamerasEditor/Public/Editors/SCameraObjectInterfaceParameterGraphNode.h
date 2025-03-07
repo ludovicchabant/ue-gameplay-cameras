@@ -4,19 +4,19 @@
 
 #include "Editors/SObjectTreeGraphNode.h"
 
-class UCameraRigInterfaceParameterGraphNode;
+class UCameraObjectInterfaceParameterGraphNode;
 
 /**
  * Custom graph editor node widget for a camera rig parameter node.
  */
-class SCameraRigInterfaceParameterGraphNode : public SObjectTreeGraphNode
+class SCameraObjectInterfaceParameterGraphNode : public SObjectTreeGraphNode
 {
 public:
 
-	SLATE_BEGIN_ARGS(SCameraRigInterfaceParameterGraphNode)
+	SLATE_BEGIN_ARGS(SCameraObjectInterfaceParameterGraphNode)
 		: _GraphNode(nullptr)
 	{}
-		SLATE_ARGUMENT(UCameraRigInterfaceParameterGraphNode*, GraphNode)
+		SLATE_ARGUMENT(UCameraObjectInterfaceParameterGraphNode*, GraphNode)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);

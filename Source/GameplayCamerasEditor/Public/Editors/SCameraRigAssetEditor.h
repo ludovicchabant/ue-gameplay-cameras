@@ -37,7 +37,7 @@ enum class ECameraRigAssetEditorMode
  */
 class SCameraRigAssetEditor 
 	: public SCompoundWidget
-	, public ICameraRigAssetEventHandler
+	, public ICameraObjectEventHandler
 {
 public:
 
@@ -87,8 +87,8 @@ public:
 
 protected:
 
-	// ICameraRigAssetEventHandler interface.
-	virtual void OnCameraRigInterfaceChanged() override;
+	// ICameraObjectEventHandler interface.
+	virtual void OnCameraObjectInterfaceChanged() override;
 
 protected:
 
@@ -110,7 +110,7 @@ private:
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
 
 	/** Event handler */
-	TCameraEventHandler<ICameraRigAssetEventHandler> EventHandler;
+	TCameraEventHandler<ICameraObjectEventHandler> EventHandler;
 
 	/** Reference to the details view */
 	TSharedPtr<IDetailsView> DetailsView;

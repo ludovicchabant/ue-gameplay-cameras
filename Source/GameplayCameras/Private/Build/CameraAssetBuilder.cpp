@@ -1,13 +1,14 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Core/CameraAssetBuilder.h"
+#include "Build/CameraAssetBuilder.h"
 
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
+#include "Build/CameraRigAssetBuilder.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigAssetBuilder.h"
-#include "Core/CameraRigParameterDefinition.h"
 #include "GameplayCamerasDelegates.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -78,12 +79,12 @@ void FCameraAssetBuilder::BuildCameraImpl()
 
 	// Get the list of all the camera rigs' interface parameters, and cache some information
 	// about them.
-	TArray<FCameraRigParameterDefinition> ParameterDefinitions;
+	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
 	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
 
 	for (const UCameraRigAsset* CameraRig : CameraRigs)
 	{
-		for (const FCameraRigParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+		for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
 		{
 			ParameterDefinitions.Add(Definition);
 			ParameterOwners.Add(CameraRig);
@@ -102,13 +103,13 @@ void FCameraAssetBuilder::BuildCameraImpl()
 	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
 	for (const UCameraRigAsset* CameraRig : CameraRigs)
 	{
-		FCameraRigParameterBuilder::AppendDefaultParameterProperties(CameraRig, DefaultParameterProperties);
+		FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(CameraRig, DefaultParameterProperties);
 	}
 	FInstancedPropertyBag DefaultParameters;
 	DefaultParameters.AddProperties(DefaultParameterProperties);
 	for (const UCameraRigAsset* CameraRig : CameraRigs)
 	{
-		FCameraRigParameterBuilder::SetDefaultParameterValues(CameraRig, DefaultParameters);
+		FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(CameraRig, DefaultParameters);
 	}
 
 	if (!DefaultParameters.Identical(&CameraAsset->DefaultParameters, 0))

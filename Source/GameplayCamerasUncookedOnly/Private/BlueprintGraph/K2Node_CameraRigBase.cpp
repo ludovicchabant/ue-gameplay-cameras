@@ -131,7 +131,7 @@ void UK2Node_CameraRigBase::OnCameraRigAssetBuilt(const UCameraRigAsset* InBuilt
 	}
 }
 
-FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(const UCameraRigBlendableParameter* BlendableParameter)
+FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(const UCameraObjectInterfaceBlendableParameter* BlendableParameter)
 {
 	return MakeBlendableParameterPinType(BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
 }
@@ -191,7 +191,7 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVari
 	return PinType;
 }
 
-FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(const UCameraRigDataParameter* DataParameter)
+FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(const UCameraObjectInterfaceDataParameter* DataParameter)
 {
 	return MakeDataParameterPinType(DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
 }
@@ -238,7 +238,7 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDa
 	return PinType;
 }
 
-FName UK2Node_CameraRigBase::GetBlendableParameterInteropSettingFunctionName(const UCameraRigBlendableParameter* BlendableParameter)
+FName UK2Node_CameraRigBase::GetBlendableParameterInteropSettingFunctionName(const UCameraObjectInterfaceBlendableParameter* BlendableParameter)
 {
 	if (ensure(BlendableParameter && BlendableParameter->PrivateVariableID))
 	{
@@ -288,7 +288,7 @@ FName UK2Node_CameraRigBase::GetBlendableParameterInteropSettingFunctionName(ECa
 	return CallSetParameterFuncName;
 }
 
-FName UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(const UCameraRigDataParameter* DataParameter)
+FName UK2Node_CameraRigBase::GetDataParameterInteropSettingFunctionName(const UCameraObjectInterfaceDataParameter* DataParameter)
 {
 	if (ensure(DataParameter && DataParameter->PrivateDataID.IsValid()))
 	{

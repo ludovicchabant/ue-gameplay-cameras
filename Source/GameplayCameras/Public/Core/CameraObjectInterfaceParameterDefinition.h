@@ -6,10 +6,9 @@
 #include "Core/CameraVariableTableFwd.h"
 #include "Misc/TVariant.h"
 
-#include "CameraRigParameterDefinition.generated.h"
+#include "CameraObjectInterfaceParameterDefinition.generated.h"
 
-class UCameraRigAsset;
-class UCameraRigDataParameter;
+class UBaseCameraObject;
 struct FInstancedPropertyBag;
 struct FPropertyBagPropertyDesc;
 
@@ -17,7 +16,7 @@ struct FPropertyBagPropertyDesc;
  * The type of a camera rig parameter.
  */
 UENUM()
-enum class ECameraRigInterfaceParameterType : uint8
+enum class ECameraObjectInterfaceParameterType : uint8
 {
 	Blendable,
 	Data
@@ -27,7 +26,7 @@ enum class ECameraRigInterfaceParameterType : uint8
  * Information about a parameter exposed on a camera asset.
  */
 USTRUCT()
-struct FCameraRigParameterDefinition
+struct FCameraObjectInterfaceParameterDefinition
 {
 	GENERATED_BODY()
 
@@ -37,15 +36,15 @@ struct FCameraRigParameterDefinition
 
 	/**
 	 * The GUID of the parameter.
-	 * This matches the GUID on the corresponding UCameraRigBlendableParameter or
-	 * UCameraRigDataParameter object.
+	 * This matches the GUID on the corresponding UCameraObjectInterfaceBlendableParameter
+	 * or UCameraObjectInterfaceDataParameter object.
 	 */
 	UPROPERTY()
 	FGuid ParameterGuid;
 
 	/** The type of this parameter. */
 	UPROPERTY()
-	ECameraRigInterfaceParameterType ParameterType = ECameraRigInterfaceParameterType::Blendable;
+	ECameraObjectInterfaceParameterType ParameterType = ECameraObjectInterfaceParameterType::Blendable;
 
 
 	// Blendable parameter properties.
@@ -85,46 +84,15 @@ struct FCameraRigParameterDefinition
 
 public:
 
-	bool operator==(const FCameraRigParameterDefinition& Other) const = default;
+	bool operator==(const FCameraObjectInterfaceParameterDefinition& Other) const = default;
 };
 
 template<>
-struct TStructOpsTypeTraits<FCameraRigParameterDefinition> : public TStructOpsTypeTraitsBase2<FCameraRigParameterDefinition>
+struct TStructOpsTypeTraits<FCameraObjectInterfaceParameterDefinition> : public TStructOpsTypeTraitsBase2<FCameraObjectInterfaceParameterDefinition>
 {
 	enum
 	{
 		WithIdenticalViaEquality = true
 	};
 };
-
-namespace UE::Cameras
-{
-
-/**
- * A helper class for building an FInstancedPropertyBag from a list of camera rig
- * parameter definitions.
- */
-class GAMEPLAYCAMERAS_API FCameraRigParameterBuilder
-{
-public:
-
-	/**
-	 * Builds a property bag that contains a property for each exposed parameter on the given camera rig.
-	 * Each property's value is set to the default value of the corresponding parameter.
-	 */
-	static void BuildDefaultParameters(const UCameraRigAsset* CameraRig, FInstancedPropertyBag& OutPropertyBag);
-
-public:
-
-	/** Generates property bag property descriptors for the parameters exposed by the given camera rig. */
-	static void AppendDefaultParameterProperties(const UCameraRigAsset* CameraRig, TArray<FPropertyBagPropertyDesc>& OutProperties);
-	/** Sets the default value of the property bag properties that correspond to parameters on the given camera rig. */
-	static void SetDefaultParameterValues(const UCameraRigAsset* CameraRig, FInstancedPropertyBag& PropertyBag);
-
-private:
-
-	static void SetDefaultParameterValue(const UCameraRigDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr);
-};
-
-}  // namespace UE::Cameras
 

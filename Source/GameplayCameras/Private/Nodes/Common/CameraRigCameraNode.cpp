@@ -2,11 +2,11 @@
 
 #include "Nodes/Common/CameraRigCameraNode.h"
 
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraBuildLog.h"
+#include "Build/CameraObjectBuildContext.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigBuildContext.h"
-#include "Helpers/CameraRigParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCameraNode)
 
@@ -63,7 +63,7 @@ void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable
 {
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
 
-	FCameraRigParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
+	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
 	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
 }
 
@@ -71,7 +71,7 @@ void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable
 {
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
 
-	FCameraRigParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
+	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
 	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
 }
 
@@ -90,7 +90,7 @@ void UCameraRigCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
 	CameraRigReference.RebuildParametersIfNeeded();
 }
 
-void UCameraRigCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
+void UCameraRigCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 
@@ -120,7 +120,7 @@ FCameraNodeEvaluatorPtr UCameraRigCameraNode::OnBuildEvaluator(FCameraNodeEvalua
 
 #if WITH_EDITOR
 
-void UCameraRigCameraNode::PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent)
+void UCameraRigCameraNode::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 

@@ -9,7 +9,7 @@
 
 #define LOCTEXT_NAMESPACE "CameraNodeGraphDragDropOp"
 
-TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> FCameraNodeGraphInterfaceParameterDragDropOp::New(UCameraRigInterfaceParameterBase* InInterfaceParameter)
+TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> FCameraNodeGraphInterfaceParameterDragDropOp::New(UCameraObjectInterfaceParameterBase* InInterfaceParameter)
 {
 	TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> Operation = MakeShared<FCameraNodeGraphInterfaceParameterDragDropOp>();
 	Operation->InterfaceParameter = InInterfaceParameter;

@@ -65,7 +65,7 @@ void UCameraNode::PreBuild(FCameraBuildLog& BuildLog)
 	OnPreBuild(BuildLog);
 }
 
-void UCameraNode::Build(FCameraRigBuildContext& BuildContext)
+void UCameraNode::Build(FCameraObjectBuildContext& BuildContext)
 {
 	OnBuild(BuildContext);
 }

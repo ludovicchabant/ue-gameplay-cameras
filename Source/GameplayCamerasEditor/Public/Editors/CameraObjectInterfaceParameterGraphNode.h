@@ -4,25 +4,25 @@
 
 #include "Editors/ObjectTreeGraphNode.h"
 
-#include "CameraRigInterfaceParameterGraphNode.generated.h"
+#include "CameraObjectInterfaceParameterGraphNode.generated.h"
 
-class UCameraRigInterfaceParameterBase;
+class UCameraObjectInterfaceParameterBase;
 
 /**
  * Custom graph editor node for a camera rig parameter.
  */
 UCLASS()
-class UCameraRigInterfaceParameterGraphNode : public UObjectTreeGraphNode
+class UCameraObjectInterfaceParameterGraphNode : public UObjectTreeGraphNode
 {
 	GENERATED_BODY()
 
 public:
 
 	/** Creates a new graph node. */
-	UCameraRigInterfaceParameterGraphNode(const FObjectInitializer& ObjInit);
+	UCameraObjectInterfaceParameterGraphNode(const FObjectInitializer& ObjInit);
 
 	/** Gets the underlying object as a camera rig interface parameter. */
-	UCameraRigInterfaceParameterBase* GetInterfaceParameter() const;
+	UCameraObjectInterfaceParameterBase* GetInterfaceParameter() const;
 
 public:
 

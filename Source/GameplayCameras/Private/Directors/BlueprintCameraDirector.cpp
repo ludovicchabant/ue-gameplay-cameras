@@ -2,9 +2,9 @@
 
 #include "Directors/BlueprintCameraDirector.h"
 
+#include "Build/CameraBuildLog.h"
 #include "Components/ActorComponent.h"
 #include "Core/CameraAsset.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"

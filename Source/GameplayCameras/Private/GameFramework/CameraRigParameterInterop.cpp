@@ -36,7 +36,7 @@ void SetCameraRigBlendableParameter(FBlueprintCameraVariableTable VariableTable,
 
 FCameraVariableID GetParameterPrivateVariableID(UCameraRigAsset* CameraRig, const FString& ParameterName, const UScriptStruct* BlendableStructType = nullptr)
 {
-	UCameraRigBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(ParameterName);
+	UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(ParameterName);
 	if (!BlendableParameter)
 	{
 		const FText Text = LOCTEXT("NoSuchBlendableParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this camera variable table value will most probably accomplish nothing.");
@@ -78,7 +78,7 @@ bool ValidateSetCameraRigDataParameter(FBlueprintCameraContextDataTable& Context
 
 FCameraContextDataID GetParameterPrivateDataID(UCameraRigAsset* CameraRig, const FString& ParameterName)
 {
-	UCameraRigDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByName(ParameterName);
+	UCameraObjectInterfaceDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByName(ParameterName);
 	if (!DataParameter)
 	{
 		const FText Text = LOCTEXT("NoSuchDataParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this data will most probably accomplish nothing.");

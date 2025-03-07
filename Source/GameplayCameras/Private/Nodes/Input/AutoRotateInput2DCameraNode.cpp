@@ -2,12 +2,12 @@
 
 #include "Nodes/Input/AutoRotateInput2DCameraNode.h"
 
+#include "Build/CameraObjectBuildContext.h"
 #include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraParameterReader.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigBuildContext.h"
 #include "Core/CameraValueInterpolator.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "Debug/CameraDebugBlock.h"
@@ -322,7 +322,7 @@ FCameraNodeChildrenView UAutoRotateInput2DCameraNode::OnGetChildren()
 	return FCameraNodeChildrenView({ InputNode });
 }
 
-void UAutoRotateInput2DCameraNode::OnBuild(FCameraRigBuildContext& BuildContext)
+void UAutoRotateInput2DCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 	const FBuiltInCameraVariables& BuiltInVariables = FBuiltInCameraVariables::Get();

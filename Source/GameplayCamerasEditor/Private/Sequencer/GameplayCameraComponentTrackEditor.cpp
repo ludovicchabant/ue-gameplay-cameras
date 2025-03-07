@@ -3,8 +3,8 @@
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
 
 #include "Core/CameraAsset.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraRigParameterDefinition.h"
 #include "EventHandlers/MovieSceneDataEventContainer.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "GameFramework/Actor.h"

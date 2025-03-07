@@ -2,7 +2,7 @@
 
 #include "Core/CameraNodeHierarchy.h"
 
-#include "Core/CameraRigAsset.h"
+#include "Core/BaseCameraObject.h"
 
 namespace UE::Cameras
 {
@@ -11,9 +11,9 @@ FCameraNodeHierarchy::FCameraNodeHierarchy()
 {
 }
 
-FCameraNodeHierarchy::FCameraNodeHierarchy(UCameraRigAsset* InCameraRig)
+FCameraNodeHierarchy::FCameraNodeHierarchy(UBaseCameraObject* InCameraObject)
 {
-	Build(InCameraRig);
+	Build(InCameraObject);
 }
 
 TArrayView<UCameraNode* const> FCameraNodeHierarchy::GetFlattenedHierarchy() const
@@ -26,9 +26,9 @@ int32 FCameraNodeHierarchy::Num() const
 	return FlattenedHierarchy.Num();
 }
 
-void FCameraNodeHierarchy::Build(UCameraRigAsset* InCameraRig)
+void FCameraNodeHierarchy::Build(UBaseCameraObject* InCameraObject)
 {
-	Build(InCameraRig ? InCameraRig->RootNode : nullptr);
+	Build(InCameraObject ? InCameraObject->GetRootNode() : nullptr);
 }
 
 void FCameraNodeHierarchy::Build(UCameraNode* InRootCameraNode)

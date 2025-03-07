@@ -2,8 +2,8 @@
 
 #include "Directors/StateTreeCameraDirector.h"
 
+#include "Build/CameraBuildLog.h"
 #include "Core/CameraAsset.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"

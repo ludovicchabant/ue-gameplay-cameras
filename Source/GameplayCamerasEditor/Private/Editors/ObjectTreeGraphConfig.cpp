@@ -22,8 +22,8 @@ FObjectTreeGraphClassConfig::FObjectTreeGraphClassConfig()
 
 FObjectTreeGraphClassConfig& FObjectTreeGraphClassConfig::OnlyAsRoot()
 {
-	_CanCreateNew = false;
-	_CanDelete = false;
+	CanCreateNew(false);
+	CanDelete(false);
 	return *this;
 }
 

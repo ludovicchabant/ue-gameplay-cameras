@@ -72,7 +72,7 @@ bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameter
 
 	CameraRig->BuildCameraRig();
 
-	UCameraRigBlendableParameter* Parameter = CameraRig->Interface.BlendableParameters[0];
+	UCameraObjectInterfaceBlendableParameter* Parameter = CameraRig->Interface.BlendableParameters[0];
 	UTEST_EQUAL("Test parameter", Parameter->InterfaceParameterName, TEXT("Test"));
 	UTEST_TRUE("Test parameter variable ID", Parameter->PrivateVariableID.IsValid());
 	UTEST_EQUAL("Test node parameter", OffsetNode->TranslationOffset.VariableID, Parameter->PrivateVariableID);
@@ -159,8 +159,8 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 
 	OuterCameraRig->BuildCameraRig();
 
-	UCameraRigBlendableParameter* OffsetParam = InnerCameraRig->Interface.BlendableParameters[0];
-	UCameraRigBlendableParameter* FocalLengthParam = InnerCameraRig->Interface.BlendableParameters[1];
+	UCameraObjectInterfaceBlendableParameter* OffsetParam = InnerCameraRig->Interface.BlendableParameters[0];
+	UCameraObjectInterfaceBlendableParameter* FocalLengthParam = InnerCameraRig->Interface.BlendableParameters[1];
 
 	// Test that the inner nodes are driven by the interface parameters.
 	{
@@ -193,7 +193,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 		UTEST_EQUAL_EXPR(FocalLengthParamOverride->Value, 25.f);
 	}
 
-	UCameraRigBlendableParameter* MiddleOffsetParam = MiddleCameraRig->Interface.BlendableParameters[0];
+	UCameraObjectInterfaceBlendableParameter* MiddleOffsetParam = MiddleCameraRig->Interface.BlendableParameters[0];
 	{
 		FInstancedPropertyBag& ParameterOverrides = MiddlePrefabNode->CameraRigReference.GetParameters();
 

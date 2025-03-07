@@ -1,9 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Editors/SCameraRigInterfaceParameterGraphNode.h"
+#include "Editors/SCameraObjectInterfaceParameterGraphNode.h"
 
 #include "Core/CameraRigAsset.h"
-#include "Editors/CameraRigInterfaceParameterGraphNode.h"
+#include "Editors/CameraObjectInterfaceParameterGraphNode.h"
 #include "SGraphNode.h"
 #include "SNodePanel.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -13,9 +13,9 @@
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
-#define LOCTEXT_NAMESPACE "SCameraRigInterfaceParameterGraphNode"
+#define LOCTEXT_NAMESPACE "SCameraObjectInterfaceParameterGraphNode"
 
-void SCameraRigInterfaceParameterGraphNode::Construct(const FArguments& InArgs)
+void SCameraObjectInterfaceParameterGraphNode::Construct(const FArguments& InArgs)
 {
 	SObjectTreeGraphNode::FArguments SuperArgs;
 	SuperArgs
@@ -23,7 +23,7 @@ void SCameraRigInterfaceParameterGraphNode::Construct(const FArguments& InArgs)
 	SObjectTreeGraphNode::Construct(SuperArgs);
 }
 
-void SCameraRigInterfaceParameterGraphNode::UpdateGraphNode()
+void SCameraObjectInterfaceParameterGraphNode::UpdateGraphNode()
 {
 	using namespace UE::Cameras;
 
@@ -57,7 +57,7 @@ void SCameraRigInterfaceParameterGraphNode::UpdateGraphNode()
 			[
 				SNew(SImage)
 				.Image(CamerasEditorStyle->GetBrush("Graph.CameraRigParameterNode.ColorSpill"))
-				.ColorAndOpacity(this, &SCameraRigInterfaceParameterGraphNode::GetNodeTitleColor)
+				.ColorAndOpacity(this, &SCameraObjectInterfaceParameterGraphNode::GetNodeTitleColor)
 			]
 			+SOverlay::Slot()
 			[
@@ -72,7 +72,7 @@ void SCameraRigInterfaceParameterGraphNode::UpdateGraphNode()
 				// NODE TITLE
 				SNew(STextBlock)
 				.TextStyle(FAppStyle::Get(), "Graph.Node.NodeTitle")
-				.Text(this, &SCameraRigInterfaceParameterGraphNode::GetInterfaceParameterName)
+				.Text(this, &SCameraObjectInterfaceParameterGraphNode::GetInterfaceParameterName)
 			]
 			+SOverlay::Slot()
 			.Padding(FMargin(0, 4))
@@ -110,7 +110,7 @@ void SCameraRigInterfaceParameterGraphNode::UpdateGraphNode()
 	CreatePinWidgets();
 }
 
-const FSlateBrush* SCameraRigInterfaceParameterGraphNode::GetShadowBrush(bool bSelected) const
+const FSlateBrush* SCameraObjectInterfaceParameterGraphNode::GetShadowBrush(bool bSelected) const
 {
 	using namespace UE::Cameras;
 	TSharedRef<FGameplayCamerasEditorStyle> CamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
@@ -119,7 +119,7 @@ const FSlateBrush* SCameraRigInterfaceParameterGraphNode::GetShadowBrush(bool bS
 		CamerasEditorStyle->GetBrush(TEXT("Graph.CameraRigParameterNode.Shadow"));
 }
 
-TSharedPtr<SGraphPin> SCameraRigInterfaceParameterGraphNode::CreatePinWidget(UEdGraphPin* InPin) const
+TSharedPtr<SGraphPin> SCameraObjectInterfaceParameterGraphNode::CreatePinWidget(UEdGraphPin* InPin) const
 {
 	using namespace UE::Cameras;
 	TSharedPtr<SGraphPin> PinWidget = SObjectTreeGraphNode::CreatePinWidget(InPin);
@@ -130,9 +130,9 @@ TSharedPtr<SGraphPin> SCameraRigInterfaceParameterGraphNode::CreatePinWidget(UEd
 	return PinWidget;
 }
 
-FText SCameraRigInterfaceParameterGraphNode::GetInterfaceParameterName() const
+FText SCameraObjectInterfaceParameterGraphNode::GetInterfaceParameterName() const
 {
-	if (UCameraRigInterfaceParameterBase* InterfaceParameter = GetObjectGraphNode()->CastObject<UCameraRigInterfaceParameterBase>())
+	if (UCameraObjectInterfaceParameterBase* InterfaceParameter = GetObjectGraphNode()->CastObject<UCameraObjectInterfaceParameterBase>())
 	{
 		return FText::FromString(InterfaceParameter->InterfaceParameterName);
 	}

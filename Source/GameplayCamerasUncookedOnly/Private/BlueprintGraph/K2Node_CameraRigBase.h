@@ -12,8 +12,8 @@
 #include "K2Node_CameraRigBase.generated.h"
 
 class UCameraRigAsset;
-class UCameraRigBlendableParameter;
-class UCameraRigDataParameter;
+class UCameraObjectInterfaceBlendableParameter;
+class UCameraObjectInterfaceDataParameter;
 
 /**
  * Utility base class for Blueprint nodes that can set camera rig parameters.
@@ -44,14 +44,14 @@ public:
 
 public:
 
-	static FEdGraphPinType MakeBlendableParameterPinType(const UCameraRigBlendableParameter* BlendableParameter);
+	static FEdGraphPinType MakeBlendableParameterPinType(const UCameraObjectInterfaceBlendableParameter* BlendableParameter);
 	static FEdGraphPinType MakeBlendableParameterPinType(ECameraVariableType CameraVariableType, const UScriptStruct* BlendableStructType);
-	static FEdGraphPinType MakeDataParameterPinType(const UCameraRigDataParameter* DataParameter);
+	static FEdGraphPinType MakeDataParameterPinType(const UCameraObjectInterfaceDataParameter* DataParameter);
 	static FEdGraphPinType MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject);
 
-	static FName GetBlendableParameterInteropSettingFunctionName(const UCameraRigBlendableParameter* BlendableParameter);
+	static FName GetBlendableParameterInteropSettingFunctionName(const UCameraObjectInterfaceBlendableParameter* BlendableParameter);
 	static FName GetBlendableParameterInteropSettingFunctionName(ECameraVariableType CameraVariableType);
-	static FName GetDataParameterInteropSettingFunctionName(const UCameraRigDataParameter* DataParameter);
+	static FName GetDataParameterInteropSettingFunctionName(const UCameraObjectInterfaceDataParameter* DataParameter);
 	static FName GetDataParameterInteropSettingFunctionName(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject);
 
 protected:

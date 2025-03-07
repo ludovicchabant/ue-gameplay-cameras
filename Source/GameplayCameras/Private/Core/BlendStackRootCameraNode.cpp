@@ -10,8 +10,8 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "Helpers/CameraParameterOverrideHelper.h"
-#include "Helpers/CameraRigParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
+#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
@@ -148,7 +148,7 @@ void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluat
 
 	BuildNestedPrefabTrail(CameraRig, BlendedParameterOverrides.PrefabTrail);
 
-	const FCameraRigAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
+	const FCameraObjectAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
 	BlendedParameterOverrides.Result.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
 
 	if (Blend)
@@ -209,7 +209,7 @@ void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStac
 
 	BuildNestedPrefabTrail(OriginalCameraRig, InitialParameterOverrides.PrefabTrail);
 
-	const FCameraRigAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
+	const FCameraObjectAllocationInfo& AllocationInfo = BlendablePrefabCameraRig->AllocationInfo;
 	InitialParameterOverrides.Result.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
 
 	BlendedParameterOverridesStack.Add(MoveTemp(InitialParameterOverrides));
@@ -261,13 +261,13 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 
 		// Start by setting the default values of all parameters. If we don't do this, parameter overrides
 		// wouldn't have a base value to blend from.
-		FCameraParameterOverrideHelper::ApplyDefaultBlendableParameters(BlendablePrefabCameraRig, CurResult.VariableTable);
+		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(BlendablePrefabCameraRig, CurResult.VariableTable);
 
 		// Next, override the defaults with the specific values of this entry, applied bottoms up.
 		for (int32 Index = BlendedParameterOverrides.PrefabTrail.Num() - 1; Index >= 0; --Index)
 		{
 			const UCameraRigCameraNode* CurPrefabNode = BlendedParameterOverrides.PrefabTrail[Index];
-			FCameraRigParameterOverrideEvaluator OverrideEvaluator(CurPrefabNode->CameraRigReference);
+			FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(CurPrefabNode->CameraRigReference);
 			OverrideEvaluator.ApplyParameterOverrides(CurResult.VariableTable, false);
 		}
 

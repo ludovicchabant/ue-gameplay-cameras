@@ -118,7 +118,7 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const F
 
 		if (Params.CameraRig)
 		{
-			const FCameraRigAllocationInfo& AllocationInfo = Params.CameraRig->AllocationInfo;
+			const FCameraObjectAllocationInfo& AllocationInfo = Params.CameraRig->AllocationInfo;
 			UnblendedResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
 			UnblendedResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
 		}

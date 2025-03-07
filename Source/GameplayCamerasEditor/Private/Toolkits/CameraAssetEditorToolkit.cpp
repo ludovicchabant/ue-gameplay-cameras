@@ -4,10 +4,10 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetTools/CameraAssetEditor.h"
+#include "Build/CameraAssetBuilder.h"
+#include "Build/CameraBuildLog.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Core/CameraAsset.h"
-#include "Core/CameraAssetBuilder.h"
-#include "Core/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Editors/ObjectTreeGraphConfig.h"

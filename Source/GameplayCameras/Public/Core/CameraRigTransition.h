@@ -15,7 +15,7 @@ class UCameraRigAsset;
 
 namespace UE::Cameras
 {
-	struct FCameraRigBuildContext;
+	struct FCameraObjectBuildContext;
 }
 
 /**
@@ -49,13 +49,13 @@ class GAMEPLAYCAMERAS_API UCameraRigTransitionCondition
 
 public:
 
-	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
+	using FCameraObjectBuildContext = UE::Cameras::FCameraObjectBuildContext;
 
 	/** Evaluates whether this transition should be used. */
 	bool TransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const;
 
 	/** Build process callback for this transition. */
-	void Build(FCameraRigBuildContext& BuildContext);
+	void Build(FCameraObjectBuildContext& BuildContext);
 
 protected:
 
@@ -63,7 +63,7 @@ protected:
 	virtual bool OnTransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const { return false; }
 
 	/** Build process callback for this transition. */
-	virtual void OnBuild(FCameraRigBuildContext& BuildContext) {}
+	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) {}
 
 protected:
 
@@ -167,13 +167,13 @@ public:
 
 public:
 
-	using FCameraRigBuildContext = UE::Cameras::FCameraRigBuildContext;
+	using FCameraObjectBuildContext = UE::Cameras::FCameraObjectBuildContext;
 
 	/** Returns whether all transition condition matches the given parameters. */
 	bool AllConditionsMatch(const FCameraRigTransitionConditionMatchParams& Params) const;
 
 	/** Build process callback for this transition. */
-	void Build(FCameraRigBuildContext& BuildContext);
+	void Build(FCameraObjectBuildContext& BuildContext);
 
 protected:
 

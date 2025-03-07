@@ -2,8 +2,8 @@
 
 #include "Core/CameraAsset.h"
 
-#include "Core/CameraAssetBuilder.h"
-#include "Core/CameraBuildLog.h"
+#include "Build/CameraAssetBuilder.h"
+#include "Build/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "UObject/ObjectRedirector.h"
