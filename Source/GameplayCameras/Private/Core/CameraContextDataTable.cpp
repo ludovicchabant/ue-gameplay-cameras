@@ -116,6 +116,10 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 		NewEntry.TypeObject = DataDefinition.DataTypeObject;
 		NewEntry.Offset = NewEntryOffset;
 		NewEntry.Flags = EEntryFlags::None;
+		if (DataDefinition.bAutoReset)
+		{
+			NewEntry.Flags |= EEntryFlags::AutoReset;
+		}
 #if WITH_EDITORONLY_DATA
 		NewEntry.DebugName = DataDefinition.DataName;
 #endif
@@ -166,6 +170,10 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	NewEntry.TypeObject = DataDefinition.DataTypeObject;
 	NewEntry.Offset = DataPtr - Memory;
 	NewEntry.Flags = EEntryFlags::None;
+	if (DataDefinition.bAutoReset)
+	{
+		NewEntry.Flags |= EEntryFlags::AutoReset;
+	}
 #if WITH_EDITORONLY_DATA
 	NewEntry.DebugName = DataDefinition.DataName;
 #endif
@@ -876,6 +884,17 @@ void FCameraContextDataTable::ClearAllWrittenThisFrameFlags()
 	for (FEntry& Entry : Entries)
 	{
 		EnumRemoveFlags(Entry.Flags, EEntryFlags::WrittenThisFrame);
+	}
+}
+
+void FCameraContextDataTable::AutoResetValues()
+{
+	for (FEntry& Entry : Entries)
+	{
+		if (EnumHasAnyFlags(Entry.Flags, EEntryFlags::AutoReset))
+		{
+			EnumRemoveFlags(Entry.Flags, EEntryFlags::Written | EEntryFlags::WrittenThisFrame);
+		}
 	}
 }
 

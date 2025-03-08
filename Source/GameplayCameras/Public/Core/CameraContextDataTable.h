@@ -203,11 +203,14 @@ public:
 	bool IsValueWrittenThisFrame(FCameraContextDataID InID) const;
 	void ClearAllWrittenThisFrameFlags();
 
+	void AutoResetValues();
+
 private:
 
 	enum class EEntryFlags : uint8
 	{
 		None = 0,
+		AutoReset = 1 << 1,
 		Written = 1 << 2,
 		WrittenThisFrame = 1 << 3
 	};

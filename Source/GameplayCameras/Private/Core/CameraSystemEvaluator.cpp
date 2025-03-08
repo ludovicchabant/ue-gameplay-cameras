@@ -210,6 +210,7 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 
 	// Reset variables and data.
 	RootNodeResult.VariableTable.AutoResetValues();
+	RootNodeResult.ContextDataTable.AutoResetValues();
 
 	// Pre-update all services.
 	PreUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);

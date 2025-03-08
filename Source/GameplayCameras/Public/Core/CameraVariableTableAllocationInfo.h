@@ -44,11 +44,7 @@ struct FCameraVariableDefinition
 	UPROPERTY()
 	bool bIsInput = false;
 
-	/**
-	 * Whether the variable should auto-reset to an "unset" state after every
-	 * evaluation. Doing so resets it to its default value if bound to a
-	 * camera variable or camera parameter, or to a non-existent state otherwise.
-	 */
+	/** Whether the variable should auto-reset to an "unset" state after every evaluation. */
 	UPROPERTY()
 	bool bAutoReset = false;
 

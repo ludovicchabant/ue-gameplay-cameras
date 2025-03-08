@@ -234,7 +234,7 @@ private:
 		ECameraVariableType Type;
 		const UScriptStruct* StructType = nullptr;
 		uint32 Offset;
-		mutable EEntryFlags Flags;
+		EEntryFlags Flags;
 #if WITH_EDITORONLY_DATA
 		FString DebugName;
 #endif

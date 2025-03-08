@@ -143,8 +143,11 @@ void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collect
 void FCameraEvaluationContext::OnEndCameraSystemUpdate()
 {
 	InitialResult.CameraPose.ClearAllChangedFlags();
+
 	InitialResult.VariableTable.AutoResetValues();
 	InitialResult.VariableTable.ClearAllWrittenThisFrameFlags();
+
+	InitialResult.ContextDataTable.AutoResetValues();
 	InitialResult.ContextDataTable.ClearAllWrittenThisFrameFlags();
 
 	for (FConditionalResults::ElementType& Pair : ConditionalResults)
@@ -153,6 +156,7 @@ void FCameraEvaluationContext::OnEndCameraSystemUpdate()
 		Result.CameraPose.ClearAllChangedFlags();
 		Result.VariableTable.AutoResetValues();
 		Result.VariableTable.ClearAllWrittenThisFrameFlags();
+		Result.ContextDataTable.AutoResetValues();
 		Result.ContextDataTable.ClearAllWrittenThisFrameFlags();
 	}
 

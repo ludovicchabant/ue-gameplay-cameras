@@ -35,6 +35,10 @@ struct FCameraContextDataDefinition
 	UPROPERTY()
 	TObjectPtr<const UObject> DataTypeObject;
 
+	/** Whether the data should auto-reset to an "unset" state after every evaluation. */
+	UPROPERTY()
+	bool bAutoReset = false;
+
 #if WITH_EDITORONLY_DATA
 	/** The name of the data, for debugging purposes. */
 	UPROPERTY()
