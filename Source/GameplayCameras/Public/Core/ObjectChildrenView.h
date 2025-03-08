@@ -9,6 +9,7 @@
 #include "UObject/ObjectPtr.h"
 
 #include <initializer_list>
+#include <type_traits>
 
 namespace UE::Cameras
 {
@@ -42,6 +43,13 @@ public:
 	TObjectChildrenView(std::initializer_list<ChildType> InChildren)
 	{
 		Storage.template Set<FArray>(FArray(InChildren));
+	}
+
+	/** Sets the view to pointer storage and adds the given list of children pointers. */
+	template<typename OtherType, bool V = std::is_convertible_v<OtherType, ChildType>>
+	TObjectChildrenView(TArrayView<OtherType> InRange)
+	{
+		Storage.template Set<FArray>(FArray(InRange));
 	}
 
 	/**

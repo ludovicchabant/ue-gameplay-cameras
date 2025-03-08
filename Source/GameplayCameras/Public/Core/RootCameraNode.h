@@ -131,6 +131,9 @@ public:
 	/** Gets whether any camera rig is running. */
 	bool HasAnyActiveCameraRig() const;
 
+	/** Gets the variable table containing the blended camera object interfaces parameters. */
+	const FCameraVariableTable* GetBlendedParameters() const;
+
 	/**
 	 * Builds the hierarchy of the system for a given single camera rig.
 	 * This is expected to return the nodes of all the layers, except for the main layer which
@@ -167,6 +170,9 @@ protected:
 
 	/** Gets information about a specified camera rig. */
 	virtual void OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const {}
+
+	/** Gets the variable table containing the blended camera object interfaces parameters. */
+	virtual const FCameraVariableTable* OnGetBlendedParameters() const { return nullptr; }
 
 	/* Builds the hierarchy of the system for a given single camera rig. */
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) {}

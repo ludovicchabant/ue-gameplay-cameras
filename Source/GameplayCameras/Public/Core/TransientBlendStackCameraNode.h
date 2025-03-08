@@ -64,6 +64,9 @@ public:
 	/** Freeze all camera rigs that belong to a given evaluation context. */
 	void FreezeAll(TSharedPtr<FCameraEvaluationContext> EvaluationContext);
 
+	/** Gets the variable table containing the blended camera object interfaces parameters. */
+	const FCameraVariableTable& GetBlendedParameters() const { return PreBlendVariableTable; }
+
 protected:
 
 	// FCameraNodeEvaluator interface.

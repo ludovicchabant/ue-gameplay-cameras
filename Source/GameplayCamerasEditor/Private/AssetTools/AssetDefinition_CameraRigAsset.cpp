@@ -3,7 +3,6 @@
 #include "AssetTools/AssetDefinition_CameraRigAsset.h"
 
 #include "IGameplayCamerasEditorModule.h"
-#include "Styles/GameplayCamerasEditorStyle.h"
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
 #include "Toolkits/IToolkit.h"
 #include "Modules/ModuleManager.h"

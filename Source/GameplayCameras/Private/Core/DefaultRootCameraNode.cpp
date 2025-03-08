@@ -193,6 +193,11 @@ void FDefaultRootCameraNodeEvaluator::OnGetCameraRigInfo(const FCameraRigInstanc
 	}
 }
 
+const FCameraVariableTable* FDefaultRootCameraNodeEvaluator::OnGetBlendedParameters() const
+{
+	return &MainLayer->GetBlendedParameters();
+}
+
 void FDefaultRootCameraNodeEvaluator::OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
 {
 	OutHierarchy.Build(BaseLayer);

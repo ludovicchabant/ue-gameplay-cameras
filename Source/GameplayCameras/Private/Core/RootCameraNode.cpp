@@ -43,6 +43,11 @@ bool FRootCameraNodeEvaluator::HasAnyActiveCameraRig() const
 	return RigInfo.RootEvaluator != nullptr;
 }
 
+const FCameraVariableTable* FRootCameraNodeEvaluator::GetBlendedParameters() const
+{
+	return OnGetBlendedParameters();
+}
+
 void FRootCameraNodeEvaluator::BuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy)
 {
 	OnBuildSingleCameraRigHierarchy(Params, OutHierarchy);

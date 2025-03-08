@@ -5,10 +5,12 @@
 #include "AssetTools/CameraAssetEditor.h"
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "AssetTools/CameraRigProxyAssetEditor.h"
+#include "AssetTools/CameraShakeAssetEditor.h"
 #include "AssetTools/CameraVariableCollectionEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Commands/CameraRigTransitionEditorCommands.h"
+#include "Commands/CameraShakeAssetEditorCommands.h"
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Commands/GameplayCamerasDebuggerCommands.h"
 #include "Commands/ObjectTreeGraphEditorCommands.h"
@@ -17,6 +19,7 @@
 #include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
+#include "Customizations/CameraShakeAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraVariableReferenceDetailsCustomizations.h"
 #include "Customizations/FilmbackCameraNodeDetailsCustomization.h"
 #include "Customizations/RichCurveDetailsCustomizations.h"
@@ -52,6 +55,7 @@
 #include "Toolkits/BlueprintCameraDirectorAssetEditorMode.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
+#include "Toolkits/CameraShakeAssetEditorToolkit.h"
 #include "Toolkits/SingleCameraDirectorAssetEditorMode.h"
 #include "Trace/CameraSystemRewindDebuggerExtension.h"
 #include "Trace/CameraSystemRewindDebuggerTrack.h"
@@ -117,6 +121,7 @@ public:
 		FCameraAssetEditorCommands::Unregister();
 		FCameraRigAssetEditorCommands::Unregister();
 		FCameraRigTransitionEditorCommands::Unregister();
+		FCameraShakeAssetEditorCommands::Unregister();
 		FCameraVariableCollectionEditorCommands::Unregister();
 		FGameplayCamerasDebuggerCommands::Unregister();
 		FObjectTreeGraphEditorCommands::Unregister();
@@ -157,6 +162,14 @@ public:
 		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
 		UCameraRigProxyAssetEditor* AssetEditor = NewObject<UCameraRigProxyAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
 		AssetEditor->Initialize(CameraRigProxy);
+		return AssetEditor;
+	}
+
+	virtual UCameraShakeAssetEditor* CreateCameraShakeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraShakeAsset* CameraShake) override
+	{
+		UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		UCameraShakeAssetEditor* AssetEditor = NewObject<UCameraShakeAssetEditor>(AssetEditorSubsystem, NAME_None, RF_Transient);
+		AssetEditor->Initialize(CameraShake);
 		return AssetEditor;
 	}
 
@@ -382,6 +395,7 @@ private:
 		FCameraAssetEditorCommands::Register();
 		FCameraRigAssetEditorCommands::Register();	
 		FCameraRigTransitionEditorCommands::Register();
+		FCameraShakeAssetEditorCommands::Register();	
 		FCameraVariableCollectionEditorCommands::Register();
 		FGameplayCamerasDebuggerCommands::Register();
 		FObjectTreeGraphEditorCommands::Register();
@@ -435,6 +449,10 @@ private:
 				"CameraRigAssetReference", 
 				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
+				"CameraShakeAssetReference", 
+				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+					&FCameraShakeAssetReferenceDetailsCustomization::MakeInstance));
 
 		PropertyEditorModule.RegisterCustomClassLayout(
 				"FilmbackCameraNode", 
@@ -457,6 +475,7 @@ private:
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigProxyTableEntry");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAssetReference");
+			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraShakeAssetReference");
 
 			PropertyEditorModule->UnregisterCustomClassLayout("FilmbackCameraNode");
 		}

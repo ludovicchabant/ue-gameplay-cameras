@@ -15,6 +15,8 @@ class UCameraRigAsset;
 class UCameraRigAssetEditor;
 class UCameraRigProxyAsset;
 class UCameraRigProxyAssetEditor;
+class UCameraShakeAsset;
+class UCameraShakeAssetEditor;
 class UCameraVariableCollection;
 class UCameraVariableCollectionEditor;
 
@@ -64,6 +66,9 @@ public:
 
 	/** Creates an editor for the given camera rig proxy asset */
 	virtual UCameraRigProxyAssetEditor* CreateCameraRigProxyEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraRigProxyAsset* CameraRigProxy) = 0;
+
+	/** Creates an editor for the given camera shake asset */
+	virtual UCameraShakeAssetEditor* CreateCameraShakeEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraShakeAsset* CameraShake) = 0;
 
 	/** Creates an editor for the given variable collection */
 	virtual UCameraVariableCollectionEditor* CreateCameraVariableCollectionEditor(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UCameraVariableCollection* VariableCollection) = 0;

@@ -36,11 +36,11 @@ FToolMenuEntry FBuildButtonToolkit::MakeToolbarButton(TSharedPtr<FUICommandInfo>
 
 FSlateIcon FBuildButtonToolkit::GetBuildButtonIcon() const
 {
-	static const FName BuildStatusBackground("CameraRigAssetEditor.BuildStatus.Background");
-	static const FName BuildStatusError("CameraRigAssetEditor.BuildStatus.Overlay.Error");
-	static const FName BuildStatusGood("CameraRigAssetEditor.BuildStatus.Overlay.Good");
-	static const FName BuildStatusUnknown("CameraRigAssetEditor.BuildStatus.Overlay.Unknown");
-	static const FName BuildStatusWarning("CameraRigAssetEditor.BuildStatus.Overlay.Warning");
+	static const FName BuildStatusBackground("CameraObjectEditor.BuildStatus.Background");
+	static const FName BuildStatusError("CameraObjectEditor.BuildStatus.Overlay.Error");
+	static const FName BuildStatusGood("CameraObjectEditor.BuildStatus.Overlay.Good");
+	static const FName BuildStatusUnknown("CameraObjectEditor.BuildStatus.Overlay.Unknown");
+	static const FName BuildStatusWarning("CameraObjectEditor.BuildStatus.Overlay.Warning");
 
 	const FName CamerasStyleSetName = FGameplayCamerasEditorStyle::Get()->GetStyleSetName();
 

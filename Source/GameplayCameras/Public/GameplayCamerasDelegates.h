@@ -8,6 +8,7 @@
 class UCameraAsset;
 class UCameraNode;
 class UCameraRigAsset;
+class UCameraShakeAsset;
 
 namespace UE::Cameras
 {
@@ -16,6 +17,7 @@ class FCameraBuildLog;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraAssetBuilt, const UCameraAsset*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraRigAssetBuilt, const UCameraRigAsset*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraShakeAssetBuilt, const UCameraShakeAsset*);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraNodeChanged, const UCameraNode*);
 
 /**
@@ -37,6 +39,12 @@ public:
 		return OnCameraRigAssetBuiltDelegate;
 	}
 
+	/** Broadcast when a camera shake has been built. */
+	static inline FOnCameraShakeAssetBuilt& OnCameraShakeAssetBuilt()
+	{
+		return OnCameraShakeAssetBuiltDelegate;
+	}
+
 	/** Broadcast when a custom camera parameter provider node changes it parameters. */
 	static inline FOnCameraNodeChanged& OnCustomCameraNodeParametersChanged()
 	{
@@ -47,6 +55,7 @@ private:
 
 	static FOnCameraAssetBuilt OnCameraAssetBuiltDelegate;
 	static FOnCameraRigAssetBuilt OnCameraRigAssetBuiltDelegate;
+	static FOnCameraShakeAssetBuilt OnCameraShakeAssetBuiltDelegate;
 	static FOnCameraNodeChanged OnCustomCameraNodeParametersChangedDelegate;
 };
 

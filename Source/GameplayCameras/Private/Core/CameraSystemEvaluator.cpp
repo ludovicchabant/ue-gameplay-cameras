@@ -16,6 +16,7 @@
 #include "GameplayCamerasSettings.h"
 #include "Math/ColorList.h"
 #include "Services/CameraModifierService.h"
+#include "Services/CameraShakeService.h"
 #include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
@@ -93,6 +94,7 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	}
 
 	RegisterEvaluationService(MakeShared<FCameraModifierService>());
+	RegisterEvaluationService(MakeShared<FCameraShakeService>());
 	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
 
 	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
