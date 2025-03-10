@@ -109,10 +109,10 @@ class FBlendCameraNodeEvaluator : public FCameraNodeEvaluator
 public:
 
 	/** Blend the parameters produced by a camera node tree over another set of values. */
-	void BlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult);
+	GAMEPLAYCAMERAS_API void BlendParameters(const FCameraNodePreBlendParams& Params, FCameraNodePreBlendResult& OutResult);
 
 	/** Blend the result of a camera node tree over another result. */
-	void BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult);
+	GAMEPLAYCAMERAS_API void BlendResults(const FCameraNodeBlendParams& Params, FCameraNodeBlendResult& OutResult);
 
 protected:
 

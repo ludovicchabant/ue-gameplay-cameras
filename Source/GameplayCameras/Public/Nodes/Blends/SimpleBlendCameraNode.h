@@ -25,6 +25,10 @@ class USimpleFixedTimeBlendCameraNode : public USimpleBlendCameraNode
 
 public:
 
+	GAMEPLAYCAMERAS_API void SetBlendTime(float BlendTimeIn) { BlendTime = BlendTimeIn; }
+
+public:
+
 	/** Duration of the blend. */
 	UPROPERTY(EditAnywhere, Category=Blending)
 	float BlendTime = 1.f;
