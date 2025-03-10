@@ -10,6 +10,8 @@
 #include "Directors/SingleCameraDirector.h"
 #include "GameFramework/Actor.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ActorCameraEvaluationContext)
+
 namespace UE::Cameras
 {
 
