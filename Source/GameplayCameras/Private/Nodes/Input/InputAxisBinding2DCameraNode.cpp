@@ -5,6 +5,7 @@
 #include "Components/InputComponent.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
@@ -65,7 +66,7 @@ void FInputAxisBinding2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 			AxisValueBindings.Add(AxisValueBinding);
 		}
 	}
-	else
+	else if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::Game)
 	{
 		UE_LOG(LogCameraSystem, Error, TEXT("No input component found on context owner '%s' for node '%s' in '%s'."),
 				*GetNameSafe(ContextOwner), 

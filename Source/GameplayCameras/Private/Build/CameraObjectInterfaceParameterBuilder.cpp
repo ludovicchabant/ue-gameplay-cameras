@@ -256,7 +256,7 @@ void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(const UBa
 			}
 		}
 
-		if (!ensure(RawSourceValuePtr))
+		if (!RawSourceValuePtr)
 		{
 			continue;
 		}
