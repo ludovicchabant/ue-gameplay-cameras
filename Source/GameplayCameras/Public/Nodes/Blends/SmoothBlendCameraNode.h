@@ -24,6 +24,10 @@ class USmoothBlendCameraNode : public USimpleFixedTimeBlendCameraNode
 {
 	GENERATED_BODY()
 
+public:
+
+	GAMEPLAYCAMERAS_API void SetCameraBlendType(ESmoothCameraBlendType BlendTypeIn) { BlendType = BlendTypeIn; }
+
 protected:
 
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;

@@ -58,7 +58,7 @@ struct FCameraNodeEvaluatorBuildParams
 	{}
 
 	/** Builds an evaluator for the given camera node. */
-	FCameraNodeEvaluator* BuildEvaluator(const UCameraNode* InNode) const;
+	GAMEPLAYCAMERAS_API FCameraNodeEvaluator* BuildEvaluator(const UCameraNode* InNode) const;
 
 	/** Builds an evaluator for the given camera node, and down-cast it to the given type. */
 	template<typename EvaluatorType>
@@ -282,7 +282,7 @@ public:
 	void UpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
 
 	/** Run this evaluator. */
-	void Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	GAMEPLAYCAMERAS_API void Run(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	/** Execute an IK operation. */
 	void ExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation);

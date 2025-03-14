@@ -184,7 +184,6 @@ bool FCameraNodeSpaceMath::GetCameraNodeSpaceTransform(const FCameraNodeSpacePar
 				OutTransform = FTransform3d::Identity;
 				return true;
 			}
-			break;
 		default:
 			ensureMsgf(false, TEXT("Unsupported camera node space."));
 			break;
