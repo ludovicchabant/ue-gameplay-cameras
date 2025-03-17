@@ -14,6 +14,7 @@
 #include "Engine/Engine.h"
 #include "GameFramework/ActorCameraEvaluationContext.h"
 #include "GameFramework/GameplayCameraComponent.h"
+#include "GameFramework/GameplayCameraRigComponent.h"
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemComponent.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
@@ -266,6 +267,10 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 	if (UGameplayCameraComponent* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponent>())
 	{
 		GameplayCameraComponent->ActivateCameraForPlayerController(PCOwner);
+	}
+	else if (UGameplayCameraRigComponent* GameplayCameraRigComponent = NewViewTarget->FindComponentByClass<UGameplayCameraRigComponent>())
+	{
+		GameplayCameraRigComponent->ActivateCameraForPlayerController(PCOwner);
 	}
 	else if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
 	{

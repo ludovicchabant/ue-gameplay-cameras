@@ -2,11 +2,9 @@
 
 #include "GameFramework/GameplayCameraActor.h"
 
-#include "CineCameraComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraActor)

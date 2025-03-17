@@ -2,23 +2,23 @@
 
 #pragma once
 
-#include "Core/CameraAssetReference.h"
+#include "Core/CameraRigAssetReference.h"
 #include "GameFramework/GameplayCameraComponentBase.h"
 
-#include "GameplayCameraComponent.generated.h"
+#include "GameplayCameraRigComponent.generated.h"
 
 /**
- * A component that can run a camera asset inside its own camera evaluation context.
+ * A component that can run a camera rig asset inside its own camera evaluation context.
  */
 UCLASS(Blueprintable, MinimalAPI)
-class UGameplayCameraComponent : public UGameplayCameraComponentBase
+class UGameplayCameraRigComponent : public UGameplayCameraComponentBase
 {
 	GENERATED_BODY()
 
 public:
 
 	/** Create a new camera component. */
-	GAMEPLAYCAMERAS_API UGameplayCameraComponent(const FObjectInitializer& ObjectInit);
+	GAMEPLAYCAMERAS_API UGameplayCameraRigComponent(const FObjectInitializer& ObjectInit);
 
 public:
 
@@ -27,16 +27,15 @@ public:
 	virtual void OnUnregister() override;
 
 	// UObject interface.
-	virtual void PostLoad() override;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
 public:
 
-	/** The camera asset to run. */
+	/** The camera rig asset to run. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera, meta=(SequencerHideProperty=true))
-	FCameraAssetReference CameraReference;
+	FCameraRigAssetReference CameraRigReference;
 
 protected:
 
@@ -48,12 +47,12 @@ protected:
 private:
 
 #if WITH_EDITOR
-	void OnCameraAssetBuilt(const UCameraAsset* InCameraAsset);
+	void OnCameraRigAssetBuilt(const UCameraRigAsset* InCameraRigAsset);
 #endif
 
 private:
 
 	UPROPERTY()
-	TObjectPtr<UCameraAsset> Camera_DEPRECATED;
+	TObjectPtr<UCameraAsset> GeneratedCameraAsset;
 };
 

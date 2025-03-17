@@ -4,6 +4,8 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetReference.h"
+#include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetReference.h"
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "EntitySystem/BuiltInComponentTypes.h"
 #include "EntitySystem/MovieSceneEntityManager.h"
@@ -13,6 +15,7 @@
 #include "Evaluation/PreAnimatedState/MovieScenePreAnimatedStateStorage.h"
 #include "Evaluation/PreAnimatedState/MovieScenePreAnimatedStorageID.inl"
 #include "GameFramework/GameplayCameraComponent.h"
+#include "GameFramework/GameplayCameraRigComponent.h"
 #include "MovieScene/MovieSceneGameplayCamerasComponentTypes.h"
 #include "Tracks/MovieScenePropertyTrack.h"
 
@@ -26,22 +29,36 @@ struct FPreAnimatedCameraParameterStateTraits : UE::MovieScene::FPreAnimatedStat
 	using KeyType = TTuple<FObjectKey, FGuid>;
 	using StorageType = bool;
 
-	bool CachePreAnimatedValue(UGameplayCameraComponent* CameraComponent, const FGuid& ParameterGuid)
+	bool CachePreAnimatedValue(UGameplayCameraComponentBase* CameraComponentBase, const FGuid& ParameterGuid)
 	{
-		if (CameraComponent && ParameterGuid.IsValid())
+		if (ParameterGuid.IsValid())
 		{
-			return CameraComponent->CameraReference.IsParameterAnimated(ParameterGuid);
+			if (UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
+			{
+				return CameraComponent->CameraReference.IsParameterAnimated(ParameterGuid);
+			}
+			else if (UGameplayCameraRigComponent* CameraRigComponent = Cast<UGameplayCameraRigComponent>(CameraComponentBase))
+			{
+				return CameraRigComponent->CameraRigReference.IsParameterAnimated(ParameterGuid);
+			}
 		}
 		return false;
 	}
 
 	void RestorePreAnimatedValue(const KeyType& InKey, bool bWasAnimated, const UE::MovieScene::FRestoreStateParams& Params)
 	{
-		UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(InKey.Get<0>().ResolveObjectPtr());
+		UGameplayCameraComponentBase* CameraComponentBase = Cast<UGameplayCameraComponentBase>(InKey.Get<0>().ResolveObjectPtr());
 		const FGuid& ParameterGuid = InKey.Get<1>();
-		if (CameraComponent && ParameterGuid.IsValid())
+		if (ParameterGuid.IsValid())
 		{
-			CameraComponent->CameraReference.SetParameterAnimated(ParameterGuid, bWasAnimated);
+			if (UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
+			{
+				CameraComponent->CameraReference.SetParameterAnimated(ParameterGuid, bWasAnimated);
+			}
+			else if (UGameplayCameraRigComponent* CameraRigComponent = Cast<UGameplayCameraRigComponent>(CameraComponentBase))
+			{
+				CameraRigComponent->CameraRigReference.SetParameterAnimated(ParameterGuid, bWasAnimated);
+			}
 		}
 	}
 };
@@ -70,43 +87,76 @@ struct FSetupCameraParameterOverrideTask
 	{
 		using namespace UE::MovieScene;
 
-		UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(BoundObject);
-		if (!ensure(CameraComponent))
+		UGameplayCameraComponentBase* CameraComponentBase = Cast<UGameplayCameraComponentBase>(BoundObject);
+		if (!ensure(CameraComponentBase))
 		{
 			return;
 		}
 
-		const FGuid ParameterGuid = GetParameterGuid(CameraComponent->CameraReference, PropertyBinding);
+		FGuid ParameterGuid;
+		bool bWasAnimated;
+
+		if (UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
+		{
+			ParameterGuid = GetParameterGuid(CameraComponent->CameraReference, PropertyBinding);
+			bWasAnimated = CameraComponent->CameraReference.IsParameterAnimated(ParameterGuid);
+		}
+		else if (UGameplayCameraRigComponent* CameraRigComponent = Cast<UGameplayCameraRigComponent>(CameraComponentBase))
+		{
+			ParameterGuid = GetParameterGuid(CameraRigComponent->CameraRigReference, PropertyBinding);
+			bWasAnimated = CameraRigComponent->CameraRigReference.IsParameterAnimated(ParameterGuid);
+		}
+
 		if (!ParameterGuid.IsValid())
 		{
 			return;
 		}
 
-		const bool bWasAnimated = CameraComponent->CameraReference.IsParameterAnimated(ParameterGuid);
-
 		using PreAnimatedKeyType = TTuple<FObjectKey, FGuid>;
 
-		PreAnimatedStorage->BeginTrackingEntity(EntityID, true, RootInstanceHandle, CameraComponent, ParameterGuid);
+		PreAnimatedStorage->BeginTrackingEntity(EntityID, true, RootInstanceHandle, CameraComponentBase, ParameterGuid);
 		PreAnimatedStorage->CachePreAnimatedValue(
-				PreAnimatedKeyType(CameraComponent, ParameterGuid),
+				PreAnimatedKeyType(CameraComponentBase, ParameterGuid),
 				[bWasAnimated](const PreAnimatedKeyType& InKey) { return bWasAnimated; });
 
 		CameraParameterOverrideID = ParameterGuid;
-		CameraComponent->CameraReference.SetParameterAnimated(ParameterGuid, true);
+
+		if (UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
+		{
+			CameraComponent->CameraReference.SetParameterAnimated(ParameterGuid, true);
+		}
+		else if (UGameplayCameraRigComponent* CameraRigComponent = Cast<UGameplayCameraRigComponent>(CameraComponentBase))
+		{
+			CameraRigComponent->CameraRigReference.SetParameterAnimated(ParameterGuid, true);
+		}
 	}
 
 	FGuid GetParameterGuid(const FCameraAssetReference& CameraReference, const FMovieScenePropertyBinding& PropertyBinding)
 	{
 		const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
-		if (!ensure(CameraAsset))
+		if (ensure(CameraAsset))
 		{
-			return FGuid();
+			return GetParameterGuid(CameraAsset->GetParameterDefinitions(), TEXT("CameraReference.Parameters.Value"), PropertyBinding);
 		}
+		return FGuid();
+	}
 
+	FGuid GetParameterGuid(const FCameraRigAssetReference& CameraRigReference, const FMovieScenePropertyBinding& PropertyBinding)
+	{
+		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
+		if (ensure(CameraRigAsset))
+		{
+			return GetParameterGuid(CameraRigAsset->GetParameterDefinitions(), TEXT("CameraRigReference.Parameters.Value"), PropertyBinding);
+		}
+		return FGuid();
+	}
+
+	FGuid GetParameterGuid(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, const FString& PropertyPathStartsWith, const FMovieScenePropertyBinding& PropertyBinding)
+	{
 		// This isn't ideal but we know all camera parameters are bound to the "Parameters" property bag
 		// of the camera component, so use that to figure out the parameter name and find is ID.
 		const FString PropertyPath = PropertyBinding.PropertyPath.ToString();
-		if (!ensure(PropertyPath.StartsWith(TEXT("CameraReference.Parameters.Value"))))
+		if (!ensure(PropertyPath.StartsWith(PropertyPathStartsWith)))
 		{
 			return FGuid();
 		}
@@ -131,7 +181,7 @@ struct FSetupCameraParameterOverrideTask
 			}
 		}
 
-		for (const FCameraObjectInterfaceParameterDefinition& ParameterDefintion : CameraAsset->GetParameterDefinitions())
+		for (const FCameraObjectInterfaceParameterDefinition& ParameterDefintion : ParameterDefinitions)
 		{
 			if (ParameterDefintion.ParameterName == ParameterName)
 			{

@@ -559,7 +559,7 @@ private:
 
 		if (GUnrealEd)
 		{
-			GUnrealEd->RegisterComponentVisualizer(UGameplayCameraComponent::StaticClass()->GetFName(), MakeShared<FGameplayCameraComponentVisualizer>());
+			GUnrealEd->RegisterComponentVisualizer(UGameplayCameraComponentBase::StaticClass()->GetFName(), MakeShared<FGameplayCameraComponentVisualizer>());
 		}
 	}
 
@@ -567,7 +567,7 @@ private:
 	{
 		if (GUnrealEd)
 		{
-			GUnrealEd->UnregisterComponentVisualizer(UGameplayCameraComponent::StaticClass()->GetFName());
+			GUnrealEd->UnregisterComponentVisualizer(UGameplayCameraComponentBase::StaticClass()->GetFName());
 		}
 	}
 	

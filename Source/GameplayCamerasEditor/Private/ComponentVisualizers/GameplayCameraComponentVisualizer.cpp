@@ -2,7 +2,7 @@
 
 #include "ComponentVisualizers/GameplayCameraComponentVisualizer.h"
 
-#include "GameFramework/GameplayCameraComponent.h"
+#include "GameFramework/GameplayCameraComponentBase.h"
 
 namespace UE::Cameras
 {
@@ -13,7 +13,7 @@ void FGameplayCameraComponentVisualizer::DrawVisualization(const UActorComponent
 
 void FGameplayCameraComponentVisualizer::DrawVisualizationHUD(const UActorComponent* Component, const FViewport* Viewport, const FSceneView* View, FCanvas* Canvas)
 {
-	if (const UGameplayCameraComponent* GameplayCameraComponent = Cast<const UGameplayCameraComponent>(Component))
+	if (const UGameplayCameraComponentBase* GameplayCameraComponent = Cast<const UGameplayCameraComponentBase>(Component))
 	{
 		GameplayCameraComponent->OnDrawVisualizationHUD(Viewport, View, Canvas);
 	}

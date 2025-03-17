@@ -9,6 +9,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/GameplayCameraComponent.h"
+#include "GameFramework/GameplayCameraRigComponent.h"
 #include "ISequencer.h"
 #include "KeyPropertyParams.h"
 #include "MVVM/ViewModels/ObjectBindingModel.h"
@@ -68,32 +69,49 @@ void GetKeyablePropertyPathsImpl(TSharedPtr<ISequencer> Sequencer, const UClass*
 	}
 }
 
-void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCameraComponent* CameraComponent, TArray<FPropertyPath>& KeyablePropertyPaths)
+void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCameraComponentBase* CameraComponentBase, TArray<FPropertyPath>& KeyablePropertyPaths)
 {
-	const UCameraAsset* CameraAsset = CameraComponent->CameraReference.GetCameraAsset();
-	if (!CameraAsset)
+	// Start us off with the property path of the parameters struct, and then get all keyable property paths from there.
+	FPropertyPath PropertyPath;
+	const UPropertyBag* CameraParametersStruct = nullptr;
+	const uint8* CameraParametersMemory = nullptr;
+
+	if (const UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
 	{
-		return;
+		const UCameraAsset* CameraAsset = CameraComponent->CameraReference.GetCameraAsset();
+		if (CameraAsset)
+		{
+			const FInstancedPropertyBag& CameraParameters = CameraComponent->CameraReference.GetParameters();
+			CameraParametersStruct = CameraParameters.GetPropertyBagStruct();
+			CameraParametersMemory = CameraParameters.GetValue().GetMemory();
+
+			PropertyPath.AddProperty(FPropertyInfo(UGameplayCameraComponent::StaticClass()->FindPropertyByName(TEXT("CameraReference"))));
+			PropertyPath.AddProperty(FPropertyInfo(FCameraAssetReference::StaticStruct()->FindPropertyByName(TEXT("Parameters"))));
+		}
+	}
+	else if (const UGameplayCameraRigComponent* CameraRigComponent = Cast<UGameplayCameraRigComponent>(CameraComponentBase))
+	{
+		const UCameraRigAsset* CameraRigAsset = CameraRigComponent->CameraRigReference.GetCameraRig();
+		if (CameraRigAsset)
+		{
+			const FInstancedPropertyBag& CameraParameters = CameraRigComponent->CameraRigReference.GetParameters();
+			CameraParametersStruct = CameraParameters.GetPropertyBagStruct();
+			CameraParametersMemory = CameraParameters.GetValue().GetMemory();
+
+			PropertyPath.AddProperty(FPropertyInfo(UGameplayCameraRigComponent::StaticClass()->FindPropertyByName(TEXT("CameraRigReference"))));
+			PropertyPath.AddProperty(FPropertyInfo(FCameraRigAssetReference::StaticStruct()->FindPropertyByName(TEXT("Parameters"))));
+		}
 	}
 
-	const FInstancedPropertyBag& CameraParameters = CameraComponent->CameraReference.GetParameters();
-	const UPropertyBag* CameraParametersStruct = CameraParameters.GetPropertyBagStruct();
-	const uint8* CameraParametersMemory = CameraParameters.GetValue().GetMemory();
 	if (!CameraParametersStruct || !CameraParametersMemory)
 	{
 		return;
 	}
 
-	// Start us off with the property path of the parameters struct.
-	const UClass* ComponentClass = UGameplayCameraComponent::StaticClass();
-	const UStruct* CameraAssetReferenceStruct = FCameraAssetReference::StaticStruct();
 	const UStruct* PropertyBagStruct = FInstancedPropertyBag::StaticStruct();
-
-	FPropertyPath PropertyPath;
-	PropertyPath.AddProperty(FPropertyInfo(ComponentClass->FindPropertyByName(TEXT("CameraReference"))));
-	PropertyPath.AddProperty(FPropertyInfo(CameraAssetReferenceStruct->FindPropertyByName(TEXT("Parameters"))));
 	PropertyPath.AddProperty(FPropertyInfo(PropertyBagStruct->FindPropertyByName(TEXT("Value"))));
 
+	const UClass* ComponentClass = CameraComponentBase->GetClass();
 	GetKeyablePropertyPathsImpl(Sequencer, ComponentClass, CameraParametersStruct, CameraParametersMemory, PropertyPath, KeyablePropertyPaths);
 }
 
@@ -162,7 +180,7 @@ void FGameplayCameraComponentTrackEditor::BuildTrackContextMenu(FMenuBuilder& Me
 
 void FGameplayCameraComponentTrackEditor::ExtendObjectBindingTrackMenu(TSharedRef<FExtender> Extender, const TArray<FGuid>& ObjectBindings, const UClass* ObjectClass)
 {
-	if (ObjectClass && ObjectClass->IsChildOf<UGameplayCameraComponent>())
+	if (ObjectClass && ObjectClass->IsChildOf<UGameplayCameraComponentBase>())
 	{
 		Extender->AddMenuExtension(
 				TEXT("Tracks"), EExtensionHook::After, nullptr, 
@@ -177,7 +195,7 @@ void FGameplayCameraComponentTrackEditor::OnExtendObjectBindingTrackMenu(FMenuBu
 		return;
 	}
 
-	const UGameplayCameraComponent* CameraComponent = GetCameraComponentForBinding(ObjectBindings[0]);
+	const UGameplayCameraComponentBase* CameraComponent = GetCameraComponentForBinding(ObjectBindings[0]);
 	if (CameraComponent)
 	{
 		using namespace UE::Cameras::Internal;
@@ -240,13 +258,13 @@ FReply FGameplayCameraComponentTrackEditor::OnDrop(const FDragDropEvent& DragDro
 	return FReply::Unhandled();
 }
 
-UGameplayCameraComponent* FGameplayCameraComponentTrackEditor::GetCameraComponentForBinding(const FGuid& ObjectBinding) const
+UGameplayCameraComponentBase* FGameplayCameraComponentTrackEditor::GetCameraComponentForBinding(const FGuid& ObjectBinding) const
 {
 	TSharedPtr<ISequencer> SequencerPtr = GetSequencer();
 	if (SequencerPtr.IsValid())
 	{
 		UObject* BoundObject = SequencerPtr->FindSpawnedObjectOrTemplate(ObjectBinding);
-		return Cast<UGameplayCameraComponent>(BoundObject);
+		return Cast<UGameplayCameraComponentBase>(BoundObject);
 	}
 	return nullptr;
 }

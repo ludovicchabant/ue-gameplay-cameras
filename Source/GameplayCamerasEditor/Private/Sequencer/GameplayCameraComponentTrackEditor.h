@@ -7,7 +7,7 @@
 #include "Templates/SharedPointerFwd.h"
 
 class ISequencer;
-class UGameplayCameraComponent;
+class UGameplayCameraComponentBase;
 class UMovieScenePropertyTrack;
 struct FCameraObjectInterfaceParameterDefinition;
 
@@ -44,7 +44,7 @@ protected:
 
 private:
 
-	UGameplayCameraComponent* GetCameraComponentForBinding(const FGuid& ObjectBinding) const;
+	UGameplayCameraComponentBase* GetCameraComponentForBinding(const FGuid& ObjectBinding) const;
 
 	void OnExtendObjectBindingTrackMenu(FMenuBuilder& MenuBuilder, TArray<FGuid> ObjectBindings);
 
