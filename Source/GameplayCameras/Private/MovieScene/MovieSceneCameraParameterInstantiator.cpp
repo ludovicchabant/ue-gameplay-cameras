@@ -94,7 +94,7 @@ struct FSetupCameraParameterOverrideTask
 		}
 
 		FGuid ParameterGuid;
-		bool bWasAnimated;
+		bool bWasAnimated = false;
 
 		if (UGameplayCameraComponent* CameraComponent = Cast<UGameplayCameraComponent>(CameraComponentBase))
 		{
