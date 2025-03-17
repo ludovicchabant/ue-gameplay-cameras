@@ -64,7 +64,7 @@ public:
 		TSet<FGuid> AnimatedParameterGuids;
 		ObjectReference.GetAnimatedParameterGuids(AnimatedParameterGuids);
 
-		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutVariableTable, nullptr);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutVariableTable, &OutContextDataTable);
 		Helper.ApplyParameterOverrides(
 				ObjectReference.GetCameraObject(),
 				ObjectReference.GetParameters(),
