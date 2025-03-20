@@ -65,6 +65,10 @@ FCameraShakeAssetEditorToolkit::FCameraShakeAssetEditorToolkit(UAssetEditor* InO
 
 FCameraShakeAssetEditorToolkit::~FCameraShakeAssetEditorToolkit()
 {
+	if (!GExitPurge)
+	{
+		DiscardNodeGraphEditor();
+	}
 }
 
 void FCameraShakeAssetEditorToolkit::AddReferencedObjects(FReferenceCollector& Collector)
@@ -274,6 +278,12 @@ void FCameraShakeAssetEditorToolkit::CreateNodeGraphEditor()
 		.IsEnabled(this, &FCameraShakeAssetEditorToolkit::IsGraphEditorEnabled)
 		.GraphToEdit(NodeGraph)
 		.AssetEditorToolkit(SharedThis(this));
+	NodeGraphEditor->RegisterEditor();
+}
+
+void FCameraShakeAssetEditorToolkit::DiscardNodeGraphEditor()
+{
+	NodeGraphEditor->UnregisterEditor();
 }
 
 void FCameraShakeAssetEditorToolkit::RegisterToolbar()

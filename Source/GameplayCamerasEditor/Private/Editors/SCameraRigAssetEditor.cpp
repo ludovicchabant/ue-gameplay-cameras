@@ -98,6 +98,7 @@ void SCameraRigAssetEditor::CreateNodeGraphEditor()
 		.IsEnabled(this, &SCameraRigAssetEditor::IsGraphEditorEnabled)
 		.GraphToEdit(NodeGraph)
 		.AssetEditorToolkit(AssetEditorToolkit);
+	NodeGraphEditor->RegisterEditor();
 }
 
 void SCameraRigAssetEditor::CreateTransitionGraphEditor()
@@ -123,6 +124,7 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 		.IsEnabled(this, &SCameraRigAssetEditor::IsGraphEditorEnabled)
 		.GraphToEdit(TransitionGraph)
 		.AssetEditorToolkit(AssetEditorToolkit);
+	TransitionGraphEditor->RegisterEditor();
 }
 
 void SCameraRigAssetEditor::DiscardGraphEditors()
@@ -146,6 +148,9 @@ void SCameraRigAssetEditor::DiscardGraphEditors()
 			}
 		}
 	}
+
+	NodeGraphEditor->UnregisterEditor();
+	TransitionGraphEditor->UnregisterEditor();
 
 	NodeGraphChangedHandle.Reset();
 	TransitionGraphChangedHandle.Reset();

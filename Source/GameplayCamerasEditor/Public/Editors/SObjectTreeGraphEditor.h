@@ -9,7 +9,6 @@
 class FAssetEditorToolkit;
 class IDetailsView;
 class UObjectTreeGraph;
-class UObjectTreeGraphNode;
 
 /**
  * A graph editor for an object tree graph.
@@ -18,6 +17,16 @@ class SObjectTreeGraphEditor
 	: public SCompoundWidget
 	, public FEditorUndoClient
 {
+public:
+
+	static TSharedPtr<SObjectTreeGraphEditor> FindGraphEditor(UObjectTreeGraph* InGraph);
+	static void OnBeginEditingGraph(UObjectTreeGraph* InGraph, TSharedRef<SObjectTreeGraphEditor> InGraphEditor);
+	static void OnEndEditingGraph(UObjectTreeGraph* InGraph, TSharedRef<SObjectTreeGraphEditor> InGraphEditor);
+
+private:
+
+	static TMap<UObjectTreeGraph*, TSharedPtr<SObjectTreeGraphEditor>> ActiveGraphEditors;
+
 public:
 
 	SLATE_BEGIN_ARGS(SObjectTreeGraphEditor)
@@ -41,8 +50,13 @@ public:
 	void Construct(const FArguments& InArgs);
 	~SObjectTreeGraphEditor();
 
+	void RegisterEditor();
+	void UnregisterEditor();
+
 	void JumpToNode(UEdGraphNode* InNode);
 	void ResyncDetailsView();
+
+	TSharedPtr<SGraphEditor> GetGraphEditor() { return GraphEditor; }
 
 protected:
 
@@ -66,7 +80,7 @@ protected:
 	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes);
 	void ImportNodesFromText(const FVector2D& Location, const FString& TextToImport);
 	bool CanImportNodesFromText(const FString& TextToImport);
-	void DeleteNodes(TArrayView<UObjectTreeGraphNode*> NodesToDelete);
+	void DeleteNodes(TArrayView<UEdGraphNode*> NodesToDelete);
 
 	void SelectAllNodes();
 	bool CanSelectAllNodes();

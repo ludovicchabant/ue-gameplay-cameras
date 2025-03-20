@@ -11,6 +11,7 @@
 class IObjectTreeGraphRootObject;
 class UEdGraph;
 class UObjectTreeGraph;
+class UObjectTreeGraphComment;
 class UObjectTreeGraphNode;
 struct FObjectTreeGraphClassConfigs;
 
@@ -42,13 +43,13 @@ public:
 	void RebuildGraph(UObjectTreeGraph* InGraph) const;
 
 	/** Creates an object graph node for the given object. */
-	UObjectTreeGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
+	UEdGraphNode* CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
 
 	/** Adds an object to the underlying data after it has been added to the graph. */
-	void AddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
+	void AddConnectableObject(UObjectTreeGraph* InGraph, UObject* InNewObject) const;
 
 	/** Removes an object from the underlying data after it has been removed from the graph. */
-	void RemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
+	void RemoveConnectableObject(UObjectTreeGraph* InGraph, UObject* InRemovedObject) const;
 
 	/** Export the given selection into a text suitable for copy/pasting. */
 	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes) const;
@@ -76,6 +77,7 @@ public:
 	// UEdGraphSchema interface.
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 	virtual void GetContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
+	virtual TSharedPtr<FEdGraphSchemaAction> GetCreateCommentAction() const override;
 	virtual FName GetParentContextMenuName() const override;
 	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override;
 	virtual class FConnectionDrawingPolicy* CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraph) const override;
@@ -94,15 +96,15 @@ protected:
 
 	struct FCreatedNodes
 	{
-		TMap<UObject*, UObjectTreeGraphNode*> CreatedNodes;
+		TMap<UObject*, UEdGraphNode*> CreatedNodes;
 	};
 
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const;
 	virtual void OnCreateAllNodes(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
-	virtual UObjectTreeGraphNode* OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
-	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const;
-	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const;
+	virtual UEdGraphNode* OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const;
+	virtual void OnAddConnectableObject(UObjectTreeGraph* InGraph, UObject* InNewObject) const;
+	virtual void OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObject* InRemovedObject) const;
 	virtual void CopyNonObjectNodes(TArrayView<UObject*> InObjects, FStringOutputDevice& OutDevice) const;
 	virtual bool OnTryCreateCustomConnection(UEdGraphPin* A, UEdGraphPin* B) const;
 	virtual bool OnBreakCustomPinLinks(UEdGraphPin& TargetPin) const;
@@ -130,13 +132,16 @@ private:
 	void RemoveAllNodes(UObjectTreeGraph* InGraph) const;
 	void CreateAllNodes(UObjectTreeGraph* InGraph) const;
 	void CreateConnections(UObjectTreeGraphNode* InGraphNode, const FCreatedNodes& InCreatedNodes) const;
+
+	UEdGraphNode* CreateCommentNode(UObjectTreeGraph* InGraph, UObjectTreeGraphComment* InComment) const;
+	void GetCommentAction(FGraphActionMenuBuilder& ActionMenuBuilder) const;
 };
 
 /**
  * Graph action to create a new object (and corresponding graph node) of a given class.
  */
 USTRUCT()
-struct FObjectGraphSchemaAction_NewNode : public FEdGraphSchemaAction
+struct FObjectTreeGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 {
 	GENERATED_BODY()
 
@@ -152,19 +157,37 @@ public:
 
 public:
 
-	FObjectGraphSchemaAction_NewNode();
-	FObjectGraphSchemaAction_NewNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping = 0, FText InKeywords = FText());
+	FObjectTreeGraphSchemaAction_NewNode();
+	FObjectTreeGraphSchemaAction_NewNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping = 0, FText InKeywords = FText());
 
 public:
 
 	// FEdGraphSchemaAction interface.
-	static FName StaticGetTypeId() { static FName Type("FObjectGraphSchemaAction_NewNode"); return Type; }
+	static FName StaticGetTypeId() { static FName Type("FObjectTreeGraphSchemaAction_NewNode"); return Type; }
 	virtual FName GetTypeId() const override { return StaticGetTypeId(); } 
 	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 
 protected:
 
 	virtual UObject* CreateObject();
-	virtual void AutoSetupNewNode(UObjectTreeGraphNode* NewNode, UEdGraphPin* FromPin);
+	virtual void AutoSetupNewNode(UEdGraphNode* NewNode, UEdGraphPin* FromPin);
+};
+
+USTRUCT()
+struct FObjectTreeGraphSchemaAction_NewComment : public FEdGraphSchemaAction
+{
+	GENERATED_BODY()
+
+public:
+
+	FObjectTreeGraphSchemaAction_NewComment();
+	FObjectTreeGraphSchemaAction_NewComment(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping = 0, FText InKeywords = FText());
+
+public:
+
+	// FEdGraphSchemaAction interface.
+	static FName StaticGetTypeId() { static FName Type("FObjectTreeGraphSchemaAction_NewComment"); return Type; }
+	virtual FName GetTypeId() const override { return StaticGetTypeId(); } 
+	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 };
 

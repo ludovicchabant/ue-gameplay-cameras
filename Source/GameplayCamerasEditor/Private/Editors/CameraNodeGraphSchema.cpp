@@ -87,7 +87,7 @@ void UCameraNodeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 		}
 		
 		UCameraObjectInterfaceParameterGraphNode* InterfaceParameterNode = CreateInterfaceParameterNode(InGraph, InterfaceParameter);
-		UObjectTreeGraphNode* CameraNodeNode = InCreatedNodes.CreatedNodes.FindRef(InterfaceParameter->Target);
+		UObjectTreeGraphNode* CameraNodeNode = Cast<UObjectTreeGraphNode>(InCreatedNodes.CreatedNodes.FindRef(InterfaceParameter->Target));
 		if (CameraNodeNode)
 		{
 			UEdGraphPin* InterfaceParameterSelfPin = InterfaceParameterNode->GetSelfPin();

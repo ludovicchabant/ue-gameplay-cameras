@@ -87,6 +87,7 @@ void SCameraRigTransitionEditor::CreateTransitionGraphEditor()
 		.GraphTitle(this, &SCameraRigTransitionEditor::GetTransitionOwnerName)
 		.GraphToEdit(TransitionGraph)
 		.AssetEditorToolkit(AssetEditorToolkit);
+	TransitionGraphEditor->RegisterEditor();
 }
 
 void SCameraRigTransitionEditor::DiscardTransitionGraphEditor()
@@ -101,6 +102,7 @@ void SCameraRigTransitionEditor::DiscardTransitionGraphEditor()
 		}
 	}
 
+	TransitionGraphEditor->UnregisterEditor();
 	TransitionGraph = nullptr;
 	TransitionGraphChangedHandle.Reset();
 

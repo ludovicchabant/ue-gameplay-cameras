@@ -3,10 +3,13 @@
 #include "Editors/ObjectTreeGraphSchema.h"
 
 #include "Commands/ObjectTreeGraphEditorCommands.h"
+#include "Core/ObjectTreeGraphComment.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "Editors/ObjectTreeConnectionDrawingPolicy.h"
 #include "Editors/ObjectTreeGraph.h"
+#include "Editors/ObjectTreeGraphCommentNode.h"
 #include "Editors/ObjectTreeGraphNode.h"
+#include "Editors/SObjectTreeGraphEditor.h"
 #include "Exporters/Exporter.h"
 #include "Factories.h"
 #include "IGameplayCamerasEditorModule.h"
@@ -220,7 +223,7 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph) const
 	FCreatedNodes CreatedNodes;
 	for (UObject* Object : AllObjects)
 	{
-		if (UObjectTreeGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
+		if (UEdGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
 		{
 			CreatedNodes.CreatedNodes.Add(Object, GraphNode);
 		}
@@ -231,19 +234,22 @@ void UObjectTreeGraphSchema::CreateAllNodes(UObjectTreeGraph* InGraph) const
 	if (!AllObjects.IsEmpty())
 	{
 		UObject* RootObject = InGraph->GetRootObject();
-		UObjectTreeGraphNode** CreatedRootObjectNode = CreatedNodes.CreatedNodes.Find(RootObject);
+		UEdGraphNode* CreatedRootObjectNode = CreatedNodes.CreatedNodes.FindRef(RootObject);
 		if (ensureMsgf(CreatedRootObjectNode, 
 					TEXT("Can't find root object '%s' in the list of created graph nodes!"),
 					*GetNameSafe(RootObject)))
 		{
-			InGraph->RootObjectNode = *CreatedRootObjectNode;
+			InGraph->RootObjectNode = CastChecked<UObjectTreeGraphNode>(CreatedRootObjectNode);
 		}
 	}
 
 	// Create all the connections.
-	for (TPair<UObject*, UObjectTreeGraphNode*> Pair : CreatedNodes.CreatedNodes)
+	for (TPair<UObject*, UEdGraphNode*> Pair : CreatedNodes.CreatedNodes)
 	{
-		CreateConnections(Pair.Value, CreatedNodes);
+		if (UObjectTreeGraphNode* Node = Cast<UObjectTreeGraphNode>(Pair.Value))
+		{
+			CreateConnections(Node, CreatedNodes);
+		}
 	}
 
 	OnCreateAllNodes(InGraph, CreatedNodes);
@@ -276,14 +282,14 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 				continue;
 			}
 
-			UObjectTreeGraphNode* const* ConnectedNode = InCreatedNodes.CreatedNodes.Find(OutConnectedObject);
+			UObjectTreeGraphNode* ConnectedNode = Cast<UObjectTreeGraphNode>(InCreatedNodes.CreatedNodes.FindRef(OutConnectedObject));
 			if (ensure(ConnectedNode))
 			{
 				if (Pin->Direction == EGPD_Input)
 				{
-					(*ConnectedNode)->OverrideSelfPinDirection(EGPD_Output);
+					ConnectedNode->OverrideSelfPinDirection(EGPD_Output);
 				}
-				UEdGraphPin* ConnectedPin = (*ConnectedNode)->GetSelfPin();
+				UEdGraphPin* ConnectedPin = ConnectedNode->GetSelfPin();
 				Pin->MakeLinkTo(ConnectedPin);
 			}
 		}
@@ -309,14 +315,14 @@ void UObjectTreeGraphSchema::CreateConnections(UObjectTreeGraphNode* InGraphNode
 					continue;
 				}
 
-				UObjectTreeGraphNode* const* ConnectedNode = InCreatedNodes.CreatedNodes.Find(ConnectedObject);
+				UObjectTreeGraphNode* ConnectedNode = Cast<UObjectTreeGraphNode>(InCreatedNodes.CreatedNodes.FindRef(ConnectedObject));
 				if (ensure(ConnectedNode))
 				{
 					if (Pin->Direction == EGPD_Input)
 					{
-						(*ConnectedNode)->OverrideSelfPinDirection(EGPD_Output);
+						ConnectedNode->OverrideSelfPinDirection(EGPD_Output);
 					}
-					UEdGraphPin* ConnectedPin = (*ConnectedNode)->GetSelfPin();
+					UEdGraphPin* ConnectedPin = ConnectedNode->GetSelfPin();
 					Pin->MakeLinkTo(ConnectedPin);
 				}
 			}
@@ -328,22 +334,37 @@ void UObjectTreeGraphSchema::OnCreateAllNodes(UObjectTreeGraph* InGraph, const F
 {
 }
 
-UObjectTreeGraphNode* UObjectTreeGraphSchema::CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
+UEdGraphNode* UObjectTreeGraphSchema::CreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
 {
 	if (!InObject)
 	{
 		return nullptr;
 	}
-
-	if (!InGraph->GetConfig().IsConnectable(InObject->GetClass()))
+	
+	if (UObjectTreeGraphComment* Comment = Cast<UObjectTreeGraphComment>(InObject))
 	{
-		return nullptr;
+		return CreateCommentNode(InGraph, Comment);
+	}
+	else if (InGraph->GetConfig().IsConnectable(InObject->GetClass()))
+	{
+		return OnCreateObjectNode(InGraph, InObject);
 	}
 
-	return OnCreateObjectNode(InGraph, InObject);
+	return nullptr;
 }
 
-UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
+UEdGraphNode* UObjectTreeGraphSchema::CreateCommentNode(UObjectTreeGraph* InGraph, UObjectTreeGraphComment* InComment) const
+{
+	InGraph->Modify();
+
+	FGraphNodeCreator<UObjectTreeGraphCommentNode> GraphNodeCreator(*InGraph);
+	UObjectTreeGraphCommentNode* NewNode = GraphNodeCreator.CreateNode(false);
+	NewNode->Initialize(InComment);
+	GraphNodeCreator.Finalize();
+	return NewNode;
+}
+
+UEdGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGraph* InGraph, UObject* InObject) const
 {
 	const FObjectTreeGraphConfig& Config = InGraph->GetConfig();
 	const FObjectTreeGraphClassConfigs ClassConfigs = Config.GetObjectClassConfigs(InObject->GetClass());
@@ -363,16 +384,13 @@ UObjectTreeGraphNode* UObjectTreeGraphSchema::OnCreateObjectNode(UObjectTreeGrap
 	return NewNode;
 }
 
-void UObjectTreeGraphSchema::AddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
+void UObjectTreeGraphSchema::AddConnectableObject(UObjectTreeGraph* InGraph, UObject* InNewObject) const
 {
-	UObject* Object = InNewNode->GetObject();
-	if (!ensure(Object))
+	if (!ensure(InNewObject))
 	{
 		return;
 	}
-
-	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
-	if (!GraphConfig.IsConnectable(Object->GetClass()))
+	if (!ensure(!InNewObject->IsA<UEdGraphNode>()))
 	{
 		return;
 	}
@@ -381,27 +399,25 @@ void UObjectTreeGraphSchema::AddConnectableObject(UObjectTreeGraph* InGraph, UOb
 	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(RootObjectNode->GetObject());
 	if (RootObjectInterface)
 	{
+		const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
 		const FName GraphName = GraphConfig.GraphName;
-		RootObjectInterface->AddConnectableObject(GraphName, Object);
+		RootObjectInterface->AddConnectableObject(GraphName, InNewObject);
 	}
 
-	OnAddConnectableObject(InGraph, InNewNode);
+	OnAddConnectableObject(InGraph, InNewObject);
 }
 
-void UObjectTreeGraphSchema::OnAddConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InNewNode) const
+void UObjectTreeGraphSchema::OnAddConnectableObject(UObjectTreeGraph* InGraph, UObject* InNewObject) const
 {
 }
 
-void UObjectTreeGraphSchema::RemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
+void UObjectTreeGraphSchema::RemoveConnectableObject(UObjectTreeGraph* InGraph, UObject* InRemovedObject) const
 {
-	UObject* Object = InRemovedNode->GetObject();
-	if (!ensure(Object))
+	if (!ensure(InRemovedObject))
 	{
 		return;
 	}
-
-	const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
-	if (!GraphConfig.IsConnectable(Object->GetClass()))
+	if (!ensure(!InRemovedObject->IsA<UEdGraphNode>()))
 	{
 		return;
 	}
@@ -409,14 +425,15 @@ void UObjectTreeGraphSchema::RemoveConnectableObject(UObjectTreeGraph* InGraph, 
 	IObjectTreeGraphRootObject* RootObjectInterface = Cast<IObjectTreeGraphRootObject>(InGraph->GetRootObject());
 	if (RootObjectInterface)
 	{
+		const FObjectTreeGraphConfig& GraphConfig = InGraph->GetConfig();
 		const FName GraphName = GraphConfig.GraphName;
-		RootObjectInterface->RemoveConnectableObject(GraphName, Object);
+		RootObjectInterface->RemoveConnectableObject(GraphName, InRemovedObject);
 	}
 
-	OnRemoveConnectableObject(InGraph, InRemovedNode);
+	OnRemoveConnectableObject(InGraph, InRemovedObject);
 }
 
-void UObjectTreeGraphSchema::OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObjectTreeGraphNode* InRemovedNode) const
+void UObjectTreeGraphSchema::OnRemoveConnectableObject(UObjectTreeGraph* InGraph, UObject* InRemovedObject) const
 {
 }
 
@@ -538,12 +555,14 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 
 			FText KeywordsText(FText::FromString(PossibleObjectClass->GetMetaData(TEXT("Keywords"))));
 
-			TSharedRef<FObjectGraphSchemaAction_NewNode> Action = MakeShared<FObjectGraphSchemaAction_NewNode>(
+			TSharedRef<FObjectTreeGraphSchemaAction_NewNode> Action = MakeShared<FObjectTreeGraphSchemaAction_NewNode>(
 					CategoryText, DisplayName, ToolTipText, Grouping, KeywordsText);
 			Action->ObjectClass = PossibleObjectClass;
 			ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(Action.ToSharedPtr()));
 		}
 	}
+
+	GetCommentAction(ContextMenuBuilder);
 
 	// Don't call the base class, we want to control exactly what can be created.
 }
@@ -579,6 +598,22 @@ void UObjectTreeGraphSchema::GetContextMenuActions(UToolMenu* Menu, UGraphNodeCo
 			Section.AddMenuEntry(Commands.InsertArrayItemPinAfter);
 			Section.AddMenuEntry(Commands.RemoveArrayItemPin);
 		}
+	}
+}
+
+TSharedPtr<FEdGraphSchemaAction> UObjectTreeGraphSchema::GetCreateCommentAction() const
+{
+	return MakeShared<FObjectTreeGraphSchemaAction_NewComment>();
+}
+
+void UObjectTreeGraphSchema::GetCommentAction(FGraphActionMenuBuilder& ActionMenuBuilder) const
+{
+	if (!ActionMenuBuilder.FromPin)
+	{
+		const FText MenuDesc= LOCTEXT("CommentActionDescription", "Add Comment...");
+		const FText MenuToolTip = LOCTEXT("CommentToolTip", "Creates a comment.");
+		TSharedPtr<FObjectTreeGraphSchemaAction_NewComment> NewAction(MakeShared<FObjectTreeGraphSchemaAction_NewComment>(FText::GetEmpty(), MenuDesc, MenuToolTip));
+		ActionMenuBuilder.AddAction(NewAction);
 	}
 }
 
@@ -1177,10 +1212,13 @@ bool UObjectTreeGraphSchema::SafeDeleteNodeFromGraph(UEdGraph* Graph, UEdGraphNo
 
 void UObjectTreeGraphSchema::OnDeleteNodeFromGraph(UObjectTreeGraph* Graph, UEdGraphNode* Node) const
 {
-	UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(Node);
-	if (ObjectNode)
+	if (UObjectTreeGraphNode* ObjectNode = Cast<UObjectTreeGraphNode>(Node))
 	{
-		RemoveConnectableObject(Graph, ObjectNode);
+		RemoveConnectableObject(Graph, ObjectNode->GetObject());
+	}
+	else if (UObjectTreeGraphCommentNode* CommentNode = Cast<UObjectTreeGraphCommentNode>(Node))
+	{
+		RemoveConnectableObject(Graph, CommentNode->GetObject());
 	}
 }
 
@@ -1224,6 +1262,10 @@ FString UObjectTreeGraphSchema::ExportNodesToText(const FGraphPanelSelectionSet&
 			if (UObjectTreeGraphNode* ObjectTreeNode = Cast<UObjectTreeGraphNode>(Node))
 			{
 				ObjectsToExport.Add(ObjectTreeNode->GetObject());
+			}
+			else if (UObjectTreeGraphCommentNode* CommentNode = Cast<UObjectTreeGraphCommentNode>(Node))
+			{
+				ObjectsToExport.Add(CommentNode->GetObject());
 			}
 			else
 			{
@@ -1360,23 +1402,26 @@ void UObjectTreeGraphSchema::ImportNodesFromText(UObjectTreeGraph* InGraph, cons
 	FCreatedNodes CreatedNodes;
 	for (UObject* Object : ImportedObjects)
 	{
-		if (UObjectTreeGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
+		if (UEdGraphNode* GraphNode = CreateObjectNode(InGraph, Object))
 		{
 			CreatedNodes.CreatedNodes.Add(Object, GraphNode);
 
-			AddConnectableObject(InGraph, GraphNode);
+			AddConnectableObject(InGraph, Object);
 		}
 	}
 
 	// Create all the connections.
-	for (TPair<UObject*, UObjectTreeGraphNode*> Pair : CreatedNodes.CreatedNodes)
+	for (TPair<UObject*, UEdGraphNode*> Pair : CreatedNodes.CreatedNodes)
 	{
-		CreateConnections(Pair.Value, CreatedNodes);
+		if (UObjectTreeGraphNode* Node = Cast<UObjectTreeGraphNode>(Pair.Value))
+		{
+			CreateConnections(Node, CreatedNodes);
+		}
 	}
 
 	OnCreateAllNodes(InGraph, CreatedNodes);
 
-	for (const TTuple<UObject*, UObjectTreeGraphNode*>& Pair : CreatedNodes.CreatedNodes)
+	for (const TTuple<UObject*, UEdGraphNode*>& Pair : CreatedNodes.CreatedNodes)
 	{
 		OutPastedNodes.Add(Pair.Value);
 	}
@@ -1403,16 +1448,16 @@ const FObjectTreeGraphClassConfigs UObjectTreeGraphSchema::GetObjectClassConfigs
 	return InGraph->GetConfig().GetObjectClassConfigs(InObjectClass);
 }
 
-FObjectGraphSchemaAction_NewNode::FObjectGraphSchemaAction_NewNode()
+FObjectTreeGraphSchemaAction_NewNode::FObjectTreeGraphSchemaAction_NewNode()
 {
 }
 
-FObjectGraphSchemaAction_NewNode::FObjectGraphSchemaAction_NewNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping, FText InKeywords)
+FObjectTreeGraphSchemaAction_NewNode::FObjectTreeGraphSchemaAction_NewNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping, FText InKeywords)
 	: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping, InKeywords)
 {
 }
 
-UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+UEdGraphNode* FObjectTreeGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
 {
 	UObjectTreeGraph* ObjectTreeGraph = Cast<UObjectTreeGraph>(ParentGraph);
 	if (!ensure(ObjectTreeGraph))
@@ -1452,13 +1497,16 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 
 		ObjectTreeGraph->Modify();
 
-		UObjectTreeGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
+		UEdGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewObject);
 
-		Schema->AddConnectableObject(ObjectTreeGraph, NewGraphNode);
+		Schema->AddConnectableObject(ObjectTreeGraph, NewObject);
 
 		NewGraphNode->NodePosX = Location.X;
 		NewGraphNode->NodePosY = Location.Y;
-		NewGraphNode->OnGraphNodeMoved(false);
+		if (UObjectTreeGraphNode* NewObjectGraphNode = Cast<UObjectTreeGraphNode>(NewGraphNode))
+		{
+			NewObjectGraphNode->OnGraphNodeMoved(false);
+		}
 
 		AutoSetupNewNode(NewGraphNode, FromPin);
 
@@ -1468,14 +1516,81 @@ UEdGraphNode* FObjectGraphSchemaAction_NewNode::PerformAction(UEdGraph* ParentGr
 	return nullptr;
 }
 
-UObject* FObjectGraphSchemaAction_NewNode::CreateObject()
+UObject* FObjectTreeGraphSchemaAction_NewNode::CreateObject()
 {
 	return NewObject<UObject>(ObjectOuter, ObjectClass, NAME_None, RF_Transactional);
 }
 
-void FObjectGraphSchemaAction_NewNode::AutoSetupNewNode(UObjectTreeGraphNode* NewNode, UEdGraphPin* FromPin)
+void FObjectTreeGraphSchemaAction_NewNode::AutoSetupNewNode(UEdGraphNode* NewNode, UEdGraphPin* FromPin)
 {
 	NewNode->AutowireNewNode(FromPin);
+}
+
+FObjectTreeGraphSchemaAction_NewComment::FObjectTreeGraphSchemaAction_NewComment()
+{
+}
+
+FObjectTreeGraphSchemaAction_NewComment::FObjectTreeGraphSchemaAction_NewComment(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping, FText InKeywords)
+	: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping, InKeywords)
+{
+}
+
+UEdGraphNode* FObjectTreeGraphSchemaAction_NewComment::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+{
+	UObjectTreeGraph* ObjectTreeGraph = Cast<UObjectTreeGraph>(ParentGraph);
+	if (!ensure(ObjectTreeGraph))
+	{
+		return nullptr;
+	}
+
+	UObject* ObjectOuter = ObjectTreeGraph->GetRootObject();
+	if (!ensure(ObjectOuter))
+	{
+		return nullptr;
+	}
+
+	FSlateRect Bounds;
+	bool bUseBounds = false;
+	if (TSharedPtr<SObjectTreeGraphEditor> GraphEditor = SObjectTreeGraphEditor::FindGraphEditor(ObjectTreeGraph))
+	{
+		bUseBounds = GraphEditor->GetGraphEditor()->GetBoundsForSelectedNodes(Bounds, 50.f);
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("CreateNewCommentAction", "Create Comment"));
+
+	const UObjectTreeGraphSchema* Schema = CastChecked<UObjectTreeGraphSchema>(ParentGraph->GetSchema());
+
+	UObjectTreeGraphComment* NewComment = NewObject<UObjectTreeGraphComment>(ObjectOuter, NAME_None, RF_Transactional);
+
+	UEdGraphNode* NewGraphNode = Schema->CreateObjectNode(ObjectTreeGraph, NewComment);
+
+	Schema->AddConnectableObject(ObjectTreeGraph, NewComment);
+
+	if (bUseBounds)
+	{
+		NewGraphNode->NodePosX = Bounds.Left;
+		NewGraphNode->NodePosY = Bounds.Top;
+
+		FVector2D BoundsSize = Bounds.GetSize();
+		NewGraphNode->NodeWidth = BoundsSize.X;
+		NewGraphNode->NodeHeight = BoundsSize.Y;
+	}
+	else
+	{
+		NewGraphNode->NodePosX = Location.X;
+		NewGraphNode->NodePosY = Location.Y;
+
+		NewGraphNode->NodeWidth = 400;
+		NewGraphNode->NodeHeight = 400;
+	}
+	if (UObjectTreeGraphCommentNode* NewCommentNode = Cast<UObjectTreeGraphCommentNode>(NewGraphNode))
+	{
+		NewCommentNode->OnGraphNodeMoved(false);
+	}
+
+	NewGraphNode->AutowireNewNode(FromPin);
+
+	return NewGraphNode;
 }
 
 #undef LOCTEXT_NAMESPACE

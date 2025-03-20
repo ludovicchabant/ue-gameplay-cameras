@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "CoreTypes.h"
 #include "Misc/EnumClassFlags.h"
 #include "UObject/Interface.h"
 

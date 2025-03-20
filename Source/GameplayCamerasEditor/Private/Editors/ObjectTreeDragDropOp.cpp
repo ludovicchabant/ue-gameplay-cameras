@@ -72,7 +72,7 @@ FReply FObjectTreeClassDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEdi
 	FVector2D CurLocation = NewLocation;
 	for (UClass* PlaceableClass : PlaceableClasses)
 	{
-		FObjectGraphSchemaAction_NewNode Action;
+		FObjectTreeGraphSchemaAction_NewNode Action;
 		Action.ObjectClass = PlaceableClass;
 		UEdGraphNode* NewNode = Action.PerformAction(Graph, nullptr, CurLocation, false);
 		GraphEditor->SetNodeSelection(NewNode, true);

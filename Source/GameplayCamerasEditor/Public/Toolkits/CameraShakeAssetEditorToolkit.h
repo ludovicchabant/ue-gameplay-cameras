@@ -73,6 +73,8 @@ private:
 	TSharedRef<SDockTab> SpawnTab_InterfaceParameters(const FSpawnTabArgs& Args);
 
 	void CreateNodeGraphEditor();
+	void DiscardNodeGraphEditor();
+
 	FText GetCameraShakeAssetName() const;
 	bool IsGraphEditorEnabled() const;
 

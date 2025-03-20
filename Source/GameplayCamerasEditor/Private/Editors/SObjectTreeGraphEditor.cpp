@@ -25,6 +25,25 @@
 
 #define LOCTEXT_NAMESPACE "SObjectTreeGraphEditor"
 
+TMap<UObjectTreeGraph*, TSharedPtr<SObjectTreeGraphEditor>> SObjectTreeGraphEditor::ActiveGraphEditors;
+
+TSharedPtr<SObjectTreeGraphEditor> SObjectTreeGraphEditor::FindGraphEditor(UObjectTreeGraph* InGraph)
+{
+	return ActiveGraphEditors.FindRef(InGraph);
+}
+
+void SObjectTreeGraphEditor::OnBeginEditingGraph(UObjectTreeGraph* InGraph, TSharedRef<SObjectTreeGraphEditor> InGraphEditor)
+{
+	ActiveGraphEditors.Add(InGraph, InGraphEditor);
+}
+
+void SObjectTreeGraphEditor::OnEndEditingGraph(UObjectTreeGraph* InGraph, TSharedRef<SObjectTreeGraphEditor> InGraphEditor)
+{
+	TSharedPtr<SObjectTreeGraphEditor> RemovedGraphEditor;
+	ActiveGraphEditors.RemoveAndCopyValue(InGraph, RemovedGraphEditor);
+	ensure(RemovedGraphEditor == InGraphEditor);
+}
+
 void SObjectTreeGraphEditor::Construct(const FArguments& InArgs)
 {
 	DetailsView = InArgs._DetailsView;
@@ -73,6 +92,22 @@ void SObjectTreeGraphEditor::Construct(const FArguments& InArgs)
 SObjectTreeGraphEditor::~SObjectTreeGraphEditor()
 {
 	GEditor->UnregisterForUndo(this);
+}
+
+void SObjectTreeGraphEditor::RegisterEditor()
+{
+	if (UObjectTreeGraph* CurrentGraph = Cast<UObjectTreeGraph>(GraphEditor->GetCurrentGraph()))
+	{
+		OnBeginEditingGraph(CurrentGraph, SharedThis(this));
+	}
+}
+
+void SObjectTreeGraphEditor::UnregisterEditor()
+{
+	if (UObjectTreeGraph* CurrentGraph = Cast<UObjectTreeGraph>(GraphEditor->GetCurrentGraph()))
+	{
+		OnEndEditingGraph(CurrentGraph, SharedThis(this));
+	}
 }
 
 void SObjectTreeGraphEditor::InitializeBuiltInCommands()
@@ -351,14 +386,14 @@ bool SObjectTreeGraphEditor::CanImportNodesFromText(const FString& TextToImport)
 	return Schema->CanImportNodesFromText(CurrentGraph, TextToImport);
 }
 
-void SObjectTreeGraphEditor::DeleteNodes(TArrayView<UObjectTreeGraphNode*> NodesToDelete)
+void SObjectTreeGraphEditor::DeleteNodes(TArrayView<UEdGraphNode*> NodesToDelete)
 {
 	UEdGraph* CurrentGraph = GraphEditor->GetCurrentGraph();
 	const UEdGraphSchema* Schema = CurrentGraph->GetSchema();
 
 	const FScopedTransaction Transaction(LOCTEXT("DeleteNode", "Delete Node(s)"));
 
-	for (UObjectTreeGraphNode* Node : NodesToDelete)
+	for (UEdGraphNode* Node : NodesToDelete)
 	{
 		if (Node)
 		{
@@ -381,7 +416,7 @@ bool SObjectTreeGraphEditor::CanSelectAllNodes()
 
 void SObjectTreeGraphEditor::DeleteSelectedNodes()
 {
-	TArray<UObjectTreeGraphNode*> NodesToDelete;
+	TArray<UEdGraphNode*> NodesToDelete;
 	const FGraphPanelSelectionSet SelectedNodes = GraphEditor->GetSelectedNodes();
 
 	for (FGraphPanelSelectionSet::TConstIterator NodeIt(SelectedNodes); NodeIt; ++NodeIt)
@@ -389,7 +424,7 @@ void SObjectTreeGraphEditor::DeleteSelectedNodes()
 		UEdGraphNode* GraphNode = Cast<UEdGraphNode>(*NodeIt);
 		if (GraphNode && GraphNode->CanUserDeleteNode())
 		{
-			NodesToDelete.Add(Cast<UObjectTreeGraphNode>(*NodeIt));
+			NodesToDelete.Add(GraphNode);
 		}
 	}
 	
