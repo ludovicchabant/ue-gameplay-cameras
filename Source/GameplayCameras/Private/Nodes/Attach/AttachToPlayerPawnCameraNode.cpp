@@ -4,6 +4,7 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
@@ -39,6 +40,14 @@ void FAttachToPlayerPawnCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 
 void FAttachToPlayerPawnCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+#if WITH_EDITOR
+	if (Params.Evaluator && Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	{
+		// No player pawn in editor preview.
+		return;
+	}
+#endif
+
 	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
 	if (!ensure(PlayerController))
 	{
