@@ -200,7 +200,9 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 
 void FCameraEvaluationContext::AutoCreateEditorPreviewDirectorEvaluator(const FCameraEvaluationContextActivateParams& Params)
 {
-	if (ensure(Params.Evaluator) && Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	if (DirectorEvaluator == nullptr &&
+			ensure(Params.Evaluator) && 
+			Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
 	{
 		FCameraDirectorRigUsageInfo UsageInfo;
 
