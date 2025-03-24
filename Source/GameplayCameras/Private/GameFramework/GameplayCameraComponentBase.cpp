@@ -439,6 +439,9 @@ void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 			OutputCameraComponent->FocusSettings.ManualFocusDistance = Result.CameraPose.GetFocusDistance();
 			OutputCameraComponent->FocusSettings.FocusMethod = (Result.CameraPose.GetEnablePhysicalCamera() ? ECameraFocusMethod::Manual : ECameraFocusMethod::Disable);
 
+			OutputCameraComponent->ProjectionMode = Result.CameraPose.GetProjectionMode();
+			OutputCameraComponent->OrthoWidth = Result.CameraPose.GetOrthographicWidth();
+
 			bGotValidTransform = true;
 		}
 	}
