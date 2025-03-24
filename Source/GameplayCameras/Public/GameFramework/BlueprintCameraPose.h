@@ -48,6 +48,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float FocalLength = 35.f;
 
+	/** The desired width (in world units) of the orthographic view (ignored in Perspective mode) */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
+	float OrthographicWidth = DEFAULT_ORTHOWIDTH;
+
 	/** The aperture (f-stop) of the camera's lens. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float Aperture = 2.8f;
@@ -110,6 +114,10 @@ public:
 	/** The aspect ratio axis constraint to use if aspect ratio is constrained. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	TEnumAsByte<EAspectRatioAxisConstraint> AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;
+
+	/** Projection mode - Perspective or orthographic */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
+	TEnumAsByte<ECameraProjectionMode::Type> ProjectionMode;
 
 public:
 

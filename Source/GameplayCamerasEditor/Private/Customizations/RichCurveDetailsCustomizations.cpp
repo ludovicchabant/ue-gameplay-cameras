@@ -639,7 +639,7 @@ TSharedRef<SWidget> FRichCurveDetailsCustomization::CreateCurveEditorPanel(TShar
 	TSharedPtr<FUICommandList> Commands = CurveEditorPanel->GetCommands();
 	TSharedPtr<FExtender> ToolbarExtender = CurveEditorPanel->GetToolbarExtender();
 
-	FToolBarBuilder ToolBarBuilder(Commands, FMultiBoxCustomization::None, ToolbarExtender, true);
+	FSlimHorizontalToolBarBuilder ToolBarBuilder(Commands, FMultiBoxCustomization::None, ToolbarExtender, true);
 	ToolBarBuilder.BeginSection("Asset");
 	ToolBarBuilder.EndSection();
 	TSharedRef<SWidget> ToolBarWidget = ToolBarBuilder.MakeWidget();

@@ -361,7 +361,12 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.AspectRatioAxisConstraint = CameraPose.GetOverrideAspectRatioAxisConstraint() ?
 		CameraPose.GetAspectRatioAxisConstraint() : TOptional<EAspectRatioAxisConstraint>();
 
-	// TODO: add support for ortho cameras.
+	DesiredView.ProjectionMode = CameraPose.GetProjectionMode();
+	if (CameraPose.GetProjectionMode() == ECameraProjectionMode::Orthographic)
+	{
+		DesiredView.OrthoWidth = CameraPose.GetOrthographicWidth();
+	}
+
 	DesiredView.PerspectiveNearClipPlane = CameraPose.GetNearClippingPlane();
 
 	const FPostProcessSettingsCollection& PostProcessSettings = RootNodeResult.PostProcessSettings;

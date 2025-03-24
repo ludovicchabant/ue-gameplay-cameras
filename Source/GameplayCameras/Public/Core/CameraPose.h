@@ -4,6 +4,7 @@
 
 #include "CoreTypes.h"
 #include "Engine/EngineTypes.h"
+#include "EngineDefines.h"
 #include "Math/MathFwd.h"
 #include "Math/Transform.h"
 
@@ -12,6 +13,7 @@
 class FArchive;
 struct FPostProcessSettings;
 enum EAspectRatioAxisConstraint : int;
+namespace ECameraProjectionMode { enum Type : int; };
 
 #define UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(FVector, Location)\
@@ -29,7 +31,8 @@ enum EAspectRatioAxisConstraint : int;
 	UE_CAMERA_POSE_FOR_PROPERTY(int32,  DiaphragmBladeCount)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  PhysicalCameraBlendWeight)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  NearClippingPlane)\
-	UE_CAMERA_POSE_FOR_PROPERTY(float,  FarClippingPlane)
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  FarClippingPlane)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  OrthographicWidth)
 
 #define UE_CAMERA_POSE_FOR_FOV_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(float, FieldOfView)\
@@ -39,7 +42,8 @@ enum EAspectRatioAxisConstraint : int;
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, EnablePhysicalCamera)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, ConstrainAspectRatio)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, OverrideAspectRatioAxisConstraint)\
-	UE_CAMERA_POSE_FOR_PROPERTY(EAspectRatioAxisConstraint, AspectRatioAxisConstraint)
+	UE_CAMERA_POSE_FOR_PROPERTY(EAspectRatioAxisConstraint, AspectRatioAxisConstraint)\
+	UE_CAMERA_POSE_FOR_PROPERTY(ECameraProjectionMode::Type, ProjectionMode)
 
 #define UE_CAMERA_POSE_FOR_ALL_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_TRANSFORM_PROPERTIES()\
@@ -248,6 +252,12 @@ private:
 	UPROPERTY()
 	float FocalLength = 35.f;
 
+	/**
+	 * The desired width (in world units) of the orthographic view (ignored in Perspective mode) 
+	 */
+	UPROPERTY()
+	float OrthographicWidth = DEFAULT_ORTHOWIDTH;
+
 	/** The aperture of the camera's lens, in f-stops */
 	UPROPERTY()
 	float Aperture = 2.8f;
@@ -313,6 +323,10 @@ private:
 	/** If ConstrainAspectRatio is false and OverrideAspectRatioAxisConstraint is true, how we should compute FieldOfView */
 	UPROPERTY()
 	TEnumAsByte<EAspectRatioAxisConstraint> AspectRatioAxisConstraint = EAspectRatioAxisConstraint::AspectRatio_MaintainYFOV;
+
+	/** Projection mode - Perspective or orthographic */
+	UPROPERTY()
+	TEnumAsByte<ECameraProjectionMode::Type> ProjectionMode;
 
 private:
 	

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Camera/CameraTypes.h"
 #include "Containers/StringView.h"
 #include "Engine/EngineTypes.h"
 #include "GameplayCameras.h"
@@ -56,6 +57,16 @@ inline FString ToDebugString(const EAspectRatioAxisConstraint& FieldValue)
 		case AspectRatio_MaintainYFOV: return TEXT("Maintain Y-Axis FOV");
 		case AspectRatio_MaintainXFOV: return TEXT("Maintain X-Axis FOV");
 		case AspectRatio_MajorAxisFOV: return TEXT("Maintain Major Axis FOV");
+	}
+	return TEXT("Invalid");
+}
+template<>
+inline FString ToDebugString(const ECameraProjectionMode::Type& FieldValue)
+{
+	switch (FieldValue)
+	{
+	case ECameraProjectionMode::Perspective: return TEXT("Perspective");
+	case ECameraProjectionMode::Orthographic: return TEXT("Orthographic");
 	}
 	return TEXT("Invalid");
 }
