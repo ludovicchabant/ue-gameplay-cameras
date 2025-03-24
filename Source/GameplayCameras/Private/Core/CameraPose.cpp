@@ -118,12 +118,12 @@ void FCameraPose::SetTransform(FTransform3d Transform, bool bForceSet)
 	SetRotation(Transform.GetRotation().Rotator(), bForceSet);
 }
 
-double FCameraPose::GetEffectiveFieldOfView() const
+double FCameraPose::GetEffectiveFieldOfView(bool bIncludeOverscan) const
 {
-	return GetEffectiveFieldOfView(FocalLength, FieldOfView, SensorWidth, SensorHeight, SqueezeFactor);
+	return GetEffectiveFieldOfView(FocalLength, FieldOfView, SensorWidth, SensorHeight, SqueezeFactor, bIncludeOverscan ? Overscan : 1.0f);
 }
 
-double FCameraPose::GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor)
+double FCameraPose::GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor, float Overscan)
 {
 	const bool bValidFocalLength = (FocalLength > 0.f);
 	const bool bValidFieldOfView = (FieldOfView > 0.f);
@@ -166,7 +166,9 @@ double FCameraPose::GetEffectiveFieldOfView(float FocalLength, float FieldOfView
 			}
 		}
 
-		return FMath::RadiansToDegrees(2.0 * FMath::Atan(CroppedSensorWidth / (2.0 * FocalLength)));
+		const double EffectiveOverscan = (1.0 + Overscan);
+
+		return FMath::RadiansToDegrees(2.0 * FMath::Atan(CroppedSensorWidth * EffectiveOverscan / (2.0 * FocalLength)));
 	}
 	else
 	{
@@ -189,6 +191,44 @@ void FCameraPose::GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHe
 {
 	OutSensorWidth = 24.89f;
 	OutSensorHeight = 18.67f;
+}
+
+double FCameraPose::GetHorizontalProjectionOffset() const
+{
+	// Compute projection offset with similar code to UCineCameraComponent...
+	double CroppedSensorWidth = SensorWidth * SqueezeFactor;
+	const double AspectRatio = GetSensorAspectRatio(SensorWidth, SensorHeight);
+	if (AspectRatio > 0.0)
+	{
+		double DesqueezeAspectRatio = AspectRatio * SqueezeFactor;
+		if (AspectRatio < DesqueezeAspectRatio)
+		{
+			CroppedSensorWidth *= AspectRatio / DesqueezeAspectRatio;
+		}
+	}
+
+	const double EffectiveOverscan = (1.0f + Overscan);
+
+	return 2.0 * SensorHorizontalOffset / (CroppedSensorWidth * EffectiveOverscan);
+}
+
+double FCameraPose::GetVerticalProjectionOffset() const
+{
+	// Compute projection offset with similar code to UCineCameraComponent...
+	double CroppedSensorHeight = SensorHeight;
+	const double AspectRatio = GetSensorAspectRatio(SensorWidth, SensorHeight);
+	if (AspectRatio > 0.0)
+	{
+		double DesqueezeAspectRatio = AspectRatio * SqueezeFactor;
+		if (DesqueezeAspectRatio < AspectRatio)
+		{
+			CroppedSensorHeight *= DesqueezeAspectRatio / AspectRatio;
+		}
+	}
+
+	const double EffectiveOverscan = (1.0f + Overscan);
+
+	return 2.0 * SensorVerticalOffset / (CroppedSensorHeight * EffectiveOverscan);
 }
 
 bool FCameraPose::ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings) const
@@ -217,8 +257,8 @@ bool FCameraPose::ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessS
 	// TODO: support minimum-focus-distance?
 	UE_LERP_PP(DepthOfFieldFocalDistance, FocusDistance);
 
-	// TODO: support overscan?
-	UE_LERP_PP(DepthOfFieldSensorWidth, SensorWidth);
+	const float EffectiveOverscan = (1.0f + Overscan);
+	UE_LERP_PP(DepthOfFieldSensorWidth, SensorWidth * EffectiveOverscan);
 	UE_LERP_PP(DepthOfFieldSqueezeFactor, SqueezeFactor);
 
 #undef UE_LERP_PP

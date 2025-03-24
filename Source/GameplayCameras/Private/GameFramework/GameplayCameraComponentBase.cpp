@@ -425,8 +425,13 @@ void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 			OutputCameraComponent->SetWorldTransform(Result.CameraPose.GetTransform());
 			OutputCameraComponent->SetFieldOfView(Result.CameraPose.GetEffectiveFieldOfView());
 			OutputCameraComponent->CurrentAperture = Result.CameraPose.GetAperture();
+
 			OutputCameraComponent->Filmback.SensorWidth = Result.CameraPose.GetSensorWidth();
 			OutputCameraComponent->Filmback.SensorHeight = Result.CameraPose.GetSensorHeight();
+			OutputCameraComponent->Filmback.SensorHorizontalOffset = Result.CameraPose.GetSensorHorizontalOffset();
+			OutputCameraComponent->Filmback.SensorVerticalOffset = Result.CameraPose.GetSensorVerticalOffset();
+
+			OutputCameraComponent->Overscan = Result.CameraPose.GetOverscan();
 			OutputCameraComponent->bConstrainAspectRatio = Result.CameraPose.GetConstrainAspectRatio();
 			OutputCameraComponent->bOverrideAspectRatioAxisConstraint = Result.CameraPose.GetOverrideAspectRatioAxisConstraint();
 			OutputCameraComponent->AspectRatioAxisConstraint = Result.CameraPose.GetAspectRatioAxisConstraint();

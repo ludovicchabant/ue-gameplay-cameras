@@ -72,6 +72,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float SensorHeight = 18.67f;
 
+	/** Horizontal offset of the sensor, in mm. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float SensorHorizontalOffset = 0.f;
+
+	/** Vertical offset of the sensor, in mm. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float SensorVerticalOffset = 0.f;
+
 	/** The camera sensor sensitivity in ISO. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float ISO = 100.f;
@@ -79,6 +87,10 @@ public:
 	/** The squeeze factor of the camera's lens. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float SqueezeFactor = 1.f;
+
+	/** Sensor overscan in percentage */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float Overscan = 0.f;
 
 	/** Number of blades in the lens diaphragm */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")

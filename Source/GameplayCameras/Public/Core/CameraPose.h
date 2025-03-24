@@ -26,8 +26,11 @@ namespace ECameraProjectionMode { enum Type : int; };
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  FocusDistance)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorWidth)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorHeight)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorHorizontalOffset)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  SensorVerticalOffset)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  ISO)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  SqueezeFactor)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  Overscan)\
 	UE_CAMERA_POSE_FOR_PROPERTY(int32,  DiaphragmBladeCount)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  PhysicalCameraBlendWeight)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  NearClippingPlane)\
@@ -155,10 +158,16 @@ public:
 	 * The effective field of view can be driven by the FieldOfView property, or
 	 * the FocalLength property in combination with the sensor size.
 	 */
-	double GetEffectiveFieldOfView() const;
+	double GetEffectiveFieldOfView(bool bIncludeOverscan = true) const;
 
 	/** Gets the aspect ratio of the camera sensor. */
 	double GetSensorAspectRatio() const;
+
+	/** Gets the horizontal projection offset. */
+	double GetHorizontalProjectionOffset() const;
+
+	/** Gets the vertical projection offset. */
+	double GetVerticalProjectionOffset() const;
 
 	/** Gets the aiming ray of the camera. */
 	FRay3d GetAimRay() const;
@@ -175,7 +184,7 @@ public:
 public:
 
 	/** Computes the horizontal field of view of a camera. */
-	static double GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor);
+	static double GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor = 1.f, float Overscan = 1.f);
 	
 	/** Computes the aspect ratio of a camera sensor. */
 	static double GetSensorAspectRatio(float SensorWidth, float SensorHeight);
@@ -278,6 +287,14 @@ private:
 	UPROPERTY()
 	float SensorHeight = 18.67f;
 
+	/** Horizontal offset of the sensor, in mm. */
+	UPROPERTY()
+	float SensorHorizontalOffset = 0.f;
+
+	/** Vertical offset of the sensor, in mm. */
+	UPROPERTY()
+	float SensorVerticalOffset = 0.f;
+
 	/** The camera sensor sensitivity in ISO. */
 	UPROPERTY()
 	float ISO = 100.f;
@@ -285,6 +302,10 @@ private:
 	/** Squeeze factor for anamorphic lenses */
 	UPROPERTY()
 	float SqueezeFactor = 1.f;
+
+	/** Sensor overscan in percentage */
+	UPROPERTY()
+	float Overscan = 0.f;
 
 	/** Number of blades in the lens diaphragm */
 	UPROPERTY()

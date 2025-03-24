@@ -369,11 +369,16 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 
 	DesiredView.PerspectiveNearClipPlane = CameraPose.GetNearClippingPlane();
 
+	DesiredView.OffCenterProjectionOffset.X = CameraPose.GetHorizontalProjectionOffset();
+	DesiredView.OffCenterProjectionOffset.Y = CameraPose.GetVerticalProjectionOffset();
+
 	const FPostProcessSettingsCollection& PostProcessSettings = RootNodeResult.PostProcessSettings;
 	DesiredView.PostProcessSettings = PostProcessSettings.Get();
 	DesiredView.PostProcessBlendWeight = 1.f;
 	// Create the physical camera settings if needed. Don't overwrite settings that were set by hand.
 	CameraPose.ApplyPhysicalCameraSettings(DesiredView.PostProcessSettings, false);
+
+	DesiredView.ApplyOverscan(CameraPose.GetOverscan());
 }
 
 #if WITH_EDITOR
