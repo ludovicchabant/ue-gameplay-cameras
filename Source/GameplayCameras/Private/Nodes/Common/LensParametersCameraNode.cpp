@@ -25,7 +25,6 @@ private:
 	TCameraParameterReader<float> FocalLengthReader;
 	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<float> ApertureReader;
-	TCameraParameterReader<float> ShutterSpeedReader;
 	TCameraParameterReader<bool> EnablePhysicalCameraReader;
 };
 
@@ -37,7 +36,6 @@ void FLensParametersCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 	FocalLengthReader.Initialize(LensParametersNode->FocalLength);
 	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	ApertureReader.Initialize(LensParametersNode->Aperture);
-	ShutterSpeedReader.Initialize(LensParametersNode->ShutterSpeed);
 	EnablePhysicalCameraReader.Initialize(LensParametersNode->EnablePhysicalCamera);
 }
 
@@ -60,11 +58,6 @@ void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	if (Aperture > 0)
 	{
 		OutPose.SetAperture(Aperture);
-	}
-	float ShutterSpeed = ShutterSpeedReader.Get(OutResult.VariableTable);
-	if (ShutterSpeed > 0)
-	{
-		OutPose.SetShutterSpeed(ShutterSpeed);
 	}
 
 	const bool bEnablePhysicalCamera = EnablePhysicalCameraReader.Get(OutResult.VariableTable);

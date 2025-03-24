@@ -34,9 +34,17 @@ public:
 	UPROPERTY(EditAnywhere, Category="Filmback", meta=(ClampMin="0.001", ForceUnits=mm))
 	FFloatCameraParameter SensorHeight;
 
-	/** The camera sensor sensitivity in ISO. */
-	UPROPERTY(EditAnywhere, Category="Filmback")
-	FFloatCameraParameter ISO;
+	/** Horizontal offset of the sensor, in mm. */
+	UPROPERTY(EditAnywhere, Category="Advanced", meta=(ForceUnits=mm))
+	FFloatCameraParameter SensorHorizontalOffset;
+
+	/** Vertical offset of the sensor, in mm. */
+	UPROPERTY(EditAnywhere, Category="Advanced", meta=(ForceUnits=mm))
+	FFloatCameraParameter SensorVerticalOffset;
+
+	/** Sensor overscan, in percentages (0% for no increase). */
+	UPROPERTY(EditAnywhere, Category="Advanced", meta=(ForceUnits=Percent))
+	FFloatCameraParameter Overscan;
 
 	/** Whether to constrain the aspect ratio of the evaluated camera. */
 	UPROPERTY(EditAnywhere, Category="Filmback")

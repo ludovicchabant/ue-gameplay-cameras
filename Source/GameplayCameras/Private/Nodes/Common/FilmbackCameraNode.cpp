@@ -23,7 +23,9 @@ private:
 
 	TCameraParameterReader<float> SensorWidthReader;
 	TCameraParameterReader<float> SensorHeightReader;
-	TCameraParameterReader<float> ISOReader;
+	TCameraParameterReader<float> SensorHorizontalOffsetReader;
+	TCameraParameterReader<float> SensorVerticalOffsetReader;
+	TCameraParameterReader<float> OverscanReader;
 	TCameraParameterReader<bool> ConstrainAspectRatioReader;
 	TCameraParameterReader<bool> OverrideAspectRatioAxisConstraintReader;
 };
@@ -35,7 +37,9 @@ void FFilmbackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitia
 	const UFilmbackCameraNode* FilmbackNode = GetCameraNodeAs<UFilmbackCameraNode>();
 	SensorWidthReader.Initialize(FilmbackNode->SensorWidth);
 	SensorHeightReader.Initialize(FilmbackNode->SensorHeight);
-	ISOReader.Initialize(FilmbackNode->ISO);
+	SensorHorizontalOffsetReader.Initialize(FilmbackNode->SensorHorizontalOffset);
+	SensorVerticalOffsetReader.Initialize(FilmbackNode->SensorVerticalOffset);
+	OverscanReader.Initialize(FilmbackNode->Overscan);
 	ConstrainAspectRatioReader.Initialize(FilmbackNode->ConstrainAspectRatio);
 	OverrideAspectRatioAxisConstraintReader.Initialize(FilmbackNode->OverrideAspectRatioAxisConstraint);
 }
@@ -54,11 +58,18 @@ void FFilmbackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Para
 	{
 		OutPose.SetSensorHeight(SensorHeight);
 	}
-	float ISO = ISOReader.Get(OutResult.VariableTable);
-	if (ISO > 0)
+	float SensorHorizontalOffset = SensorHorizontalOffsetReader.Get(OutResult.VariableTable);
+	if (SensorHorizontalOffset > 0)
 	{
-		OutPose.SetISO(ISO);
+		OutPose.SetSensorHorizontalOffset(SensorHorizontalOffset);
 	}
+	float SensorVerticalOffset = SensorVerticalOffsetReader.Get(OutResult.VariableTable);
+	if (SensorVerticalOffset > 0)
+	{
+		OutPose.SetSensorVerticalOffset(SensorVerticalOffset);
+	}
+
+	OutPose.SetOverscan(OverscanReader.Get(OutResult.VariableTable));
 
 	OutPose.SetConstrainAspectRatio(ConstrainAspectRatioReader.Get(OutResult.VariableTable));
 	OutPose.SetOverrideAspectRatioAxisConstraint(OverrideAspectRatioAxisConstraintReader.Get(OutResult.VariableTable));

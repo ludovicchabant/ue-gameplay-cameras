@@ -35,10 +35,6 @@ public:
 	UPROPERTY(EditAnywhere, Category="Lens Parameters")
 	FFloatCameraParameter Aperture;
 
-	/** Current shutter speed, in 1/seconds */
-	UPROPERTY(EditAnywhere, Category="Lens Parameters", DisplayName="Shutter Speed (1/s)")
-    FFloatCameraParameter ShutterSpeed;
-
 	/** 
 	 * Whether post-process settings should be automatically applied to reflect
 	 * the lens settings.
