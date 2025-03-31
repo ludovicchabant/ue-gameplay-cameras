@@ -133,6 +133,9 @@ public:
 	 */
 	void Deactivate(const FCameraEvaluationContextDeactivateParams& Params);
 
+	/** Whether this context is active. */
+	bool IsActive() const { return bActivated; }
+
 public:
 
 	// Internal API.

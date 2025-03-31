@@ -140,7 +140,7 @@ private:
 
 	void ActivateCameraEvaluationContext(int32 PlayerIndex);
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
-	void EnsureCameraEvaluationContextCreated(APlayerController* PlayerController);
+	void TryCreateCameraEvaluationContext(APlayerController* PlayerController);
 	void UpdateOutputCameraComponent();
 	void DeactivateCameraEvaluationContext();
 
