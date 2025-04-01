@@ -442,6 +442,9 @@ void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 			OutputCameraComponent->ProjectionMode = Result.CameraPose.GetProjectionMode();
 			OutputCameraComponent->OrthoWidth = Result.CameraPose.GetOrthographicWidth();
 
+			OutputCameraComponent->PostProcessSettings = Result.PostProcessSettings.Get();
+			OutputCameraComponent->PostProcessBlendWeight = 1.f;
+
 			bGotValidTransform = true;
 		}
 	}

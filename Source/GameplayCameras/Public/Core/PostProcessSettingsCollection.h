@@ -19,9 +19,6 @@ struct GAMEPLAYCAMERAS_API FPostProcessSettingsCollection
 	/** Gets the effective post-process settings. */
 	const FPostProcessSettings& Get() const { return PostProcessSettings; }
 
-	/** Returns whether this collection has any set post-process settings. */
-	bool HasAnyPostProcessSettings() const { return bHasAnySetting; }
-
 	/** Resets this collection to the default post-process settings. */
 	void Reset();
 
@@ -56,7 +53,6 @@ private:
 private:
 
 	FPostProcessSettings PostProcessSettings;
-	bool bHasAnySetting = false;
 };
 
 }  // namespace UE::Cameras

@@ -11,6 +11,7 @@ namespace UE::Cameras
 
 class FCameraPoseDebugBlock;
 class FContextDataTableDebugBlock;
+class FPostProcessSettingsDebugBlock;
 class FVariableTableDebugBlock;
 struct FCameraDebugBlockBuilder;
 struct FCameraNodeEvaluationResult;
@@ -52,6 +53,8 @@ public:
 	FVariableTableDebugBlock* GetVariableTableDebugBlock();
 	/** Gets the context data table debug block. */
 	FContextDataTableDebugBlock* GetContextDataTableDebugBlock();
+	/** Gets the pose stats debug block. */
+	FPostProcessSettingsDebugBlock* GetPostProcessSettingsDebugBlock();
 
 protected:
 
@@ -60,7 +63,6 @@ protected:
 
 private:
 
-	bool bHasAnyPostProcessSettings;
 	bool bIsCameraCut;
 	bool bIsValid;
 };

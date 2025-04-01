@@ -85,6 +85,12 @@ struct FCameraSystemEvaluationResult
 	/** The result camera variable table. */
 	FCameraVariableTable VariableTable;
 
+	/** The result camera context data table. */
+	FCameraContextDataTable ContextDataTable;
+	
+	/** The result post-process settings. */
+	FPostProcessSettingsCollection PostProcessSettings;
+
 	/** Whether this evaluation was a camera cut. */
 	bool bIsCameraCut = false;
 

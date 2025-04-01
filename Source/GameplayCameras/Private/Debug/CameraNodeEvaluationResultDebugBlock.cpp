@@ -11,6 +11,7 @@
 #include "Debug/CameraRigJointsDebugBlock.h"
 #include "Debug/ContextDataTableDebugBlock.h"
 #include "Debug/DebugTextRenderer.h"
+#include "Debug/PostProcessSettingsDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "Math/ColorList.h"
 
@@ -27,13 +28,13 @@ FCameraNodeEvaluationResultDebugBlock::FCameraNodeEvaluationResultDebugBlock()
 
 void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraNodeEvaluationResult& InResult, FCameraDebugBlockBuilder& Builder)
 {
-	bHasAnyPostProcessSettings = InResult.PostProcessSettings.HasAnyPostProcessSettings();
 	bIsCameraCut = InResult.bIsCameraCut;
 	bIsValid = InResult.bIsValid;
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
 	AddChild(&Builder.BuildDebugBlock<FContextDataTableDebugBlock>(InResult.ContextDataTable));
+	AddChild(&Builder.BuildDebugBlock<FPostProcessSettingsDebugBlock>(InResult.PostProcessSettings));
 	AddChild(&Builder.BuildDebugBlock<FCameraRigJointsDebugBlock>(InResult.CameraRigJoints, InResult.VariableTable));
 }
 
@@ -44,7 +45,9 @@ void FCameraNodeEvaluationResultDebugBlock::Initialize(const FCameraSystemEvalua
 
 	AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InResult.CameraPose));
 	AddChild(&Builder.BuildDebugBlock<FVariableTableDebugBlock>(InResult.VariableTable));
-	// No context data or rig joints exposed on the camera system result.
+	AddChild(&Builder.BuildDebugBlock<FContextDataTableDebugBlock>(InResult.ContextDataTable));
+	AddChild(&Builder.BuildDebugBlock<FPostProcessSettingsDebugBlock>(InResult.PostProcessSettings));
+	// No rig joints exposed on the camera system result.
 }
 
 FCameraPoseDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetCameraPoseDebugBlock()
@@ -77,6 +80,16 @@ FContextDataTableDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetContextDa
 	return nullptr;
 }
 
+FPostProcessSettingsDebugBlock* FCameraNodeEvaluationResultDebugBlock::GetPostProcessSettingsDebugBlock()
+{
+	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
+	if (ChildrenView.IsValidIndex(3))
+	{
+		return ChildrenView[3]->CastThis<FPostProcessSettingsDebugBlock>();
+	}
+	return nullptr;
+}
+
 void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
 	const FCameraDebugColors& Colors = FCameraDebugColors::Get();
@@ -93,11 +106,6 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 	if (bIsCameraCut)
 	{
 		Renderer.AddText(TEXT("  {cam_warning}IsCameraCut"));
-	}
-
-	if (bHasAnyPostProcessSettings)
-	{
-		Renderer.AddText(TEXT("  {cam_notice}post-FX set"));
 	}
 
 	Renderer.NewLine();
@@ -130,10 +138,18 @@ void FCameraNodeEvaluationResultDebugBlock::OnDebugDraw(const FCameraDebugBlockD
 	}
 	if (ChildrenView.IsValidIndex(3))
 	{
-		Renderer.AddText(TEXT("{cam_title}Camera Rig Joints:"));
+		Renderer.AddText(TEXT("{cam_title}Post-Process Settings:"));
 		Renderer.AddIndent();
 		Renderer.SetTextColor(Colors.Default);
 		ChildrenView[3]->DebugDraw(Params, Renderer);
+		Renderer.RemoveIndent();
+	}
+	if (ChildrenView.IsValidIndex(4))
+	{
+		Renderer.AddText(TEXT("{cam_title}Camera Rig Joints:"));
+		Renderer.AddIndent();
+		Renderer.SetTextColor(Colors.Default);
+		ChildrenView[4]->DebugDraw(Params, Renderer);
 		Renderer.RemoveIndent();
 	}
 

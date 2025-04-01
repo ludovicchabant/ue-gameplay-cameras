@@ -10,13 +10,11 @@ namespace UE::Cameras
 void FPostProcessSettingsCollection::Reset()
 {
 	PostProcessSettings = FPostProcessSettings::GetDefault();
-	bHasAnySetting = false;
 }
 
 void FPostProcessSettingsCollection::OverrideAll(const FPostProcessSettingsCollection& OtherCollection)
 {
 	PostProcessSettings = OtherCollection.PostProcessSettings;
-	bHasAnySetting = OtherCollection.bHasAnySetting;
 }
 
 void FPostProcessSettingsCollection::OverrideChanged(const FPostProcessSettingsCollection& OtherCollection)
@@ -29,8 +27,7 @@ void FPostProcessSettingsCollection::OverrideChanged(const FPostProcessSettings&
 	FPostProcessSettings& ThisPP = PostProcessSettings;
 	const FPostProcessSettings& OtherPP = OtherPostProcessSettings;
 
-	const bool bAnyOverwritten = FPostProcessUtils::OverridePostProcessSettings(ThisPP, OtherPP);
-	bHasAnySetting |= bAnyOverwritten;
+	FPostProcessUtils::OverridePostProcessSettings(ThisPP, OtherPP);
 }
 
 void FPostProcessSettingsCollection::LerpAll(const FPostProcessSettingsCollection& ToCollection, float BlendFactor)
@@ -48,16 +45,13 @@ void FPostProcessSettingsCollection::InternalLerp(const FPostProcessSettings& To
 	FPostProcessSettings& ThisPP = PostProcessSettings;
 	const FPostProcessSettings& ToPP = ToPostProcessSettings;
 
-	const bool bAnyOverwritten = FPostProcessUtils::BlendPostProcessSettings(ThisPP, ToPP, BlendFactor);
-	bHasAnySetting |= bAnyOverwritten;
+	FPostProcessUtils::BlendPostProcessSettings(ThisPP, ToPP, BlendFactor);
 }
 
 void FPostProcessSettingsCollection::Serialize(FArchive& Ar)
 {
 	UScriptStruct* PostProcessSettingsStruct = FPostProcessSettings::StaticStruct();
 	PostProcessSettingsStruct->SerializeItem(Ar, &PostProcessSettings, &FPostProcessSettings::GetDefault());
-
-	Ar << bHasAnySetting;
 }
 
 }  // namespace UE::Cameras

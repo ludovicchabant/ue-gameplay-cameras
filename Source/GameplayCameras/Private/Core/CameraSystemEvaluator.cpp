@@ -32,6 +32,7 @@ void FCameraSystemEvaluationResult::Reset()
 {
 	CameraPose.ClearAllChangedFlags();
 	VariableTable.ClearAllWrittenThisFrameFlags();
+	ContextDataTable.ClearAllWrittenThisFrameFlags();
 	bIsCameraCut = false;
 	bIsValid = false;
 }
@@ -44,6 +45,8 @@ void FCameraSystemEvaluationResult::Reset(const FCameraNodeEvaluationResult& Nod
 	CameraPose = NodeResult.CameraPose;
 
 	VariableTable.OverrideAll(NodeResult.VariableTable);
+	ContextDataTable.OverrideAll(NodeResult.ContextDataTable);
+	PostProcessSettings.OverrideAll(NodeResult.PostProcessSettings);
 
 	bIsCameraCut = NodeResult.bIsCameraCut;
 	bIsValid = true;

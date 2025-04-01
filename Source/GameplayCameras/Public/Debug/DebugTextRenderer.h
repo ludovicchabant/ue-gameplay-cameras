@@ -9,6 +9,7 @@
 #include "GameplayCameras.h"
 #include "Math/UnrealMath.h"
 #include "Misc/TVariant.h"
+#include <type_traits>
 
 class FCanvas;
 class UFont;
@@ -22,7 +23,21 @@ namespace UE::Cameras
 template<typename FieldType>
 FString ToDebugString(const FieldType& FieldValue)
 {
-	return LexToString(FieldValue);
+	if constexpr (std::is_enum_v<FieldType>)
+	{
+		const UEnum* EnumClass = StaticEnum<FieldType>();
+		return EnumClass->GetValueAsString(FieldValue);
+	}
+	else
+	{
+		return LexToString(FieldValue);
+	}
+}
+template<typename EnumType>
+FString ToDebugString(TEnumAsByte<EnumType> EnumValue)
+{
+	const UEnum* EnumClass = StaticEnum<EnumType>();
+	return EnumClass->GetValueAsString(EnumValue);
 }
 template<typename T>
 FString ToDebugString(const UE::Math::TVector<T>& FieldValue)
@@ -46,6 +61,11 @@ FString ToDebugString(const UE::Math::TRotator<T>& FieldValue)
 }
 template<typename T>
 FString ToDebugString(const UE::Math::TTransform<T>& FieldValue)
+{
+	return FieldValue.ToString();
+}
+template<>
+inline FString ToDebugString(const FLinearColor& FieldValue)
 {
 	return FieldValue.ToString();
 }
