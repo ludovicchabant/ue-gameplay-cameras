@@ -37,7 +37,7 @@ public:
 	virtual const FSlateBrush* GetNodeBodyBrush() const override;
 
 	// SNodePanel::SNode interface.
-	virtual void MoveTo(const FVector2D& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
+	virtual void MoveTo(const FVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
 
 protected:
 

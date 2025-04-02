@@ -27,7 +27,7 @@ void SObjectTreeGraphNode::Construct(const FArguments& InArgs)
 	UpdateGraphNode();
 }
 
-void SObjectTreeGraphNode::MoveTo(const FVector2D& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty)
+void SObjectTreeGraphNode::MoveTo(const FVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty)
 {
 	SGraphNode::MoveTo(NewPosition, NodeFilter, bMarkDirty);
 
