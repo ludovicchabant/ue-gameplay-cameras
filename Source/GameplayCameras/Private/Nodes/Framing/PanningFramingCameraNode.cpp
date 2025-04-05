@@ -69,6 +69,21 @@ void FPanningFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	// If this is the first frame, we may want to help frame the targets dead-on.
+	if (Params.bIsFirstFrame)
+	{
+		TOptional<FVector3d> ApproximatedWorldTarget = GetInitialDesiredWorldTarget(Params, OutResult);
+		if (ApproximatedWorldTarget.IsSet())
+		{
+			const FVector3d InitialDesiredAim = ApproximatedWorldTarget.GetValue() - OutResult.CameraPose.GetLocation();
+			if (!InitialDesiredAim.IsNearlyZero())
+			{
+				const FVector3d InitialPoseAim = OutResult.CameraPose.GetAimDir();
+				PanningRotation = InitialDesiredAim.Rotation() - InitialPoseAim.Rotation();
+			}
+		}
+	}
+
 	// Let the base class figure out all the screen-space framing stuff.
 	const FTransform3d LastShotTransform = BuildPanningShotTransform(OutResult.CameraPose);
 	UpdateFramingState(Params, OutResult, LastShotTransform);

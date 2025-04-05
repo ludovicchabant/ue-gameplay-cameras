@@ -75,6 +75,19 @@ void FDollyFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIn
 
 void FDollyFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	// If this is the first frame, we may want to help frame the targets dead-on.
+	if (Params.bIsFirstFrame)
+	{
+		TOptional<FVector3d> ApproximatedWorldTarget = GetInitialDesiredWorldTarget(Params, OutResult);
+		if (ApproximatedWorldTarget.IsSet())
+		{
+			const FTransform3d InitialPose = OutResult.CameraPose.GetTransform();
+			const FVector3d InitialLocalTarget = InitialPose.InverseTransformPositionNoScale(ApproximatedWorldTarget.GetValue());
+			DollyPosition.X = InitialLocalTarget.Y;
+			DollyPosition.Y = InitialLocalTarget.Z;
+		}
+	}
+
 	// Let the base class figure out all the screen-space framing stuff.
 	const FTransform3d LastShotTransform = BuildDollyShotTransform(OutResult.CameraPose);
 	UpdateFramingState(Params, OutResult, LastShotTransform);

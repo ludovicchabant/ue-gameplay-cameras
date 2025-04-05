@@ -65,6 +65,7 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 	Readers.TargetInfos.Initialize(BaseFramingNode->TargetInfos, BaseFramingNode->TargetInfosDataID);
 
 	Readers.IdealFramingLocation.Initialize(BaseFramingNode->IdealFramingLocation);
+	Readers.InitializeWithIdealFraming.Initialize(BaseFramingNode->InitializeWithIdealFraming);
 	Readers.SetTargetDistance.Initialize(BaseFramingNode->SetTargetDistance);
 
 	Readers.ReframeDampingFactor.Initialize(BaseFramingNode->ReframeDampingFactor);
@@ -77,17 +78,37 @@ void FBaseFramingCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 	Readers.SoftZone.Initialize(BaseFramingNode->SoftZone);
 
 	ScreenTargetHistory.History.Reserve(GFramingNumTargetMovementSamples);
+
+	TArray<FCameraActorComputedTargetInfo> AcquiredTargetInfos;
+	const bool bAcquireSuccess = AcquireTargetInfo(Params.EvaluationContext, OutResult, AcquiredTargetInfos);
+	WorldTargets.TargetInfos = AcquiredTargetInfos;
+}
+
+TOptional<FVector3d> FBaseFramingCameraNodeEvaluator::GetInitialDesiredWorldTarget(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult)
+{
+	if (Params.bIsFirstFrame && 
+			Readers.InitializeWithIdealFraming.Get(OutResult.VariableTable) && 
+			!WorldTargets.TargetInfos.IsEmpty())
+	{
+		FVector3d ApproximatedWorldTarget(EForceInit::ForceInitToZero);
+		for (const FCameraActorComputedTargetInfo& TargetInfo : WorldTargets.TargetInfos)
+		{
+			ApproximatedWorldTarget += TargetInfo.Transform.GetLocation() * TargetInfo.NormalizedWeight;
+		}
+		return ApproximatedWorldTarget;
+	}
+	return TOptional<FVector3d>();
 }
 
 void FBaseFramingCameraNodeEvaluator::UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FTransform3d& LastFraming)
 {
 	TArray<FCameraActorComputedTargetInfo> AcquiredTargetInfos;
-	const bool bAcquireSuccess = AcquireTargetInfo(Params, OutResult, AcquiredTargetInfos);
+	const bool bAcquireSuccess = AcquireTargetInfo(Params.EvaluationContext, OutResult, AcquiredTargetInfos);
 	WorldTargets.TargetInfos = AcquiredTargetInfos;
 	if (bAcquireSuccess && AcquiredTargetInfos.Num() > 0)
 	{
 		ComputeCurrentState(Params, OutResult, LastFraming);
-		ComputeDesiredState(Params.DeltaTime);
+		ComputeDesiredState(Params, OutResult);
 	}
 }
 
@@ -101,7 +122,7 @@ void FBaseFramingCameraNodeEvaluator::EndFramingUpdate(const FCameraNodeEvaluati
 	}
 }
 
-bool FBaseFramingCameraNodeEvaluator::AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos)
+bool FBaseFramingCameraNodeEvaluator::AcquireTargetInfo(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos)
 {
 	const UBaseFramingCameraNode* FramingNode = GetCameraNodeAs<UBaseFramingCameraNode>();
 	if (FramingNode->TargetLocation.IsValid())
@@ -123,7 +144,7 @@ bool FBaseFramingCameraNodeEvaluator::AcquireTargetInfo(const FCameraNodeEvaluat
 			return true;
 		}
 	}
-	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
+	else if (APlayerController* PlayerController = EvaluationContext->GetPlayerController())
 	{
 		APawn* Pawn = PlayerController->GetPawn();
 		FCameraActorComputedTargetInfo OutInfo;
@@ -482,7 +503,7 @@ FFramingZone FBaseFramingCameraNodeEvaluator::ComputeScreenTargetBounds(const FC
 	return FFramingZone::FromPoints(ScreenBoxCorners);
 }
 
-void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
+void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult)
 {
 	// If we  don't have any reframing to do, bail out.
 	FVector2d IdealToTarget(State.ScreenTarget - State.IdealTarget);
@@ -493,6 +514,16 @@ void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 		Desired.ScreenTarget = State.ScreenTarget;
 		Desired.FramingCorrection = FVector2d::ZeroVector;
 		Desired.bHasCorrection = false;
+		return;
+	}
+
+	// We may need to jump directly to the ideal framing without interpolating.
+	bool bJumpToIdealFraming = false;
+	if (Params.bIsFirstFrame && Readers.InitializeWithIdealFraming.Get(OutResult.VariableTable))
+	{
+		Desired.ScreenTarget = State.IdealTarget;
+		Desired.FramingCorrection = Desired.ScreenTarget - State.ScreenTarget;
+		Desired.bHasCorrection = true;
 		return;
 	}
 
@@ -519,7 +550,7 @@ void FBaseFramingCameraNodeEvaluator::ComputeDesiredState(float DeltaTime)
 	State.ReframeDamper.SetW0(EffectiveDampingFactor);
 
 	// Move the target towards the ideal framing using damping.
-	const double NewDistanceToGo = State.ReframeDamper.Update(DistanceToGo, DeltaTime);
+	const double NewDistanceToGo = State.ReframeDamper.Update(DistanceToGo, Params.DeltaTime);
 
 	// Compute where we want the target this frame.
 	const FVector2d InvReframeDir(IdealToTarget / DistanceToGo);

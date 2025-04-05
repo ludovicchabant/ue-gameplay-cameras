@@ -49,6 +49,12 @@ public:
 	UPROPERTY(EditAnywhere, Category="Target")
 	FBooleanCameraParameter SetTargetDistance;
 
+	/**
+	 * Whether to frame the target with the ideal framing immediately on the first frame.
+	 */
+	UPROPERTY(EditAnywhere, Category="Target")
+	FBooleanCameraParameter InitializeWithIdealFraming = true;
+
 	/** The ideal horizontal and vertical screen-space position of the target. */
 	UPROPERTY(EditAnywhere, Category="Framing Target")
 	FVector2dCameraParameter IdealFramingLocation;
@@ -168,6 +174,8 @@ protected:
 	struct FState;
 	struct FDesired;
 
+	/** The first frame aiming direction we need for proper initialization. */
+	TOptional<FVector3d> GetInitialDesiredWorldTarget(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
 	/** Updates the framing state for the current tick, see State member field. */
 	void UpdateFramingState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FTransform3d& LastFraming);
 	/** Wraps-up the update with optional operations. */
@@ -182,9 +190,9 @@ private:
 	FVector2d GetHardReframeCoords() const;
 
 	void ComputeCurrentState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult, const FTransform3d& LastFraming);
-	void ComputeDesiredState(float DeltaTime);
+	void ComputeDesiredState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
 
-	bool AcquireTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos);
+	bool AcquireTargetInfo(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos);
 	bool ComputeFinalTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
 	FVector2d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector2d& InPreviousAnticipatedScreenTarget, const FVector2d& InScreenTarget);
 	FFramingZone ComputeEffectiveDeadZone();
@@ -219,6 +227,7 @@ protected:
 		FCameraActorTargetInfoArrayReader TargetInfos;
 
 		TCameraParameterReader<FVector2d> IdealFramingLocation;
+		TCameraParameterReader<bool> InitializeWithIdealFraming;
 		TCameraParameterReader<bool> SetTargetDistance;
 
 		TCameraParameterReader<float> ReframeDampingFactor;
