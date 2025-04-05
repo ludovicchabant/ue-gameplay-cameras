@@ -49,6 +49,10 @@ struct FCameraActorAttachmentInfoReader
 
 	bool GetAttachmentTransform(const FCameraContextDataTable& ContextDataTable, FTransform3d& OutTransform);
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	FString RenderAttachmentInfo() const;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	void CacheAttachmentInfo(const FCameraActorAttachmentInfo& InAttachmentInfo);

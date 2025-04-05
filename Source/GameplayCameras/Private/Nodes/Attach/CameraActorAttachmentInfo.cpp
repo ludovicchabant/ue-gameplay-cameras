@@ -63,7 +63,7 @@ bool FCameraActorAttachmentInfoReader::GetAttachmentTransform(const FCameraConte
 
 	if (CachedSkeletalMeshComponent && !CachedBoneName.IsNone())
 	{
-		OutTransform = CachedSkeletalMeshComponent->GetSocketTransform(CachedAttachmentInfo.SocketName);
+		OutTransform = CachedSkeletalMeshComponent->GetBoneTransform(CachedBoneName);
 		return true;
 	}
 	else if (CachedAttachmentInfo.Actor)
@@ -149,6 +149,15 @@ bool FCameraActorAttachmentInfoArrayReader::GetAttachmentTransform(const FCamera
 
 	return true;
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+FString FCameraActorAttachmentInfoReader::RenderAttachmentInfo() const
+{
+	return FString::Printf(TEXT("Actor '%s' (Bone '%s')"), *GetNameSafe(CachedAttachmentInfo.Actor), *CachedBoneName.ToString());
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 
