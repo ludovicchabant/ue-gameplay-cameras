@@ -73,6 +73,11 @@ protected:
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
+#if WITH_EDITOR
+	// FBlendStackCameraNodeEvaluator interface.
+	virtual void OnEntryReinitialized(int32 EntryIndex) override;
+#endif
+
 private:
 
 	// Update methods.

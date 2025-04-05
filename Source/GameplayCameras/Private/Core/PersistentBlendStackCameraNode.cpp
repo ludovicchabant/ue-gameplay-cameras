@@ -359,5 +359,26 @@ const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTr
 			nullptr, nullptr);
 }
 
+#if WITH_EDITOR
+
+void FPersistentBlendStackCameraNodeEvaluator::OnEntryReinitialized(int32 EntryIndex)
+{
+	if (!ensure(EntryExtraInfos.IsValidIndex(EntryIndex)))
+	{
+		return;
+	}
+
+	FCameraRigEntryExtraInfo& ExtraInfo = EntryExtraInfos[EntryIndex];
+	{
+		// When hot-reloading camera rigs, the base class replaces the blend node with pop so
+		// let's update our own extra info accordingly.
+		ExtraInfo.bIsBlendFull = true;
+		ExtraInfo.bIsBlendFinished = true;
+		ExtraInfo.BlendStatus = EBlendStatus::None;
+	}
+}
+
+#endif
+
 }  // namespace UE::Cameras
 

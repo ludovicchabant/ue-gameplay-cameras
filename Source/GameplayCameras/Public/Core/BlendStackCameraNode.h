@@ -164,6 +164,12 @@ protected:
 
 protected:
 
+#if WITH_EDITOR
+	virtual void OnEntryReinitialized(int32 EntryIndex) {}
+#endif
+
+protected:
+
 	struct FResolvedEntry
 	{
 		FResolvedEntry(FCameraRigEntry& InEntry, TSharedPtr<const FCameraEvaluationContext> InContext)

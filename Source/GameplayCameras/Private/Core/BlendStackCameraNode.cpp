@@ -522,6 +522,8 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 				Entry.bIsFrozen = true;
 				continue;
 			}
+
+			OnEntryReinitialized(Index);
 		}
 	}
 }

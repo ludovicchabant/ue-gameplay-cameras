@@ -649,5 +649,33 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 	return nullptr;
 }
 
+#if WITH_EDITOR
+
+void FTransientBlendStackCameraNodeEvaluator::OnEntryReinitialized(int32 EntryIndex)
+{
+	if (!ensure(EntryExtraInfos.IsValidIndex(EntryIndex)))
+	{
+		return;
+	}
+
+	FCameraRigEntry& Entry = Entries[EntryIndex];
+	FCameraRigEntryExtraInfo& ExtraInfo = EntryExtraInfos[EntryIndex];
+	{
+		// Update our extra info with the new data.
+		FCameraNodeEvaluationResult& UnblendedResult = ExtraInfo.UnblendedResult;
+
+		if (Entry.CameraRig)
+		{
+			const FCameraObjectAllocationInfo& AllocationInfo = Entry.CameraRig->AllocationInfo;
+			UnblendedResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+			UnblendedResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+		}
+
+		UnblendedResult.OverrideAll(Entry.Result, true);
+	}
+}
+
+#endif
+
 }  // namespace UE::Cameras
 

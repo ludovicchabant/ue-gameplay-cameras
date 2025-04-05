@@ -86,6 +86,11 @@ protected:
 	// FCameraNodeEvaluator interface.
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
+#if WITH_EDITOR
+	// FBlendStackCameraNodeEvaluator interface.
+	virtual void OnEntryReinitialized(int32 EntryIndex) override;
+#endif
+
 private:
 
 	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
