@@ -15,6 +15,8 @@
 #include "GameFramework/GameplayCameraSystemActor.h"
 #include "GameFramework/GameplayCameraSystemHost.h"
 #include "GameplayCamerasDelegates.h"
+#include "IGameplayCamerasLiveEditManager.h"
+#include "IGameplayCamerasModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AssertionMacros.h"
 #include "PrimitiveDrawInterface.h"
@@ -490,7 +492,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 		return;
 	}
 	
-	if (bRunInEditor && !(EditorPreviewEvaluator && EvaluationContext))
+	if (CanRunInEditor() && !(EditorPreviewEvaluator && EvaluationContext))
 	{
 		// We want to run the camera logic in the editor but we haven't set things up for that.
 		// Let's create the preview evaluator and the evaluation context.
@@ -513,7 +515,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 			}
 		}
 	}
-	else if (!bRunInEditor && (EditorPreviewEvaluator || EvaluationContext))
+	else if (!CanRunInEditor() && (EditorPreviewEvaluator || EvaluationContext))
 	{
 		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
 		EditorPreviewEvaluator = nullptr;
@@ -528,24 +530,30 @@ void UGameplayCameraComponentBase::OnEditorPreviewCameraRigIndexChanged()
 		return;
 	}
 
-	if (bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	if (CanRunInEditor() && EditorPreviewEvaluator && EvaluationContext)
 	{
 		EvaluationContext->SetEditorPreviewCameraRigIndex(EditorPreviewCameraRigIndex);
 	}
+}
+
+bool UGameplayCameraComponentBase::CanRunInEditor() const
+{
+	IGameplayCamerasModule& Module = IGameplayCamerasModule::Get();
+	return bRunInEditor && Module.GetLiveEditManager()->CanRunInEditor();
 }
 
 bool UGameplayCameraComponentBase::HasActiveEditorPreview() const
 {
 	return (
 			bIsEditorWorld &&
-			bRunInEditor &&
+			CanRunInEditor() &&
 			EditorPreviewEvaluator &&
 			EvaluationContext);
 }
 
 void UGameplayCameraComponentBase::RecreateEditorPreviewEvaluationContext()
 {
-	if (bIsEditorWorld && bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	if (bIsEditorWorld && CanRunInEditor() && EditorPreviewEvaluator && EvaluationContext)
 	{
 		EditorPreviewEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
 		EvaluationContext = nullptr;
@@ -586,7 +594,7 @@ void UGameplayCameraComponentBase::OnDrawVisualizationHUD(const FViewport* Viewp
 	using namespace UE::Cameras;
 
 	const bool bHasShowFlag = SceneView->Family->EngineShowFlags.GetSingleFlag(CustomShowFlag);
-	if (bHasShowFlag && bRunInEditor && EditorPreviewEvaluator && EvaluationContext)
+	if (bHasShowFlag && CanRunInEditor() && EditorPreviewEvaluator && EvaluationContext)
 	{
 		const AActor* OwnerActor = GetOwner();
 

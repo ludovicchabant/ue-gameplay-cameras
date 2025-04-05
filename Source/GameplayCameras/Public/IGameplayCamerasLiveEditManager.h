@@ -26,6 +26,9 @@ public:
 
 	virtual ~IGameplayCamerasLiveEditManager() {}
 
+	/** Whether cameras should be run in editor. */
+	virtual bool CanRunInEditor() const = 0;
+
 	/** Notify all listeners to reload cameras related to the given package. */
 	virtual void NotifyPostBuildAsset(const UPackage* InAssetPackage) const = 0;
 

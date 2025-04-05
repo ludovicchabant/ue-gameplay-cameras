@@ -131,6 +131,7 @@ protected:
 
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
 #if WITH_EDITOR
+	bool CanRunInEditor() const;
 	bool HasActiveEditorPreview() const;
 	void RecreateEditorPreviewEvaluationContext();
 	void UpdateEditorPreviewEvaluator(float DeltaTime);

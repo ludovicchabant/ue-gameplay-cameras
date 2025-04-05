@@ -22,6 +22,7 @@ public:
 public:
 
 	// IGameplayCamerasLiveEditManager interface
+	virtual bool CanRunInEditor() const override;
 	virtual void NotifyPostBuildAsset(const UPackage* InAssetPackage) const override;
 	virtual void AddListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;
 	virtual void RemoveListener(const UPackage* InAssetPackage, IGameplayCamerasLiveEditListener* Listener) override;

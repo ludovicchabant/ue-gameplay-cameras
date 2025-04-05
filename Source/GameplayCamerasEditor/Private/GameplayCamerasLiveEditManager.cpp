@@ -3,6 +3,7 @@
 #include "GameplayCamerasLiveEditManager.h"
 
 #include "IGameplayCamerasLiveEditListener.h"
+#include "GameplayCamerasEditorSettings.h"
 #include "Misc/CoreDelegates.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
@@ -59,6 +60,12 @@ FGameplayCamerasLiveEditManager::FGameplayCamerasLiveEditManager()
 FGameplayCamerasLiveEditManager::~FGameplayCamerasLiveEditManager()
 {
 	FCoreUObjectDelegates::GetPostGarbageCollect().RemoveAll(this);
+}
+
+bool FGameplayCamerasLiveEditManager::CanRunInEditor() const
+{
+	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
+	return Settings->bEnableRunInEditor;
 }
 
 void FGameplayCamerasLiveEditManager::NotifyPostBuildAsset(const UPackage* InAssetPackage) const

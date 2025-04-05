@@ -19,6 +19,10 @@ class UGameplayCamerasSettings : public UDeveloperSettings
 
 public:
 
+	UGameplayCamerasSettings(const FObjectInitializer& ObjectInitializer);	
+
+public:
+
 	/**
 	 * Automatically spawn a camera system actor when any gameplay camera activates and no camera system
 	 * is found on the player controller's camera manager, or as a view target. This camera system actor
@@ -60,10 +64,5 @@ public:
 	/** The distance below which any IK aiming operation is disabled. */
 	UPROPERTY(EditAnywhere, Config, Category="IK Aiming")
 	double DefaultIKAimingMinDistance = 100.0;  // 1m
-
-protected:
-
-	// UDeveloperSettings interface.
-	virtual FName GetCategoryName() const override;
 };
 

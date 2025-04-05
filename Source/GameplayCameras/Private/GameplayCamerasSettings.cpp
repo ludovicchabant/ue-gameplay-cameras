@@ -4,8 +4,9 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCamerasSettings)
 
-FName UGameplayCamerasSettings::GetCategoryName() const
+UGameplayCamerasSettings::UGameplayCamerasSettings(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
-	return TEXT("Plugins");
+	CategoryName = TEXT("Plugins");
 }
 

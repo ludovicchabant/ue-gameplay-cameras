@@ -97,7 +97,6 @@ public:
 
 		FCoreDelegates::OnEnginePreExit.AddRaw(this, &FGameplayCamerasEditorModule::OnPreExit);
 
-		RegisterSettings();
 		RegisterCameraDirectorEditors();
 		RegisterCoreDebugCategories();
 		RegisterRewindDebuggerFeatures();
@@ -126,7 +125,6 @@ public:
 		FGameplayCamerasDebuggerCommands::Unregister();
 		FObjectTreeGraphEditorCommands::Unregister();
 
-		UnregisterSettings();
 		UnregisterCameraDirectorEditors();
 		UnregisterCoreDebugCategories();
 		UnregisterRewindDebuggerFeatures();
@@ -271,30 +269,6 @@ private:
 		using namespace UE::Cameras;
 
 		SGameplayCamerasDebugger::UnregisterTabSpawners();
-	}
-
-	void RegisterSettings()
-	{
-		ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
-
-		if (SettingsModule != nullptr)
-		{
-			SettingsModule->RegisterSettings("Editor", "Plugins", "Gameplay Cameras",
-				LOCTEXT("GameplayCamerasEditorProjectSettingsName", "Gameplay Cameras"),
-				LOCTEXT("GameplayCamerasEditorProjectSettingsDescription", "Configure the gameplay cameras editors."),
-				GetMutableDefault<UGameplayCamerasEditorSettings>()
-			);
-		}
-	}
-
-	void UnregisterSettings()
-	{
-		ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings");
-
-		if (SettingsModule != nullptr)
-		{
-			SettingsModule->UnregisterSettings("Editor", "Plugins", "Gameplay Cameras");
-		}
 	}
 
 	void RegisterCameraDirectorEditors()
