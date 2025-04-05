@@ -224,6 +224,7 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 
 			// Start with the input given to us.
 			{
+				CurResult.Reset();
 				CurResult.CameraPose = OutResult.CameraPose;
 				CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
 				CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
