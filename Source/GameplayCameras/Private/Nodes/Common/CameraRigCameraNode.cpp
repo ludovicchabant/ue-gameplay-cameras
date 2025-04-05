@@ -6,6 +6,7 @@
 #include "Build/CameraObjectBuildContext.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigAssetReference.h"
 #include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCameraNode)
@@ -124,7 +125,8 @@ void UCameraRigCameraNode::PostEditChangeProperty(struct FPropertyChangedEvent& 
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	if (PropertyChangedEvent.GetPropertyName() == GET_MEMBER_NAME_CHECKED(UCameraRigCameraNode, CameraRigReference))
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(UCameraRigCameraNode, CameraRigReference) &&
+			PropertyChangedEvent.GetPropertyName() == TEXT("CameraRig"))
 	{
 		OnCustomCameraNodeParametersChanged(this);
 	}
