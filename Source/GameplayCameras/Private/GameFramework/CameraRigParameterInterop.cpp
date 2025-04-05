@@ -2,6 +2,8 @@
 
 #include "GameFramework/CameraRigParameterInterop.h"
 
+#include "Blueprint/BlueprintExceptionInfo.h"
+#include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraVariableTable.h"
@@ -14,303 +16,168 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigParameterInterop)
 
-namespace UE::Cameras::Private
-{
-
-template<typename ValueType>
-void SetCameraRigBlendableParameter(FBlueprintCameraVariableTable VariableTable, FCameraVariableID PrivateVariableID, typename TCallTraits<ValueType>::ParamType Value)
-{
-	if (!VariableTable.IsValid())
-	{
-		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
-		return;
-	}
-	if (!PrivateVariableID.IsValid())
-	{
-		FFrame::KismetExecutionMessage(TEXT("No camera rig was passed."), ELogVerbosity::Error);
-		return;
-	}
-
-	VariableTable.GetVariableTable()->TrySetValue<ValueType>(PrivateVariableID, Value);
-}
-
-FCameraVariableID GetParameterPrivateVariableID(UCameraRigAsset* CameraRig, const FString& ParameterName, const UScriptStruct* BlendableStructType = nullptr)
-{
-	UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraRig->Interface.FindBlendableParameterByName(ParameterName);
-	if (!BlendableParameter)
-	{
-		const FText Text = LOCTEXT("NoSuchBlendableParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this camera variable table value will most probably accomplish nothing.");
-		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return FCameraVariableID();
-	}
-
-	if (!BlendableParameter->PrivateVariableID)
-	{
-		const FText Text = LOCTEXT("CameraRigNeedsBuilding", "Parameter '{0}' isn't built. Please build camera rig '{1}'.");
-		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return FCameraVariableID();
-	}
-
-	if (BlendableParameter->BlendableStructType != BlendableStructType)
-	{
-		const FText Text = LOCTEXT("InvalidParameterType", "Parameter '{0}' has an incorrect type. Please build camera rig '{1}'.");
-		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return FCameraVariableID();
-	}
-
-	return BlendableParameter->PrivateVariableID;
-}
-
-bool ValidateSetCameraRigDataParameter(FBlueprintCameraContextDataTable& ContextDataTable, FCameraContextDataID DataID)
-{
-	if (!ContextDataTable.IsValid())
-	{
-		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
-		return false;
-	}
-	if (!DataID.IsValid())
-	{
-		FFrame::KismetExecutionMessage(TEXT("No camera rig was passed."), ELogVerbosity::Error);
-		return false;
-	}
-	return true;
-}
-
-FCameraContextDataID GetParameterPrivateDataID(UCameraRigAsset* CameraRig, const FString& ParameterName)
-{
-	UCameraObjectInterfaceDataParameter* DataParameter = CameraRig->Interface.FindDataParameterByName(ParameterName);
-	if (!DataParameter)
-	{
-		const FText Text = LOCTEXT("NoSuchDataParameter", "No parameter '{0}' found on camera rig '{1}'. Setting this data will most probably accomplish nothing.");
-		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return FCameraContextDataID();
-	}
-
-	if (!DataParameter->PrivateDataID)
-	{
-		const FText Text = LOCTEXT("CameraRigNeedsBuilding", "Parameter '{0}' isn't built. Please build camera rig '{1}'.");
-		FFrame::KismetExecutionMessage(*FText::Format(Text, FText::FromString(ParameterName), FText::FromString(CameraRig->GetPathName())).ToString(), ELogVerbosity::Warning);
-		return FCameraContextDataID();
-	}
-
-	return DataParameter->PrivateDataID;
-}
-
-}  // namespace UE::Cameras::Private
-
 UCameraRigParameterInterop::UCameraRigParameterInterop(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
 }
 
-void UCameraRigParameterInterop::SetBooleanParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, bool ParameterValue)
+void UCameraRigParameterInterop::GetCameraParameter(const FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, int32& ReturnValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter<bool>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName), 
-			ParameterValue);
+	checkNoEntry();
 }
 
-void UCameraRigParameterInterop::SetIntegerParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, int32 ParameterValue)
+void UCameraRigParameterInterop::SetCameraParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, const int32& NewValue)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter<int32>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName), 
-			ParameterValue);
+	checkNoEntry();
 }
 
-void UCameraRigParameterInterop::SetFloatParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
+DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 {
-	UE::Cameras::Private::SetCameraRigBlendableParameter<float>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			(float)ParameterValue);
-}
+	P_GET_STRUCT_REF(FBlueprintCameraNodeEvaluationResult, Result);
+	P_GET_OBJECT(UCameraRigAsset, CameraRig);
+	P_GET_STRUCT(FName, ParameterName);
 
-void UCameraRigParameterInterop::SetDoubleParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, double ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<double>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
+	// Read wildcard value input.
+	Stack.MostRecentPropertyAddress = nullptr;
+	Stack.MostRecentPropertyContainer = nullptr;
+	Stack.StepCompiledIn<FProperty>(nullptr);
 
-void UCameraRigParameterInterop::SetVector2Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector2D ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector2D>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
+	const FProperty* TargetProperty = Stack.MostRecentProperty;
+	void* TargetPtr = Stack.MostRecentPropertyAddress;
 
-void UCameraRigParameterInterop::SetVector3Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
+	P_FINISH;
 
-void UCameraRigParameterInterop::SetVector4Parameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FVector4 ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<FVector4>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
-
-void UCameraRigParameterInterop::SetRotatorParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FRotator ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<FRotator>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
-
-void UCameraRigParameterInterop::SetTransformParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FTransform ParameterValue)
-{
-	UE::Cameras::Private::SetCameraRigBlendableParameter<FTransform>(
-			Result.GetVariableTable(), 
-			UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName),
-			ParameterValue);
-}
-
-void UCameraRigParameterInterop::SetBlendableStructParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const FInstancedStruct& ParameterValue)
-{
-	FBlueprintCameraVariableTable VariableTable = Result.GetVariableTable();
-	if (!VariableTable.IsValid())
+	if (TargetProperty == nullptr || TargetPtr == nullptr)
 	{
-		FFrame::KismetExecutionMessage(TEXT("Invalid camera variable table was passed."), ELogVerbosity::Error);
-		return;
+		FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AbortExecution,
+			LOCTEXT("InvalidGetCameraParameterReturnValue", "Failed to resolve ReturnValue for GetCameraParameter")
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
 	}
-
-	FCameraVariableID PrivateVariableID = UE::Cameras::Private::GetParameterPrivateVariableID(CameraRig, ParameterName, ParameterValue.GetScriptStruct());
-	if (!PrivateVariableID.IsValid())
+	else
 	{
-		FFrame::KismetExecutionMessage(TEXT("No camera rig was passed."), ELogVerbosity::Error);
-		return;
-	}
+		P_NATIVE_BEGIN
 
-	VariableTable.GetVariableTable()->TrySetValue(PrivateVariableID, ECameraVariableType::BlendableStruct, ParameterValue.GetScriptStruct(), ParameterValue.GetMemory());
-}
+		using namespace UE::Cameras;
 
-void UCameraRigParameterInterop::SetNameParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FName ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetNameData(DataID, ParameterValue);
+		const FCameraObjectInterfaceParameterDefinition* ParameterDefinition = CameraRig->GetParameterDefinitions()
+			.FindByPredicate(
+				[ParameterName](const FCameraObjectInterfaceParameterDefinition& Item)
+				{
+					return Item.ParameterName == ParameterName;
+				});
+		if (!ParameterDefinition)
+		{
+			FBlueprintExceptionInfo ExceptionInfo(
+				EBlueprintExceptionType::NonFatalError,
+				FText::Format(LOCTEXT("ParameterDefinitionNotFound", "No such camera parameter: {0}"), FText::FromName(ParameterName))
+			);
+			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		}
+		else
+		{
+			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
+			const UPropertyBag* PropertyBag = DefaultParameters.GetPropertyBagStruct();
+
+			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+			{
+				if (const FCameraVariableTable* VariableTable = Result.GetVariableTable().GetVariableTable())
+				{
+					const uint8* RawValue = VariableTable->TryGetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType);
+					if (RawValue)
+					{
+						TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
+					}
+				}
+			}
+			else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
+			{
+				if (FCameraContextDataTable* ContextDataTable = Result.GetContextDataTable().GetContextDataTable())
+				{
+					const uint8* RawValue = ContextDataTable->TryGetRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
+					if (RawValue)
+					{
+						TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
+					}
+				}
+			}
+		}
+
+		P_NATIVE_END
 	}
 }
 
-void UCameraRigParameterInterop::SetStringParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, FString ParameterValue)
+DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 {
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetStringData(DataID, ParameterValue);
-	}
-}
+	P_GET_STRUCT_REF(FBlueprintCameraNodeEvaluationResult, Result);
+	P_GET_OBJECT(UCameraRigAsset, CameraRig);
+	P_GET_STRUCT(FName, ParameterName);
 
-void UCameraRigParameterInterop::SetEnumParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const UEnum* EnumType, uint8 ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetEnumData(DataID, EnumType, ParameterValue);
-	}
-}
+	// Read wildcard value input.
+	Stack.MostRecentPropertyAddress = nullptr;
+	Stack.MostRecentPropertyContainer = nullptr;
+	Stack.StepCompiledIn<FProperty>(nullptr);
 
-void UCameraRigParameterInterop::SetStructParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const FInstancedStruct& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetInstancedStructData(DataID, ParameterValue);
-	}
-}
+	const FProperty* SourceProperty = Stack.MostRecentProperty;
+	const uint8* SourcePtr = Stack.MostRecentPropertyAddress;
 
-void UCameraRigParameterInterop::SetObjectParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, UObject* ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetObjectData(DataID, ParameterValue);
-	}
-}
+	P_FINISH;
 
-void UCameraRigParameterInterop::SetClassParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, UClass* ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	if (SourceProperty == nullptr || SourcePtr == nullptr)
 	{
-		ContextDataTable.GetContextDataTable()->SetClassData(DataID, ParameterValue);
+		FBlueprintExceptionInfo ExceptionInfo(
+			EBlueprintExceptionType::AbortExecution,
+			LOCTEXT("InvalidSetCameraParameterNewValue", "Failed to resolve NewValue for SetCameraParameter")
+		);
+		FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
 	}
-}
-
-void UCameraRigParameterInterop::SetNameArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FName>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
+	else
 	{
-		ContextDataTable.GetContextDataTable()->SetNameArrayData(DataID, ParameterValue);
-	}
-}
+		P_NATIVE_BEGIN
 
-void UCameraRigParameterInterop::SetStringArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FString>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetStringArrayData(DataID, ParameterValue);
-	}
-}
+		using namespace UE::Cameras;
 
-void UCameraRigParameterInterop::SetEnumArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const UEnum* EnumType, const TArray<uint8>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetEnumArrayData(DataID, EnumType, ParameterValue);
-	}
-}
+		const FCameraObjectInterfaceParameterDefinition* ParameterDefinition = CameraRig->GetParameterDefinitions()
+			.FindByPredicate(
+				[ParameterName](const FCameraObjectInterfaceParameterDefinition& Item)
+				{
+					return Item.ParameterName == ParameterName;
+				});
+		if (!ParameterDefinition)
+		{
+			FBlueprintExceptionInfo ExceptionInfo(
+				EBlueprintExceptionType::NonFatalError,
+				FText::Format(LOCTEXT("ParameterDefinitionNotFound", "No such camera parameter: {0}"), FText::FromName(ParameterName))
+			);
+			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		}
+		else
+		{
+			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
+			const UPropertyBag* PropertyBag = DefaultParameters.GetPropertyBagStruct();
 
-void UCameraRigParameterInterop::SetStructArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<FInstancedStruct>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetInstancedStructArrayData(DataID, ParameterValue);
-	}
-}
+			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+			{
+				if (FCameraVariableTable* VariableTable = Result.GetVariableTable().GetVariableTable())
+				{
+					VariableTable->TrySetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType, SourcePtr);
+				}
+			}
+			else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
+			{
+				if (FCameraContextDataTable* ContextDataTable = Result.GetContextDataTable().GetContextDataTable())
+				{
+					uint8* RawValue = ContextDataTable->TryGetMutableRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
+					if (RawValue)
+					{
+						SourceProperty->CopyCompleteValue(RawValue, SourcePtr);
+					}
+				}
+			}
+		}
 
-void UCameraRigParameterInterop::SetObjectArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<UObject*>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetObjectArrayData(DataID, ParameterValue);
-	}
-}
-
-void UCameraRigParameterInterop::SetClassArrayParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, const FString& ParameterName, const TArray<UClass*>& ParameterValue)
-{
-	const FCameraContextDataID DataID(UE::Cameras::Private::GetParameterPrivateDataID(CameraRig, ParameterName));
-	FBlueprintCameraContextDataTable ContextDataTable(Result.GetContextDataTable());
-	if (UE::Cameras::Private::ValidateSetCameraRigDataParameter(ContextDataTable, DataID))
-	{
-		ContextDataTable.GetContextDataTable()->SetClassArrayData(DataID, ParameterValue);
+		P_NATIVE_END
 	}
 }
 

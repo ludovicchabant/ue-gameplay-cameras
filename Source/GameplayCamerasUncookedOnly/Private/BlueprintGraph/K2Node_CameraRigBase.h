@@ -49,11 +49,6 @@ public:
 	static FEdGraphPinType MakeDataParameterPinType(const UCameraObjectInterfaceDataParameter* DataParameter);
 	static FEdGraphPinType MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject);
 
-	static FName GetBlendableParameterInteropSettingFunctionName(const UCameraObjectInterfaceBlendableParameter* BlendableParameter);
-	static FName GetBlendableParameterInteropSettingFunctionName(ECameraVariableType CameraVariableType);
-	static FName GetDataParameterInteropSettingFunctionName(const UCameraObjectInterfaceDataParameter* DataParameter);
-	static FName GetDataParameterInteropSettingFunctionName(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject);
-
 protected:
 
 	// UK2Node_CameraRigBase interface.

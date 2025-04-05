@@ -648,25 +648,6 @@ const uint8* FCameraContextDataTable::TryGetData(
 	return nullptr;
 }
 
-uint8* FCameraContextDataTable::TryGetMutableData(
-		FCameraContextDataID DataID,
-		ECameraContextDataType ExpectedDataType,
-		const UObject* ExpectedDataTypeObject)
-{
-	FEntry* Entry = FindEntry(DataID);
-	if (Entry)
-	{
-		if (Entry->Type == ExpectedDataType && 
-				Entry->ContainerType == ECameraContextDataContainerType::None && 
-				Entry->TypeObject == ExpectedDataTypeObject)
-		{
-			return Memory + Entry->Offset;
-		}
-	}
-
-	return nullptr;
-}
-
 const FCameraContextDataTable::FEntryScriptArray* FCameraContextDataTable::TryGetArrayData(
 		FCameraContextDataID DataID,
 		ECameraContextDataType ExpectedDataType,
@@ -680,6 +661,23 @@ const FCameraContextDataTable::FEntryScriptArray* FCameraContextDataTable::TryGe
 				Entry->TypeObject == ExpectedDataTypeObject)
 		{
 			return (FEntryScriptArray*)(Memory + Entry->Offset);
+		}
+	}
+
+	return nullptr;
+}
+
+const uint8* FCameraContextDataTable::TryGetRawDataPtr(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject) const
+{
+	const FEntry* Entry = FindEntry(DataID);
+	if (Entry)
+	{
+		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		{
+			return Memory + Entry->Offset;
 		}
 	}
 
@@ -787,6 +785,29 @@ bool FCameraContextDataTable::TrySetArrayData(
 	}
 	
 	return true;
+}
+
+uint8* FCameraContextDataTable::TryGetMutableRawDataPtr(
+		FCameraContextDataID DataID,
+		ECameraContextDataType ExpectedDataType,
+		const UObject* ExpectedDataTypeObject,
+		bool bMarkAsWrittenThisFrame)
+{
+	FEntry* Entry = FindEntry(DataID);
+	if (Entry)
+	{
+		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		{
+			Entry->Flags |= EEntryFlags::Written;
+			if (bMarkAsWrittenThisFrame)
+			{
+				Entry->Flags |= EEntryFlags::WrittenThisFrame;
+			}
+			return Memory + Entry->Offset;
+		}
+	}
+
+	return nullptr;
 }
 
 bool FCameraContextDataTable::SetDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr)

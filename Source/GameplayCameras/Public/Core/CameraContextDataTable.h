@@ -159,12 +159,12 @@ public:
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject) const;
 
-	uint8* TryGetMutableData(
+	const FEntryScriptArray* TryGetArrayData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
-			const UObject* ExpectedDataTypeObject);
+			const UObject* ExpectedDataTypeObject) const;
 
-	const FEntryScriptArray* TryGetArrayData(
+	const uint8* TryGetRawDataPtr(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject) const;
@@ -194,6 +194,12 @@ public:
 			const UObject* ExpectedDataTypeObject,
 			int32 Index,
 			const uint8* InRawDataPtr,
+			bool bMarkAsWrittenThisFrame = true);
+
+	uint8* TryGetMutableRawDataPtr(
+			FCameraContextDataID DataID,
+			ECameraContextDataType ExpectedDataType,
+			const UObject* ExpectedDataTypeObject,
 			bool bMarkAsWrittenThisFrame = true);
 
 	bool IsValueWritten(FCameraContextDataID InID) const;
