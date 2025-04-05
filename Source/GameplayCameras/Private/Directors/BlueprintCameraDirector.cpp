@@ -399,6 +399,34 @@ void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBluep
 	}
 }
 
+UWorld* UBlueprintCameraDirectorEvaluator::GetWorld() const
+{
+	if (UWorld* CachedWorld = WeakCachedWorld.Get())
+	{
+		return CachedWorld;
+	}
+
+	if (HasAllFlags(RF_ClassDefaultObject))
+	{
+		return nullptr;
+	}
+
+	UObject* Outer = GetOuter();
+	while (Outer)
+	{
+		UWorld* World = Outer->GetWorld();
+		if (World)
+		{
+			WeakCachedWorld = World;
+			return World;
+		}
+
+		Outer = Outer->GetOuter();
+	}
+
+	return nullptr;
+}
+
 void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params)
 {
 	using namespace UE::Cameras;

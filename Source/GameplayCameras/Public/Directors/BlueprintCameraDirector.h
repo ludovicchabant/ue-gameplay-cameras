@@ -198,6 +198,14 @@ public:
 
 public:
 
+	// UObject interface.
+	virtual UWorld* GetWorld() const override;
+#if WITH_EDITOR
+	virtual bool ImplementsGetWorld() const override { return true; }
+#endif  // WITH_EDITOR
+
+public:
+
 	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
 	using FBlueprintCameraDirectorEvaluationResult = UE::Cameras::FBlueprintCameraDirectorEvaluationResult;
 
@@ -220,6 +228,9 @@ private:
 
 	/** The current evaluation context. */
 	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
+
+	/** Cached world. */
+	mutable TWeakObjectPtr<UWorld> WeakCachedWorld;
 };
 
 /**
