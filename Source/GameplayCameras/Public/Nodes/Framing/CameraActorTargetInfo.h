@@ -35,27 +35,27 @@ struct GAMEPLAYCAMERAS_API FCameraActorTargetInfo
 	GENERATED_BODY()
 
 	/** The actor to target. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	TObjectPtr<AActor> Actor;
 
 	/** An optional socket to target on the actor. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	FName SocketName;
 
 	/** An optional bone to target on the actor. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	FName BoneName;
 
 	/** Specifies the shape of the target. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	ECameraTargetShape TargetShape = ECameraTargetShape::Point;
 
 	/** Specifies the size of target. Only used if TargetShape is set to manual bounds. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	float TargetSize = 10.f;
 
 	/** The weight of this target. Unused when only one target is used. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	float Weight = 1.f;
 
 	bool IsValid() const { return Actor != nullptr; }

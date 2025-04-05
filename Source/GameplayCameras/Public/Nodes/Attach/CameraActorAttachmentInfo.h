@@ -18,19 +18,19 @@ struct GAMEPLAYCAMERAS_API FCameraActorAttachmentInfo
 	GENERATED_BODY()
 
 	/** The actor to attach to. */
-	UPROPERTY(EditAnywhere, Category="Attachment")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Attachment")
 	TObjectPtr<AActor> Actor;
 
 	/** An optional socket to attach to on the actor. */
-	UPROPERTY(EditAnywhere, Interp, Category="Attachment")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Attachment")
 	FName SocketName;
 
 	/** An optional bone to attach to on the actor. */
-	UPROPERTY(EditAnywhere, Interp, Category="Target")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
 	FName BoneName;
 
 	/** The weight of this attachment. Unused if only one attachment is used. */
-	UPROPERTY(EditAnywhere, Interp, Category="Attachment")
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Attachment")
 	float Weight = 1.f;
 
 	bool operator== (const FCameraActorAttachmentInfo& Other) const = default;
