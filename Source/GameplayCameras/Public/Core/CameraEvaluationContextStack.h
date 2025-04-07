@@ -37,12 +37,14 @@ public:
 	void PushContext(TSharedRef<FCameraEvaluationContext> Context);
 
 	/**
-	 * Tries to add a context inside the active context. This will query the active context's
+	 * Tries to add a context inside the given context. This will query the active context's
 	 * director in order to find an "available spot" for the child context.
 	 * 
+	 * @param Context  The new context to activate.
+	 * @param ParentContext  The parent context to activate inside of, or the active context (if any) if null.
 	 * @return Whether the child context was acccepted.
 	 */
-	bool AddChildContext(TSharedRef<FCameraEvaluationContext> Context);
+	bool AddChildContext(TSharedRef<FCameraEvaluationContext> Context, TSharedPtr<FCameraEvaluationContext> ParentContext = nullptr);
 
 	/** Remove an existing context from the stack. */
 	bool RemoveContext(TSharedRef<FCameraEvaluationContext> Context);

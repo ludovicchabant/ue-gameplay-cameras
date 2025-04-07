@@ -41,7 +41,7 @@ protected:
 
 		if (PreviewIndex != INDEX_NONE)
 		{
-			OutResult.Add(Params.OwnerContext, CameraRigs[PreviewIndex]);
+			OutResult.Add(GetEvaluationContext(), CameraRigs[PreviewIndex]);
 		}
 	}
 
@@ -280,7 +280,6 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 	{
 		FCameraDirectorActivateParams DirectorParams;
 		DirectorParams.Evaluator = Params.Evaluator;
-		DirectorParams.OwnerContext = SharedThis(this);
 		DirectorEvaluator->Activate(DirectorParams);
 	}
 
@@ -298,7 +297,6 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	if (DirectorEvaluator)
 	{
 		FCameraDirectorDeactivateParams DirectorParams;
-		DirectorParams.OwnerContext = SharedThis(this);
 		DirectorEvaluator->Deactivate(DirectorParams);
 	}
 
@@ -309,6 +307,28 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 
 	CameraSystemEvaluator = nullptr;
 	bActivated = false;
+}
+
+bool FCameraEvaluationContext::AddChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)
+{
+	if (DirectorEvaluator)
+	{
+		ensure(DirectorEvaluator->GetEvaluationContext() == SharedThis(this));
+		return DirectorEvaluator->AddChildEvaluationContext(ChildContext);
+	}
+
+	return false;
+}
+
+bool FCameraEvaluationContext::RemoveChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)
+{
+	if (DirectorEvaluator)
+	{
+		ensure(DirectorEvaluator->GetEvaluationContext() == SharedThis(this));
+		return DirectorEvaluator->RemoveChildEvaluationContext(ChildContext);
+	}
+
+	return false;
 }
 
 bool FCameraEvaluationContext::RegisterChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)

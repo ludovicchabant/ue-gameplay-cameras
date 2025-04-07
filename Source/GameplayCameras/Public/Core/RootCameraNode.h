@@ -27,6 +27,7 @@ namespace UE::Cameras
 
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
+struct FCameraRigActivationDeactivationRequest;
 struct FRootCameraNodeCameraRigEvent;
 
 /**
@@ -121,6 +122,11 @@ public:
 	 * What it means to deactivate a camera rig may differ depending on the layer it runs on.
 	 */
 	void DeactivateCameraRig(const FDeactivateCameraRigParams& Params);
+
+	/**
+	 * Execute a request to activate or deactivate a camera rig.
+	 */
+	void ExecuteCameraDirectorRequest(const FCameraRigActivationDeactivationRequest& Request);
 
 	/** Gets information about the active camera rig in the main layer. */
 	void GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const;

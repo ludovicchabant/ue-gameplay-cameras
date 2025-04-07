@@ -9,7 +9,6 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
-#include "Core/CameraRigProxyTable.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Engine/Blueprint.h"
@@ -25,15 +24,6 @@
 namespace UE::Cameras
 {
 
-void FBlueprintCameraDirectorEvaluationResult::Reset()
-{
-	ActiveCameraRigProxies.Reset();
-	ActiveCameraRigs.Reset();
-	ActivePersistentCameraRigs.Reset();
-	InactivePersistentCameraRigs.Reset();
-	bForceActivateCameraRigs = false;
-}
-
 class FBlueprintCameraDirectorEvaluator : public FCameraDirectorEvaluator
 {
 	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(GAMEPLAYCAMERAS_API, FBlueprintCameraDirectorEvaluator)
@@ -44,19 +34,9 @@ protected:
 	virtual void OnActivate(const FCameraDirectorActivateParams& Params) override;
 	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) override;
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
+	virtual void OnAddChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) override;
+	virtual void OnRemoveChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
-
-private:
-
-	void ActivateTransientCameraRigs(
-			const FCameraDirectorEvaluationParams& Params, 
-			const FBlueprintCameraDirectorEvaluationResult& BlueprintResult, 
-			FCameraDirectorEvaluationResult& OutResult);
-	void ActivateDeactivePersistentCameraRigs(
-			TSharedPtr<FCameraEvaluationContext> EvaluationContext,
-			const FBlueprintCameraDirectorEvaluationResult& BlueprintResult);
-
-	const UCameraRigAsset* FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy);
 
 private:
 
@@ -85,6 +65,7 @@ void FBlueprintCameraDirectorEvaluator::OnInitialize(const FCameraDirectorInitia
 	{
 		UObject* Outer = Params.OwnerContext->GetOwner();
 		EvaluatorBlueprint = NewObject<UBlueprintCameraDirectorEvaluator>(Outer, Blueprint->CameraDirectorEvaluatorClass);
+		EvaluatorBlueprint->NativeInitializeCameraDirector(Params);
 	}
 	else
 	{
@@ -99,9 +80,6 @@ void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	if (EvaluatorBlueprint)
 	{
 		EvaluatorBlueprint->NativeActivateCameraDirector(Params);
-
-		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
-		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
 	}
 	else
 	{
@@ -114,9 +92,6 @@ void FBlueprintCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeacti
 	if (EvaluatorBlueprint)
 	{
 		EvaluatorBlueprint->NativeDeactivateCameraDirector(Params);
-
-		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
-		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
 	}
 
 	OwningEvaluator = nullptr;
@@ -128,124 +103,36 @@ void FBlueprintCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 	{
 		EvaluatorBlueprint->NativeRunCameraDirector(Params);
 
-		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
-		ActivateTransientCameraRigs(Params, BlueprintResult, OutResult);
-		ActivateDeactivePersistentCameraRigs(Params.OwnerContext, BlueprintResult);
+		const FCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		OutResult = BlueprintResult;
 	}
 }
 
-void FBlueprintCameraDirectorEvaluator::ActivateTransientCameraRigs(
-		const FCameraDirectorEvaluationParams& Params, 
-		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult, 
-		FCameraDirectorEvaluationResult& OutResult)
+void FBlueprintCameraDirectorEvaluator::OnAddChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result)
 {
-	TArray<const UCameraRigAsset*, TInlineAllocator<2>> CameraRigs;
-	const UCameraAsset* CameraAsset = Params.OwnerContext->GetCameraAsset();
-
-	// Gather camera rigs.
-	for (const UCameraRigAsset* ActiveCameraRig : BlueprintResult.ActiveCameraRigs)
+	if (EvaluatorBlueprint)
 	{
-		if (ActiveCameraRig)
+		UObject* ChildContextOwner = Params.ChildContext->GetOwner();
+		const bool bAdded = EvaluatorBlueprint->NativeAddChildEvaluationContext(ChildContextOwner);
+		if (bAdded)
 		{
-			CameraRigs.Add(ActiveCameraRig);
+			Result.Result = EChildContextManipulationResult::Success;
 		}
-		else
-		{
-			UE_LOG(
-					LogCameraSystem, 
-					Error, 
-					TEXT("Null camera rig specified in camera director '%s'."),
-					*EvaluatorBlueprint->GetClass()->GetPathName());
-		}
-	}
-
-	// Resolve camera rig proxies.
-	for (const UCameraRigProxyAsset* ActiveCameraRigProxy : BlueprintResult.ActiveCameraRigProxies)
-	{
-		const UCameraRigAsset* ActiveCameraRig = FindCameraRigByProxy(ActiveCameraRigProxy);
-		if (ActiveCameraRig)
-		{
-			CameraRigs.Add(ActiveCameraRig);
-		}
-		else
-		{
-			UE_LOG(
-					LogCameraSystem, 
-					Error, 
-					TEXT("No camera rig found mapped to proxy '%s' in camera '%s'."),
-					*ActiveCameraRigProxy->GetPathName(), *CameraAsset->GetPathName());
-		}
-	}
-
-	// The BP interface doesn't specify the evaluation context for the chosen camera rigs: we always automatically
-	// make them run in our own owner context.
-	for (const UCameraRigAsset* ActiveCameraRig : CameraRigs)
-	{
-		OutResult.Add(Params.OwnerContext, ActiveCameraRig);
-	}
-
-	OutResult.bForceActivateCameraRigs = BlueprintResult.bForceActivateCameraRigs;
-}
-
-void FBlueprintCameraDirectorEvaluator::ActivateDeactivePersistentCameraRigs(
-		TSharedPtr<FCameraEvaluationContext> EvaluationContext,
-		const FBlueprintCameraDirectorEvaluationResult& BlueprintResult)
-{
-	if (BlueprintResult.InactivePersistentCameraRigs.IsEmpty() && BlueprintResult.ActivePersistentCameraRigs.IsEmpty())
-	{
-		return;
-	}
-
-	if (!ensure(OwningEvaluator))
-	{
-		return;
-	}
-
-	FRootCameraNodeEvaluator* RootNodeEvaluator = OwningEvaluator->GetRootNodeEvaluator();
-
-	APlayerController* PlayerController = EvaluationContext->GetPlayerController();
-	TSharedPtr<const FCameraEvaluationContext> ControllerEvaluationContext;
-	if (ensure(PlayerController))
-	{
-		ControllerEvaluationContext = UControllerGameplayCameraEvaluationComponent::FindOrAddEvaluationContext(PlayerController);
-	}
-
-	for (const FBlueprintPersistentCameraRigInfo& CameraRigInfo : BlueprintResult.InactivePersistentCameraRigs)
-	{
-		FDeactivateCameraRigParams DeactivateParams;
-		DeactivateParams.EvaluationContext = ControllerEvaluationContext;
-		DeactivateParams.CameraRig = CameraRigInfo.CameraRig;
-		DeactivateParams.Layer = CameraRigInfo.Layer;
-		RootNodeEvaluator->DeactivateCameraRig(DeactivateParams);
-	}
-
-	for (const FBlueprintPersistentCameraRigInfo& CameraRigInfo : BlueprintResult.ActivePersistentCameraRigs)
-	{
-		FActivateCameraRigParams ActivateParams;
-		ActivateParams.EvaluationContext = ControllerEvaluationContext;
-		ActivateParams.CameraRig = CameraRigInfo.CameraRig;
-		ActivateParams.Layer = CameraRigInfo.Layer;
-		RootNodeEvaluator->ActivateCameraRig(ActivateParams);
 	}
 }
 
-const UCameraRigAsset* FBlueprintCameraDirectorEvaluator::FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy)
+void FBlueprintCameraDirectorEvaluator::OnRemoveChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result)
 {
-	const UBlueprintCameraDirector* Blueprint = GetCameraDirectorAs<UBlueprintCameraDirector>();
-	if (!ensure(Blueprint))
+	if (EvaluatorBlueprint)
 	{
-		return nullptr;
+		UObject* ChildContextOwner = Params.ChildContext->GetOwner();
+		const bool bRemoved = EvaluatorBlueprint->NativeRemoveChildEvaluationContext(ChildContextOwner);
+		
+		if (bRemoved)
+		{
+			Result.Result = EChildContextManipulationResult::Success;
+		}
 	}
-
-	UCameraRigProxyTable* ProxyTable = Blueprint->CameraRigProxyTable;
-	if (!ensureMsgf(ProxyTable, TEXT("No proxy table set on Blueprint director '%s'."), *Blueprint->GetPathName()))
-	{
-		return nullptr;
-	}
-
-	FCameraRigProxyTableResolveParams ResolveParams;
-	ResolveParams.CameraRigProxy = InProxy;
-	return Blueprint->CameraRigProxyTable->ResolveProxy(ResolveParams);
 }
 
 void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
@@ -255,45 +142,109 @@ void FBlueprintCameraDirectorEvaluator::OnAddReferencedObjects(FReferenceCollect
 
 }  // namespace UE::Cameras
 
+bool UBlueprintCameraDirectorEvaluator::RunChildCameraDirector(float DeltaTime, FName ChildSlotName)
+{
+	using namespace UE::Cameras;
+
+	const int32 ChildIndex = ChildrenContextSlotNames.Find(ChildSlotName);
+	TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts = EvaluationContext->GetChildrenContexts();
+
+	if (ChildIndex >= 0 && ensure(ChildrenContexts.IsValidIndex(ChildIndex)))
+	{
+		TSharedPtr<const FCameraEvaluationContext> ChildContext = ChildrenContexts[ChildIndex];
+
+		if (FCameraDirectorEvaluator* ChildDirectorEvaluator = ChildContext->GetDirectorEvaluator())
+		{
+			FCameraDirectorEvaluationParams ChildParams;
+			ChildParams.DeltaTime = DeltaTime;
+			
+			FCameraDirectorEvaluationResult ChildResult;
+			
+			ChildDirectorEvaluator->Run(ChildParams, ChildResult);
+
+			if (!ChildResult.Requests.IsEmpty())
+			{
+				EvaluationResult = ChildResult;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void UBlueprintCameraDirectorEvaluator::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Base });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	Request.Layer = ECameraRigLayer::Base;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Global });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	Request.Layer = ECameraRigLayer::Global;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.ActivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	Request.Layer = ECameraRigLayer::Visual;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Base });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Deactivate;
+	Request.Layer = ECameraRigLayer::Base;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Global });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Deactivate;
+	Request.Layer = ECameraRigLayer::Global;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab)
 {
-	EvaluationResult.InactivePersistentCameraRigs.Add({ CameraRigPrefab, ECameraRigLayer::Visual });
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigPrefab);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Deactivate;
+	Request.Layer = ECameraRigLayer::Visual;
+	EvaluationResult.Requests.Add(Request);
 }
 
 void UBlueprintCameraDirectorEvaluator::ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance)
 {
-	EvaluationResult.ActiveCameraRigs.Add(CameraRig);
-	EvaluationResult.bForceActivateCameraRigs |= bForceNewInstance;
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRig);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	Request.Layer = ECameraRigLayer::Main;
+	Request.bForceActivateDeactivate = bForceNewInstance;
+	EvaluationResult.Requests.Add(Request);
 }
 
-void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy)
+void UBlueprintCameraDirectorEvaluator::ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy, bool bForceNewInstance)
 {
-	EvaluationResult.ActiveCameraRigProxies.Add(CameraRigProxy);
+	using namespace UE::Cameras;
+	FCameraRigActivationDeactivationRequest Request(EvaluationContext, CameraRigProxy);
+	Request.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	Request.Layer = ECameraRigLayer::Main;
+	Request.bForceActivateDeactivate = bForceNewInstance;
+	EvaluationResult.Requests.Add(Request);
 }
 
 AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
@@ -427,21 +378,26 @@ UWorld* UBlueprintCameraDirectorEvaluator::GetWorld() const
 	return nullptr;
 }
 
-void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params)
+void UBlueprintCameraDirectorEvaluator::NativeInitializeCameraDirector(const UE::Cameras::FCameraDirectorInitializeParams& Params)
 {
 	using namespace UE::Cameras;
 
 	EvaluationContext = Params.OwnerContext;
+}
+
+void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params)
+{
+	using namespace UE::Cameras;
 
 	EvaluationResult.Reset();
 	{
-		FBlueprintCameraDirectorActivateParams BlueprintParams;
-		if (Params.OwnerContext)
+		UObject* EvaluationContextOwner = nullptr;
+		if (EvaluationContext)
 		{
-			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		ActivateCameraDirector(BlueprintParams);
+		ActivateCameraDirector(EvaluationContextOwner);
 	}
 }
 
@@ -449,31 +405,79 @@ void UBlueprintCameraDirectorEvaluator::NativeDeactivateCameraDirector(const UE:
 {
 	EvaluationResult.Reset();
 	{
-		FBlueprintCameraDirectorDeactivateParams BlueprintParams;
-		if (Params.OwnerContext)
+		UObject* EvaluationContextOwner = nullptr;
+		if (EvaluationContext)
 		{
-			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		DeactivateCameraDirector(BlueprintParams);
+		DeactivateCameraDirector(EvaluationContextOwner);
 	}
-
-	EvaluationContext = nullptr;
 }
 
 void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const UE::Cameras::FCameraDirectorEvaluationParams& Params)
 {
 	EvaluationResult.Reset();
 	{
-		FBlueprintCameraDirectorEvaluationParams BlueprintParams;
-		BlueprintParams.DeltaTime = Params.DeltaTime;
-		if (Params.OwnerContext)
+		UObject* EvaluationContextOwner = nullptr;
+		if (EvaluationContext)
 		{
-			BlueprintParams.EvaluationContextOwner = Params.OwnerContext->GetOwner();
+			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		RunCameraDirector(BlueprintParams);
+		RunCameraDirector(Params.DeltaTime, EvaluationContextOwner);
 	}
+}
+
+bool UBlueprintCameraDirectorEvaluator::NativeAddChildEvaluationContext(UObject* ChildEvaluationContextOwner)
+{
+	const FName ChildSlotName = AddChildEvaluationContext(ChildEvaluationContextOwner);
+	
+	if (!ChildSlotName.IsNone())
+	{
+		const int32 NewChildIndex = EvaluationContext->GetChildrenContexts().Num();
+
+		ensure(!ChildrenContextSlotNames.IsValidIndex(NewChildIndex) || ChildrenContextSlotNames[NewChildIndex].IsNone());
+		if (ChildrenContextSlotNames.Num() <= NewChildIndex)
+		{
+			ChildrenContextSlotNames.SetNum(NewChildIndex + 1);
+		}
+
+		ChildrenContextSlotNames[NewChildIndex] = ChildSlotName;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool UBlueprintCameraDirectorEvaluator::NativeRemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner)
+{
+	const int32 ChildIndex = EvaluationContext->GetChildrenContexts().IndexOfByPredicate(
+			[ChildEvaluationContextOwner](TSharedPtr<FCameraEvaluationContext> Item)
+			{
+				return Item->GetOwner() == ChildEvaluationContextOwner;
+			});
+	if (ChildIndex < 0)
+	{
+		return false;
+	}
+
+	if (!ensure(ChildrenContextSlotNames.IsValidIndex(ChildIndex) && !ChildrenContextSlotNames[ChildIndex].IsNone()))
+	{
+		return false;
+	}
+
+	const FName ChildSlotName = ChildrenContextSlotNames[ChildIndex];
+	const bool bRemoved = RemoveChildEvaluationContext(ChildEvaluationContextOwner, ChildSlotName);
+	if (bRemoved)
+	{
+		ChildrenContextSlotNames[ChildIndex] = NAME_None;
+
+		return true;
+	}
+
+	return false;
 }
 
 FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
@@ -518,18 +522,6 @@ void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 
 #endif  // WITH_EDITORONLY_DATA
 }
-
-#if WITH_EDITOR
-
-void UBlueprintCameraDirector::OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
-{
-	if (!CameraRigProxyTable)
-	{
-		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
-	}
-}
-
-#endif  // WITH_EDITOR
 
 #undef LOCTEXT_NAMESPACE
 

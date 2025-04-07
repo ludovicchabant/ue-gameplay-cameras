@@ -14,87 +14,7 @@
 
 class UCameraRigAsset;
 class UCameraRigProxyAsset;
-class UCameraRigProxyTable;
 enum class ECameraRigLayer : uint8;
-
-namespace UE::Cameras
-{
-
-/** Information about a persitent camera rig to be activated or deactivated. */
-struct FBlueprintPersistentCameraRigInfo
-{
-	UCameraRigAsset* CameraRig;
-	ECameraRigLayer Layer;
-};
-
-/**
- * The evaluation result for the Blueprint camera director evaluator.
- */
-struct FBlueprintCameraDirectorEvaluationResult
-{
-	/** The list of camera rigs that should be active this frame. */
-	TArray<UCameraRigProxyAsset*> ActiveCameraRigProxies;
-
-	/** The list of camera rigs that should be active this frame. */
-	TArray<UCameraRigAsset*> ActiveCameraRigs;
-
-	/** The list of persistent camera rigs to activate. */
-	TArray<FBlueprintPersistentCameraRigInfo> ActivePersistentCameraRigs;
-
-	/** The list of persistent camera rigs to deactivate. */
-	TArray<FBlueprintPersistentCameraRigInfo> InactivePersistentCameraRigs;
-
-	/** Whether to force a new instance of the main layer camera rigs. */
-	bool bForceActivateCameraRigs = false;
-
-	/** Reset this result for a new evaluation. */
-	void Reset();
-};
-
-}  // namespace UE::Cameras
-
-/**
- * Parameter struct for activating the Blueprint camera director evaluator.
- */
-USTRUCT(BlueprintType)
-struct FBlueprintCameraDirectorActivateParams
-{
-	GENERATED_BODY()
-
-	/** The owner (if any) of the evaluation context we are running inside of. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TObjectPtr<UObject> EvaluationContextOwner;
-};
-
-/**
- * Parameter struct for deactivating the Blueprint camera director evaluator.
- */
-USTRUCT(BlueprintType)
-struct FBlueprintCameraDirectorDeactivateParams
-{
-	GENERATED_BODY()
-
-	/** The owner (if any) of the evaluation context we were running inside of. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TObjectPtr<UObject> EvaluationContextOwner;
-};
-
-/**
- * Parameter struct for running the Blueprint camera director evaluator.
- */
-USTRUCT(BlueprintType)
-struct FBlueprintCameraDirectorEvaluationParams
-{
-	GENERATED_BODY()
-
-	/** The elapsed time since the last evaluation. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	float DeltaTime = 0.f;
-
-	/** The owner (if any) of the evaluation context we are running inside of. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	TObjectPtr<UObject> EvaluationContextOwner;
-};
 
 /**
  * Base class for a Blueprint camera director evaluator.
@@ -111,21 +31,32 @@ public:
 	 * camera director gets activated.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
-	void ActivateCameraDirector(const FBlueprintCameraDirectorActivateParams& Params);
+	void ActivateCameraDirector(UObject* EvaluationContextOwner);
 
 	/**
 	 * Override this method in Blueprint to execute custom logic when this
 	 * camera director gets deactivated.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
-	void DeactivateCameraDirector(const FBlueprintCameraDirectorDeactivateParams& Params);
+	void DeactivateCameraDirector(UObject* EvaluationContextOwner);
 	
 	/**
 	 * Override this method in Blueprint to execute the custom logic that determines
 	 * what camera rig(s) should be active every frame.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
-	void RunCameraDirector(const FBlueprintCameraDirectorEvaluationParams& Params);
+	void RunCameraDirector(float DeltaTime, UObject* EvaluationContextOwner);
+
+public:
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
+	FName AddChildEvaluationContext(UObject* ChildEvaluationContextOwner);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
+	bool RemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner, FName ChildSlotName);
+
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	bool RunChildCameraDirector(float DeltaTime, FName ChildSlotName);
 
 public:
 
@@ -164,7 +95,7 @@ public:
 	 * via the proxy table of the Blueprint camera director.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation")
-	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy);
+	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy, bool bForceNewInstance = false);
 
 public:
 
@@ -207,7 +138,15 @@ public:
 public:
 
 	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
-	using FBlueprintCameraDirectorEvaluationResult = UE::Cameras::FBlueprintCameraDirectorEvaluationResult;
+	using FCameraDirectorEvaluationResult = UE::Cameras::FCameraDirectorEvaluationResult;
+
+	// Internal API.
+
+	const FCameraDirectorEvaluationResult& GetEvaluationResult() const { return EvaluationResult; }
+
+public:
+
+	void NativeInitializeCameraDirector(const UE::Cameras::FCameraDirectorInitializeParams& Params);
 
 	/** Native wrapper for ActivateCameraDirector. */
 	void NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params);
@@ -218,16 +157,20 @@ public:
 	/** Native wrapper for RunCameraDirector. */
 	void NativeRunCameraDirector(const UE::Cameras::FCameraDirectorEvaluationParams& Params);
 
-	/** Get the last result for this camera director. */
-	const FBlueprintCameraDirectorEvaluationResult& GetEvaluationResult() const { return EvaluationResult; }
+	bool NativeAddChildEvaluationContext(UObject* ChildEvaluationContextOwner);
+
+	bool NativeRemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner);
 
 private:
 
-	/** The current camera director evaluation result. */
-	FBlueprintCameraDirectorEvaluationResult EvaluationResult;
+	/** The current evaluation result. */
+	FCameraDirectorEvaluationResult EvaluationResult;
 
 	/** The current evaluation context. */
 	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
+
+	/** Currently registered children contexts. */
+	TArray<FName> ChildrenContextSlotNames;
 
 	/** Cached world. */
 	mutable TWeakObjectPtr<UWorld> WeakCachedWorld;
@@ -247,21 +190,11 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evaluation")
 	TSubclassOf<UBlueprintCameraDirectorEvaluator> CameraDirectorEvaluatorClass;
 
-	/** 
-	 * The table that maps camera rig proxies (used in the evaluator Blueprint graph)
-	 * to actual camera rigs.
-	 */
-	UPROPERTY(EditAnywhere, Instanced, Category="Evaluation")
-	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable;
-
 protected:
 
 	// UCameraDirector interface.
 	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const override;
 	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) override;
 	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) override;
-#if WITH_EDITOR
-	virtual void OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams) override;
-#endif
 };
 

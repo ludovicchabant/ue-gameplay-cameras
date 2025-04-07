@@ -45,7 +45,11 @@ struct FCameraEvaluationContextInitializeParams
  */
 struct FCameraEvaluationContextActivateParams
 {
+	/** The system the context will evaluate inside of. */
 	FCameraSystemEvaluator* Evaluator = nullptr;
+
+	/** The parent context, if any. */
+	TSharedPtr<FCameraEvaluationContext> ParentContext;
 };
 
 /**
@@ -103,6 +107,12 @@ public:
 	/** Gets the camera director evaluator that runs the camera rigs of this context. */
 	FCameraDirectorEvaluator* GetDirectorEvaluator() const { return DirectorEvaluator; }
 
+	/** Gets the parent evaluation context, if any. */
+	TSharedPtr<const FCameraEvaluationContext> GetParentContext() const { return WeakParent.Pin(); }
+
+	/** Gets the parent evaluation context, if any. */
+	TSharedPtr<FCameraEvaluationContext> GetParentContext() { return WeakParent.Pin(); }
+
 	/** Gets the children evaluation contexts running inside this context. */
 	TArrayView<const TSharedPtr<FCameraEvaluationContext>> GetChildrenContexts() const { return ChildrenContexts; }
 
@@ -135,6 +145,14 @@ public:
 
 	/** Whether this context is active. */
 	bool IsActive() const { return bActivated; }
+
+public:
+
+	/** Adds a child context. */
+	bool AddChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
+
+	/** Removes a child context. */
+	bool RemoveChildContext(TSharedRef<FCameraEvaluationContext> ChildContext);
 
 public:
 

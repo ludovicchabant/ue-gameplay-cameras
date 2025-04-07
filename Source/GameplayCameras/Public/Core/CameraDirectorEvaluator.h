@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraRigInstanceID.h"
 #include "Core/CameraObjectRtti.h"
 #include "CoreTypes.h"
 #include "GameplayCameras.h"
@@ -10,6 +11,7 @@
 
 class UCameraDirector;
 class UCameraRigAsset;
+class UCameraRigProxyAsset;
 class UCameraRigTransition;
 
 namespace UE::Cameras
@@ -39,9 +41,6 @@ struct FCameraDirectorActivateParams
 {
 	/** The camera system that will run the camera director. */
 	FCameraSystemEvaluator* Evaluator = nullptr;
-
-	/** The evaluation context that owns the camera director. */
-	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
 /**
@@ -49,8 +48,6 @@ struct FCameraDirectorActivateParams
  */
 struct FCameraDirectorDeactivateParams
 {
-	/** The evaluation context that owns the camera director. */
-	TSharedPtr<FCameraEvaluationContext> OwnerContext;
 };
 
 /**
@@ -60,20 +57,53 @@ struct FCameraDirectorEvaluationParams
 {
 	/** Time interval for the update. */
 	float DeltaTime = 0.f;
+};
 
-	/** The context in which this director runs. */
-	TSharedPtr<FCameraEvaluationContext> OwnerContext;
+/** The type of request for activating or deactivating a camera rig. */
+enum class ECameraRigActivationDeactivationRequestType
+{
+	Activate,
+	Deactivate
 };
 
 /**
- * Structure describing a camera rig that should be active.
+ * Structure for requesting that a camera rig be activated or deactivated.
  */
-struct FActiveCameraRigInfo
+struct FCameraRigActivationDeactivationRequest
 {
 	/** The evaluation context to run the specified camera rig. */
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
 	/** The camera rig that should be running. */
 	TObjectPtr<const UCameraRigAsset> CameraRig;
+	/** The camera proxy that determines the rig that should be running (if CameraRig is null). */
+	TObjectPtr<const UCameraRigProxyAsset> CameraRigProxy;
+	/** The type of the request. */
+	ECameraRigActivationDeactivationRequestType RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+	/** The layer on which to activate or deactivate this camera rig. */
+	ECameraRigLayer Layer = ECameraRigLayer::Main;
+	/** A transition to use for this activation, if possible, instead of looking up one according to usual rules. */
+	TObjectPtr<const UCameraRigTransition> TransitionOverride;
+	/** An order key for activating camera rigs on ordered layers. */
+	int32 OrderKey = 0;
+	/** Whether to force creating a new instance, even if an identical one is already active. */
+	bool bForceActivateDeactivate = false;
+
+public:
+
+	FCameraRigActivationDeactivationRequest()
+	{}
+	FCameraRigActivationDeactivationRequest(
+			TSharedPtr<const FCameraEvaluationContext> InContext, 
+			TObjectPtr<const UCameraRigAsset> InCameraRig)
+		: EvaluationContext(InContext)
+		, CameraRig(InCameraRig)
+	{}
+	FCameraRigActivationDeactivationRequest(
+			TSharedPtr<const FCameraEvaluationContext> InContext, 
+			TObjectPtr<const UCameraRigProxyAsset> InCameraRigProxy)
+		: EvaluationContext(InContext)
+		, CameraRigProxy(InCameraRigProxy)
+	{}
 };
 
 /**
@@ -81,21 +111,31 @@ struct FActiveCameraRigInfo
  */
 struct FCameraDirectorEvaluationResult
 {
-	using FActiveCameraRigInfos = TArray<FActiveCameraRigInfo, TInlineAllocator<2>>;
+	using FRequests = TArray<FCameraRigActivationDeactivationRequest, TInlineAllocator<4>>;
 
-	/** The camera rig(s) that the director says should be active this frame in the main layer. */
-	FActiveCameraRigInfos ActiveCameraRigs;
+	/** Requests for activating/deactivating camera rigs this frame. */
+	FRequests Requests;
 
-	/** A transition to use for the next camera rig activation, instead of looking up one according to usual rules. */
-	TObjectPtr<const UCameraRigTransition> TransitionOverride;
-
-	/** Whether to force creating a new instance of the camera rigs, even if they are already active in the main layer. */
-	bool bForceActivateCameraRigs = false;
-
-	/** Adds a given camera rig with the given evaluation context to the activation list. */
-	void Add(TSharedPtr<const FCameraEvaluationContext> InContext, TObjectPtr<const UCameraRigAsset> InCameraRig)
+	/** Adds a simple activation request for the main layer. */
+	void Add(
+			TSharedPtr<const FCameraEvaluationContext> InEvaluationContext,
+			TObjectPtr<const UCameraRigAsset> InCameraRig)
 	{
-		ActiveCameraRigs.Add(FActiveCameraRigInfo{ InContext, InCameraRig });
+		Requests.Add({ InEvaluationContext, InCameraRig });
+	}
+
+	/** Adds a simple activation request for the main layer. */
+	void Add(
+			TSharedPtr<const FCameraEvaluationContext> InEvaluationContext,
+			TObjectPtr<const UCameraRigProxyAsset> InCameraRigProxy)
+	{
+		Requests.Add({ InEvaluationContext, InCameraRigProxy });
+	}
+
+	/** Reset this result. */
+	void Reset()
+	{
+		Requests.Reset();
 	}
 };
 
@@ -170,6 +210,9 @@ public:
 		return Cast<CameraDirectorType>(PrivateCameraDirector);
 	}
 
+	/** Gets the owning evaluation context. */
+	TSharedPtr<FCameraEvaluationContext> GetEvaluationContext() const { return WeakOwnerContext.Pin(); }
+
 public:
 
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
@@ -183,33 +226,46 @@ public:
 
 public:
 
+	/** Add a child context to this camera director. */
 	GAMEPLAYCAMERAS_API bool AddChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
+
+	/** Remove the given child context from this camera director. */
 	GAMEPLAYCAMERAS_API bool RemoveChildEvaluationContext(TSharedRef<FCameraEvaluationContext> InContext);
 
+	/** Garbage collection pass. */
 	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 
 public:
 
 	// Internal API.
+
 	void SetPrivateCameraDirector(const UCameraDirector* InCameraDirector);
+
+	const UCameraRigAsset* FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy) const;
 
 	void OnEndCameraSystemUpdate();
 
 protected:
 
+	/** Result for adding/removing children contexts. */
 	enum class EChildContextManipulationResult
 	{
+		/** The add or removal failed. */
 		Failure,
+		/** The add or removal was successful. */
 		Success,
+		/** The add or removal was successfully handled by a child director. */
 		ChildContextSuccess
 	};
 
+	/** Parameter struct for adding/removing children contexts. */
 	struct FChildContextManulationParams
 	{
 		TSharedPtr<FCameraEvaluationContext> ParentContext;
 		TSharedPtr<FCameraEvaluationContext> ChildContext;
 	};
 
+	/** Result struct for adding/removing children contexts. */
 	struct FChildContextManulationResult
 	{
 		EChildContextManipulationResult Result = EChildContextManipulationResult::Failure;
@@ -229,13 +285,21 @@ protected:
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) {}
 
+	/** Add a child context to this camera director. */
 	virtual void OnAddChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) {}
+
+	/** Remove the given child context from this camera director. */
 	virtual void OnRemoveChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) {}
 
+	/** Garbage collection pass. */
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 private:
 
+	/** The camera system this evaluator is running inside of. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
+
+	/** The evaluation context that owns this evaluator. */
 	TWeakPtr<FCameraEvaluationContext> WeakOwnerContext;
 
 	/** The camera director this evaluator is running. */

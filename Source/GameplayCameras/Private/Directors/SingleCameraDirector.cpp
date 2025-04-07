@@ -22,7 +22,7 @@ protected:
 		const USingleCameraDirector* SingleDirector = GetCameraDirectorAs<USingleCameraDirector>();
 		if (SingleDirector->CameraRig)
 		{
-			OutResult.Add(Params.OwnerContext, SingleDirector->CameraRig);
+			OutResult.Add(GetEvaluationContext(), SingleDirector->CameraRig);
 		}
 	}
 };
@@ -34,6 +34,7 @@ UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(FSingleCameraDirectorEvaluator)
 USingleCameraDirector::USingleCameraDirector(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
+	bHasCameraRigProxyTable = false;
 }
 
 FCameraDirectorEvaluatorPtr USingleCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const

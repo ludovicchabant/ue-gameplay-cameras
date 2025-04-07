@@ -68,17 +68,39 @@ void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationCont
 	Entries.Push(MoveTemp(NewEntry));
 }
 
-bool FCameraEvaluationContextStack::AddChildContext(TSharedRef<FCameraEvaluationContext> Context)
+bool FCameraEvaluationContextStack::AddChildContext(TSharedRef<FCameraEvaluationContext> Context, TSharedPtr<FCameraEvaluationContext> ParentContext)
 {
-	TSharedPtr<FCameraEvaluationContext> ActiveContext = GetActiveContext();
-	if (ensureMsgf(ActiveContext.IsValid(), TEXT("Can't add child context to the stack, no active context was found!")))
+	if (ParentContext == nullptr && !Entries.IsEmpty())
 	{
-		FCameraDirectorEvaluator* DirectorEvaluator = ActiveContext->GetDirectorEvaluator();
-		if (ensureMsgf(DirectorEvaluator, TEXT("Can't add child context, active context has no camera director evaluator!")))
-		{
-			return DirectorEvaluator->AddChildEvaluationContext(Context);
-		}
+		ParentContext = GetActiveContext();
 	}
+
+	// No parent context provided, and no active context found in the stack.
+	if (!ParentContext.IsValid())
+	{
+		return false;
+	}
+
+	// The context is already in the stack. The caller should remove it first.
+	const int32 ExistingIndex = Entries.IndexOfByPredicate(
+			[Context](const FContextEntry& Entry) { return Entry.WeakContext == Context; });
+	if (ExistingIndex != INDEX_NONE)
+	{
+		return false;
+	}
+
+	// Check invalid situation.
+	if (!ensureMsgf(Context != ParentContext, TEXT("Can't add a context as a child of itself")))
+	{
+		return false;
+	}
+
+	FCameraDirectorEvaluator* DirectorEvaluator = ParentContext->GetDirectorEvaluator();
+	if (ensureMsgf(DirectorEvaluator, TEXT("Can't add child context, active context has no camera director evaluator!")))
+	{
+		return DirectorEvaluator->AddChildEvaluationContext(Context);
+	}
+
 	return false;
 }
 

@@ -2,6 +2,8 @@
 
 #include "Core/CameraDirector.h"
 
+#include "Core/CameraRigProxyTable.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraDirector)
 
 FCameraDirectorEvaluatorPtr UCameraDirector::BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
@@ -26,6 +28,11 @@ void UCameraDirector::GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
 
 void UCameraDirector::FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams)
 {
+	if (bHasCameraRigProxyTable && !CameraRigProxyTable)
+	{
+		CameraRigProxyTable = NewObject<UCameraRigProxyTable>(this);
+	}
+
 	OnFactoryCreateAsset(InParams);
 }
 

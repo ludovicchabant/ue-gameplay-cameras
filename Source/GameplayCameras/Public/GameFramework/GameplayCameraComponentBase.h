@@ -30,6 +30,20 @@ class FGameplayCameraComponentEvaluationContext;
 }  // namespace UE::Cameras
 
 /**
+ * Defines how to activate a gameplay camera component.
+ */
+UENUM()
+enum class EGameplayCameraComponentActivationMode : uint8
+{
+	/** Push the camera director over any existing ones. */
+	Push,
+	/** Push the camera director and try to insert any active one as a child. */
+	PushAndInsert,
+	/** Inserts the camera director as a child of the active one, or push it if there is no active one. */
+	InsertOrPush
+};
+
+/**
  * A component that can run a camera asset inside its own camera evaluation context.
  */
 UCLASS(Blueprintable, MinimalAPI, Abstract,
@@ -62,11 +76,15 @@ public:
 
 	/** Activates the camera for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerIndex(int32 PlayerIndex);
+	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerIndex(
+			int32 PlayerIndex, 
+			EGameplayCameraComponentActivationMode ActivationMode = EGameplayCameraComponentActivationMode::Push);
 
 	/** Activates the camera for the given player. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerController(APlayerController* PlayerController);
+	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerController(
+			APlayerController* PlayerController,
+			EGameplayCameraComponentActivationMode ActivationMode = EGameplayCameraComponentActivationMode::Push);
 
 	/** Deactivates the camera for the last player it was activated for. */
 	UFUNCTION(BlueprintCallable, Category=Camera)
@@ -139,8 +157,8 @@ protected:
 
 private:
 
-	void ActivateCameraEvaluationContext(int32 PlayerIndex);
-	void ActivateCameraEvaluationContext(APlayerController* PlayerController);
+	void ActivateCameraEvaluationContext(int32 PlayerIndex, EGameplayCameraComponentActivationMode ActivationMode);
+	void ActivateCameraEvaluationContext(APlayerController* PlayerController, EGameplayCameraComponentActivationMode ActivationMode);
 	void TryCreateCameraEvaluationContext(APlayerController* PlayerController);
 	void UpdateOutputCameraComponent();
 	void DeactivateCameraEvaluationContext();

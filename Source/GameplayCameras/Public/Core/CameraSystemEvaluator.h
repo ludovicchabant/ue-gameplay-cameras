@@ -25,12 +25,14 @@ struct FMinimalViewInfo;
 namespace UE::Cameras
 {
 
+class FCameraDirectorEvaluator;
 class FCameraEvaluationContext;
 class FCameraEvaluationService;
 class FCameraRigCombinationRegistry;
 class FRootCameraNodeEvaluator;
 enum class ECameraEvaluationServiceFlags;
 enum class ECameraNodeEvaluationType;
+struct FCameraRigActivationDeactivationRequest;
 struct FRootCameraNodeCameraRigEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -246,6 +248,9 @@ public:
 private:
 
 	void UpdateImpl(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
+
+	void UpdateCameraDirector(float DeltaTime, FCameraDirectorEvaluator* CameraDirectorEvaluator);
+	void GetCombinedCameraRigRequest(TConstArrayView<FCameraRigActivationDeactivationRequest> Requests, FCameraRigActivationDeactivationRequest& OutCombinedRequest);
 
 	void PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);
 	void PostUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags);

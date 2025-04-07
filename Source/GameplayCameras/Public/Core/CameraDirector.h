@@ -8,6 +8,8 @@
 
 #include "CameraDirector.generated.h"
 
+class UCameraRigProxyTable;
+
 namespace UE::Cameras { class FCameraBuildLog; }
 
 #if WITH_EDITOR
@@ -71,5 +73,20 @@ protected:
 	/** Called by the asset factories to setup new data before the editor opens. */
 	virtual void OnFactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams) {}
 #endif
+
+public:
+
+	/** 
+	 * The table that maps camera rig proxies (used in the evaluator Blueprint graph)
+	 * to actual camera rigs.
+	 */
+	UPROPERTY(EditAnywhere, Instanced, Category="Evaluation")
+	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable;
+
+protected:
+
+	/** Whether this type of director supports having a camera rig proxy table. */
+	UPROPERTY(Transient)
+	bool bHasCameraRigProxyTable = true;
 };
 

@@ -4,6 +4,7 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraRigProxyTable.h"
 #include "Core/CameraRigTransition.h"
 
 namespace UE::Cameras
@@ -34,7 +35,7 @@ void FCameraDirectorEvaluator::Initialize(const FCameraDirectorInitializeParams&
 
 void FCameraDirectorEvaluator::Activate(const FCameraDirectorActivateParams& Params)
 {
-	WeakOwnerContext = Params.OwnerContext;
+	Evaluator = Params.Evaluator;
 
 	OnActivate(Params);
 }
@@ -43,24 +44,46 @@ void FCameraDirectorEvaluator::Deactivate(const FCameraDirectorDeactivateParams&
 {
 	OnDeactivate(Params);
 
-	WeakOwnerContext.Reset();
+	Evaluator = nullptr;
 }
 
 void FCameraDirectorEvaluator::Run(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	OnRun(Params, OutResult);
 
-	if (NextActivationTransitionOverride)
+	// Set some overrides on the first main-layer activation we find.
+	if (NextActivationTransitionOverride || bNextActivationForce)
 	{
-		OutResult.TransitionOverride = NextActivationTransitionOverride;
+		for (FCameraRigActivationDeactivationRequest& Request : OutResult.Requests)
+		{
+			if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Activate && Request.Layer == ECameraRigLayer::Main)
+			{
+				Request.TransitionOverride = NextActivationTransitionOverride;
+				Request.bForceActivateDeactivate |= bNextActivationForce;
+			}
+		}
 	}
-	NextActivationTransitionOverride = nullptr;
 
-	if (bNextActivationForce)
-	{
-		OutResult.bForceActivateCameraRigs = true;
-	}
+	NextActivationTransitionOverride = nullptr;
 	bNextActivationForce = false;
+}
+
+const UCameraRigAsset* FCameraDirectorEvaluator::FindCameraRigByProxy(const UCameraRigProxyAsset* InProxy) const
+{
+	if (!ensure(PrivateCameraDirector))
+	{
+		return nullptr;
+	}
+
+	UCameraRigProxyTable* ProxyTable = PrivateCameraDirector->CameraRigProxyTable;
+	if (!ensureMsgf(ProxyTable, TEXT("Cannot resolve camera rig proxy: no proxy table set on camera director.")))
+	{
+		return nullptr;
+	}
+
+	FCameraRigProxyTableResolveParams ResolveParams;
+	ResolveParams.CameraRigProxy = InProxy;
+	return ProxyTable->ResolveProxy(ResolveParams);
 }
 
 void FCameraDirectorEvaluator::OnEndCameraSystemUpdate()
@@ -109,7 +132,7 @@ bool FCameraDirectorEvaluator::AddChildEvaluationContext(TSharedRef<FCameraEvalu
 			break;
 		case EChildContextManipulationResult::ChildContextSuccess:
 			// A sub-director of our director accepted the child context, so it already
-			// activate it and we don't need to do it ourselves.
+			// activated it and we don't need to do it ourselves.
 			bReturn = true;
 			break;
 	}
@@ -118,6 +141,8 @@ bool FCameraDirectorEvaluator::AddChildEvaluationContext(TSharedRef<FCameraEvalu
 		OwnerContext->RegisterChildContext(InContext);
 
 		FCameraEvaluationContextActivateParams ActivateParams;
+		ActivateParams.Evaluator = Evaluator;
+		ActivateParams.ParentContext = OwnerContext;
 		InContext->Activate(ActivateParams);
 	}
 	return bReturn;

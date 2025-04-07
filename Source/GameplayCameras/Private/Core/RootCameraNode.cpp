@@ -2,6 +2,7 @@
 
 #include "Core/RootCameraNode.h"
 
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationService.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
@@ -24,6 +25,31 @@ FCameraRigInstanceID FRootCameraNodeEvaluator::ActivateCameraRig(const FActivate
 void FRootCameraNodeEvaluator::DeactivateCameraRig(const FDeactivateCameraRigParams& Params)
 {
 	OnDeactivateCameraRig(Params);
+}
+
+void FRootCameraNodeEvaluator::ExecuteCameraDirectorRequest(const FCameraRigActivationDeactivationRequest& Request)
+{
+	if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Activate)
+	{
+		FActivateCameraRigParams CameraRigParams;
+		CameraRigParams.EvaluationContext = Request.EvaluationContext;
+		CameraRigParams.CameraRig = Request.CameraRig;
+		CameraRigParams.Layer = Request.Layer;
+		CameraRigParams.OrderKey = Request.OrderKey;
+		CameraRigParams.TransitionOverride = Request.TransitionOverride;
+		CameraRigParams.bForceActivate = Request.bForceActivateDeactivate;
+		ActivateCameraRig(CameraRigParams);
+	}
+	else if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Deactivate)
+	{
+		FDeactivateCameraRigParams CameraRigParams;
+		CameraRigParams.EvaluationContext = Request.EvaluationContext;
+		CameraRigParams.CameraRig = Request.CameraRig;
+		CameraRigParams.Layer = Request.Layer;
+		CameraRigParams.TransitionOverride = Request.TransitionOverride;
+		CameraRigParams.bDeactiveImmediately = Request.bForceActivateDeactivate;
+		DeactivateCameraRig(CameraRigParams);
+	}
 }
 
 void FRootCameraNodeEvaluator::GetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const

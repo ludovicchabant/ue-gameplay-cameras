@@ -232,63 +232,11 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	FCameraDirectorEvaluator* ActiveDirectorEvaluator = ActiveContext->GetDirectorEvaluator();
 	if (ActiveDirectorEvaluator)
 	{
-		FCameraDirectorEvaluationParams DirectorParams;
-		DirectorParams.DeltaTime = DeltaTime;
-		DirectorParams.OwnerContext = ActiveContext;
-
-		FCameraDirectorEvaluationResult DirectorResult;
-
-		ActiveDirectorEvaluator->Run(DirectorParams, DirectorResult);
-
-		if (DirectorResult.ActiveCameraRigs.Num() == 1)
-		{
-			// Only one camera rig to activate... let's do that.
-			const FActiveCameraRigInfo& ActiveCameraRig = DirectorResult.ActiveCameraRigs[0];
-
-			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.EvaluationContext = ActiveCameraRig.EvaluationContext;
-			CameraRigParams.CameraRig = ActiveCameraRig.CameraRig;
-			CameraRigParams.TransitionOverride = DirectorResult.TransitionOverride;
-			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
-			RootEvaluator->ActivateCameraRig(CameraRigParams);
-		}
-		else if (DirectorResult.ActiveCameraRigs.Num() > 1)
-		{
-			// We have a combination of camera rigs to activate. Let's dynamically generate a new camera rig
-			// asset that combines them.
-#if WITH_EDITOR
-			const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-			if (DirectorResult.ActiveCameraRigs.Num() > Settings->CombinedCameraRigNumThreshold)
-			{
-				UE_LOG(LogCameraSystem, Warning, 
-						TEXT("Activating %d camera rigs combined! Is the camera director doing this on purpose? "
-							"If so, raise the CombinedCameraRigNumThreshold setting to remove this warning."),
-						DirectorResult.ActiveCameraRigs.Num());
-			}
-#endif
-
-			// All combined camera rigs must belong to the same evaluation context.
-			TArray<const UCameraRigAsset*> Combination;
-			TSharedPtr<const FCameraEvaluationContext> CommonContext = DirectorResult.ActiveCameraRigs[0].EvaluationContext;
-			for (const FActiveCameraRigInfo& ActiveCameraRig : DirectorResult.ActiveCameraRigs)
-			{
-				Combination.Add(ActiveCameraRig.CameraRig);
-				ensureMsgf(ActiveCameraRig.EvaluationContext == CommonContext,
-						TEXT("All combined camera rigs must be activated from the same evaluation context."));
-			}
-			const UCameraRigAsset* CombinedCameraRig = CameraRigCombinationRegistry->FindOrCreateCombination(Combination);
-
-			FActivateCameraRigParams CameraRigParams;
-			CameraRigParams.EvaluationContext = CommonContext;
-			CameraRigParams.CameraRig = CombinedCameraRig;
-			CameraRigParams.TransitionOverride = DirectorResult.TransitionOverride;
-			CameraRigParams.bForceActivate = DirectorResult.bForceActivateCameraRigs;
-			RootEvaluator->ActivateCameraRig(CameraRigParams);
-		}
+		UpdateCameraDirector(DeltaTime, ActiveDirectorEvaluator);
 	}
 
+	// Run the camera node tree.
 	{
-		// Setup the params/result for running the root camera node.
 		FCameraNodeEvaluationParams NodeParams;
 		NodeParams.Evaluator = this;
 		NodeParams.DeltaTime = DeltaTime;
@@ -296,7 +244,6 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 
 		RootNodeResult.Reset();
 
-		// Run the root camera node.
 		RootEvaluator->Run(NodeParams, RootNodeResult);
 
 		RootNodeResult.bIsValid = true;
@@ -315,6 +262,130 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 
 	// End of update things...
 	ContextStack.OnEndCameraSystemUpdate();
+}
+
+void FCameraSystemEvaluator::UpdateCameraDirector(float DeltaTime, FCameraDirectorEvaluator* CameraDirectorEvaluator)
+{
+	check(CameraDirectorEvaluator);
+
+	FCameraDirectorEvaluationResult DirectorResult;
+	{
+		FCameraDirectorEvaluationParams DirectorParams;
+		DirectorParams.DeltaTime = DeltaTime;
+
+		CameraDirectorEvaluator->Run(DirectorParams, DirectorResult);
+	}
+
+	TArray<FCameraRigActivationDeactivationRequest, TInlineAllocator<2>> MainLayerActivations;
+	TArray<FCameraRigActivationDeactivationRequest, TInlineAllocator<2>> MainLayerDeactivations;
+
+	for (FCameraRigActivationDeactivationRequest& Request : DirectorResult.Requests)
+	{
+		if (!ensure(Request.EvaluationContext))
+		{
+			continue;
+		}
+
+		// Resolve camera rig proxies if needed.
+		if (Request.CameraRig == nullptr && Request.CameraRigProxy)
+		{
+			Request.CameraRig = CameraDirectorEvaluator->FindCameraRigByProxy(Request.CameraRigProxy);
+		}
+		if (!ensure(Request.CameraRig))
+		{
+			continue;
+		}
+
+		// Put the main layer requests aside while we handle the other requests.
+		if (Request.Layer == ECameraRigLayer::Main)
+		{
+			if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Activate)
+			{
+				MainLayerActivations.Add(Request);
+			}
+			else if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Deactivate)
+			{
+				MainLayerDeactivations.Add(Request);
+			}
+		}
+		else
+		{
+			RootEvaluator->ExecuteCameraDirectorRequest(Request);
+		}
+	}
+
+	if (MainLayerActivations.Num() == 1)
+	{
+		RootEvaluator->ExecuteCameraDirectorRequest(MainLayerActivations[0]);
+	}
+	else if (MainLayerActivations.Num() > 1)
+	{
+		FCameraRigActivationDeactivationRequest CombinedRequest;
+		CombinedRequest.RequestType = ECameraRigActivationDeactivationRequestType::Activate;
+		GetCombinedCameraRigRequest(MainLayerActivations, CombinedRequest);
+
+		RootEvaluator->ExecuteCameraDirectorRequest(CombinedRequest);
+	}
+
+	if (MainLayerDeactivations.Num() == 1)
+	{
+		RootEvaluator->ExecuteCameraDirectorRequest(MainLayerDeactivations[0]);
+	}
+	else if (MainLayerDeactivations.Num() > 1)
+	{
+		FCameraRigActivationDeactivationRequest CombinedRequest;
+		CombinedRequest.RequestType = ECameraRigActivationDeactivationRequestType::Deactivate;
+		GetCombinedCameraRigRequest(MainLayerDeactivations, CombinedRequest);
+
+		RootEvaluator->ExecuteCameraDirectorRequest(CombinedRequest);
+	}
+}
+
+void FCameraSystemEvaluator::GetCombinedCameraRigRequest(TConstArrayView<FCameraRigActivationDeactivationRequest> Requests, FCameraRigActivationDeactivationRequest& OutCombinedRequest)
+{
+	// We have a combination of camera rigs to activate. Let's dynamically generate a new camera rig
+	// asset that combines them.
+#if WITH_EDITOR
+	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+	if (Requests.Num() > Settings->CombinedCameraRigNumThreshold)
+	{
+		UE_LOG(LogCameraSystem, Warning, 
+				TEXT("Activating %d camera rigs combined! Is the camera director doing this on purpose? "
+					"If so, raise the CombinedCameraRigNumThreshold setting to remove this warning."),
+				Requests.Num());
+	}
+#endif
+
+	// All combined camera rigs must belong to the same evaluation context, and we can't have more
+	// than one transition override.
+	TArray<const UCameraRigAsset*> Combination;
+	TSharedPtr<const FCameraEvaluationContext> CommonContext = Requests[0].EvaluationContext;
+	const UCameraRigTransition* FirstTransitionOverride = nullptr;
+	bool bAnyForceActivationDeactivation = false;
+	for (const FCameraRigActivationDeactivationRequest& Request : Requests)
+	{
+		Combination.Add(Request.CameraRig);
+		ensureMsgf(Request.EvaluationContext == CommonContext,
+				TEXT("All combined camera rigs must be activated from the same evaluation context."));
+
+		if (Request.TransitionOverride)
+		{
+			if (ensureMsgf(FirstTransitionOverride == nullptr || FirstTransitionOverride == Request.TransitionOverride,
+					TEXT("Only one transition override can be specified when activating/deactivating multiple main-layer rigs.")))
+			{
+				FirstTransitionOverride = Request.TransitionOverride;
+			}
+		}
+
+		bAnyForceActivationDeactivation |= Request.bForceActivateDeactivate;
+	}
+
+	const UCameraRigAsset* CombinedCameraRig = CameraRigCombinationRegistry->FindOrCreateCombination(Combination);
+
+	OutCombinedRequest.EvaluationContext = CommonContext;
+	OutCombinedRequest.CameraRig = CombinedCameraRig;
+	OutCombinedRequest.TransitionOverride = FirstTransitionOverride;
+	OutCombinedRequest.bForceActivateDeactivate = bAnyForceActivationDeactivation;
 }
 
 void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)

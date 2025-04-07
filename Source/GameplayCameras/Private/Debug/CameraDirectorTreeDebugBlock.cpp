@@ -65,11 +65,14 @@ void FCameraDirectorTreeDebugBlock::InitializeEntry(TSharedPtr<FCameraEvaluation
 		const FCameraDirectorEvaluator* DirectorEvaluator = Context->GetDirectorEvaluator();
 		const UCameraDirector* CameraDirector = DirectorEvaluator->GetCameraDirector();
 
+		TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts = Context->GetChildrenContexts();
+
 		EntryDebugInfo.ContextClassName = ContextTypeName;
 		EntryDebugInfo.OwnerName = *GetPathNameSafe(ContextOwner);
 		EntryDebugInfo.OwnerClassName = ContextOwner ? ContextOwner->GetClass()->GetFName() : NAME_None;
 		EntryDebugInfo.CameraAssetName = GetNameSafe(Context->GetCameraAsset());
 		EntryDebugInfo.CameraDirectorClassName = GetFNameSafe(CameraDirector);
+		EntryDebugInfo.NumChildrenContexts = ChildrenContexts.Num();
 		EntryDebugInfo.InitialContextTransform = Context->GetInitialResult().CameraPose.GetTransform();
 		EntryDebugInfo.bIsValid = true;
 
@@ -77,12 +80,12 @@ void FCameraDirectorTreeDebugBlock::InitializeEntry(TSharedPtr<FCameraEvaluation
 		AddChild(&Builder.BuildDebugBlock<FCameraPoseDebugBlock>(InitialResult.CameraPose)
 				.WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.ContextInitialResult.ShowUnchanged")));
 
-		TArrayView<const TSharedPtr<FCameraEvaluationContext>> ChildrenContexts = Context->GetChildrenContexts();
 		if (ChildrenContexts.Num() > 0)
 		{
 			FCameraDirectorTreeDebugBlock& ChildBlock = Builder.StartChildDebugBlock<FCameraDirectorTreeDebugBlock>();
 			{
 				ChildBlock.Initialize(ChildrenContexts, Builder);
+				ChildBlock.bIsTreeRoot = false;
 			}
 			Builder.EndChildDebugBlock();
 		}
@@ -100,18 +103,32 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 {
 	const FCameraDebugColors& Colors = FCameraDebugColors::Get();
 
+	// Our children view looks like this:
+	//
+	//		[0] Initial result pose block
+	//		[1] Child director block
+	//		[2] Child director block
+	//		[3] Initial result pose block
+	//		[4] Initial result pose block
+	//
 	TArrayView<FCameraDebugBlock*> ChildrenView(GetChildren());
 
-	const int32 MinNum = FMath::Min(ChildrenView.Num(), CameraDirectors.Num());
-
-	Renderer.SetTextColor(Colors.Notice);
-	Renderer.AddText("Inactive Directors\n");
-	Renderer.SetTextColor(Colors.Default);
-	Renderer.AddIndent();
-
-	for (int32 Index = 0; Index < MinNum; ++Index)
+	// For the root debug info, separate the active director from the inactive ones.
+	// The inactive ones are at the beginning (bottom) of the stack.
+	if (bIsTreeRoot)
 	{
-		if (Index == CameraDirectors.Num() - 1)
+		Renderer.SetTextColor(Colors.Notice);
+		Renderer.AddText("Inactive Directors\n");
+		Renderer.SetTextColor(Colors.Default);
+		Renderer.AddIndent();
+	}
+
+	int32 ChildContextIndex = 0;
+
+	for (int32 Index = 0; Index < ChildrenView.Num(); ++Index)
+	{
+		// If we reached the top of the stack, display the active director separately.
+		if (bIsTreeRoot && ChildContextIndex == CameraDirectors.Num() - 1)
 		{
 			Renderer.RemoveIndent();
 
@@ -121,9 +138,9 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 			Renderer.AddIndent();
 		}
 
-		Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Index + 1);
+		Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), ChildContextIndex + 1);
 
-		const FDirectorDebugInfo& EntryDebugInfo(CameraDirectors[Index]);
+		const FDirectorDebugInfo& EntryDebugInfo(CameraDirectors[ChildContextIndex]);
 		if (EntryDebugInfo.bIsValid)
 		{
 			Renderer.AddText(TEXT("{cam_passive}[%s]{cam_default}"), 
@@ -151,14 +168,33 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 			Renderer.AddText(TEXT("{cam_error}Invalid context!{cam_default}\n"));
 		}
 
+		// Initial result pose block.
 		Renderer.AddIndent();
 		ChildrenView[Index]->DebugDraw(Params, Renderer);
 		Renderer.RemoveIndent();
 
+		// Children blocks.
+		if (EntryDebugInfo.NumChildrenContexts > 0)
+		{
+			Renderer.AddIndent();
+			for (int32 ChildIndex = 0; ChildIndex < EntryDebugInfo.NumChildrenContexts; ++ChildIndex)
+			{
+				ChildrenView[Index + 1 + ChildIndex]->DebugDraw(Params, Renderer);
+			}
+			Renderer.RemoveIndent();
+
+			Index += EntryDebugInfo.NumChildrenContexts;
+		}
+
+		++ChildContextIndex;
+
 		Renderer.NewLine();
 	}
 
-	Renderer.RemoveIndent();
+	if (bIsTreeRoot)
+	{
+		Renderer.RemoveIndent();
+	}
 	Renderer.SetTextColor(Colors.Default);
 
 	Renderer.SkipAllBlocks();
@@ -167,6 +203,7 @@ void FCameraDirectorTreeDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParam
 void FCameraDirectorTreeDebugBlock::OnSerialize(FArchive& Ar)
 {
 	 Ar << CameraDirectors;
+	 Ar << bIsTreeRoot;
 }
 
 FArchive& operator<< (FArchive& Ar, FCameraDirectorTreeDebugBlock::FDirectorDebugInfo& DirectorDebugInfo)

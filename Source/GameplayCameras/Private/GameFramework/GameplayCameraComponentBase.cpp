@@ -102,14 +102,14 @@ APlayerController* UGameplayCameraComponentBase::GetPlayerController() const
 	return nullptr;
 }
 
-void UGameplayCameraComponentBase::ActivateCameraForPlayerIndex(int32 PlayerIndex)
+void UGameplayCameraComponentBase::ActivateCameraForPlayerIndex(int32 PlayerIndex, EGameplayCameraComponentActivationMode ActivationMode)
 {
-	ActivateCameraEvaluationContext(PlayerIndex);
+	ActivateCameraEvaluationContext(PlayerIndex, ActivationMode);
 }
 
-void UGameplayCameraComponentBase::ActivateCameraForPlayerController(APlayerController* PlayerController)
+void UGameplayCameraComponentBase::ActivateCameraForPlayerController(APlayerController* PlayerController, EGameplayCameraComponentActivationMode ActivationMode)
 {
-	ActivateCameraEvaluationContext(PlayerController);
+	ActivateCameraEvaluationContext(PlayerController, ActivationMode);
 }
 
 void UGameplayCameraComponentBase::DeactivateCamera()
@@ -117,12 +117,12 @@ void UGameplayCameraComponentBase::DeactivateCamera()
 	DeactivateCameraEvaluationContext();
 }
 
-void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(int32 PlayerIndex)
+void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(int32 PlayerIndex, EGameplayCameraComponentActivationMode ActivationMode)
 {
 	DeactivateCameraEvaluationContext();
 
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	ActivateCameraEvaluationContext(PlayerController);
+	ActivateCameraEvaluationContext(PlayerController, ActivationMode);
 }
 
 void UGameplayCameraComponentBase::DeactivateCameraEvaluationContext()
@@ -136,8 +136,15 @@ void UGameplayCameraComponentBase::DeactivateCameraEvaluationContext()
 
 	if (EvaluationContext.IsValid())
 	{
-		TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
-		Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+		if (TSharedPtr<FCameraEvaluationContext> ParentContext = EvaluationContext->GetParentContext())
+		{
+			ParentContext->RemoveChildContext(EvaluationContext.ToSharedRef());
+		}
+		else
+		{
+			TSharedPtr<FCameraSystemEvaluator> Evaluator = CameraSystemHost->GetCameraSystemEvaluator();
+			Evaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+		}
 	}
 
 	if (OutputCameraComponent)
@@ -149,7 +156,7 @@ void UGameplayCameraComponentBase::DeactivateCameraEvaluationContext()
 	// running camera rigs blend out.
 }
 
-void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerController* PlayerController)
+void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerController* PlayerController, EGameplayCameraComponentActivationMode ActivationMode)
 {
 	using namespace UE::Cameras;
 
@@ -172,6 +179,7 @@ void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerContro
 
 	if (!OnValidateCameraEvaluationContextActivation())
 	{
+		// We expect the sub-class to print a useful error or warning message.
 		return;
 	}
 
@@ -195,7 +203,40 @@ void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerContro
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
-	CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+	FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+
+	switch (ActivationMode)
+	{
+		case EGameplayCameraComponentActivationMode::Push:
+			ContextStack.PushContext(EvaluationContext.ToSharedRef());
+			break;
+		case EGameplayCameraComponentActivationMode::PushAndInsert:
+			{
+				TSharedPtr<FCameraEvaluationContext> PreviousActiveContext = ContextStack.GetActiveContext();
+				ContextStack.PushContext(EvaluationContext.ToSharedRef());
+				if (PreviousActiveContext)
+				{
+					ContextStack.RemoveContext(PreviousActiveContext.ToSharedRef());
+					EvaluationContext->AddChildContext(PreviousActiveContext.ToSharedRef());
+				}
+			}
+			break;
+		case EGameplayCameraComponentActivationMode::InsertOrPush:
+			{
+				if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
+				{
+					ActiveContext->AddChildContext(EvaluationContext.ToSharedRef());
+				}
+				else
+				{
+					ContextStack.PushContext(EvaluationContext.ToSharedRef());
+				}
+			}
+			break;
+		default:
+			ensure(false);
+			break;
+	}
 
 	// Make sure the component is active so it receives tick updates to maintain the evaluation context.
 	Activate();

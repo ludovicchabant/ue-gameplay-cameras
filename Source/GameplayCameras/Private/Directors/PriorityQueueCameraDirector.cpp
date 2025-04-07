@@ -71,10 +71,9 @@ void FPriorityQueueCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluatio
 			if (FCameraDirectorEvaluator* DirectorEvaluator = HighestPriorityEntry.ChildContext->GetDirectorEvaluator())
 			{
 				FCameraDirectorEvaluationParams ChildParams(Params);
-				ChildParams.OwnerContext = HighestPriorityEntry.ChildContext;
 				DirectorEvaluator->Run(ChildParams, OutResult);
 
-				if (OutResult.ActiveCameraRigs.Num() > 0)
+				if (OutResult.Requests.Num() > 0)
 				{
 					return;
 				}

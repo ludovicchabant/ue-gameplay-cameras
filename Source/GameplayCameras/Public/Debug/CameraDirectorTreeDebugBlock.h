@@ -48,10 +48,13 @@ private:
 		FString OwnerName;
 		FString CameraAssetName;
 		FName CameraDirectorClassName;
+		int32 NumChildrenContexts = 0;
 		FTransform3d InitialContextTransform = FTransform3d::Identity;
 		bool bIsValid = false;
 	};
+
 	TArray<FDirectorDebugInfo> CameraDirectors;
+	bool bIsTreeRoot = true;
 
 	friend FArchive& operator<< (FArchive&, FDirectorDebugInfo&);
 };
