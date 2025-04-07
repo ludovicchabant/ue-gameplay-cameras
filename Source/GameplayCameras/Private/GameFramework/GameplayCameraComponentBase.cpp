@@ -275,44 +275,18 @@ void UGameplayCameraComponentBase::TryCreateCameraEvaluationContext(APlayerContr
 		return ErrorResult;\
 	}
 
-FBlueprintCameraNodeEvaluationResult UGameplayCameraComponentBase::GetInitialResult() const
+FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetInitialResult() const
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get shared camera data", FBlueprintCameraNodeEvaluationResult());
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get shared camera data", FBlueprintCameraEvaluationDataRef());
 
-	return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetInitialResult());
+	return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetInitialResult());
 }
 
-FBlueprintCameraNodeEvaluationResult UGameplayCameraComponentBase::GetConditionalResult(ECameraEvaluationDataCondition Condition) const
+FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetConditionalResult(ECameraEvaluationDataCondition Condition) const
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get conditional camera data", FBlueprintCameraNodeEvaluationResult());
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get conditional camera data", FBlueprintCameraEvaluationDataRef());
 
-	return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetOrAddConditionalResult(Condition));
-}
-
-FBlueprintCameraPose UGameplayCameraComponentBase::GetInitialPose() const
-{
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial camera pose", FBlueprintCameraPose());
-
-	return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
-}
-
-bool UGameplayCameraComponentBase::SetInitialPose(const FBlueprintCameraPose& CameraPose)
-{
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't set initial camera pose", false);
-
-	FCameraPose InitialPose = EvaluationContext->GetInitialResult().CameraPose;
-	CameraPose.ApplyTo(InitialPose);
-	return true;
-}
-
-FBlueprintCameraVariableTable UGameplayCameraComponentBase::GetInitialVariableTable() const
-{
-	using namespace UE::Cameras;
-
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get initial camera variable table", FBlueprintCameraVariableTable());
-
-	FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
-	return FBlueprintCameraVariableTable(&VariableTable);
+	return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetOrAddConditionalResult(Condition));
 }
 
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT

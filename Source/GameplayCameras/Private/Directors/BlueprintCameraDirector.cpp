@@ -273,80 +273,33 @@ AActor* UBlueprintCameraDirectorEvaluator::FindEvaluationContextOwnerActor(TSubc
 	}
 }
 
-FBlueprintCameraNodeEvaluationResult UBlueprintCameraDirectorEvaluator::GetInitialContextResult() const
+FBlueprintCameraEvaluationDataRef UBlueprintCameraDirectorEvaluator::GetInitialContextResult() const
 {
 	if (EvaluationContext)
 	{
-		return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetInitialResult());
+		return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetInitialResult());
 	}
 	else
 	{
 		FFrame::KismetExecutionMessage(
 				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
 				ELogVerbosity::Error);
-		return FBlueprintCameraNodeEvaluationResult();
+		return FBlueprintCameraEvaluationDataRef();
 	}
 }
 
-FBlueprintCameraNodeEvaluationResult UBlueprintCameraDirectorEvaluator::GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const
+FBlueprintCameraEvaluationDataRef UBlueprintCameraDirectorEvaluator::GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const
 {
 	if (EvaluationContext)
 	{
-		return FBlueprintCameraNodeEvaluationResult(&EvaluationContext->GetOrAddConditionalResult(Condition));
+		return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetOrAddConditionalResult(Condition));
 	}
 	else
 	{
 		FFrame::KismetExecutionMessage(
 				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
 				ELogVerbosity::Error);
-		return FBlueprintCameraNodeEvaluationResult();
-	}
-}
-
-FBlueprintCameraPose UBlueprintCameraDirectorEvaluator::GetInitialContextCameraPose() const
-{
-	if (EvaluationContext)
-	{
-		return FBlueprintCameraPose::FromCameraPose(EvaluationContext->GetInitialResult().CameraPose);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
-				ELogVerbosity::Error);
-		return FBlueprintCameraPose();
-	}
-}
-
-FBlueprintCameraVariableTable UBlueprintCameraDirectorEvaluator::GetInitialContextVariableTable() const
-{
-	using namespace UE::Cameras;
-
-	if (EvaluationContext)
-	{
-		FCameraVariableTable& VariableTable = EvaluationContext->GetInitialResult().VariableTable;
-		return FBlueprintCameraVariableTable(&VariableTable);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
-				ELogVerbosity::Error);
-		return FBlueprintCameraVariableTable();
-	}
-}
-
-void UBlueprintCameraDirectorEvaluator::SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose)
-{
-	if (EvaluationContext)
-	{
-		InCameraPose.ApplyTo(EvaluationContext->GetInitialResult().CameraPose);
-	}
-	else
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't access evaluation context's initial result outside of RunCameraDirector"), 
-				ELogVerbosity::Error);
+		return FBlueprintCameraEvaluationDataRef();
 	}
 }
 

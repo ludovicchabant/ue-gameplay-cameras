@@ -5,9 +5,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
-#include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
-#include "GameFramework/BlueprintCameraPose.h"
-#include "GameFramework/BlueprintCameraVariableTable.h"
+#include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "Templates/SubclassOf.h"
 
 #include "BlueprintCameraDirector.generated.h"
@@ -109,23 +107,11 @@ public:
 
 	/** Gets the shared evaluation context data. */
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Shared Camera Data"))
-	FBlueprintCameraNodeEvaluationResult GetInitialContextResult() const;
+	FBlueprintCameraEvaluationDataRef GetInitialContextResult() const;
 
 	/** Gets the evaluation context data for a sub-set of camera rigs. */	
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Conditional Camera Data"))
-	FBlueprintCameraNodeEvaluationResult GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const;
-
-	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation",
-			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
-	FBlueprintCameraPose GetInitialContextCameraPose() const;
-
-	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation",
-			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
-	void SetInitialContextCameraPose(const FBlueprintCameraPose& InCameraPose);
-
-	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", 
-			meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedEvaluationData"))
-	FBlueprintCameraVariableTable GetInitialContextVariableTable() const;
+	FBlueprintCameraEvaluationDataRef GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const;
 
 public:
 

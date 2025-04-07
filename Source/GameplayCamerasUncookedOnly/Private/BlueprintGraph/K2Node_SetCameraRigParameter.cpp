@@ -175,7 +175,7 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 	UEdGraphPin* FirstExecPin = CallSetParameter->GetExecPin();
 
 	// Connect the camera evaluation result argument.
-	UEdGraphPin* CallSetParameterResultPin = CallSetParameter->FindPinChecked(TEXT("Result"));
+	UEdGraphPin* CallSetParameterResultPin = CallSetParameter->FindPinChecked(TEXT("CameraData"));
 	CompilerContext.CopyPinLinksToIntermediate(*CameraNodeEvaluationResultPin, *CallSetParameterResultPin);
 
 	// Set the camera rig argument.

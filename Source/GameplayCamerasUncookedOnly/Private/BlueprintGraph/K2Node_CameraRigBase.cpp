@@ -9,12 +9,11 @@
 #include "EdGraphSchema_K2.h"
 #include "Editor.h"
 #include "EditorCategoryUtils.h"
-#include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
+#include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "GameFramework/CameraRigParameterInterop.h"
 #include "GameplayCamerasDelegates.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
-#include "Nodes/Framing/CameraFramingZone.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "K2Node_CameraRigBase"
@@ -47,7 +46,7 @@ void UK2Node_CameraRigBase::AllocateDefaultPins()
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
 
 	// Add evalation result pin.
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Struct, FBlueprintCameraNodeEvaluationResult::StaticStruct(), CameraNodeEvaluationResultPinName);
+	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Struct, FBlueprintCameraEvaluationDataRef::StaticStruct(), CameraNodeEvaluationResultPinName);
 
 	Super::AllocateDefaultPins();
 }

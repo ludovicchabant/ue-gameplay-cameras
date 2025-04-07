@@ -8,6 +8,7 @@
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableTable.h"
@@ -17,6 +18,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "Misc/AssertionMacros.h"
 #include "UObject/Object.h"
 #include "UObject/ObjectMacros.h"
@@ -86,7 +88,7 @@ void FBlueprintCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 
 		ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable);
 
-		EvaluatorBlueprint->NativeInitializeCameraNode(Params, OutResult);
+		EvaluatorBlueprint->NativeInitializeCameraNode(BlueprintNode, Params, OutResult);
 	}
 	else
 	{
@@ -175,17 +177,18 @@ void FBlueprintCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& 
 
 }  // namespace UE::Cameras
 
-void UBlueprintCameraNodeEvaluator::NativeInitializeCameraNode(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
+void UBlueprintCameraNodeEvaluator::NativeInitializeCameraNode(const UBlueprintCameraNode* InBlueprintNode, const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	using namespace UE::Cameras;
+
+	ensure(BlueprintNode == nullptr);
+	BlueprintNode = InBlueprintNode;
 
 	SetupExecution(Params.EvaluationContext, OutResult);
 	{
 		bIsFirstFrame = true;
 
 		InitializeCameraNode();
-
-		CameraPose.ApplyTo(OutResult.CameraPose);
 	}
 	TeardownExecution();
 }
@@ -199,8 +202,6 @@ void UBlueprintCameraNodeEvaluator::NativeRunCameraNode(const FCameraNodeEvaluat
 		bIsFirstFrame = Params.bIsFirstFrame;
 
 		TickCameraNode(Params.DeltaTime);
-
-		CameraPose.ApplyTo(OutResult.CameraPose);
 	}
 	TeardownExecution();
 }
@@ -208,19 +209,18 @@ void UBlueprintCameraNodeEvaluator::NativeRunCameraNode(const FCameraNodeEvaluat
 void UBlueprintCameraNodeEvaluator::SetupExecution(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, FCameraNodeEvaluationResult& OutResult)
 {
 	EvaluationContextOwner = EvaluationContext->GetOwner();
-	CameraPose = FBlueprintCameraPose::FromCameraPose(OutResult.CameraPose);
+
+	ensure(!CameraData.IsValid());
+	CameraData = FBlueprintCameraEvaluationDataRef::MakeExternalRef(&OutResult);
 
 	ensure(!CurrentContext.IsValid());
 	CurrentContext = EvaluationContext;
-
-	ensure(CurrentResult == nullptr);
-	CurrentResult = &OutResult;
 }
 
 void UBlueprintCameraNodeEvaluator::TeardownExecution()
 {
+	CameraData = FBlueprintCameraEvaluationDataRef();
 	CurrentContext = nullptr;
-	CurrentResult = nullptr;
 }
 
 AActor* UBlueprintCameraNodeEvaluator::FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const
@@ -246,6 +246,27 @@ AActor* UBlueprintCameraNodeEvaluator::FindEvaluationContextOwnerActor(TSubclass
 				TEXT("Can't access evaluation context outside of RunCameraDirector"), 
 				ELogVerbosity::Error);
 		return nullptr;
+	}
+}
+
+FBlueprintCameraPose UBlueprintCameraNodeEvaluator::GetCurrentCameraPose() const
+{
+	return UBlueprintCameraEvaluationDataFunctionLibrary::GetCameraPose(CameraData);
+}
+
+void UBlueprintCameraNodeEvaluator::SetCurrentCameraPose(const FBlueprintCameraPose& CameraPose)
+{
+	UBlueprintCameraEvaluationDataFunctionLibrary::SetCameraPose(CameraData, CameraPose);
+}
+
+void UBlueprintCameraNodeEvaluator::SetDefaultOwningCameraRigParameters(FBlueprintCameraEvaluationDataRef TargetCameraData) const
+{
+	using namespace UE::Cameras;
+
+	if (FCameraNodeEvaluationResult* Result = TargetCameraData.GetResult())
+	{
+		const UCameraRigAsset* OwningCameraRig = BlueprintNode->GetTypedOuter<UCameraRigAsset>();
+		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParameters(OwningCameraRig, Result->VariableTable, Result->ContextDataTable);
 	}
 }
 

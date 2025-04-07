@@ -7,10 +7,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraVariableTable.h"
-#include "GameFramework/BlueprintCameraContextDataTable.h"
-#include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
-#include "GameFramework/BlueprintCameraVariableTable.h"
-#include "Templates/UnrealTypeTraits.h"
+#include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigParameterInterop"
 
@@ -21,19 +18,19 @@ UCameraRigParameterInterop::UCameraRigParameterInterop(const FObjectInitializer&
 {
 }
 
-void UCameraRigParameterInterop::GetCameraParameter(const FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, int32& ReturnValue)
+void UCameraRigParameterInterop::GetCameraParameter(const FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, int32& ReturnValue)
 {
 	checkNoEntry();
 }
 
-void UCameraRigParameterInterop::SetCameraParameter(FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, const int32& NewValue)
+void UCameraRigParameterInterop::SetCameraParameter(FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, const int32& NewValue)
 {
 	checkNoEntry();
 }
 
 DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 {
-	P_GET_STRUCT_REF(FBlueprintCameraNodeEvaluationResult, Result);
+	P_GET_STRUCT_REF(FBlueprintCameraEvaluationDataRef, CameraData);
 	P_GET_OBJECT(UCameraRigAsset, CameraRig);
 	P_GET_STRUCT(FName, ParameterName);
 
@@ -75,6 +72,14 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 			);
 			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
 		}
+		else if (!CameraData.IsValid())
+		{
+			FBlueprintExceptionInfo ExceptionInfo(
+				EBlueprintExceptionType::NonFatalError,
+				LOCTEXT("InvalidCameraData", "CameraData is an invalid reference")
+			);
+			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		}
 		else
 		{
 			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
@@ -82,24 +87,20 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 
 			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 			{
-				if (const FCameraVariableTable* VariableTable = Result.GetVariableTable().GetVariableTable())
+				const FCameraVariableTable& VariableTable = CameraData.GetResult()->VariableTable;
+				const uint8* RawValue = VariableTable.TryGetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType);
+				if (RawValue)
 				{
-					const uint8* RawValue = VariableTable->TryGetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType);
-					if (RawValue)
-					{
-						TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
-					}
+					TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
 				}
 			}
 			else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
 			{
-				if (FCameraContextDataTable* ContextDataTable = Result.GetContextDataTable().GetContextDataTable())
+				const FCameraContextDataTable& ContextDataTable = CameraData.GetResult()->ContextDataTable;
+				const uint8* RawValue = ContextDataTable.TryGetRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
+				if (RawValue)
 				{
-					const uint8* RawValue = ContextDataTable->TryGetRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
-					if (RawValue)
-					{
-						TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
-					}
+					TargetProperty->CopyCompleteValue(TargetPtr, RawValue);
 				}
 			}
 		}
@@ -110,7 +111,7 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 
 DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 {
-	P_GET_STRUCT_REF(FBlueprintCameraNodeEvaluationResult, Result);
+	P_GET_STRUCT_REF(FBlueprintCameraEvaluationDataRef, CameraData);
 	P_GET_OBJECT(UCameraRigAsset, CameraRig);
 	P_GET_STRUCT(FName, ParameterName);
 
@@ -152,6 +153,14 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 			);
 			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
 		}
+		else if (!CameraData.IsValid())
+		{
+			FBlueprintExceptionInfo ExceptionInfo(
+				EBlueprintExceptionType::NonFatalError,
+				LOCTEXT("InvalidCameraData", "CameraData is an invalid reference")
+			);
+			FBlueprintCoreDelegates::ThrowScriptException(P_THIS, Stack, ExceptionInfo);
+		}
 		else
 		{
 			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
@@ -159,20 +168,16 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 
 			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 			{
-				if (FCameraVariableTable* VariableTable = Result.GetVariableTable().GetVariableTable())
-				{
-					VariableTable->TrySetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType, SourcePtr);
-				}
+				FCameraVariableTable& VariableTable = CameraData.GetResult()->VariableTable;
+				VariableTable.TrySetValue(ParameterDefinition->VariableID, ParameterDefinition->VariableType, ParameterDefinition->BlendableStructType, SourcePtr);
 			}
 			else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
 			{
-				if (FCameraContextDataTable* ContextDataTable = Result.GetContextDataTable().GetContextDataTable())
+				FCameraContextDataTable& ContextDataTable = CameraData.GetResult()->ContextDataTable;
+				uint8* RawValue = ContextDataTable.TryGetMutableRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
+				if (RawValue)
 				{
-					uint8* RawValue = ContextDataTable->TryGetMutableRawDataPtr(ParameterDefinition->DataID, ParameterDefinition->DataType, ParameterDefinition->DataTypeObject);
-					if (RawValue)
-					{
-						SourceProperty->CopyCompleteValue(RawValue, SourcePtr);
-					}
+					SourceProperty->CopyCompleteValue(RawValue, SourcePtr);
 				}
 			}
 		}

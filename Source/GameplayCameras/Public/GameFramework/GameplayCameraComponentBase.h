@@ -5,9 +5,7 @@
 #include "Components/SceneComponent.h"
 #include "Core/CameraAssetReference.h"
 #include "Core/CameraEvaluationContext.h"
-#include "GameFramework/BlueprintCameraNodeEvaluationResult.h"
-#include "GameFramework/BlueprintCameraPose.h"
-#include "GameFramework/BlueprintCameraVariableTable.h"
+#include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "UObject/ObjectMacros.h"
 
 #include "GameplayCameraComponentBase.generated.h"
@@ -92,23 +90,11 @@ public:
 
 	/** Gets the shared camera evaluation data for this component's evaluation context. */
 	UFUNCTION(BlueprintPure, Category=Camera, meta=(DisplayName="Get Shared Camera Data"))
-	GAMEPLAYCAMERAS_API FBlueprintCameraNodeEvaluationResult GetInitialResult() const;
-	
+	GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef GetInitialResult() const;
+
 	/** Gets the camera evaluation data for a given sub-set of camera rigs in this component's evaluation context. */
 	UFUNCTION(BlueprintPure, Category=Camera, meta=(DisplayName="Get Conditional Camera Data"))
-	GAMEPLAYCAMERAS_API FBlueprintCameraNodeEvaluationResult GetConditionalResult(ECameraEvaluationDataCondition Condition) const;
-
-	/** Gets the initial camera pose for this component's camera evaluation context. */
-	UFUNCTION(BlueprintPure, Category=Camera, meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedCameraData"))
-	GAMEPLAYCAMERAS_API FBlueprintCameraPose GetInitialPose() const;
-
-	/** Sets the initial camera pose for this component's camera evaluation context. */
-	UFUNCTION(BlueprintCallable, Category=Camera, meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedCameraData"))
-	GAMEPLAYCAMERAS_API bool SetInitialPose(const FBlueprintCameraPose& CameraPose);
-
-	/** Gets the initial camera variable table for this component's camera evaluation context. */
-	UFUNCTION(BlueprintPure, Category=Camera, meta=(DeprecatedFunction, DeprecationMessage="Please use GetSharedCameraData"))
-	GAMEPLAYCAMERAS_API FBlueprintCameraVariableTable GetInitialVariableTable() const;
+	GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef GetConditionalResult(ECameraEvaluationDataCondition Condition) const;
 
 public:
 

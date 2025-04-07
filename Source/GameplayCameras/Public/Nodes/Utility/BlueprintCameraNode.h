@@ -6,8 +6,7 @@
 #include "Core/CameraNode.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "Core/ObjectTreeGraphObject.h"
-#include "GameFramework/BlueprintCameraPose.h"
-#include "GameFramework/BlueprintCameraVariableTable.h"
+#include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 
 #include "BlueprintCameraNode.generated.h"
 
@@ -39,6 +38,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category="Evaluation")
 	void TickCameraNode(float DeltaTime);
 
+public:
+
 	/**
 	 * A utility function that tries to find if an actor owns the evaluation context.
 	 * Handles the situation where the evaluation context is an actor component (like a
@@ -46,6 +47,18 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
 	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+
+	/** A utility function to get the current camera pose from this node's camera data. */
+	UFUNCTION(BlueprintPure, Category="Evaluation")
+	FBlueprintCameraPose GetCurrentCameraPose() const;
+
+	/** A utility function to set the current camera pose on this node's camera data. */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void SetCurrentCameraPose(const FBlueprintCameraPose& CameraPose);
+
+	/** Assigns the default parameter values of the owning camera rig to the given camera evaluation data. */
+	UFUNCTION(BlueprintCallable, Category="Evaluation")
+	void SetDefaultOwningCameraRigParameters(FBlueprintCameraEvaluationDataRef TargetCameraData) const;
 
 public:
 
@@ -55,7 +68,7 @@ public:
 	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
 
 	/** Initialize this camera node. */
-	void NativeInitializeCameraNode(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void NativeInitializeCameraNode(const UBlueprintCameraNode* InBlueprintNode, const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult);
 
 	/** Runs this camera node. */
 	void NativeRunCameraNode(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
@@ -83,21 +96,17 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Evaluation")
 	TObjectPtr<UObject> EvaluationContextOwner;
 
-	/** The input/output camera pose for this frame. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	FBlueprintCameraPose CameraPose;
-
-	/** The input/output camera variable table for this frame. */
-	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
-	FBlueprintCameraVariableTable VariableTable;
+	/** The input/output camera data for this frame. */
+	UPROPERTY(BlueprintReadOnly, Category="Evaluation")
+	FBlueprintCameraEvaluationDataRef CameraData;
 
 private:
 
 	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> CurrentContext;
 
-	FCameraNodeEvaluationResult* CurrentResult = nullptr;
-
 	mutable TWeakObjectPtr<UWorld> WeakCachedWorld;
+
+	const UBlueprintCameraNode* BlueprintNode = nullptr;
 };
 
 /**

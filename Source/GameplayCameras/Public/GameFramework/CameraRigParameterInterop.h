@@ -11,7 +11,7 @@
 #include "CameraRigParameterInterop.generated.h"
 
 class UCameraRigAsset;
-struct FBlueprintCameraNodeEvaluationResult;
+struct FBlueprintCameraEvaluationDataRef;
 
 /**
  * Blueprint internal methods to set values on a camera rig's exposed parameters.
@@ -31,10 +31,10 @@ public:
 public:
 
 	UFUNCTION(BlueprintCallable, CustomThunk, Category="Camera", meta=(BlueprintInternalUseOnly="true", CustomStructureParam="ReturnValue"))
-	static void GetCameraParameter(UPARAM(Ref) const FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, int32& ReturnValue);
+	static void GetCameraParameter(UPARAM(Ref) const FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, int32& ReturnValue);
 
 	UFUNCTION(BlueprintCallable, CustomThunk, Category="Camera", meta=(BlueprintInternalUseOnly="true", CustomStructureParam="NewValue"))
-	static void SetCameraParameter(UPARAM(Ref) FBlueprintCameraNodeEvaluationResult& Result, UCameraRigAsset* CameraRig, FName ParameterName, UPARAM(Ref) const int32& NewValue);
+	static void SetCameraParameter(UPARAM(Ref) FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, UPARAM(Ref) const int32& NewValue);
 
 private:
 

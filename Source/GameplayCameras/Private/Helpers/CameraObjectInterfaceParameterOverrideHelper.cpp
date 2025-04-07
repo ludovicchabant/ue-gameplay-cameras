@@ -454,6 +454,16 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverride(
 
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(const UBaseCameraObject* CameraObject, FCameraVariableTable& OutVariableTable)
 {
+	ApplyDefaultParametersImpl(CameraObject, &OutVariableTable, nullptr);
+}
+
+void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParameters(const UBaseCameraObject* CameraObject, FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable)
+{
+	ApplyDefaultParametersImpl(CameraObject, &OutVariableTable, &OutContextDataTable);
+}
+
+void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParametersImpl(const UBaseCameraObject* CameraObject, FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable)
+{
 	if (!ensure(CameraObject))
 	{
 		return;
@@ -464,23 +474,42 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParamet
 
 	for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraObject->GetParameterDefinitions())
 	{
-		if (Definition.ParameterType != ECameraObjectInterfaceParameterType::Blendable)
+		if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 		{
-			continue;
-		}
-		if (!Definition.VariableID.IsValid())
-		{
-			continue;
-		}
+			if (!OutVariableTable || !Definition.VariableID.IsValid())
+			{
+				continue;
+			}
 
-		const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
-		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
-		{
-			continue;
-		}
+			const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
+			if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
+			{
+				continue;
+			}
 
-		const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
-		OutVariableTable.SetValue(Definition.VariableID, Definition.VariableType, Definition.BlendableStructType, (const uint8*)RawValuePtr);
+			const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
+			OutVariableTable->TrySetValue(Definition.VariableID, Definition.VariableType, Definition.BlendableStructType, (const uint8*)RawValuePtr);
+		}
+		else if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
+		{
+			if (!OutContextDataTable || !Definition.DataID.IsValid())
+			{
+				continue;
+			}
+
+			const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
+			if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
+			{
+				continue;
+			}
+
+			uint8* RawDestPtr = OutContextDataTable->TryGetMutableRawDataPtr(Definition.DataID, Definition.DataType, Definition.DataTypeObject);
+			if (RawDestPtr)
+			{
+				const void* RawValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(RawDefaultParametersContainer);
+				PropertyDesc->CachedProperty->CopyCompleteValue(RawDestPtr, RawValuePtr);
+			}
+		}
 	}
 }
 

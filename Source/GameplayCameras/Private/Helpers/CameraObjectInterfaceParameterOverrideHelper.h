@@ -25,6 +25,13 @@ public:
 	/** Sets default values of blendable interface parameters in the given variable table. */
 	static void ApplyDefaultBlendableParameters(const UBaseCameraObject* CameraObject, FCameraVariableTable& OutVariableTable);
 
+	/** Sets default values of interface parameters in the given variable and context data tables. */
+	static void ApplyDefaultParameters(const UBaseCameraObject* CameraObject, FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable);
+
+private:
+
+	static void ApplyDefaultParametersImpl(const UBaseCameraObject* CameraObject, FCameraVariableTable* OutVariableTable, FCameraContextDataTable* OutContextDataTable);
+
 public:
 
 	/** 
