@@ -100,5 +100,45 @@ void FRootCameraNodeEvaluator::BroadcastCameraRigEvent(const FRootCameraNodeCame
 	OnCameraRigEventDelegate.Broadcast(InEvent);
 }
 
+void FRootCameraNodeEvaluator::StopCameraVariableSetter(const FCameraVariableSetterHandle& InHandle, bool bImmediately)
+{
+	if (VariableSetters.IsValidIndex(InHandle.Value))
+	{
+		FVariableSetterEntry& Entry(VariableSetters[InHandle.Value]);
+		if (Entry.ThisHandle.SerialNumber == InHandle.SerialNumber)
+		{
+			Entry.Setter->Stop(bImmediately);
+		}
+	}
+}
+
+void FRootCameraNodeEvaluator::UpdateCameraVariableSetters(float DeltaTime)
+{
+	for (auto It = VariableSetters.CreateIterator(); It; ++It)
+	{
+		FVariableSetterEntry& Entry(*It);
+		if (!Entry.Setter.IsValid())
+		{
+			It.RemoveCurrent();
+			continue;
+		}
+
+		Entry.Setter->Update(DeltaTime);
+
+		if (!Entry.Setter->IsActive())
+		{
+			It.RemoveCurrent();
+		}
+	}
+}
+
+void FRootCameraNodeEvaluator::ApplyCameraVariableSetters(FCameraVariableTable& OutVariableTable)
+{
+	for (FVariableSetterEntry& Entry : VariableSetters)
+	{
+		Entry.Setter->Apply(OutVariableTable);
+	}
+}
+
 }  // namespace UE::Cameras
 

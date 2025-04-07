@@ -94,16 +94,15 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	}
 
 	// Allocate variable table and context data table.
+	NewEntry.ContextResult.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
+	NewEntry.ContextResult.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
 	NewEntry.Result.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
 	NewEntry.Result.ContextDataTable.Initialize(CameraRig->AllocationInfo.ContextDataTableInfo);
 
-	// Set the default values, so that pre-blending from default values works.
-	FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.Result.VariableTable);
-
 	// Set all the data from the context.
 	const FCameraNodeEvaluationResult& ContextResult = EvaluationContext->GetInitialResult();
-	NewEntry.Result.VariableTable.OverrideAll(ContextResult.VariableTable, true);
-	NewEntry.Result.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
+	NewEntry.ContextResult.VariableTable.OverrideAll(ContextResult.VariableTable, true);
+	NewEntry.ContextResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 	// Add some conditional result if necessary.
 	if (bSetActiveResult && EvaluationContext)
@@ -111,8 +110,8 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 		const FCameraNodeEvaluationResult* ActiveOnlyResult = EvaluationContext->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig);
 		if (ActiveOnlyResult)
 		{
-			NewEntry.Result.VariableTable.OverrideAll(ActiveOnlyResult->VariableTable, true);
-			NewEntry.Result.ContextDataTable.OverrideAll(ActiveOnlyResult->ContextDataTable);
+			NewEntry.ContextResult.VariableTable.OverrideAll(ActiveOnlyResult->VariableTable, true);
+			NewEntry.ContextResult.ContextDataTable.OverrideAll(ActiveOnlyResult->ContextDataTable);
 		}
 	}
 
@@ -121,7 +120,13 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	InitParams.Evaluator = OwningEvaluator;
 	InitParams.EvaluationContext = EvaluationContext;
 	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
-	RootEvaluator->Initialize(InitParams, NewEntry.Result);
+	RootEvaluator->Initialize(InitParams, NewEntry.ContextResult);  // Initializing with the context result here.
+
+	// Set default values for unset entries in the variable table, so that pre-blending from default 
+	// values works.
+	FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.ContextResult.VariableTable);
+
+	NewEntry.Result.OverrideAll(NewEntry.ContextResult, true);
 
 	// Wrap up!
 	NewEntry.EntryID = FBlendStackEntryID(NextEntryID++);
@@ -217,6 +222,9 @@ void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 
 void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries)
 {
+	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::ChangedOnly;
+	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
+
 	// Build up these structures so we don't re-resolve evaluation context weak-pointers
 	// multiple times in this function..
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
@@ -281,6 +289,21 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 			// Reset this entry's flags for this frame.
 			FCameraNodeEvaluationResult& CurResult = Entry.Result;
 			CurResult.ResetFrameFlags();
+
+			// Bring the entry's context result up to date with any changes.
+			Entry.ContextResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
+			Entry.ContextResult.VariableTable.Override(ContextResult.VariableTable, VariableTableFilter);
+			Entry.ContextResult.ContextDataTable.Override(ContextResult.ContextDataTable, ContextDataTableFilter);
+			if (ResolvedEntry.bIsActiveEntry)
+			{
+				if (const FCameraNodeEvaluationResult* ActiveOnlyResult = ResolvedEntry.Context->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig))
+				{
+					Entry.ContextResult.VariableTable.Override(ActiveOnlyResult->VariableTable, VariableTableFilter);
+					Entry.ContextResult.ContextDataTable.Override(ActiveOnlyResult->ContextDataTable, ContextDataTableFilter);
+				}
+			}
+			Entry.ContextResult.bIsCameraCut = ContextResult.bIsCameraCut;
+			Entry.ContextResult.bIsValid = ContextResult.bIsValid;
 		}
 		// else: frozen entries may have null contexts or invalid initial results
 		//       because we're not going to update them anyway. We will however blend
@@ -481,6 +504,7 @@ void FBlendStackCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSeria
 
 	for (FCameraRigEntry& Entry : Entries)
 	{
+		Entry.ContextResult.Serialize(Ar);
 		Entry.Result.Serialize(Ar);
 		Ar << Entry.bIsFirstFrame;
 		Ar << Entry.bIsFrozen;

@@ -203,7 +203,9 @@ protected:
 		FBlendStackRootCameraNodeEvaluator* RootEvaluator = nullptr;
 		/** The evaluator tree. */
 		FCameraNodeEvaluatorHierarchy EvaluatorHierarchy;
-		/** Result for this node tree. */
+		/** Context result for this node tree. */
+		FCameraNodeEvaluationResult ContextResult;
+		/** Evaluation result for this node tree. */
 		FCameraNodeEvaluationResult Result;
 		/** Whether this is the first frame this entry runs. */
 		bool bIsFirstFrame = false;

@@ -480,6 +480,11 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParametersImpl(c
 			{
 				continue;
 			}
+			
+			if (OutVariableTable->IsValueWritten(Definition.VariableID))
+			{
+				continue;
+			}
 
 			const FPropertyBagPropertyDesc* PropertyDesc = DefaultParameters.FindPropertyDescByID(Definition.ParameterGuid);
 			if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
@@ -493,6 +498,11 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParametersImpl(c
 		else if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
 			if (!OutContextDataTable || !Definition.DataID.IsValid())
+			{
+				continue;
+			}
+
+			if (OutContextDataTable->IsValueWritten(Definition.DataID))
 			{
 				continue;
 			}

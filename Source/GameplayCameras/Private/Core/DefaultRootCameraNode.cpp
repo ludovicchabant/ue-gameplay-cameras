@@ -76,6 +76,8 @@ FCameraNodeEvaluatorChildrenView FDefaultRootCameraNodeEvaluator::OnGetChildren(
 
 void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	UpdateCameraVariableSetters(Params.DeltaTime);
+
 	BaseLayer->Run(Params, OutResult);
 	MainLayer->Run(Params, OutResult);
 	GlobalLayer->Run(Params, OutResult);

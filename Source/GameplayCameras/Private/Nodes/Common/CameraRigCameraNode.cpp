@@ -8,6 +8,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
 #include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCameraNode)
 
@@ -44,6 +45,14 @@ void FCameraRigCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 {
 	// Apply overrides right away.
 	ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, false);
+
+	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
+	if (const UCameraRigAsset* CameraRig = PrefabNode->CameraRigReference.GetCameraRig())
+	{
+		// Set default values for unset entries in the variable table, so that pre-blending from default 
+		// values works.
+		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, OutResult.VariableTable);
+	}
 }
 
 void FCameraRigCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)

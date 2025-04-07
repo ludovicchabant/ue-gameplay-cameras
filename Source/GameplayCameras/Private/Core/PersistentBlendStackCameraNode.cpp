@@ -204,9 +204,6 @@ void FPersistentBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 
 void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::ChangedOnly;
-	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
-
 	TArray<int32, TInlineAllocator<4>> EntriesToRemove;
 
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
@@ -222,21 +219,21 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 
 			FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-			// Start with the input given to us.
+			// Update the current entry's result.
 			{
 				CurResult.Reset();
+
+				// Start with the input given to us.
 				CurResult.CameraPose = OutResult.CameraPose;
 				CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
 				CurResult.CameraRigJoints.OverrideAll(OutResult.CameraRigJoints);
 				CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
 
 				// Override it with whatever the evaluation context has set on its result.
-				// Evaluation contexts may have private variables we need to pass along, such as when rig parameter
-				// overrides have been set on them, so include private variables in the filter.
-				const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
+				const FCameraNodeEvaluationResult& ContextResult(Entry.ContextResult);
 				CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-				CurResult.VariableTable.Override(ContextResult.VariableTable, VariableTableFilter);
-				CurResult.ContextDataTable.Override(ContextResult.ContextDataTable, ContextDataTableFilter);
+				CurResult.VariableTable.OverrideAll(ContextResult.VariableTable, true);
+				CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 				// Setup flags.
 				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;

@@ -11,6 +11,8 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigCombinationRegistry.h"
 #include "Core/CameraRigTransition.h"
+#include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
 #include "Helpers/CameraRigTransitionFinder.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
 
@@ -111,21 +113,6 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const F
 		return FBlendStackEntryID();
 	}
 	
-	// Take a snapshot of the initial result for having base values during pre-blending.
-	FCameraRigEntryExtraInfo NewExtraInfo;
-	{
-		FCameraNodeEvaluationResult& UnblendedResult = NewExtraInfo.UnblendedResult;
-
-		if (Params.CameraRig)
-		{
-			const FCameraObjectAllocationInfo& AllocationInfo = Params.CameraRig->AllocationInfo;
-			UnblendedResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-			UnblendedResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
-		}
-
-		UnblendedResult.OverrideAll(NewEntry.Result, true);
-	}
-
 #if WITH_EDITOR
 	// Listen to changes to the packages inside which this camera rig is defined. We will hot-reload the
 	// camera node evaluators for this camera rig when we detect changes.
@@ -137,7 +124,7 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const F
 	// Important: we need to move the new entry here because copying evaluator storage
 	// is disabled.
 	Entries.Add(MoveTemp(NewEntry));
-	EntryExtraInfos.Add(MoveTemp(NewExtraInfo));
+	EntryExtraInfos.Emplace();
 
 	if (OnCameraRigEventDelegate.IsBound())
 	{
@@ -245,6 +232,9 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::ChangedOnly;
 	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
 
+	FRootCameraNodeEvaluator* RootNodeEvaluator = Params.Evaluator->GetRootNodeEvaluator();
+	check(RootNodeEvaluator);
+
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
@@ -259,35 +249,25 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		CurParams.EvaluationContext = ResolvedEntry.Context;
 		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
-		FCameraNodeEvaluationResult& UnblendedResult(EntryExtraInfo.UnblendedResult);
-
-		// Reset frame flags to match what happend to the Entry.Result in ResolveEntries.
-		UnblendedResult.ResetFrameFlags();
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
 		// Start with the input given to us.
-		UnblendedResult.VariableTable.OverrideAll(OutResult.VariableTable);
+		CurResult.VariableTable.OverrideAll(OutResult.VariableTable);
 
 		// Override it with whatever the evaluation context has set on its result this frame.
-		// Evaluation contexts may have private variables we need to pass along, such as when rig parameter
-		// overrides have been set on them, so include private variables in the filter.
-		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
-		UnblendedResult.VariableTable.Override(ContextResult.VariableTable, VariableTableFilter);
-		UnblendedResult.ContextDataTable.Override(ContextResult.ContextDataTable, ContextDataTableFilter);
-		if (ResolvedEntry.bIsActiveEntry)
-		{
-			if (const FCameraNodeEvaluationResult* ActiveOnlyResult = ResolvedEntry.Context->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig))
-			{
-				UnblendedResult.VariableTable.Override(ActiveOnlyResult->VariableTable, VariableTableFilter);
-				UnblendedResult.ContextDataTable.Override(ActiveOnlyResult->ContextDataTable, ContextDataTableFilter);
-			}
-		}
+		const FCameraNodeEvaluationResult& ContextResult(Entry.ContextResult);
+		CurResult.VariableTable.OverrideAll(ContextResult.VariableTable, true);
+		CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
+
+		// Override it with variable setters.
+		RootNodeEvaluator->ApplyCameraVariableSetters(CurResult.VariableTable);
 
 		// Gather input parameters if needed (and remember if it was indeed needed).
 		if (!EntryExtraInfo.bInputRunThisFrame)
 		{
 			bool bHasPreBlendedParameters = false;
-			FCameraBlendedParameterUpdateParams InputParams(CurParams, UnblendedResult.CameraPose);
-			FCameraBlendedParameterUpdateResult InputResult(UnblendedResult.VariableTable);
+			FCameraBlendedParameterUpdateParams InputParams(CurParams, CurResult.CameraPose);
+			FCameraBlendedParameterUpdateResult InputResult(CurResult.VariableTable);
 
 			Entry.EvaluatorHierarchy.ForEachEvaluator(ECameraNodeEvaluatorFlags::NeedsParameterUpdate,
 					[&bHasPreBlendedParameters, &InputParams, &InputResult](FCameraNodeEvaluator* ParameterEvaluator)
@@ -308,29 +288,11 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
 			if (EntryBlendEvaluator)
 			{
-				EntryBlendEvaluator->Run(CurParams, UnblendedResult);
+				EntryBlendEvaluator->Run(CurParams, CurResult);
 			}
 
 			EntryExtraInfo.bBlendRunThisFrame = true;
 		}
-
-		// Assign the new unblended result back to the entry result. The goal is that:
-		//
-		// 1) We only write values from the context result when they have been written to.
-		//    That is, we don't always set all values every frame. When "left alone", a camera rig
-		//    should retain whatever values it was last set with. For instance, if a camera rig 
-		//    received special values when it was the active camera rig, we want to keep those 
-		//    values when it starts blending out, instead of immediately overwriting them with
-		//    the "common" values (i.e. the values from the initial result).
-		//
-		// 2) However, we do want to write all the values into the PreBlendVariableTable every
-		//    frame, so that we can have them blend together. The blended values are then reassigned
-		//    to Entry.Result in InternalPreBlendExecute, which means we lose each camera rig's
-		//    "intended" values. Getting them from the evaluation context each frame would violate
-		//    previous item (1) so that's why we use the UnblendedResult as a snapshot.
-		//
-		FCameraNodeEvaluationResult& CurResult(Entry.Result);
-		CurResult.OverrideAll(UnblendedResult, true);
 	}
 }
 
@@ -353,7 +315,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		FCameraNodeEvaluationResult& UnblendedResult(EntryExtraInfo.UnblendedResult);
+		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
 		if (!Entry.bIsFrozen)
 		{
@@ -361,7 +323,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 			CurParams.EvaluationContext = ResolvedEntry.Context;
 			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
 
-			FCameraNodePreBlendParams PreBlendParams(CurParams, UnblendedResult.CameraPose, UnblendedResult.VariableTable);
+			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
 			PreBlendParams.VariableTableFilter = VariableTableFilter;
 
 			FCameraNodePreBlendResult PreBlendResult(PreBlendVariableTable);
@@ -374,14 +336,14 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 			}
 			else
 			{
-				PreBlendVariableTable.Override(UnblendedResult.VariableTable, PreBlendParams.VariableTableFilter);
+				PreBlendVariableTable.Override(CurResult.VariableTable, PreBlendParams.VariableTableFilter);
 				EntryExtraInfo.bIsPreBlendFull = true;
 			}
 		}
 		else
 		{
 			// Frozen entries still contribute to the blend using their last evaluated values.
-			PreBlendVariableTable.Override(UnblendedResult.VariableTable, VariableTableFilter);
+			PreBlendVariableTable.Override(CurResult.VariableTable, VariableTableFilter);
 		}
 	}
 
@@ -391,14 +353,10 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
-
 		if (!Entry.bIsFrozen)
 		{
-			FCameraNodeEvaluationResult& UnblendedResult(EntryExtraInfo.UnblendedResult);
 			FCameraNodeEvaluationResult& CurResult(Entry.Result);
-
-			Entry.Result.VariableTable.Override(PreBlendVariableTable, ECameraVariableTableFilter::KnownOnly);
+			CurResult.VariableTable.Override(PreBlendVariableTable, ECameraVariableTableFilter::KnownOnly);
 		}
 	}
 }
@@ -428,17 +386,9 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
 
 		// Override it with whatever the evaluation context has set on its result.
-		const FCameraNodeEvaluationResult& ContextResult(ResolvedEntry.Context->GetInitialResult());
+		const FCameraNodeEvaluationResult& ContextResult(Entry.ContextResult);
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
 		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
-		if (ResolvedEntry.bIsActiveEntry)
-		{
-			if (const FCameraNodeEvaluationResult* ActiveOnlyResult = ResolvedEntry.Context->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig))
-			{
-				CurResult.CameraPose.OverrideChanged(ActiveOnlyResult->CameraPose);
-				CurResult.bIsCameraCut |= ActiveOnlyResult->bIsCameraCut;
-			}
-		}
 		
 		CurResult.bIsValid = true;
 
@@ -648,34 +598,6 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 
 	return nullptr;
 }
-
-#if WITH_EDITOR
-
-void FTransientBlendStackCameraNodeEvaluator::OnEntryReinitialized(int32 EntryIndex)
-{
-	if (!ensure(EntryExtraInfos.IsValidIndex(EntryIndex)))
-	{
-		return;
-	}
-
-	FCameraRigEntry& Entry = Entries[EntryIndex];
-	FCameraRigEntryExtraInfo& ExtraInfo = EntryExtraInfos[EntryIndex];
-	{
-		// Update our extra info with the new data.
-		FCameraNodeEvaluationResult& UnblendedResult = ExtraInfo.UnblendedResult;
-
-		if (Entry.CameraRig)
-		{
-			const FCameraObjectAllocationInfo& AllocationInfo = Entry.CameraRig->AllocationInfo;
-			UnblendedResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-			UnblendedResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
-		}
-
-		UnblendedResult.OverrideAll(Entry.Result, true);
-	}
-}
-
-#endif
 
 }  // namespace UE::Cameras
 
