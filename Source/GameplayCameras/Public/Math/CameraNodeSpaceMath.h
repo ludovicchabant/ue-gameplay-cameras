@@ -56,6 +56,9 @@ public:
 
 	/** Offsets a given world position in the specified camera node space. */
 	static bool OffsetCameraNodeSpacePosition(const FCameraNodeSpaceParams& Params, const FVector3d& InPosition, const FVector3d& InOffset, ECameraNodeSpace InSpace, FVector3d& OutPosition);
+
+	/** Offsets a given world transform in the specified camera node space. */
+	static bool OffsetCameraNodeSpaceTransform(const FCameraNodeSpaceParams& Params, const FTransform3d& InTransform, const FVector3d& InLocationOffset, const FRotator3d& InRotationOffset, ECameraNodeSpace InSpace, FTransform3d& OutTransform);
 };
 
 }  // namespace UE::Cameras

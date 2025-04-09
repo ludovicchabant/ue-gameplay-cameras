@@ -4,12 +4,14 @@
 
 #include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraPose.h"
 #include "Core/CameraRigJoints.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Math/Axis.h"
 
 namespace UE::Cameras
 {
@@ -274,6 +276,85 @@ bool FCameraNodeSpaceMath::OffsetCameraNodeSpacePosition(const FCameraNodeSpaceP
 	}
 
 	return bGotWorldOffset;
+}
+
+bool FCameraNodeSpaceMath::OffsetCameraNodeSpaceTransform(const FCameraNodeSpaceParams& Params, const FTransform3d& InTransform, const FVector3d& InLocationOffset, const FRotator3d& InRotationOffset, ECameraNodeSpace InSpace, FTransform3d& OutTransform)
+{
+	FTransform3d LocalSpace;
+	bool bApplyLocalSpaceTransform = true;
+	bool bIsValid = false;
+
+	switch (InSpace)
+	{
+		case ECameraNodeSpace::CameraPose:
+		default:
+			{
+				OutTransform = FTransform3d(InRotationOffset, InLocationOffset) * InTransform;
+				bApplyLocalSpaceTransform = false;
+				bIsValid = true;
+			}
+			break;
+		case ECameraNodeSpace::ActiveContext:
+			if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
+			{
+				const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
+				LocalSpace = InitialResult.CameraPose.GetTransform();
+				bIsValid = true;
+			}
+			break;
+		case ECameraNodeSpace::OwningContext:
+			if (TSharedPtr<const FCameraEvaluationContext> OwningContext = Params.GetOwningContext())
+			{ 
+				const FCameraNodeEvaluationResult& InitialResult = OwningContext->GetInitialResult();
+				LocalSpace = InitialResult.CameraPose.GetTransform();
+				bIsValid = true;
+			}
+			break;
+		case ECameraNodeSpace::Pivot:
+			{
+				FTransform PivotTransform;
+				if (Params.FindPivotTransform(PivotTransform))
+				{
+					LocalSpace = PivotTransform;
+					bIsValid = true;
+				}
+				else if (TSharedPtr<const FCameraEvaluationContext> ActiveContext = Params.GetActiveContext())
+				{
+					const FCameraNodeEvaluationResult& InitialResult = ActiveContext->GetInitialResult();
+					LocalSpace = InitialResult.CameraPose.GetTransform();
+					bIsValid = true;
+				}
+			}
+			break;
+		case ECameraNodeSpace::World:
+			{
+				OutTransform = InTransform;
+				OutTransform.SetTranslation(InLocationOffset + InTransform.GetTranslation());
+				OutTransform.SetRotation(InRotationOffset.Quaternion() * InTransform.GetRotation());
+				bApplyLocalSpaceTransform = false;
+				bIsValid = true;
+			}
+			break;
+	}
+
+	if (bIsValid && bApplyLocalSpaceTransform)
+	{
+		const FVector3d WorldTranslationOffset = LocalSpace.TransformVector(InLocationOffset);
+
+		const FVector3d ContextForward = LocalSpace.GetUnitAxis(EAxis::X);
+		const FVector3d ContextRight = LocalSpace.GetUnitAxis(EAxis::Y);
+		const FVector3d ContextUp = LocalSpace.GetUnitAxis(EAxis::Z);
+		const FQuat WorldRotationOffset = 
+			FQuat(ContextUp, FMath::DegreesToRadians(InRotationOffset.Yaw)) * 
+			FQuat(ContextRight, -FMath::DegreesToRadians(InRotationOffset.Pitch)) *
+			FQuat(ContextForward, -FMath::DegreesToRadians(InRotationOffset.Roll));
+
+		OutTransform = InTransform;
+		OutTransform.SetTranslation(WorldTranslationOffset + InTransform.GetTranslation());
+		OutTransform.SetRotation(WorldRotationOffset * InTransform.GetRotation());
+	}
+
+	return bIsValid;
 }
 
 }  // namespace UE::Cameras

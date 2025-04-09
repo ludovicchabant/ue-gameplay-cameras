@@ -2,10 +2,8 @@
 
 #include "Nodes/Common/OffsetCameraNode.h"
 
-#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
-#include "GameplayCameras.h"
-#include "Math/Axis.h"
+#include "Math/CameraNodeSpaceMath.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OffsetCameraNode)
 
@@ -42,55 +40,18 @@ void FOffsetCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params
 	const FRotator3d RotationOffset = RotationReader.Get(OutResult.VariableTable);
 
 	const UOffsetCameraNode* OffsetNode = GetCameraNodeAs<UOffsetCameraNode>();
-	switch (OffsetNode->OffsetSpace)
+
+	FTransform3d OutTransform;
+	const bool bSuccess = FCameraNodeSpaceMath::OffsetCameraNodeSpaceTransform(
+			FCameraNodeSpaceParams(Params, OutResult),
+			OutResult.CameraPose.GetTransform(),
+			TranslationOffset,
+			RotationOffset,
+			OffsetNode->OffsetSpace,
+			OutTransform);
+	if (bSuccess)
 	{
-		case ECameraNodeSpace::CameraPose:
-		default:
-			{
-				FTransform3d Transform = OutResult.CameraPose.GetTransform();
-				Transform = FTransform3d(RotationOffset, TranslationOffset) * Transform;
-				OutResult.CameraPose.SetTransform(Transform);
-			}
-			break;
-		case ECameraNodeSpace::OwningContext:
-			if (Params.EvaluationContext)
-			{ 
-				// The offsets are meant to be treated as context-local. Let's get the context transform
-				// and apply the offsets using that transform's axes.
-				const FCameraNodeEvaluationResult& InitialResult = Params.EvaluationContext->GetInitialResult();
-				const FTransform3d ContextTransform = InitialResult.CameraPose.GetTransform();
-
-				const FVector3d WorldTranslationOffset = ContextTransform.TransformVector(TranslationOffset);
-
-				const FVector3d ContextForward = ContextTransform.GetUnitAxis(EAxis::X);
-				const FVector3d ContextRight = ContextTransform.GetUnitAxis(EAxis::Y);
-				const FVector3d ContextUp = ContextTransform.GetUnitAxis(EAxis::Z);
-				const FQuat WorldRotationOffset = 
-					FQuat(ContextUp, FMath::DegreesToRadians(RotationOffset.Yaw)) * 
-					FQuat(ContextRight, -FMath::DegreesToRadians(RotationOffset.Pitch)) *
-					FQuat(ContextForward, -FMath::DegreesToRadians(RotationOffset.Roll));
-
-				FTransform3d Transform = OutResult.CameraPose.GetTransform();
-				Transform.SetTranslation(Transform.GetTranslation() + WorldTranslationOffset);
-				Transform.SetRotation(WorldRotationOffset * Transform.GetRotation());
-				OutResult.CameraPose.SetTransform(Transform);
-			}
-			else
-			{
-				UE_LOG(LogCameraSystem, Error, 
-						TEXT("OffsetCameraNode: cannot offset in context space when there is "
-							 "no current context set."));
-				return;
-			}
-			break;
-		case ECameraNodeSpace::World:
-			{
-				FTransform3d Transform = OutResult.CameraPose.GetTransform();
-				Transform.SetTranslation(Transform.GetTranslation() + TranslationOffset);
-				Transform.SetRotation(RotationOffset.Quaternion() * Transform.GetRotation());
-				OutResult.CameraPose.SetTransform(Transform);
-			}
-			break;
+		OutResult.CameraPose.SetTransform(OutTransform);
 	}
 }
 
