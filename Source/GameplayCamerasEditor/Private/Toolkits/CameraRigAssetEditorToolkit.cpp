@@ -2,6 +2,7 @@
 
 #include "Toolkits/CameraRigAssetEditorToolkit.h"
 
+#include "BlueprintActionDatabase.h"
 #include "Build/CameraBuildLog.h"
 #include "Build/CameraRigAssetBuilder.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
@@ -336,6 +337,11 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	for (const UPackage* BuiltPackage : BuiltPackages)
 	{
 		LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
+	}
+
+	if (FBlueprintActionDatabase* Database = FBlueprintActionDatabase::TryGet())
+	{
+		Database->RefreshAssetActions(CameraRigAsset);
 	}
 }
 
