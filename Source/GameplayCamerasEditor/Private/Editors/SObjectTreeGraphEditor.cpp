@@ -491,7 +491,7 @@ void SObjectTreeGraphEditor::PasteNodes()
 	FString TextToImport;
 	FPlatformApplicationMisc::ClipboardPaste(TextToImport);
 	
-	ImportNodesFromText(GraphEditor->GetPasteLocation(), TextToImport);
+	ImportNodesFromText(GraphEditor->GetPasteLocation2f(), TextToImport);
 }
 
 bool SObjectTreeGraphEditor::CanPasteNodes()

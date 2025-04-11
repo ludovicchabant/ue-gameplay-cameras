@@ -28,7 +28,7 @@ public:
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	virtual void GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const override;
 	virtual void PostPlacedNewNode() override;
-	virtual void ResizeNode(const FVector2D& NewSize) override;
+	virtual void ResizeNode(const FVector2f& NewSize) override;
 	virtual void OnRenameNode(const FString& NewName) override;
 
 public:

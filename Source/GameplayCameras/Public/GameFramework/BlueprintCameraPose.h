@@ -129,7 +129,7 @@ public:
 
 	/** Projection mode - Perspective or orthographic */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
-	TEnumAsByte<ECameraProjectionMode::Type> ProjectionMode;
+	TEnumAsByte<ECameraProjectionMode::Type> ProjectionMode = ECameraProjectionMode::Perspective;
 
 public:
 

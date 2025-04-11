@@ -16,7 +16,7 @@ public:
 	static TSharedRef<FCameraNodeGraphInterfaceParameterDragDropOp> New(UCameraObjectInterfaceParameterBase* InInterfaceParameter);
 
 	FReply ExecuteDragOver(TSharedPtr<SGraphEditor> GraphEditor);
-	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FVector2D& NewLocation);
+	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const UE::Slate::FDeprecateVector2DParameter& NewLocation);
 
 private:
 

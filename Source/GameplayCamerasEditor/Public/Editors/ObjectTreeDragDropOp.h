@@ -23,7 +23,7 @@ public:
 	TArrayView<UClass* const> GetObjectClasses() const { return ObjectClasses; }
 
 	FReply ExecuteDragOver(TSharedPtr<SGraphEditor> GraphEditor);
-	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FVector2D& NewLocation);
+	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const UE::Slate::FDeprecateVector2DParameter& NewLocation);
 
 private:
 

@@ -123,7 +123,7 @@ void FRichCurveViewportInterface::CreateTexture()
 		return;
 	}
 
-	Texture = new FSlateTexture2DRHIRef(DesiredTextureSize.X, DesiredTextureSize.Y, PF_B8G8R8A8, NULL, TexCreate_Dynamic);
+	Texture = new FSlateTexture2DRHIRef(DesiredTextureSize.X, DesiredTextureSize.Y, PF_B8G8R8A8, NULL, TexCreate_None);
 	RenderTarget = new FSlateTextureRenderTarget2DResource(FLinearColor::Black, DesiredTextureSize.X, DesiredTextureSize.Y, PF_B8G8R8A8, SF_Point, TA_Wrap, TA_Wrap, 0.0f);
 
 	FSlateTexture2DRHIRef* TexturePtr = Texture;

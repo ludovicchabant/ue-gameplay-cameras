@@ -38,7 +38,7 @@ FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDragOver(TSharedPtr<
 	return FReply::Handled();
 }
 
-FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FVector2D& NewLocation)
+FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const UE::Slate::FDeprecateVector2DParameter& NewLocation)
 {
 	if (!InterfaceParameter || InterfaceParameter->bHasGraphNode)
 	{
