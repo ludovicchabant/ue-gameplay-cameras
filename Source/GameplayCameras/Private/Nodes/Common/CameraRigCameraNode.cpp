@@ -117,6 +117,14 @@ void UCameraRigCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 	BuildContext.AllocationInfo.Append(CameraRig->AllocationInfo);
 }
 
+void UCameraRigCameraNode::GatherPackages(FCameraRigPackages& OutPackages) const
+{
+	if (const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig())
+	{
+		CameraRig->GatherPackages(OutPackages);
+	}
+}
+
 void UCameraRigCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
 {
 	CameraRigReference.GetCustomCameraNodeParameters(OutParameterInfos);

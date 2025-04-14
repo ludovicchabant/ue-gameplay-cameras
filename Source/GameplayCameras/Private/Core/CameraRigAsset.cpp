@@ -6,6 +6,7 @@
 #include "Build/CameraRigAssetBuilder.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraVariableAssets.h"
+#include "Core/IAssetReferenceCameraNode.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
 
@@ -148,6 +149,11 @@ void UCameraRigAsset::GatherPackages(FCameraRigPackages& OutPackages) const
 		UCameraNode* CurrentNode = NodeStack.Pop();
 		const UPackage* CurrentPackage = CurrentNode->GetOutermost();
 		OutPackages.AddUnique(CurrentPackage);
+
+		if (IAssetReferenceCameraNode* AssetReferencer = Cast<IAssetReferenceCameraNode>(CurrentNode))
+		{
+			AssetReferencer->GatherPackages(OutPackages);
+		}
 
 		FCameraNodeChildrenView CurrentChildren = CurrentNode->GetChildren();
 		for (UCameraNode* CurrentChild : ReverseIterate(CurrentChildren))

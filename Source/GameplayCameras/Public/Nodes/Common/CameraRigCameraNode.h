@@ -5,6 +5,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
+#include "Core/IAssetReferenceCameraNode.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
 #include "CameraRigCameraNode.generated.h"
@@ -15,6 +16,7 @@
 UCLASS(MinimalAPI, meta=(DisplayName="Camera Rig Prefab", CameraNodeCategories="Common,Utility"))
 class UCameraRigCameraNode 
 	: public UCameraNode
+	, public IAssetReferenceCameraNode
 	, public ICustomCameraNodeParameterProvider
 {
 	GENERATED_BODY()
@@ -25,6 +27,9 @@ protected:
 	virtual void OnPreBuild(FCameraBuildLog& BuildLog) override;
 	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
+
+	// IAssetReferenceCameraNode interface.
+	virtual void GatherPackages(FCameraRigPackages& OutPackages) const override;
 
 	// ICustomCameraNodeParameterProvider interface.
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
