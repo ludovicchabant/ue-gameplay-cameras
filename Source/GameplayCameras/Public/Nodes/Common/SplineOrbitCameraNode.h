@@ -84,6 +84,9 @@ public:
 	UPROPERTY(EditAnywhere, Category="Spline Orbit", meta=(CurveEditorXLabelFormat="{0}deg"))
 	FCameraRotatorCurve RotationOffsetSpline;
 
+	UPROPERTY(EditAnywhere, Category="Spline Orbit")
+	FFloatCameraParameter LocationOffsetMultiplier = 1.f;
+
 	/**
 	 * The space in which the control points' TargetOffset is applied.
 	 */

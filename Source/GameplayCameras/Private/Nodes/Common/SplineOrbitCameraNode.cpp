@@ -4,6 +4,7 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraOperation.h"
+#include "Core/CameraParameterReader.h"
 #include "Core/CameraRigJoints.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
@@ -14,9 +15,7 @@
 #include "IGameplayCamerasModule.h"
 #include "IGameplayCamerasLiveEditListener.h"
 #include "IGameplayCamerasLiveEditManager.h"
-#include "Math/Axis.h"
 #include "Math/CameraNodeSpaceMath.h"
-#include "Math/InterpCurve.h"
 #include "Math/Ray.h"
 #include "Nodes/Input/Input2DCameraNode.h"
 
@@ -79,6 +78,8 @@ private:
 	FCompressedRichCurve TargetOffsetSpline[3];
 	FCompressedRichCurve RotationOffsetSpline[3];
 
+	TCameraParameterReader<float> LocationOffsetMultiplierReader;
+
 	bool bHasAnyTargetOffset = false;
 	bool bHasAnyRotationOffset = false;
 
@@ -125,6 +126,9 @@ void FSplineOrbitCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
 
 	RebuildCurves();
+
+	const USplineOrbitCameraNode* SplineOrbitNode = GetCameraNodeAs<USplineOrbitCameraNode>();
+	LocationOffsetMultiplierReader.Initialize(SplineOrbitNode->LocationOffsetMultiplier);
 
 #if WITH_EDITOR
 	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
@@ -194,7 +198,8 @@ void FSplineOrbitCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 			LocationOffsetSpline[0].Eval(OrbitRotation.Pitch),
 			LocationOffsetSpline[1].Eval(OrbitRotation.Pitch),
 			LocationOffsetSpline[2].Eval(OrbitRotation.Pitch));
-	FTransform3d OrbitTransform(FTransform3d(LocationOffset) * OrbitPivot);
+	const float LocationOffsetMultiplier = LocationOffsetMultiplierReader.Get(OutResult.VariableTable);
+	FTransform3d OrbitTransform(FTransform3d(LocationOffset * LocationOffsetMultiplier) * OrbitPivot);
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	DebugYawPitch = FVector2d(OrbitRotation.Yaw, OrbitRotation.Pitch);
