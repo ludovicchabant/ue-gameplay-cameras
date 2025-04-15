@@ -150,50 +150,6 @@ class UBlueprintCameraPoseFunctionLibrary : public UBlueprintFunctionLibrary
 
 public:
 
-	/** Gets the location of the camera pose. */
-	UFUNCTION(BlueprintPure, Category="Camera")
-	static inline FVector GetLocation(const FBlueprintCameraPose& CameraPose) { return CameraPose.Location; }
-
-	/** Gets the rotation of the camera pose. */
-	UFUNCTION(BlueprintPure, Category="Camera")
-	static inline FRotator GetRotation(const FBlueprintCameraPose& CameraPose) { return CameraPose.Rotation; }
-
-	/** Gets the target distance of the camera pose. */
-	UFUNCTION(BlueprintPure, Category="Camera")
-	static inline double GetTargetDistance(const FBlueprintCameraPose& CameraPose) { return CameraPose.TargetDistance; }
-
-	/** Gets the field of view of the camera pose. */
-	UFUNCTION(BlueprintPure, Category="Camera")
-	static inline double GetFieldOfView(const FBlueprintCameraPose& CameraPose) { return CameraPose.FieldOfView; }
-
-	/** Gets the focal length of the camera pose. */
-	UFUNCTION(BlueprintPure, Category="Camera")
-	static inline double GetFocalLength(const FBlueprintCameraPose& CameraPose) { return CameraPose.FocalLength; }
-	
-public:
-
-	/** Creates a copy of the given camera pose with the given location. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static FBlueprintCameraPose SetLocation(const FBlueprintCameraPose& CameraPose, const FVector& Location);
-
-	/** Creates a copy of the given camera pose with the given rotation. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static FBlueprintCameraPose SetRotation(const FBlueprintCameraPose& CameraPose, const FRotator& Rotation);
-
-	/** Creates a copy of the given camera pose with the given target distance. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static FBlueprintCameraPose SetTargetDistance(const FBlueprintCameraPose& CameraPose, double TargetDistance);
-
-	/** Creates a copy of the given camera pose with the given field of view. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static FBlueprintCameraPose SetFieldOfView(const FBlueprintCameraPose& CameraPose, float FieldOfView);
-
-	/** Creates a copy of the given camera pose with the given focal length. */
-	UFUNCTION(BlueprintCallable, Category="Camera")
-	static FBlueprintCameraPose SetFocalLength(const FBlueprintCameraPose& CameraPose, float FocalLength);
-
-public:
-
 	/** Gets the transform matrix of the camera pose. */
 	UFUNCTION(BlueprintPure, Category="Camera")
 	static FTransform GetTransform(const FBlueprintCameraPose& CameraPose);
