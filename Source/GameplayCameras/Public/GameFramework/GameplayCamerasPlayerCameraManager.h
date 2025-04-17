@@ -4,12 +4,11 @@
 
 #include "Camera/PlayerCameraManager.h"
 #include "Core/CameraEvaluationContext.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 #include "Nodes/Blends/SimpleBlendCameraNode.h"
 
 #include "GameplayCamerasPlayerCameraManager.generated.h"
 
-class AGameplayCameraSystemActor;
-class UGameplayCameraSystemHost;
 struct FCameraRigInstanceID;
 
 namespace UE::Cameras
@@ -38,16 +37,15 @@ class FViewTargetContextReferencerService;
  * two actors.
  */
 UCLASS(notplaceable, MinimalAPI)
-class AGameplayCamerasPlayerCameraManager : public APlayerCameraManager
+class AGameplayCamerasPlayerCameraManager 
+	: public APlayerCameraManager
+	, public IGameplayCameraSystemHost
 {
 	GENERATED_BODY()
 
 public:
 
 	AGameplayCamerasPlayerCameraManager(const FObjectInitializer& ObjectInitializer);
-
-	/** Gets the camera system host object. */
-	UGameplayCameraSystemHost* GetCameraSystemHost() const { return CameraSystemHost; }
 
 public:
 
@@ -78,9 +76,14 @@ public:
 	virtual void ProcessViewRotation(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot) override;
 
 	// AActor interface.
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
+
+	// UObject interface.
+	virtual void BeginDestroy() override;
+	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
+
+	// IGameplayCameraSystemHost interface.
+	virtual UObject* GetAsObject() override { return this; }
 
 protected:
 
@@ -89,21 +92,13 @@ protected:
 
 private:
 
-	void AcquireCameraSystemHost(APlayerController* PlayerController);
-	void ReleaseCameraSystemHost();
+	void EnsureCameraSystemHost();
+	void TeardownCameraSystemHost();
 
 private:
 
 	UPROPERTY(Transient)
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
-
-	UPROPERTY(Transient)
 	TObjectPtr<APlayerCameraManager> OriginalCameraManager;
-
-	UPROPERTY(Transient)
-	TWeakObjectPtr<AGameplayCameraSystemActor> WeakOriginalAutoCameraSystemActor;
-
-	TSharedPtr<UE::Cameras::FCameraSystemEvaluator> CameraSystemEvaluator;
 
 	TSharedPtr<UE::Cameras::FViewTargetContextReferencerService> ViewTargetContextReferencerService;
 

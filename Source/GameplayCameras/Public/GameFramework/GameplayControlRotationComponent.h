@@ -6,8 +6,8 @@
 
 #include "GameplayControlRotationComponent.generated.h"
 
+class IGameplayCameraSystemHost;
 class APlayerController;
-class UGameplayCameraSystemHost;
 class UCanvas;
 class UInputAction;
 
@@ -96,7 +96,7 @@ private:
 	TObjectPtr<APlayerController> PlayerController;
 
 	UPROPERTY()
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
+	TScriptInterface<IGameplayCameraSystemHost> CameraSystemHost;
 
 	TSharedPtr<UE::Cameras::FPlayerControlRotationEvaluationService> ControlRotationService;
 };

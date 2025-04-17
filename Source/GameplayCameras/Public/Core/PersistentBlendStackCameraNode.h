@@ -81,6 +81,9 @@ public:
 	/** Remove an existing camera rig from the blend stack. */
 	void Remove(const FBlendStackCameraRemoveParams& Params);
 
+	/** Remove all existing camera rigs with the given context from the blend stack. */
+	void RemoveAll(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately);
+
 protected:
 
 	// FCameraNodeEvaluator interface.
@@ -95,8 +98,10 @@ private:
 
 	void InternalUpdate(TArrayView<FResolvedEntry> ResolvedEntries, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
+	void RemoveEntry(int32 EntryIndex, const UCameraRigTransition* TransitionOverride, bool bImmediately);
+
 	const UCameraRigTransition* FindEnterTransition(const FBlendStackCameraInsertParams& Params) const;
-	const UCameraRigTransition* FindExitTransition(const FBlendStackCameraRemoveParams& Params, const FCameraRigEntry& Entry) const;
+	const UCameraRigTransition* FindExitTransition(const FCameraRigEntry& Entry, const UCameraRigTransition* TransitionOverride) const;
 
 private:
 

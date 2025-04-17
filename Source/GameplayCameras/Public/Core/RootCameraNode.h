@@ -125,9 +125,10 @@ public:
 	 */
 	void DeactivateCameraRig(const FDeactivateCameraRigParams& Params);
 
-	/**
-	 * Execute a request to activate or deactivate a camera rig.
-	 */
+	/** Deactivates all camera rigs with the given evaluation context. */
+	void DeactivateAllCameraRigs(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately);
+
+	/** Execute a request to activate or deactivate a camera rig. */
 	void ExecuteCameraDirectorRequest(const FCameraRigActivationDeactivationRequest& Request);
 
 	/** Gets information about the active camera rig in the main layer. */
@@ -136,8 +137,11 @@ public:
 	/** Gets information about a specified camera rig. */
 	void GetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const;
 
-	/** Gets whether any camera rig is running. */
+	/** Gets whether any camera rig is running in the main layer. */
 	bool HasAnyActiveCameraRig() const;
+
+	/** Gets whether any camera rig is running with the given context in the main layer. */
+	bool HasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const;
 
 	/** Gets the variable table containing the blended camera object interfaces parameters. */
 	const FCameraVariableTable* GetBlendedParameters() const;
@@ -182,8 +186,14 @@ protected:
 	/** Deactivates a camera rig. */
 	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) {}
 
+	/** Deactivates all camera rigs with the given evaluation context. */
+	virtual void OnDeactivateAllCameraRigs(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately) {}
+
 	/** Gets information about the active camera rig in the main layer. */
 	virtual void OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const {}
+
+	/** Gets whether any camera rig is running with the given context in the main layer. */
+	virtual bool OnHasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const { return false; }
 
 	/** Gets information about a specified camera rig. */
 	virtual void OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const {}

@@ -34,24 +34,6 @@ public:
 
 public:
 
-	/**
-	 * Get the automatically spawned camera system actor, if it exists.
-	 * Returns null if bAutoSpawnCameraSystemActor is disabled in the GameplayCameras 
-	 * settings, or if no actor has been spawned yet.
-	 */
-	UFUNCTION(BlueprintCallable, Category=Camera)
-	static AGameplayCameraSystemActor* GetAutoSpawnedCameraSystemActor(APlayerController* PlayerController, bool bSpawnIfMissing = false);
-
-	/**
-	 * Automatically sets a camera system actor as the view-target, spawning a unique
-	 * instance if needed. Doesn't do anything if bAutoSpawnCameraSystemActor is disabled
-	 * in the GameplayCameras settings.
-	 */
-	UFUNCTION(BlueprintCallable, Category=Camera)
-	static void AutoManageActiveViewTarget(APlayerController* PlayerController);
-
-public:
-
 	// AActor interface.
 	virtual void CalcCamera(float DeltaTime, struct FMinimalViewInfo& OutResult) override;
 

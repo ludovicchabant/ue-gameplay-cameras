@@ -13,11 +13,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "GameFramework/ActorCameraEvaluationContext.h"
-#include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/GameplayCameraRigComponent.h"
-#include "GameFramework/GameplayCameraSystemActor.h"
-#include "GameFramework/GameplayCameraSystemComponent.h"
-#include "GameFramework/GameplayCameraSystemHost.h"
+#include "GameFramework/GameplayCameraComponentBase.h"
 #include "GameFramework/PlayerController.h"
 #include "Services/CameraModifierService.h"
 #include "UObject/Package.h"
@@ -125,6 +121,21 @@ AGameplayCamerasPlayerCameraManager::AGameplayCamerasPlayerCameraManager(const F
 {
 }
 
+void AGameplayCamerasPlayerCameraManager::BeginDestroy()
+{
+	TeardownCameraSystemHost();
+
+	Super::BeginDestroy();
+}
+
+void AGameplayCamerasPlayerCameraManager::AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector)
+{
+	Super::AddReferencedObjects(InThis, Collector);
+
+	AGameplayCamerasPlayerCameraManager* This = CastChecked<AGameplayCamerasPlayerCameraManager>(InThis);
+	This->IGameplayCameraSystemHost::OnAddReferencedObjects(Collector);
+}
+
 void AGameplayCamerasPlayerCameraManager::StealPlayerController(APlayerController* PlayerController)
 {
 	using namespace UE::Cameras;
@@ -140,28 +151,7 @@ void AGameplayCamerasPlayerCameraManager::StealPlayerController(APlayerControlle
 	PlayerController->PlayerCameraManager = this;
 	InitializeFor(PlayerController);
 
-	if (WeakOriginalAutoCameraSystemActor != OriginalViewTarget)
-	{
-		// We had some arbitrary view target before. Let's keep it.
-		SetViewTarget(OriginalViewTarget);
-	}
-	else
-	{
-		// The original view target was our camera system, so nothing changes. We will restore 
-		// that actor as the view target on the original camera manager when we're done.
-		//
-		// Let's set the view target to whatever owns the active context, or fall back to the
-		// player controller if the active context owner isn't an actor. We need to avoid using
-		// SetViewTarget otherwise that would create another evaluation context. Instead we
-		// call AssignViewTarget directly.
-		TSharedPtr<FCameraEvaluationContext> ActiveContext = CameraSystemEvaluator->GetEvaluationContextStack().GetActiveContext();
-		if (ActiveContext && ActiveContext->GetOwner())
-		{
-			AActor* ActiveViewTarget = ActiveContext->GetOwner()->GetTypedOuter<AActor>();
-			AssignViewTarget(ActiveViewTarget, ViewTarget);
-		}
-		ViewTarget.CheckViewTarget(PlayerController);
-	}
+	SetViewTarget(OriginalViewTarget);
 }
 
 void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
@@ -172,17 +162,12 @@ void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
 	}
 
 	PCOwner->PlayerCameraManager = OriginalCameraManager;
-	if (AGameplayCameraSystemActor* OriginalAutoCameraSystemActor = WeakOriginalAutoCameraSystemActor.Get())
-	{
-		OriginalCameraManager->SetViewTarget(OriginalAutoCameraSystemActor);
-	}
 
 	ViewTarget.Target = nullptr;
 
 	OriginalCameraManager = nullptr;
-	WeakOriginalAutoCameraSystemActor = nullptr;
 
-	ReleaseCameraSystemHost();
+	TeardownCameraSystemHost();
 
 	PCOwner = nullptr;
 }
@@ -226,7 +211,8 @@ void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstan
 
 void AGameplayCamerasPlayerCameraManager::InitializeFor(APlayerController* PlayerController)
 {
-	AcquireCameraSystemHost(PlayerController);
+	EnsureCameraSystemHost();
+
 	Super::InitializeFor(PlayerController);
 }
 
@@ -264,13 +250,9 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 		return;
 	}
 
-	if (UGameplayCameraComponent* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponent>())
+	if (UGameplayCameraComponentBase* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponentBase>())
 	{
 		GameplayCameraComponent->ActivateCameraForPlayerController(PCOwner);
-	}
-	else if (UGameplayCameraRigComponent* GameplayCameraRigComponent = NewViewTarget->FindComponentByClass<UGameplayCameraRigComponent>())
-	{
-		GameplayCameraRigComponent->ActivateCameraForPlayerController(PCOwner);
 	}
 	else if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
 	{
@@ -303,37 +285,30 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 	}
 }
 
-void AGameplayCamerasPlayerCameraManager::AcquireCameraSystemHost(APlayerController* PlayerController)
+void AGameplayCamerasPlayerCameraManager::EnsureCameraSystemHost()
 {
 	using namespace UE::Cameras;
 
-	// Early-out if we already have acquired the host.
-	if (CameraSystemHost)
+	if (!HasCameraSystem())
 	{
-		return;
+		InitializeCameraSystem();
+
+		ViewTargetContextReferencerService = MakeShared<FViewTargetContextReferencerService>();
+		CameraSystemEvaluator->RegisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
 	}
-
-	// Find or create a camera system host and grab its camera system.
-	CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
-	ensure(CameraSystemHost);
-	CameraSystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
-
-	ViewTargetContextReferencerService = MakeShared<FViewTargetContextReferencerService>();
-	CameraSystemEvaluator->RegisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
-
-	// See if there was an auto-spawned camera system actor. If so, remember to set it back.
-	WeakOriginalAutoCameraSystemActor = AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(PlayerController, false);
 }
 
-void AGameplayCamerasPlayerCameraManager::ReleaseCameraSystemHost()
+void AGameplayCamerasPlayerCameraManager::TeardownCameraSystemHost()
 {
-	if (ViewTargetContextReferencerService)
+	if (HasCameraSystem())
 	{
-		CameraSystemEvaluator->UnregisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
-	}
+		if (ensure(ViewTargetContextReferencerService))
+		{
+			CameraSystemEvaluator->UnregisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
+		}
 
-	CameraSystemHost = nullptr;
-	CameraSystemEvaluator = nullptr;
+		DestroyCameraSystem();
+	}
 }
 
 void AGameplayCamerasPlayerCameraManager::ProcessViewRotation(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot)
@@ -362,18 +337,6 @@ void AGameplayCamerasPlayerCameraManager::DoUpdateCamera(float DeltaTime)
 
 		LastFrameDesiredView = DesiredView;
 	}
-}
-
-void AGameplayCamerasPlayerCameraManager::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-void AGameplayCamerasPlayerCameraManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	// TODO: destroy camera system actor?
-
-	Super::EndPlay(EndPlayReason);
 }
 
 void AGameplayCamerasPlayerCameraManager::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos)

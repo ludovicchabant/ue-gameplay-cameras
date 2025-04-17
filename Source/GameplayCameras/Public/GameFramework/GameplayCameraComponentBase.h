@@ -6,6 +6,7 @@
 #include "Core/CameraAssetReference.h"
 #include "Core/CameraEvaluationContext.h"
 #include "GameFramework/BlueprintCameraEvaluationDataRef.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 #include "UObject/ObjectMacros.h"
 
 #include "GameplayCameraComponentBase.generated.h"
@@ -17,7 +18,6 @@ class FViewport;
 class UCameraAsset;
 class UCanvas;
 class UCineCameraComponent;
-class UGameplayCameraSystemHost;
 
 namespace UE::Cameras
 {
@@ -48,7 +48,9 @@ UCLASS(Blueprintable, MinimalAPI, Abstract,
 		ClassGroup=Camera, 
 		HideCategories=(Mobility, Rendering, LOD), 
 		meta=(BlueprintSpawnableComponent))
-class UGameplayCameraComponentBase : public USceneComponent
+class UGameplayCameraComponentBase 
+	: public USceneComponent
+	, public IGameplayCameraSystemHost
 {
 	GENERATED_BODY()
 
@@ -63,30 +65,53 @@ public:
 	/** Get the camera evaluation context used by this component. */
 	GAMEPLAYCAMERAS_API TSharedPtr<UE::Cameras::FCameraEvaluationContext> GetEvaluationContext();
 
-	/** Get the player controller this component is currently activated for (if any). */
-	GAMEPLAYCAMERAS_API APlayerController* GetPlayerController() const;
-
 public:
 
 	/** Gets the child camera component used as the "output" for the gameplay/procedural camera. */
 	UFUNCTION(BlueprintGetter, Category=Camera)
 	UCineCameraComponent* GetOutputCameraComponent() const { return OutputCameraComponent; }
 
-	/** Activates the camera for the given player. */
+	/** 
+	 * Activates the camera for the given player.
+	 *
+	 * @param PlayerIndex        The player to activate the camera for.
+	 * @param bSetAsViewTarget   Whether to set this component's actor as the view target for the player.
+	 * @param ActivationMode     How to activate this camera into the player's camera system. Only valid 
+	 *                           and used when the player camera manager is running the camera system.
+	 *                           Must be 'Push' otherwise, when this component runs as a standalone camera
+	 *                           system.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerIndex(
 			int32 PlayerIndex, 
+			bool bSetAsViewTarget = true,
 			EGameplayCameraComponentActivationMode ActivationMode = EGameplayCameraComponentActivationMode::Push);
 
-	/** Activates the camera for the given player. */
+	/** 
+	 * Activates the camera for the given player.
+	 *
+	 * @param PlayerController   The player to activate the camera for.
+	 * @param bSetAsViewTarget   Whether to set this component's actor as the view target for the player.
+	 * @param ActivationMode     How to activate this camera into the player's camera system. Only valid 
+	 *                           and used when the player camera manager is running the camera system.
+	 *                           Must be 'Push' otherwise, when this component runs as a standalone camera
+	 *                           system.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Camera)
 	GAMEPLAYCAMERAS_API void ActivateCameraForPlayerController(
 			APlayerController* PlayerController,
+			bool bSetAsViewTarget = true,
 			EGameplayCameraComponentActivationMode ActivationMode = EGameplayCameraComponentActivationMode::Push);
 
-	/** Deactivates the camera for the last player it was activated for. */
+	/** 
+	 * Deactivates the camera.
+	 *
+	 * @param bImmediately       Whether to let this component's camera rigs gracefully blend out before
+	 *                           deactivating. If true, any running camera rigs will be frozen or forcibly
+	 *                           removed from the camera system.
+	 */
 	UFUNCTION(BlueprintCallable, Category=Camera)
-	GAMEPLAYCAMERAS_API void DeactivateCamera();
+	GAMEPLAYCAMERAS_API void DeactivateCamera(bool bImmediately = false);
 
 	/** Gets the shared camera evaluation data for this component's evaluation context. */
 	UFUNCTION(BlueprintPure, Category=Camera, meta=(DisplayName="Get Shared Camera Data"))
@@ -103,8 +128,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnUnregister() override;
+	virtual void Activate(bool bReset = false) override;
+	virtual void Deactivate() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
-	virtual void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 #if WITH_EDITOR
 	virtual bool GetEditorPreviewInfo(float DeltaTime, FMinimalViewInfo& ViewOut) override;
 #endif 
@@ -120,11 +146,16 @@ public:
 
 	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& Collector);
 
+	// IGameplayCameraSystemHost interface.
+	virtual UObject* GetAsObject() override { return this; }
+
 public:
+
+	bool CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult);
 
 #if WITH_EDITOR
 	GAMEPLAYCAMERAS_API void OnDrawVisualizationHUD(const FViewport* Viewport, const FSceneView* SceneView, FCanvas* Canvas) const;
-#endif
+#endif  // WITH_EDITOR
 
 protected:
 
@@ -134,20 +165,21 @@ protected:
 	virtual void OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides) {}
 
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
-#if WITH_EDITOR
-	bool CanRunInEditor() const;
-	bool HasActiveEditorPreview() const;
-	void RecreateEditorPreviewEvaluationContext();
-	void UpdateEditorPreviewEvaluator(float DeltaTime);
-#endif  // WITH_EDITOR
+	bool HasCameraEvaluationContext() const { return EvaluationContext.IsValid(); }
+
+	void RecreateCameraEvaluationContext();
 
 private:
 
-	void ActivateCameraEvaluationContext(int32 PlayerIndex, EGameplayCameraComponentActivationMode ActivationMode);
-	void ActivateCameraEvaluationContext(APlayerController* PlayerController, EGameplayCameraComponentActivationMode ActivationMode);
+	bool CanRunCameraSystem() const;
+	void EnsureCameraSystemHost();
+	void TeardownCameraSystemHost();
+
+	void ActivateCameraEvaluationContext(APlayerController* PlayerController, IGameplayCameraSystemHost* Host, EGameplayCameraComponentActivationMode ActivationMode);
 	void TryCreateCameraEvaluationContext(APlayerController* PlayerController);
 	void UpdateOutputCameraComponent();
-	void DeactivateCameraEvaluationContext();
+	void DeactivateCameraEvaluationContext(bool bImmediately);
+	void CheckPendingDeactivation();
 
 #if WITH_EDITOR
 	void AutoManageEditorPreviewEvaluator();
@@ -158,16 +190,18 @@ public:
 
 	/**
 	 * If AutoActivate is set, auto-activates this component's camera for the given player.
-	 * This is equivalent to calling ActivateCamera on BeginPlay.
+	 * This is equivalent to calling ActivateCameraForPlayerIndex on BeginPlay.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation, meta=(EditCondition="bAutoActivate"))
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
 
 #if WITH_EDITORONLY_DATA
 
+	/** Whether to run this camera in editor. */
 	UPROPERTY(EditAnywhere, Category=Camera)
 	bool bRunInEditor = true;
 
+	/** The camera rig to run in the editor. */
 	UPROPERTY(EditAnywhere, Category=Camera, meta=(EditCondition="bRunInEditor"))
 	int32 EditorPreviewCameraRigIndex = 0;
 
@@ -178,9 +212,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UCineCameraComponent> OutputCameraComponent;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
-
 private:
 
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
@@ -189,10 +220,10 @@ private:
 
 	bool bIsCameraCutNextFrame = false;
 
+	bool bIsDeactivating = false;
+
 #if WITH_EDITOR
 	
-	TSharedPtr<UE::Cameras::FCameraSystemEvaluator> EditorPreviewEvaluator;
-
 	bool bIsEditorWorld = false;
 
 	int32 CustomShowFlag = INDEX_NONE;

@@ -8,8 +8,8 @@
 
 #include "ControllerGameplayCameraEvaluationComponent.generated.h"
 
+class IGameplayCameraSystemHost;
 class UCameraRigAsset;
-class UGameplayCameraSystemHost;
 enum class ECameraRigLayer : uint8;
 
 namespace UE::Cameras
@@ -30,16 +30,15 @@ public:
 
 	UControllerGameplayCameraEvaluationComponent(const FObjectInitializer& ObjectInitializer);
 
+	void Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost);
+
 	/** Activates a new camera rig. */
 	void ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
 
 public:
 
-	static UControllerGameplayCameraEvaluationComponent* FindComponent(APlayerController* PlayerController);
-	static UControllerGameplayCameraEvaluationComponent* FindOrAddComponent(APlayerController* PlayerController);
-
-	static TSharedPtr<UE::Cameras::FCameraEvaluationContext> FindEvaluationContext(APlayerController* PlayerController);
-	static TSharedRef<UE::Cameras::FCameraEvaluationContext> FindOrAddEvaluationContext(APlayerController* PlayerController);
+	static UControllerGameplayCameraEvaluationComponent* FindComponent(AActor* OwnerActor);
+	static UControllerGameplayCameraEvaluationComponent* FindOrAddComponent(AActor* OwnerActor, bool* bOutCreated = nullptr);
 
 public:
 
@@ -51,7 +50,6 @@ private:
 
 	void ActivateCameraRigs();
 	void EnsureEvaluationContext();
-	void EnsureCameraSystemHost();
 
 private:
 
@@ -67,6 +65,6 @@ private:
 	TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext;
 
 	UPROPERTY()
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
+	TScriptInterface<IGameplayCameraSystemHost> CameraSystemHost;
 };
 

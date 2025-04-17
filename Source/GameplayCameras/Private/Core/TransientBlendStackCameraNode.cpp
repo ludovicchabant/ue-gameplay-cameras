@@ -174,7 +174,6 @@ void FTransientBlendStackCameraNodeEvaluator::Freeze(const FBlendStackCameraFree
 	}
 	else
 	{
-
 		// Freeze any entries matching the given context and rig asset.
 		for (FCameraRigEntry& Entry : Entries)
 		{
@@ -188,7 +187,7 @@ void FTransientBlendStackCameraNodeEvaluator::Freeze(const FBlendStackCameraFree
 	}
 }
 
-void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<FCameraEvaluationContext> EvaluationContext)
+void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
 {
 	for (FCameraRigEntry& Entry : Entries)
 	{

@@ -23,19 +23,9 @@ USceneComponent* AGameplayCameraRigActor::GetDefaultAttachComponent() const
 	return CameraRigComponent;
 }
 
-void AGameplayCameraRigActor::Tick(float DeltaTime)
+UGameplayCameraComponentBase* AGameplayCameraRigActor::GetCameraComponentBase() const
 {
-	Super::Tick(DeltaTime);
-}
-
-bool AGameplayCameraRigActor::ShouldTickIfViewportsOnly() const
-{
-	return true;
-}
-
-void AGameplayCameraRigActor::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos)
-{
-	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
+	return CameraRigComponent;
 }
 
 #undef LOCTEXT_NAMESPACE

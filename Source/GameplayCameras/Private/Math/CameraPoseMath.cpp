@@ -69,8 +69,7 @@ double FCameraPoseMath::GetEffectiveAspectRatio(const FCameraPose& CameraPose, T
 	else
 	{
 		FIntPoint ViewportSize = EvaluationContext->GetViewportSize();
-		if (ensureMsgf(ViewportSize.X > 0 && ViewportSize.Y > 0,
-				TEXT("Can't get viewport aspect ratio! Using sensor aspect ratio instead.")))
+		if (ViewportSize.X > 0 && ViewportSize.Y > 0)
 		{
 			return (double)ViewportSize.X / (double)ViewportSize.Y;
 		}

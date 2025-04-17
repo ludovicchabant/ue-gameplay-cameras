@@ -9,9 +9,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/GameplayCameraComponent.h"
-#include "GameFramework/GameplayCameraSystemActor.h"
-#include "GameFramework/GameplayCameraSystemComponent.h"
-#include "GameFramework/GameplayCameraSystemHost.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 #include "GameFramework/Pawn.h"
 #include "GameplayCameras.h"
 #include "Kismet/GameplayStatics.h"
@@ -98,22 +96,17 @@ void UGameplayControlRotationComponent::InitializeControlRotationService(APlayer
 		return;
 	}
 
-	UGameplayCameraSystemHost* FoundHost = UGameplayCameraSystemHost::FindHost(InPlayerController);
+	IGameplayCameraSystemHost* FoundHost = IGameplayCameraSystemHost::FindActiveHost(InPlayerController);
 	if (!FoundHost)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't find camera system host on the player controller."));
+		UE_LOG(LogCameraSystem, Error, 
+				TEXT("Can't find camera system host on the player controller. "
+				 	 "UGameplayControlRotationComponent requires using AGameplayCamerasPlayerCameraManager, or similar, as a camera manager."));
 		return;
 	}
 
 	PlayerController = InPlayerController;
-	CameraSystemHost = FoundHost;
-
-	// Make sure that if there's an auto-spawned camera system actor, it doesn't set the control rotation.
-	AGameplayCameraSystemActor* AutoSpawnedCameraSystemActor = AGameplayCameraSystemActor::GetAutoSpawnedCameraSystemActor(PlayerController);
-	if (AutoSpawnedCameraSystemActor)
-	{
-		AutoSpawnedCameraSystemActor->GetCameraSystemComponent()->bSetPlayerControllerRotation = false;
-	}
+	CameraSystemHost = FoundHost->GetAsScriptInterface();
 
 	// Create the evaluation service, with a copy of our parameters.
 	FPlayerControlRotationParams ServiceParams;

@@ -169,9 +169,22 @@ void FDefaultRootCameraNodeEvaluator::OnDeactivateCameraRig(const FDeactivateCam
 	}
 }
 
+void FDefaultRootCameraNodeEvaluator::OnDeactivateAllCameraRigs(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately)
+{
+	BaseLayer->RemoveAll(InContext, bImmediately);
+	MainLayer->FreezeAll(InContext);
+	GlobalLayer->RemoveAll(InContext, bImmediately);
+	VisualLayer->RemoveAll(InContext, bImmediately);
+}
+
 void FDefaultRootCameraNodeEvaluator::OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const
 {
 	OutCameraRigInfo = MainLayer->GetActiveCameraRigEvaluationInfo();
+}
+
+bool FDefaultRootCameraNodeEvaluator::OnHasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const
+{
+	return MainLayer->HasAnyRunningCameraRig(InContext);
 }
 
 void FDefaultRootCameraNodeEvaluator::OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const

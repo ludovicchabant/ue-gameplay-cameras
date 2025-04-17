@@ -10,7 +10,6 @@
 #include "Debug/RootCameraDebugBlock.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
-#include "GameFramework/GameplayCameraSystemActor.h"
 #include "Trace/CameraSystemTraceProvider.h"
 
 #if UE_GAMEPLAY_CAMERAS_TRACE

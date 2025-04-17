@@ -118,71 +118,93 @@ void FPersistentBlendStackCameraNodeEvaluator::Remove(const FBlendStackCameraRem
 		}
 	}
 
-	// If we need to remove the camera rigs immediately, simply pop out their entries.
-	if (Params.bRemoveImmediately)
+	for (int32 Index : EntriesToRemove)
 	{
-		for (int32 Index : EntriesToRemove)
+		RemoveEntry(Index, Params.TransitionOverride, Params.bRemoveImmediately);
+	}
+}
+
+void FPersistentBlendStackCameraNodeEvaluator::RemoveAll(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately)
+{
+	TArray<int32, TInlineAllocator<4>> EntriesToRemove;
+	for (int32 Index = Entries.Num() - 1; Index >= 0; --Index)
+	{
+		FCameraRigEntry& Entry(Entries[Index]);
+		if (Entry.EvaluationContext == InContext)
 		{
-			PopEntry(Index);
-			EntryExtraInfos.RemoveAt(Index);
+			EntriesToRemove.Add(Index);
 		}
 	}
-	// Else, we need to start blending out these entries.
+
+	for (int32 Index : EntriesToRemove)
+	{
+		RemoveEntry(Index, nullptr, bImmediately);
+	}
+}
+
+void FPersistentBlendStackCameraNodeEvaluator::RemoveEntry(int32 EntryIndex, const UCameraRigTransition* TransitionOverride, bool bImmediately)
+{
+	ensure(Entries.IsValidIndex(EntryIndex));
+
+	// If we need to remove the camera rig immediately, simply pop out its entries.
+	// Else, we need to start blending out that entry.
+	if (bImmediately)
+	{
+		PopEntry(EntryIndex);
+		EntryExtraInfos.RemoveAt(EntryIndex);
+	}
 	else
 	{
-		for (int32 Index : EntriesToRemove)
+		FCameraRigEntry& Entry(Entries[EntryIndex]);
+		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[EntryIndex]);
+		const UCameraRigTransition* Transition = FindExitTransition(Entry, TransitionOverride);
+		if (Transition && Transition->Blend)
 		{
-			FCameraRigEntry& Entry(Entries[Index]);
-			FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[Index]);
-			const UCameraRigTransition* Transition = FindExitTransition(Params, Entry);
-			if (Transition && Transition->Blend)
+			// Swap the blend-in evaluator on this entry with a blend-out one.
+			if (EntryExtraInfo.BlendStatus != EBlendStatus::BlendOut)
 			{
-				// Swap the blend-in evaluator on this entry with a blend-out one.
-				if (EntryExtraInfo.BlendStatus != EBlendStatus::BlendOut)
+				FCameraNodeEvaluatorBuilder BlendOutBuilder(Entry.EvaluatorStorage);
+				FCameraNodeEvaluatorBuildParams BlendOutBuildParams(BlendOutBuilder);
+				FBlendCameraNodeEvaluator* BlendOutEvaluator = BlendOutBuildParams.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(Transition->Blend);
+
+				FCameraNodeEvaluatorInitializeParams BlendOutInitParams;
+				BlendOutInitParams.Evaluator = OwningEvaluator;
+				BlendOutInitParams.EvaluationContext = Entry.EvaluationContext.Pin();
+				BlendOutEvaluator->Initialize(BlendOutInitParams, Entry.Result);
+
+				// Reverse this blend so it plays as a blend-out. Also, see if we are going to 
+				// interrupt an ongoing blend-in... if so, give a chance for the blend-out to
+				// start at an "equivalent spot".
+				if (!BlendOutEvaluator->SetReversed(true))
 				{
-					FCameraNodeEvaluatorBuilder BlendOutBuilder(Entry.EvaluatorStorage);
-					FCameraNodeEvaluatorBuildParams BlendOutBuildParams(BlendOutBuilder);
-					FBlendCameraNodeEvaluator* BlendOutEvaluator = BlendOutBuildParams.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(Transition->Blend);
-
-					FCameraNodeEvaluatorInitializeParams BlendOutInitParams;
-					BlendOutInitParams.Evaluator = OwningEvaluator;
-					BlendOutInitParams.EvaluationContext = Entry.EvaluationContext.Pin();
-					BlendOutEvaluator->Initialize(BlendOutInitParams, Entry.Result);
-
-					// Reverse this blend so it plays as a blend-out. Also, see if we are going to 
-					// interrupt an ongoing blend-in... if so, give a chance for the blend-out to
-					// start at an "equivalent spot".
-					if (!BlendOutEvaluator->SetReversed(true))
-					{
-						BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FReverseBlendCameraNodeEvaluator>(BlendOutEvaluator);
-					}
-					if (EntryExtraInfo.BlendStatus == EBlendStatus::BlendIn)
-					{
-						FBlendCameraNodeEvaluator* OngoingBlend = Entry.RootEvaluator->GetBlendEvaluator();
-
-						FCameraNodeBlendInterruptionParams InterruptionParams;
-						InterruptionParams.InterruptedBlend = OngoingBlend;
-						if (!BlendOutEvaluator->InitializeFromInterruption(InterruptionParams))
-						{
-							BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FInterruptedBlendCameraNodeEvaluator>(BlendOutEvaluator, OngoingBlend);
-						}
-					}
-					// Note: neither the reverse or interrupted blends need initialization, but
-					// technically we're missing calling it on them.
-					Entry.RootEvaluator->SetBlendEvaluator(BlendOutEvaluator);
-
-					EntryExtraInfo.BlendStatus = EBlendStatus::BlendOut;
-					EntryExtraInfo.bIsBlendFinished = false;
-					EntryExtraInfo.bIsBlendFull = false;
+					BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FReverseBlendCameraNodeEvaluator>(BlendOutEvaluator);
 				}
-				// else: we were already blending out, so let this continue.
+				if (EntryExtraInfo.BlendStatus == EBlendStatus::BlendIn)
+				{
+					FBlendCameraNodeEvaluator* OngoingBlend = Entry.RootEvaluator->GetBlendEvaluator();
+
+					FCameraNodeBlendInterruptionParams InterruptionParams;
+					InterruptionParams.InterruptedBlend = OngoingBlend;
+					if (!BlendOutEvaluator->InitializeFromInterruption(InterruptionParams))
+					{
+						BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FInterruptedBlendCameraNodeEvaluator>(BlendOutEvaluator, OngoingBlend);
+					}
+				}
+				// Note: neither the reverse or interrupted blends need initialization, but
+				// technically we're missing calling it on them.
+				Entry.RootEvaluator->SetBlendEvaluator(BlendOutEvaluator);
+
+				EntryExtraInfo.BlendStatus = EBlendStatus::BlendOut;
+				EntryExtraInfo.bIsBlendFinished = false;
+				EntryExtraInfo.bIsBlendFull = false;
 			}
-			else
-			{
-				// No transition found... just cut.
-				PopEntry(Index);
-				EntryExtraInfos.RemoveAt(Index);
-			}
+			// else: we were already blending out, so let this continue.
+		}
+		else
+		{
+			// No transition found... just cut.
+			PopEntry(EntryIndex);
+			EntryExtraInfos.RemoveAt(EntryIndex);
 		}
 	}
 }
@@ -342,12 +364,12 @@ const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindEnterT
 			Params.CameraRig, nullptr);
 }
 
-const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTransition(const FBlendStackCameraRemoveParams& Params, const FCameraRigEntry& Entry) const
+const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTransition(const FCameraRigEntry& Entry, const UCameraRigTransition* TransitionOverride) const
 {
 	// If we are forced to use a specific transition, our search is over.
-	if (Params.TransitionOverride)
+	if (TransitionOverride)
 	{
-		return Params.TransitionOverride;
+		return TransitionOverride;
 	}
 
 	// Find a transition that works for blending the given camera rig out.

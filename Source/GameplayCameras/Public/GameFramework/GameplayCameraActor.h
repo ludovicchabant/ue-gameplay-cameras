@@ -2,10 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/EngineTypes.h"
-#include "GameFramework/Actor.h"
-#include "UObject/ObjectMacros.h"
+#include "GameFramework/GameplayCameraActorBase.h"
 
 #include "GameplayCameraActor.generated.h"
 
@@ -15,7 +12,7 @@ class UGameplayCameraComponent;
  * An actor that can run a camera asset.
  */
 UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera, HideCategories=(Input, Rendering))
-class AGameplayCameraActor : public AActor
+class AGameplayCameraActor : public AGameplayCameraActorBase
 {
 	GENERATED_BODY()
 
@@ -33,9 +30,11 @@ public:
 
 	// AActor interface.
 	virtual USceneComponent* GetDefaultAttachComponent() const override;
-	virtual void Tick(float DeltaTime) override;
-	virtual bool ShouldTickIfViewportsOnly() const override;
-	virtual void DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
+
+protected:
+
+	// AGameplayCameraActorBase interface.
+	virtual UGameplayCameraComponentBase* GetCameraComponentBase() const override;
 
 private:
 

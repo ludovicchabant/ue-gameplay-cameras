@@ -67,7 +67,9 @@ protected:
 	// FRootCameraNodeEvaluator interface.
 	virtual FCameraRigInstanceID OnActivateCameraRig(const FActivateCameraRigParams& Params) override;
 	virtual void OnDeactivateCameraRig(const FDeactivateCameraRigParams& Params) override;
+	virtual void OnDeactivateAllCameraRigs(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately) override;
 	virtual void OnGetActiveCameraRigInfo(FCameraRigEvaluationInfo& OutCameraRigInfo) const override;
+	virtual bool OnHasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const override;
 	virtual void OnGetCameraRigInfo(const FCameraRigInstanceID InstanceID, FCameraRigEvaluationInfo& OutCameraRigInfo) const override;
 	virtual const FCameraVariableTable* OnGetBlendedParameters() const override;
 	virtual void OnBuildSingleCameraRigHierarchy(const FSingleCameraRigHierarchyBuildParams& Params, FCameraNodeEvaluatorHierarchy& OutHierarchy) override;

@@ -92,7 +92,7 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuilt(const UCameraRigAsset* I
 
 	// If our camera rig asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
-	if (HasActiveEditorPreview())
+	if (HasCameraEvaluationContext())
 	{
 		const FCameraObjectAllocationInfo& AllocationInfo = InCameraRigAsset->AllocationInfo;
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
@@ -114,13 +114,13 @@ void UGameplayCameraRigComponent::PostEditChangeProperty( struct FPropertyChange
 	const FName MemberPropertyName = PropertyChangedEvent.GetMemberPropertyName();
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraRigComponent, CameraRigReference))
 	{
-		if (HasActiveEditorPreview())
+		if (HasCameraEvaluationContext())
 		{
 			if (PropertyChangedEvent.GetPropertyName() == TEXT("CameraRig"))
 			{
 				// The camera rig asset has changed! Recreate the context.
 				GeneratedCameraAsset = nullptr;
-				RecreateEditorPreviewEvaluationContext();
+				RecreateCameraEvaluationContext();
 			}
 			else
 			{

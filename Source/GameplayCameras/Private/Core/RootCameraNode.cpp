@@ -27,6 +27,11 @@ void FRootCameraNodeEvaluator::DeactivateCameraRig(const FDeactivateCameraRigPar
 	OnDeactivateCameraRig(Params);
 }
 
+void FRootCameraNodeEvaluator::DeactivateAllCameraRigs(TSharedPtr<const FCameraEvaluationContext> InContext, bool bImmediately)
+{
+	OnDeactivateAllCameraRigs(InContext, bImmediately);
+}
+
 void FRootCameraNodeEvaluator::ExecuteCameraDirectorRequest(const FCameraRigActivationDeactivationRequest& Request)
 {
 	if (Request.RequestType == ECameraRigActivationDeactivationRequestType::Activate)
@@ -67,6 +72,11 @@ bool FRootCameraNodeEvaluator::HasAnyActiveCameraRig() const
 	FCameraRigEvaluationInfo RigInfo;
 	GetActiveCameraRigInfo(RigInfo);
 	return RigInfo.RootEvaluator != nullptr;
+}
+
+bool FRootCameraNodeEvaluator::HasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const
+{
+	return OnHasAnyRunningCameraRig(InContext);
 }
 
 const FCameraVariableTable* FRootCameraNodeEvaluator::GetBlendedParameters() const

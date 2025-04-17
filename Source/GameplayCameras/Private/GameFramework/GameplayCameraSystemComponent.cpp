@@ -11,7 +11,6 @@
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Controller.h"
-#include "GameFramework/GameplayCameraSystemHost.h"
 #include "Kismet/GameplayStatics.h"
 #include "Services/CameraModifierService.h"
 #include "UObject/ConstructorHelpers.h"
@@ -26,35 +25,23 @@ UGameplayCameraSystemComponent::UGameplayCameraSystemComponent(const FObjectInit
 {
 }
 
-TSharedPtr<UE::Cameras::FCameraSystemEvaluator> UGameplayCameraSystemComponent::GetCameraSystemEvaluator(bool bEnsureIfNull)
-{
-	UGameplayCameraSystemHost* HostPtr = CameraSystemHost.Get();
-	ensureMsgf(HostPtr || !bEnsureIfNull, TEXT("Accessing camera system evaluator when we haven't found or created a host for one."));
-	if (HostPtr)
-	{
-		return HostPtr->GetCameraSystemEvaluator();
-	}
-	return nullptr;
-}
-
 void UGameplayCameraSystemComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView)
 {
 	using namespace UE::Cameras;
 
-	TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator();
-	if (Evaluator.IsValid())
+	if (CameraSystemEvaluator.IsValid())
 	{
 		FCameraSystemEvaluationParams UpdateParams;
 		UpdateParams.DeltaTime = DeltaTime;
-		Evaluator->Update(UpdateParams);
+		CameraSystemEvaluator->Update(UpdateParams);
 
-		Evaluator->GetEvaluatedCameraView(DesiredView);
+		CameraSystemEvaluator->GetEvaluatedCameraView(DesiredView);
 
 		if (bSetPlayerControllerRotation)
 		{
 			if (APlayerController* PlayerController = WeakPlayerController.Get())
 			{
-				PlayerController->SetControlRotation(Evaluator->GetEvaluatedResult().CameraPose.GetRotation());
+				PlayerController->SetControlRotation(CameraSystemEvaluator->GetEvaluatedResult().CameraPose.GetRotation());
 			}
 		}
 	}
@@ -116,6 +103,8 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerIndex(int32 Pl
 
 void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APlayerController* PlayerController)
 {
+	using namespace UE::Cameras;
+
 	if (!PlayerController)
 	{
 		FFrame::KismetExecutionMessage(
@@ -132,6 +121,8 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 		}
 	}
 
+	EnsureCameraSystemInitialized();
+
 	AActor* OwningActor = GetOwner();
 	if (!OwningActor)
 	{
@@ -139,16 +130,6 @@ void UGameplayCameraSystemComponent::ActivateCameraSystemForPlayerController(APl
 				TEXT("Can't activate gameplay camera system: no owning actor found!"),
 				ELogVerbosity::Error);
 		return;
-	}
-
-	if (!CameraSystemHost)
-	{
-		CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
-		if (!CameraSystemHost)
-		{
-			FFrame::KismetExecutionMessage(TEXT("can't create camera system host!"), ELogVerbosity::Error);
-			return;
-		}
 	}
 
 	PlayerController->SetViewTarget(OwningActor);
@@ -172,7 +153,7 @@ bool UGameplayCameraSystemComponent::IsCameraSystemActiveForPlayController(APlay
 		return false;
 	}
 	
-	if (!CameraSystemHost)
+	if (!HasCameraSystem())
 	{
 		return false;
 	}
@@ -219,9 +200,9 @@ FCameraRigInstanceID UGameplayCameraSystemComponent::StartGlobalCameraModifierRi
 {
 	using namespace UE::Cameras;
 
-	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	if (CameraSystemEvaluator)
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
 		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Global, OrderKey);
 	}
 
@@ -232,9 +213,9 @@ FCameraRigInstanceID UGameplayCameraSystemComponent::StartVisualCameraModifierRi
 {
 	using namespace UE::Cameras;
 
-	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	if (CameraSystemEvaluator)
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
 		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Visual);
 	}
 
@@ -245,9 +226,9 @@ void UGameplayCameraSystemComponent::StopCameraModifierRig(FCameraRigInstanceID 
 {
 	using namespace UE::Cameras;
 
-	if (TSharedPtr<FCameraSystemEvaluator> Evaluator = GetCameraSystemEvaluator())
+	if (CameraSystemEvaluator)
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = Evaluator->FindEvaluationService<FCameraModifierService>();
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
 		CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
 	}
 }

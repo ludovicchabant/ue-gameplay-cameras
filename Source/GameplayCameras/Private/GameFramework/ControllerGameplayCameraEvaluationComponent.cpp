@@ -6,7 +6,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
-#include "GameFramework/GameplayCameraSystemHost.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 #include "GameFramework/PlayerController.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ControllerGameplayCameraEvaluationComponent)
@@ -15,6 +15,12 @@ UControllerGameplayCameraEvaluationComponent::UControllerGameplayCameraEvaluatio
 	: Super(ObjectInitializer)
 {
 	bAutoActivate = true;
+}
+
+void UControllerGameplayCameraEvaluationComponent::Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost)
+{
+	ensure(InCameraSystemHost);
+	CameraSystemHost = InCameraSystemHost;
 }
 
 void UControllerGameplayCameraEvaluationComponent::ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
@@ -50,8 +56,7 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 {
 	using namespace UE::Cameras;
 
-	EnsureCameraSystemHost();
-	if (!CameraSystemHost)
+	if (!ensure(CameraSystemHost))
 	{
 		return;
 	}
@@ -86,6 +91,7 @@ void UControllerGameplayCameraEvaluationComponent::EnsureEvaluationContext()
 
 	if (!EvaluationContext.IsValid())
 	{
+		// TODO: we won't find a player controller this way if we are under a view target.
 		APlayerController* PlayerController = GetOwner<APlayerController>();
 
 		FCameraEvaluationContextInitializeParams InitParams;
@@ -96,48 +102,24 @@ void UControllerGameplayCameraEvaluationComponent::EnsureEvaluationContext()
 	}
 }
 
-void UControllerGameplayCameraEvaluationComponent::EnsureCameraSystemHost()
+UControllerGameplayCameraEvaluationComponent* UControllerGameplayCameraEvaluationComponent::FindComponent(AActor* OwnerActor)
 {
-	if (!CameraSystemHost)
-	{
-		APlayerController* PlayerController = GetOwner<APlayerController>();
-
-		CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
-	}
+	return OwnerActor->FindComponentByClass<UControllerGameplayCameraEvaluationComponent>();
 }
 
-UControllerGameplayCameraEvaluationComponent* UControllerGameplayCameraEvaluationComponent::FindComponent(APlayerController* PlayerController)
+UControllerGameplayCameraEvaluationComponent* UControllerGameplayCameraEvaluationComponent::FindOrAddComponent(AActor* OwnerActor, bool* bOutCreated)
 {
-	return PlayerController->FindComponentByClass<UControllerGameplayCameraEvaluationComponent>();
-}
-
-UControllerGameplayCameraEvaluationComponent* UControllerGameplayCameraEvaluationComponent::FindOrAddComponent(APlayerController* PlayerController)
-{
-	UControllerGameplayCameraEvaluationComponent* ControllerComponent = FindComponent(PlayerController);
+	UControllerGameplayCameraEvaluationComponent* ControllerComponent = FindComponent(OwnerActor);
 	if (!ControllerComponent)
 	{
 		ControllerComponent = NewObject<UControllerGameplayCameraEvaluationComponent>(
-				PlayerController, TEXT("ControllerGameplayCameraEvaluationComponent"), RF_Transient);
+				OwnerActor, TEXT("ControllerGameplayCameraEvaluationComponent"), RF_Transient);
 		ControllerComponent->RegisterComponent();
+		if (bOutCreated)
+		{
+			*bOutCreated = true;
+		}
 	}
 	return ControllerComponent;
-}
-
-TSharedPtr<UE::Cameras::FCameraEvaluationContext> UControllerGameplayCameraEvaluationComponent::FindEvaluationContext(APlayerController* PlayerController)
-{
-	if (UControllerGameplayCameraEvaluationComponent* ControllerComponent = FindComponent(PlayerController))
-	{
-		ControllerComponent->EnsureEvaluationContext();
-		return ControllerComponent->EvaluationContext;
-	}
-	return nullptr;
-}
-
-TSharedRef<UE::Cameras::FCameraEvaluationContext> UControllerGameplayCameraEvaluationComponent::FindOrAddEvaluationContext(APlayerController* PlayerController)
-{
-	UControllerGameplayCameraEvaluationComponent* ControllerComponent = FindOrAddComponent(PlayerController);
-	check(ControllerComponent);
-	ControllerComponent->EnsureEvaluationContext();
-	return ControllerComponent->EvaluationContext.ToSharedRef();
 }
 

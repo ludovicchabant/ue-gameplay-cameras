@@ -4,13 +4,13 @@
 
 #include "UObject/ObjectMacros.h"
 #include "Components/SceneComponent.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 
 #include "GameplayCameraSystemComponent.generated.h"
 
 class APlayerController;
 class UCameraRigAsset;
 class UCanvas;
-class UGameplayCameraSystemHost;
 struct FCameraRigInstanceID;
 struct FMinimalViewInfo;
 
@@ -23,7 +23,9 @@ namespace UE::Cameras
  * A component that hosts a camera system.
  */
 UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera, HideCategories=(Mobility, Rendering, LOD))
-class UGameplayCameraSystemComponent : public USceneComponent
+class UGameplayCameraSystemComponent 
+	: public USceneComponent
+	, public IGameplayCameraSystemHost
 {
 	GENERATED_BODY()
 
@@ -32,9 +34,6 @@ public:
 	using FCameraSystemEvaluator = UE::Cameras::FCameraSystemEvaluator;
 
 	UGameplayCameraSystemComponent(const FObjectInitializer& ObjectInit);
-
-	/** Gets the camera system evaluator. */
-	GAMEPLAYCAMERAS_API TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator(bool bEnsureIfNull = true);
 
 	/** Updates the camera system and returns the computed view. */
 	GAMEPLAYCAMERAS_API void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView);
@@ -68,10 +67,13 @@ public:
 
 public:
 
-	// UActorComponent interface
+	// UActorComponent interface.
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// IGameplayCameraSystemHost interface.
+	virtual UObject* GetAsObject() { return this; }
 
 private:
 
@@ -96,9 +98,6 @@ public:
 	bool bSetPlayerControllerRotation = false;
 
 private:
-	
-	UPROPERTY(Transient)
-	TObjectPtr<UGameplayCameraSystemHost> CameraSystemHost;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<APlayerController> WeakPlayerController;

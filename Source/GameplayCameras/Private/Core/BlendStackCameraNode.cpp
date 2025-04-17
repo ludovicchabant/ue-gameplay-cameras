@@ -199,6 +199,18 @@ FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetCameraRigEvaluationI
 	return FCameraRigEvaluationInfo();
 }
 
+bool FBlendStackCameraNodeEvaluator::HasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const
+{
+	for (const FCameraRigEntry& Entry : Entries)
+	{
+		if (Entry.EvaluationContext == InContext)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 FCameraNodeEvaluatorChildrenView FBlendStackCameraNodeEvaluator::OnGetChildren()
 {
 	FCameraNodeEvaluatorChildrenView View;

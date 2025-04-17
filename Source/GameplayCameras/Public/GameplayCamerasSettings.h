@@ -24,24 +24,6 @@ public:
 public:
 
 	/**
-	 * Automatically spawn a camera system actor when any gameplay camera activates and no camera system
-	 * is found on the player controller's camera manager, or as a view target. This camera system actor
-	 * will be spawned and set as the view target automatically.
-	 */
-	UPROPERTY(EditAnywhere, Config, Category="General")
-	bool bAutoSpawnCameraSystemActor = true;
-
-	/**
-	 * Whether the automatically spawned camera system actor should set the control rotation on the
-	 * associated player controller. This is useful if camera rigs are managing their own rotation, e.g.
-	 * by specifying input slots on boom arms instead of using the existing control rotation.
-	 * Do not mix handling control rotation via camera nodes, and handling control rotation by calling
-	 * methods like AddYawInput/AddPitchInput/AddRollInput, as this can lead to a feedback loop.
-	 */
-	UPROPERTY(EditAnywhere, Config, Category="General", meta=(EditCondition="bAutoSpawnCameraSystemActor"))
-	bool bAutoSpawnCameraSystemActorSetsControlRotation = false;
-
-	/**
 	 * The number of camera rigs combined in one frame past which the camera system emits a warning.
 	 */
 	UPROPERTY(EditAnywhere, Config, Category="General")

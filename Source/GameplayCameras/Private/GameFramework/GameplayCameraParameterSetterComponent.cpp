@@ -9,7 +9,7 @@
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
-#include "GameFramework/GameplayCameraSystemHost.h"
+#include "GameFramework/IGameplayCameraSystemHost.h"
 #include "Kismet/GameplayStatics.h"
 
 UGameplayCameraParameterSetterComponent::UGameplayCameraParameterSetterComponent(const FObjectInitializer& ObjInit)
@@ -53,21 +53,25 @@ UE::Cameras::FRootCameraNodeEvaluator* UGameplayCameraParameterSetterComponent::
 {
 	using namespace UE::Cameras;
 
+	// For now we only support one local player.
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 	if (!PlayerController)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no player controller found!"));
 		return nullptr;
 	}
 
-	UGameplayCameraSystemHost* CameraSystemHost = UGameplayCameraSystemHost::FindOrCreateHost(PlayerController);
+	IGameplayCameraSystemHost* CameraSystemHost = IGameplayCameraSystemHost::FindActiveHost(PlayerController);
 	if (!CameraSystemHost)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no camera system found under the player controller!"));
 		return nullptr;
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> SystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	if (!SystemEvaluator)
 	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no camera system is active!"));
 		return nullptr;
 	}
 
