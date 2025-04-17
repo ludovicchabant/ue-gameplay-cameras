@@ -31,6 +31,15 @@ public:
 	template<typename VariableReferenceType>
 	void Initialize(const VariableReferenceType& Reference)
 	{
+		Initialize(Reference, ValueType());
+	}
+
+	/**
+	 * Initializes the reader around the given variable reference.
+	 */
+	template<typename VariableReferenceType>
+	void Initialize(const VariableReferenceType& Reference, TCallTraits<ValueType>::ParamType DefaultValueIfNoReference)
+	{
 		static_assert(
 				std::is_same<ValueType, typename VariableReferenceType::VariableAssetType::ValueType>(),
 				"The given variable reference is of the wrong type for this reader! Value types must be the same.");
@@ -42,7 +51,7 @@ public:
 		}
 		else
 		{
-			DefaultValue = ValueType();
+			DefaultValue = DefaultValueIfNoReference;
 			VariableID = Reference.VariableID;
 		}
 	}
@@ -50,7 +59,7 @@ public:
 	/**
 	 * Gets the actual value for the referenced variable.
 	 */
-	typename TCallTraits<ValueType>::ParamType Get(const FCameraVariableTable& VariableTable) const
+	const ValueType& Get(const FCameraVariableTable& VariableTable) const
 	{
 		if (!VariableID.IsValid())
 		{

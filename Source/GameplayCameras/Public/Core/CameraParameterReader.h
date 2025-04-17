@@ -44,7 +44,7 @@ public:
 	/**
 	 * Gets the actual value for the parameter.
 	 */
-	typename TCallTraits<ValueType>::ParamType Get(const FCameraVariableTable& VariableTable) const
+	const ValueType& Get(const FCameraVariableTable& VariableTable) const
 	{
 		checkf(DefaultValuePtr, TEXT("Parameter reader has no value pointer!"));
 		if (!VariableID.IsValid())
