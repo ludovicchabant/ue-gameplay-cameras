@@ -11,11 +11,14 @@
 
 namespace UE::Cameras
 {
-	class FRootCameraNodeEvaluator;
+	class FCameraParameterSetterService;
 }
 
-UENUM()
-enum class ECameraVariableSetterBlendType
+/**
+ * The blend type for a camera variable setter.
+ */
+UENUM(BlueprintType)
+enum class ECameraVariableSetterBlendType : uint8
 {
 	None,
 	Linear,
@@ -23,6 +26,9 @@ enum class ECameraVariableSetterBlendType
 	SmootherStep
 };
 
+/**
+ * A handle to an ongoing camera variable setter.
+ */
 USTRUCT(BlueprintType)
 struct FCameraVariableSetterHandle
 {
@@ -75,16 +81,23 @@ private:
 	UPROPERTY()
 	uint32 SerialNumber;
 
-	friend class UE::Cameras::FRootCameraNodeEvaluator;
+	friend class UE::Cameras::FCameraParameterSetterService;
 };
 
 namespace UE::Cameras
 {
 
+/**
+ * A base structure for overriding a camera variable value until told to stop.
+ * Overriding supports blending in and out.
+ *
+ * This base structure doesn't apply the values, see TCameraVariableSetter for that.
+ */
 struct FCameraVariableSetter
 {
 	ECameraVariableSetterBlendType BlendType = ECameraVariableSetterBlendType::Linear;
-	float BlendTime = 1.f;
+	float BlendInTime = 1.f;
+	float BlendOutTime = 1.f;
 
 	virtual ~FCameraVariableSetter() {}
 
@@ -147,6 +160,9 @@ struct TVariableSetterValueInterpolator<UE::Math::TTransform<T>>
 
 }  // namespace Internal
 
+/**
+ * An actual camera variable setter for a given type of values.
+ */
 template<typename ValueType>
 struct TCameraVariableSetter : public FCameraVariableSetter
 {

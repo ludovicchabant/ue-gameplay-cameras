@@ -7,7 +7,6 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigEvaluationInfo.h"
 #include "Core/CameraRigInstanceID.h"
-#include "Core/CameraVariableSetter.h"
 
 #include "RootCameraNode.generated.h"
 
@@ -164,15 +163,6 @@ public:
 	/** Gets the delegate for camera rig events. */
 	FOnRootCameraNodeCameraRigEvent& OnCameraRigEvent() { return OnCameraRigEventDelegate; }
 
-public:
-
-	template<typename ValueType>
-	FCameraVariableSetterHandle AddCameraVariableSetter(const TCameraVariableSetter<ValueType>& InSetter);
-
-	void StopCameraVariableSetter(const FCameraVariableSetterHandle& InHandle, bool bImmediately = false);
-
-	void ApplyCameraVariableSetters(FCameraVariableTable& OutVariableTable);
-
 protected:
 
 	// FCameraNodeEvaluator interface.
@@ -211,8 +201,6 @@ protected:
 
 	void BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const;
 
-	void UpdateCameraVariableSetters(float DeltaTime);
-
 private:
 
 	/** The camera system that owns this root node. */
@@ -220,26 +208,7 @@ private:
 
 	/** The delegate to notify when an event happens. */
 	FOnRootCameraNodeCameraRigEvent OnCameraRigEventDelegate;
-
-	struct FVariableSetterEntry
-	{
-		FCameraVariableSetterPtr Setter;
-		FCameraVariableSetterHandle ThisHandle;
-	};
-
-	using FCameraVariableSetters = TSparseArray<FVariableSetterEntry>;
-	FCameraVariableSetters VariableSetters;
-	uint32 NextVariableSetterSerial = 0;
 };
-
-template<typename ValueType>
-FCameraVariableSetterHandle FRootCameraNodeEvaluator::AddCameraVariableSetter(const TCameraVariableSetter<ValueType>& InSetter)
-{
-	FSparseArrayAllocationInfo NewAllocation = VariableSetters.AddUninitialized();
-	FCameraVariableSetterHandle NewHandle(NewAllocation.Index, NextVariableSetterSerial++);
-	new(NewAllocation.Pointer) FVariableSetterEntry{ InSetter, NewHandle };
-	return NewHandle;
-}
 
 }  // namespace UE::Cameras
 

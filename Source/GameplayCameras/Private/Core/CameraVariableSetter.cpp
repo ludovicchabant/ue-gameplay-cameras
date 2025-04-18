@@ -28,7 +28,8 @@ void FCameraVariableSetter::Stop(bool bImmediately)
 			else if (PrevState == EState::BlendIn)
 			{
 				// TODO: this assumes a symmetrical blend curve, which may not always be true.
-				CurrentTime = FMath::Clamp(BlendTime - CurrentTime, 0.f, BlendTime);
+				const float BlendInPercent = (BlendInTime > 0.f) ? FMath::Clamp(CurrentTime / BlendInTime, 0.f, 1.f) : 1.f;
+				CurrentTime = (1.f - BlendInPercent) * BlendOutTime;
 			}
 			// else: was blending out already.
 		}
@@ -47,26 +48,26 @@ void FCameraVariableSetter::UpdateState(float DeltaTime)
 		const float NewTime = CurrentTime + DeltaTime;
 		if (State == EState::BlendIn)
 		{
-			if (NewTime < BlendTime)
+			if (NewTime < BlendInTime)
 			{
 				CurrentTime = NewTime;
 			}
 			else
 			{
 				State = EState::Full;
-				CurrentTime = BlendTime;
+				CurrentTime = BlendInTime;
 			}
 		}
 		else if (State == EState::BlendOut)
 		{
-			if (NewTime < BlendTime)
+			if (NewTime < BlendOutTime)
 			{
 				CurrentTime = NewTime;
 			}
 			else
 			{
 				State = EState::Inactive;
-				CurrentTime = BlendTime;
+				CurrentTime = BlendOutTime;
 			}
 		}
 	}
@@ -78,13 +79,13 @@ float FCameraVariableSetter::GetBlendFactor()
 	switch (State)
 	{
 		case EState::BlendIn:
-			BlendPercent = (BlendTime > 0.f) ? (CurrentTime / BlendTime) : 1.f;
+			BlendPercent = (BlendInTime > 0.f) ? (CurrentTime / BlendInTime) : 1.f;
 			break;
 		case EState::Full:
 			BlendPercent = 1.f;
 			break;
 		case EState::BlendOut:
-			BlendPercent = 1.f - ((BlendTime > 0.f) ? (CurrentTime / BlendTime) : 1.f);
+			BlendPercent = 1.f - ((BlendOutTime > 0.f) ? (CurrentTime / BlendOutTime) : 1.f);
 			break;
 		case EState::Inactive:
 		default:

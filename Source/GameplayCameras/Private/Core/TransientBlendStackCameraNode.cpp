@@ -12,9 +12,9 @@
 #include "Core/CameraRigCombinationRegistry.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraSystemEvaluator.h"
-#include "Core/RootCameraNode.h"
 #include "Helpers/CameraRigTransitionFinder.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
+#include "Services/CameraParameterSetterService.h"
 
 namespace UE::Cameras
 {
@@ -198,6 +198,13 @@ void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<const FCamera
 	}
 }
 
+void FTransientBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	Super::OnInitialize(Params, OutResult);
+
+	ParameterSetterService = Params.Evaluator->FindEvaluationService<FCameraParameterSetterService>();
+}
+
 void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	ensure(Entries.Num() == EntryExtraInfos.Num());
@@ -231,9 +238,6 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::ChangedOnly;
 	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
 
-	FRootCameraNodeEvaluator* RootNodeEvaluator = Params.Evaluator->GetRootNodeEvaluator();
-	check(RootNodeEvaluator);
-
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
@@ -259,7 +263,10 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 		// Override it with variable setters.
-		RootNodeEvaluator->ApplyCameraVariableSetters(CurResult.VariableTable);
+		if (ParameterSetterService)
+		{
+			ParameterSetterService->ApplyCameraVariableSetters(CurResult.VariableTable);
+		}
 
 		// Gather input parameters if needed (and remember if it was indeed needed).
 		if (!EntryExtraInfo.bInputRunThisFrame)

@@ -16,6 +16,7 @@
 #include "GameplayCamerasSettings.h"
 #include "Math/ColorList.h"
 #include "Services/CameraModifierService.h"
+#include "Services/CameraParameterSetterService.h"
 #include "Services/CameraShakeService.h"
 #include "Services/OrientationInitializationService.h"
 #include "UObject/Package.h"
@@ -89,18 +90,19 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	BuildParams.RootCameraNode = RootNode;
 	RootEvaluator = static_cast<FRootCameraNodeEvaluator*>(RootEvaluatorStorage.BuildEvaluatorTree(BuildParams));
 
+	RegisterEvaluationService(MakeShared<FCameraModifierService>());
+	RegisterEvaluationService(MakeShared<FCameraParameterSetterService>());
+	RegisterEvaluationService(MakeShared<FCameraShakeService>());
+	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
+
+	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
+
 	if (ensure(RootEvaluator))
 	{
 		FCameraNodeEvaluatorInitializeParams InitParams;
 		InitParams.Evaluator = this;
 		RootEvaluator->Initialize(InitParams, RootNodeResult);
 	}
-
-	RegisterEvaluationService(MakeShared<FCameraModifierService>());
-	RegisterEvaluationService(MakeShared<FCameraShakeService>());
-	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
-
-	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
 }
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()

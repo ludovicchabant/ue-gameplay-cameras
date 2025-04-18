@@ -5,12 +5,12 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableSetter.h"
-#include "Core/RootCameraNode.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
 #include "Kismet/GameplayStatics.h"
+#include "Services/CameraParameterSetterService.h"
 
 UGameplayCameraParameterSetterComponent::UGameplayCameraParameterSetterComponent(const FObjectInitializer& ObjInit)
 	: Super(ObjInit)
@@ -49,7 +49,7 @@ void UGameplayCameraParameterSetterComponent::OnActorEndOverlap(AActor* Overlapp
 	StopParameterSetters(false);
 }
 
-UE::Cameras::FRootCameraNodeEvaluator* UGameplayCameraParameterSetterComponent::GetRootNodeEvaluator()
+TSharedPtr<UE::Cameras::FCameraParameterSetterService> UGameplayCameraParameterSetterComponent::GetParameterSetterService()
 {
 	using namespace UE::Cameras;
 
@@ -75,9 +75,7 @@ UE::Cameras::FRootCameraNodeEvaluator* UGameplayCameraParameterSetterComponent::
 		return nullptr;
 	}
 
-	FRootCameraNodeEvaluator* RootNodeEvaluator = SystemEvaluator->GetRootNodeEvaluator();
-
-	return RootNodeEvaluator;
+	return SystemEvaluator->FindEvaluationService<FCameraParameterSetterService>();
 }
 
 void UGameplayCameraParameterSetterComponent::StartParameterSetters()
@@ -89,8 +87,8 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 		return;
 	}
 
-	FRootCameraNodeEvaluator* RootNodeEvaluator = GetRootNodeEvaluator();
-	if (!RootNodeEvaluator)
+	TSharedPtr<FCameraParameterSetterService> ParameterSetterService = GetParameterSetterService();
+	if (!ParameterSetterService)
 	{
 		return;
 	}
@@ -101,7 +99,6 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 
 	for (const FCameraObjectInterfaceParameterDefinition& ParameterDefinition : CameraRig->GetParameterDefinitions())
 	{
-		// TODO
 		if (ParameterDefinition.ParameterType != ECameraObjectInterfaceParameterType::Blendable)
 		{
 			continue;
@@ -128,7 +125,8 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 				{\
 					TCameraVariableSetter<VariableType> Setter(\
 							ParameterDefinition.VariableID, *reinterpret_cast<const VariableType*>(RawValue));\
-					SetterHandle = RootNodeEvaluator->AddCameraVariableSetter(Setter);\
+					InitializeParameterSetter(Setter);\
+					SetterHandle = ParameterSetterService->AddCameraVariableSetter(Setter);\
 				}\
 				break;
 			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -144,19 +142,26 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 	}
 }
 
+void UGameplayCameraParameterSetterComponent::InitializeParameterSetter(UE::Cameras::FCameraVariableSetter& VariableSetter)
+{
+	VariableSetter.BlendInTime = BlendInTime;
+	VariableSetter.BlendOutTime = BlendOutTime;
+	VariableSetter.BlendType = BlendType;
+}
+
 void UGameplayCameraParameterSetterComponent::StopParameterSetters(bool bImmediately)
 {
 	using namespace UE::Cameras;
 
-	FRootCameraNodeEvaluator* RootNodeEvaluator = GetRootNodeEvaluator();
-	if (!RootNodeEvaluator)
+	TSharedPtr<FCameraParameterSetterService> ParameterSetterService = GetParameterSetterService();
+	if (!ParameterSetterService)
 	{
 		return;
 	}
 
 	for (FCameraVariableSetterHandle Handle : SetterHandles)
 	{
-		RootNodeEvaluator->StopCameraVariableSetter(Handle, bImmediately);
+		ParameterSetterService->StopCameraVariableSetter(Handle, bImmediately);
 	}
 }
 

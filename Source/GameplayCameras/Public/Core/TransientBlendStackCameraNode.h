@@ -4,9 +4,12 @@
 
 #include "Core/BlendStackCameraNode.h"
 #include "Core/BlendStackEntryID.h"
+#include "Templates/SharedPointerFwd.h"
 
 namespace UE::Cameras
 {
+
+class FCameraParameterSetterService;
 
 /**
  * Parameter structure for pushing a camera rig onto a transient blend stack.
@@ -70,6 +73,7 @@ public:
 protected:
 
 	// FCameraNodeEvaluator interface.
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
@@ -106,6 +110,9 @@ private:
 
 	/** Variable table for pre-blending. */
 	FCameraVariableTable PreBlendVariableTable;
+
+	/** Cached pointer to the parameter setter service. */
+	TSharedPtr<FCameraParameterSetterService> ParameterSetterService;
 };
 
 }  // namespace UE::Cameras
