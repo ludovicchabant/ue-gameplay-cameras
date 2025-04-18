@@ -105,6 +105,17 @@ void FCurveEditorToolkit::AddCurveOwner(UObject* InCurveOwner)
 	}
 }
 
+void FCurveEditorToolkit::AddCurveOwners(TArrayView<UObject*> InCurveOwners)
+{
+	if (IsInitialized())
+	{
+		for (UObject* CurveOwner : InCurveOwners)
+		{
+			AddCurves(CurveOwner);
+		}
+	}
+}
+
 void FCurveEditorToolkit::RemoveCurveOwner(UObject* InCurveOwner)
 {
 	if (!IsInitialized())

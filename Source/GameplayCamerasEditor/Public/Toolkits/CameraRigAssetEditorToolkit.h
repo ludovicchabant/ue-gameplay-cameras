@@ -107,6 +107,9 @@ private:
 
 	/** Event handler */
 	TCameraEventHandler<ICameraRigAssetEventHandler> EventHandler;
+
+	/** Whether the toolkit has finished initializing */
+	bool bIsInitialized = false;
 };
 
 }  // namespace UE::Cameras

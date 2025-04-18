@@ -49,6 +49,11 @@ public:
 	 */
 	void AddCurveOwner(UObject* InCurveOwner);
 	/**
+	 * Adds curves for any curve property on the given objects. If the object doesn't have any recognizable
+	 * curve properties, nothing happens.
+	 */
+	void AddCurveOwners(TArrayView<UObject*> InCurveOwners);
+	/**
 	 * Removes any existing curves belonging to the given object.
 	 */
 	void RemoveCurveOwner(UObject* InCurveOwner);

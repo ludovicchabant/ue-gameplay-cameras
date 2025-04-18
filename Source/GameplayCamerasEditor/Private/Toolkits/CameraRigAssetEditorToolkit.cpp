@@ -82,7 +82,7 @@ void FCameraRigAssetEditorToolkit::SetCameraRigAsset(UCameraRigAsset* InCameraRi
 	BuildButtonToolkit->SetTarget(InCameraRig);
 	InterfaceParametersToolkit->SetCameraObject(InCameraRig);
 
-	if (InCameraRig)
+	if (InCameraRig && bIsInitialized)
 	{
 		InCameraRig->EventHandlers.Register(EventHandler, this);
 	}
@@ -144,10 +144,7 @@ TSharedRef<SDockTab> FCameraRigAssetEditorToolkit::SpawnTab_Curves(const FSpawnT
 {
 	if (!CurveEditorToolkit->IsInitialized())
 	{
-		TArray<UObject*> CameraRigObjects;
-		UPackage* CameraRigPackage = Impl->GetCameraRigAsset()->GetPackage();
-		GetObjectsWithPackage(CameraRigPackage, CameraRigObjects);
-		CurveEditorToolkit->Initialize(CameraRigObjects);
+		CurveEditorToolkit->Initialize();
 	}
 
 	TSharedPtr<SDockTab> CurvesTab = SNew(SDockTab)
@@ -299,7 +296,19 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 
 	RegenerateMenusAndToolbars();
 
+	if (UCameraRigAsset* CameraRig = Impl->GetCameraRigAsset())
+	{
+		TArray<UObject*> CameraRigObjects;
+		UPackage* CameraRigPackage = CameraRig->GetPackage();
+		GetObjectsWithPackage(CameraRigPackage, CameraRigObjects);
+		CurveEditorToolkit->AddCurveOwners(CameraRigObjects);
+
+		CameraRig->EventHandlers.Register(EventHandler, this);
+	}
+
 	FRichCurveDetailsCustomization::OnInvokeCurveEditor().AddSP(this, &FCameraRigAssetEditorToolkit::OnInvokeCurveEditor);
+
+	bIsInitialized = true;
 }
 
 void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()
