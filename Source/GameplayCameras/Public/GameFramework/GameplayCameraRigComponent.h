@@ -54,5 +54,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UCameraAsset> GeneratedCameraAsset;
+
+#if WITH_EDITOR
+	bool bIsBuildingGeneratedCameraAsset = false;
+#endif
 };
 

@@ -85,13 +85,18 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuilt(const UCameraRigAsset* I
 {
 	using namespace UE::Cameras;
 
-	if (InCameraRigAsset != CameraRigReference.GetCameraRig())
+	if (InCameraRigAsset != CameraRigReference.GetCameraRig() || bIsBuildingGeneratedCameraAsset)
 	{
 		return;
 	}
 
 	// If our camera rig asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
+	if (GeneratedCameraAsset)
+	{
+		TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
+		GeneratedCameraAsset->BuildCamera();
+	}
 	if (HasCameraEvaluationContext())
 	{
 		const FCameraObjectAllocationInfo& AllocationInfo = InCameraRigAsset->AllocationInfo;
