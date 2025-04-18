@@ -38,7 +38,7 @@ public:
 	 * Initializes the reader around the given variable reference.
 	 */
 	template<typename VariableReferenceType>
-	void Initialize(const VariableReferenceType& Reference, TCallTraits<ValueType>::ParamType DefaultValueIfNoReference)
+	void Initialize(const VariableReferenceType& Reference, typename TCallTraits<ValueType>::ParamType DefaultValueIfNoReference)
 	{
 		static_assert(
 				std::is_same<ValueType, typename VariableReferenceType::VariableAssetType::ValueType>(),

@@ -121,7 +121,9 @@ void UCameraRigCameraNode::GatherPackages(FCameraRigPackages& OutPackages) const
 {
 	if (const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig())
 	{
+#if WITH_EDITOR
 		CameraRig->GatherPackages(OutPackages);
+#endif  // WITH_EDITOR
 	}
 }
 
