@@ -24,6 +24,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"AssetTools",
 				"BlueprintGraph",
 				"CinematicCamera",
+				"ContentBrowser",
 				"Core",
 				"CoreUObject",
 				"CurveEditor",

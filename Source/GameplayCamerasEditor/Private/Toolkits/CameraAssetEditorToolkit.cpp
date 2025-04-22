@@ -22,6 +22,7 @@
 #include "Helpers/ObjectReferenceFinder.h"
 #include "IAssetTools.h"
 #include "IGameplayCamerasEditorModule.h"
+#include "IGameplayCamerasFamily.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "PropertyEditorModule.h"
@@ -35,6 +36,7 @@
 #include "Toolkits/StandardToolkitLayout.h"
 #include "UObject/Package.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/SCameraFamilyShortcutBar.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAssetEditorToolkit)
 
@@ -193,6 +195,19 @@ void FCameraAssetEditorToolkit::RegisterToolbar()
 		ModesSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowCameraDirector));
 		ModesSection.AddEntry(FToolMenuEntry::InitToolBarButton(Commands.ShowSharedTransitions));
 	}
+
+	TSharedRef<IGameplayCamerasFamily> Family = IGameplayCamerasFamily::CreateFamily(CameraAsset).ToSharedRef();
+	TSharedRef<FExtender> ToolbarExtender = MakeShared<FExtender>();
+	AddToolbarExtender(ToolbarExtender);
+	ToolbarExtender->AddToolBarExtension(
+			"Asset",
+			EExtensionHook::After,
+			GetToolkitCommands(),
+			FToolBarExtensionDelegate::CreateLambda([this, Family](FToolBarBuilder& Builder)
+				{
+					AddToolbarWidget(SNew(SCameraFamilyShortcutBar, SharedThis(this), Family));
+				})
+			);
 }
 
 void FCameraAssetEditorToolkit::InitToolMenuContext(FToolMenuContext& MenuContext)

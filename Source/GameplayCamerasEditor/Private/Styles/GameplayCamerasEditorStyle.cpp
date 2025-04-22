@@ -150,6 +150,11 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("Graph.CameraRigParameterPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Connected", Icon16x16));
 	Set("Graph.CameraRigParameterPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Disconnected", Icon16x16));
 
+	// Family icons.
+	Set("Family.CameraAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraKit", Icon20x20));
+	Set("Family.CameraRigAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraRig", Icon20x20));
+	Set("Family.CameraRigProxyAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraRigProxy", Icon20x20));
+
 	FSlateStyleRegistry::RegisterSlateStyle(*this);
 }
 

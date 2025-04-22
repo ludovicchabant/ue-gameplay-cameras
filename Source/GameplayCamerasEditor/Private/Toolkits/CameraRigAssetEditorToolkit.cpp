@@ -16,6 +16,7 @@
 #include "Framework/Docking/TabManager.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IGameplayCamerasEditorModule.h"
+#include "IGameplayCamerasFamily.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "Modules/ModuleManager.h"
@@ -28,6 +29,7 @@
 #include "Toolkits/CurveEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
+#include "Widgets/SCameraFamilyShortcutBar.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAssetEditorToolkit)
 
@@ -258,6 +260,19 @@ void FCameraRigAssetEditorToolkit::RegisterToolbar()
 
 		Impl->BuildToolbarMenu(ToolbarMenu);
 	}
+	
+	TSharedRef<IGameplayCamerasFamily> Family = IGameplayCamerasFamily::CreateFamily(Impl->GetCameraRigAsset()).ToSharedRef();
+	TSharedRef<FExtender> ToolbarExtender = MakeShared<FExtender>();
+	AddToolbarExtender(ToolbarExtender);
+	ToolbarExtender->AddToolBarExtension(
+			"Asset",
+			EExtensionHook::After,
+			GetToolkitCommands(),
+			FToolBarExtensionDelegate::CreateLambda([this, Family](FToolBarBuilder& Builder)
+				{
+					AddToolbarWidget(SNew(SCameraFamilyShortcutBar, SharedThis(this), Family));
+				})
+			);
 }
 
 void FCameraRigAssetEditorToolkit::InitToolMenuContext(FToolMenuContext& MenuContext)
