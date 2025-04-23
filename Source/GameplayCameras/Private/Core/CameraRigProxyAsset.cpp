@@ -4,6 +4,8 @@
 
 #include "Misc/Guid.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigProxyAsset)
+
 UCameraRigProxyAsset::UCameraRigProxyAsset(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {

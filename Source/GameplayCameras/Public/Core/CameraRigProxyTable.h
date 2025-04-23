@@ -39,14 +39,12 @@ struct FCameraRigProxyTableEntry
 /**
  * A table that defines mappings between camera rig proxies and actual camera rigs.
  */
-UCLASS(MinimalAPI, EditInlineNew)
-class UCameraRigProxyTable : public UObject
+USTRUCT()
+struct FCameraRigProxyTable
 {
 	GENERATED_BODY()
 
 public:
-
-	UCameraRigProxyTable(const FObjectInitializer& ObjectInit);
 
 	/**
 	 * Resolves a given proxy to an actual camera rig.

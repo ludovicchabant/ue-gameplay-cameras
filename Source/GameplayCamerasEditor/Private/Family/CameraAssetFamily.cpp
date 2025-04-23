@@ -62,6 +62,10 @@ void FCameraAssetFamily::FindAssetsOfType(UClass* InAssetType, TArray<FAssetData
 	}
 	else if (InAssetType == UCameraRigProxyAsset::StaticClass())
 	{
+		for (UCameraRigProxyAsset* CameraRigProxy : UsageInfo.CameraRigProxies)
+		{
+			OutAssets.Add(FAssetData(CameraRigProxy));
+		}
 	}
 }
 

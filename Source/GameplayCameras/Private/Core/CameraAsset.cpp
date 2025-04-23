@@ -6,6 +6,7 @@
 #include "Build/CameraBuildLog.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigProxyAsset.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectRedirector.h"
 #include "UObject/ObjectSaveContext.h"
@@ -112,33 +113,13 @@ void UCameraAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {
 	if (CameraDirector)
 	{
-		FCameraDirectorRigUsageInfo UsageInfo;
-		CameraDirector->GatherRigUsageInfo(UsageInfo);
-
-		TStringBuilder<256> CameraRigListBuilder;
-		for (const UCameraRigAsset* CameraRig : UsageInfo.CameraRigs)
-		{
-			const UPackage* CameraRigPackage = CameraRig->GetPackage();
-			CameraRigListBuilder << TEXT(";");
-			CameraRigListBuilder << CameraRigPackage->GetName();
-		}
-
-		FAssetRegistryTag CameraRigsTag;
-		CameraRigsTag.Type = FAssetRegistryTag::ETagType::TT_Hidden;
-		CameraRigsTag.Name = TEXT("UsedCameraRigs");
-		CameraRigsTag.Value = CameraRigListBuilder.ToString();
-		Context.AddTag(CameraRigsTag);
+		CameraDirector->ExtendAssetRegistryTags(Context);
 	}
 
 	Super::GetAssetRegistryTags(Context);
 }
 
 #if WITH_EDITOR
-
-void UCameraAsset::GetAssetRegistryTagMetadata(TMap<FName, FAssetRegistryTagMetadata>& OutMetadata) const
-{
-	Super::GetAssetRegistryTagMetadata(OutMetadata);
-}
 
 void UCameraAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {

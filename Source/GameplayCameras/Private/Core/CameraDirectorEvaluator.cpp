@@ -75,15 +75,11 @@ const UCameraRigAsset* FCameraDirectorEvaluator::FindCameraRigByProxy(const UCam
 		return nullptr;
 	}
 
-	UCameraRigProxyTable* ProxyTable = PrivateCameraDirector->CameraRigProxyTable;
-	if (!ensureMsgf(ProxyTable, TEXT("Cannot resolve camera rig proxy: no proxy table set on camera director.")))
-	{
-		return nullptr;
-	}
+	const FCameraRigProxyTable& ProxyTable = PrivateCameraDirector->CameraRigProxyTable;
 
 	FCameraRigProxyTableResolveParams ResolveParams;
 	ResolveParams.CameraRigProxy = InProxy;
-	return ProxyTable->ResolveProxy(ResolveParams);
+	return ProxyTable.ResolveProxy(ResolveParams);
 }
 
 void FCameraDirectorEvaluator::OnEndCameraSystemUpdate()

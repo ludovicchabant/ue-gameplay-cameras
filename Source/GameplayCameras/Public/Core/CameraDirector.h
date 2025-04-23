@@ -5,12 +5,15 @@
 #include "CoreTypes.h"
 #include "UObject/Object.h"
 #include "Core/CameraDirectorEvaluator.h"
+#include "Core/CameraRigProxyTable.h"
+#include "UObject/AssetRegistryTagsContext.h"
 
 #include "CameraDirector.generated.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
 
-class UCameraRigProxyTable;
+class UCameraRigAsset;
+class UCameraRigProxy;
 
 namespace UE::Cameras { class FCameraBuildLog; }
 
@@ -31,7 +34,10 @@ struct FCameraDirectorFactoryCreateParams
  */
 struct FCameraDirectorRigUsageInfo
 {
+	/** Camera rigs used by the camera director. */
 	TArray<UCameraRigAsset*> CameraRigs;
+	/** Camera rig proxies used by the camera director. */
+	TArray<UCameraRigProxyAsset*> CameraRigProxies;
 };
 
 /**
@@ -53,7 +59,10 @@ public:
 	UE_API void BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog);
 
 	/** Gets the list of camera rigs used by this camera director. */
-	UE_API void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo);
+	UE_API void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const;
+
+	/** Extend the owning camera asset's tags. */
+	UE_API void ExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const;
 
 #if WITH_EDITOR
 	/** Called by the asset factories to setup new data before the editor opens. */
@@ -69,7 +78,10 @@ protected:
 	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) {}
 
 	/** Gets the list of camera rigs used by this camera director. */
-	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) {}
+	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const {}
+
+	/** Extend the owning camera asset's tags. */
+	virtual void OnExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const {}
 
 #if WITH_EDITOR
 	/** Called by the asset factories to setup new data before the editor opens. */
@@ -82,14 +94,8 @@ public:
 	 * The table that maps camera rig proxies (used in the evaluator Blueprint graph)
 	 * to actual camera rigs.
 	 */
-	UPROPERTY(EditAnywhere, Instanced, Category="Evaluation")
-	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable;
-
-protected:
-
-	/** Whether this type of director supports having a camera rig proxy table. */
-	UPROPERTY(Transient)
-	bool bHasCameraRigProxyTable = true;
+	UPROPERTY(EditAnywhere, Category="Evaluation")
+	FCameraRigProxyTable CameraRigProxyTable;
 };
 
 #undef UE_API

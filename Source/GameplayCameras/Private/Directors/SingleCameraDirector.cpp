@@ -34,7 +34,6 @@ UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(FSingleCameraDirectorEvaluator)
 USingleCameraDirector::USingleCameraDirector(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
-	bHasCameraRigProxyTable = false;
 }
 
 FCameraDirectorEvaluatorPtr USingleCameraDirector::OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
@@ -51,7 +50,7 @@ void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& 
 	}
 }
 
-void USingleCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+void USingleCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const
 {
 	if (CameraRig)
 	{

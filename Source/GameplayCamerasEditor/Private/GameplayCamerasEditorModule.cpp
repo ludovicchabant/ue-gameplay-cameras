@@ -17,7 +17,6 @@
 #include "ComponentVisualizers/GameplayCameraComponentVisualizer.h"
 #include "Customizations/CameraAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
-#include "Customizations/CameraProxyTableDetailsCustomization.h"
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraShakeAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraVariableReferenceDetailsCustomizations.h"
@@ -37,7 +36,6 @@
 #include "Features/IModularFeatures.h"
 #include "GameFramework/GameplayCameraComponent.h"
 #include "GameplayCameras.h"
-#include "GameplayCamerasEditorSettings.h"
 #include "GameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
@@ -416,10 +414,6 @@ private:
 				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraAssetReferenceDetailsCustomization::MakeInstance));
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
-				"CameraRigProxyTableEntry", 
-				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
-					&FCameraProxyTableEntryDetailsCustomization::MakeInstance));
-		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 				"CameraRigAssetReference", 
 				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraRigAssetReferenceDetailsCustomization::MakeInstance));
@@ -446,7 +440,6 @@ private:
 			FCameraVariableReferenceDetailsCustomization::Unregister(*PropertyEditorModule);
 			FRichCurveDetailsCustomization::Unregister(*PropertyEditorModule);
 
-			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigProxyTableEntry");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAssetReference");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraShakeAssetReference");

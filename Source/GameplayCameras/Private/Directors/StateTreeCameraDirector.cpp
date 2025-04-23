@@ -6,6 +6,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigProxyAsset.h"
 #include "Directors/CameraDirectorStateTreeSchema.h"
 #include "GameplayCameras.h"
 #include "Helpers/OutgoingReferenceFinder.h"
@@ -232,19 +233,20 @@ void UStateTreeCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLo
 	}
 }
 
-void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo)
+void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const
 {
 	using namespace UE::Cameras;
 
-	UStateTree* StateTree = StateTreeReference.GetMutableStateTree();
+	const UStateTree* StateTree = StateTreeReference.GetStateTree();
 	if (!StateTree)
 	{
 		return;
 	}
 
-	FOutgoingReferenceFinder ReferenceFinder(StateTree, UCameraRigAsset::StaticClass());
+	FOutgoingReferenceFinder ReferenceFinder(const_cast<UStateTree*>(StateTree), UCameraRigAsset::StaticClass());
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
+	ReferenceFinder.GetReferencesOfClass<UCameraRigProxyAsset>(UsageInfo.CameraRigProxies);
 }
 
 #undef LOCTEXT_NAMESPACE

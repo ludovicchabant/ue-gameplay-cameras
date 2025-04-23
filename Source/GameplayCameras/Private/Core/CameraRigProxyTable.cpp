@@ -2,12 +2,9 @@
 
 #include "Core/CameraRigProxyTable.h"
 
-UCameraRigProxyTable::UCameraRigProxyTable(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
-{
-}
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigProxyTable)
 
-UCameraRigAsset* UCameraRigProxyTable::ResolveProxy(const FCameraRigProxyTableResolveParams& InParams) const
+UCameraRigAsset* FCameraRigProxyTable::ResolveProxy(const FCameraRigProxyTableResolveParams& InParams) const
 {
 	ensure(InParams.CameraRigProxy);
 

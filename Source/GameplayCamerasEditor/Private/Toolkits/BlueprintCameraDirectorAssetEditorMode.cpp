@@ -2,7 +2,6 @@
 
 #include "Toolkits/BlueprintCameraDirectorAssetEditorMode.h"
 
-#include "Core/CameraRigProxyTable.h"
 #include "Directors/BlueprintCameraDirector.h"
 
 namespace UE::Cameras
