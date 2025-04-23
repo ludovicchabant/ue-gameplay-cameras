@@ -226,6 +226,8 @@ private:
 	
 	bool bIsEditorWorld = false;
 
+	bool bIsFirstActivation = true;
+
 	int32 CustomShowFlag = INDEX_NONE;
 
 #endif  // WITH_EDITOR

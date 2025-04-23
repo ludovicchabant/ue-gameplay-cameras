@@ -24,6 +24,13 @@ public:
 public:
 
 	/**
+	 * Build camera assets before using them in PIE, so that they automatically run with the
+	 * latest user edits.
+	 */
+	UPROPERTY(EditAnywhere, Config, Category="General")
+	bool bAutoBuildInPIE = true;
+
+	/**
 	 * The number of camera rigs combined in one frame past which the camera system emits a warning.
 	 */
 	UPROPERTY(EditAnywhere, Config, Category="General")
