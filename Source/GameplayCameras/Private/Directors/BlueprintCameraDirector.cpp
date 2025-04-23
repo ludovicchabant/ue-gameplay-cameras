@@ -12,6 +12,7 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/ControllerGameplayCameraEvaluationComponent.h"
@@ -473,11 +474,26 @@ void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 		return;
 	}
 
-	FOutgoingReferenceFinder ReferenceFinder(EvaluatorBlueprint, UCameraRigAsset::StaticClass());
+	TArray<UClass*> RefClasses { UCameraRigAsset::StaticClass(), UCameraRigProxyAsset::StaticClass() };
+	FOutgoingReferenceFinder ReferenceFinder(EvaluatorBlueprint, RefClasses);
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 	ReferenceFinder.GetReferencesOfClass<UCameraRigProxyAsset>(UsageInfo.CameraRigProxies);
 
+#endif  // WITH_EDITORONLY_DATA
+}
+
+void UBlueprintCameraDirector::OnExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const
+{
+#if WITH_EDITORONLY_DATA
+	if (CameraDirectorEvaluatorClass && CameraDirectorEvaluatorClass->ClassGeneratedBy)
+	{
+		FAssetRegistryTag ExternalDirectorTag;
+		ExternalDirectorTag.Type = FAssetRegistryTag::ETagType::TT_Hidden;
+		ExternalDirectorTag.Name = TEXT("ExternalDirector");
+		ExternalDirectorTag.Value = CameraDirectorEvaluatorClass->ClassGeneratedBy->GetPathName();
+		Context.AddTag(ExternalDirectorTag);
+	}
 #endif  // WITH_EDITORONLY_DATA
 }
 

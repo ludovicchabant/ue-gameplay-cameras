@@ -26,6 +26,7 @@ protected:
 	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const override;
 	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) override;
 	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const override;
+	virtual void OnExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
 
 public:
 

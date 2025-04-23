@@ -276,7 +276,7 @@ TSharedRef<SWidget> SCameraFamilyAssetShortcut::HandleGetDropdownMenuContent()
 		MenuBuilder.BeginSection("AssetSelection", LOCTEXT("AssetSelectionSection", "Select Asset"));
 		{
 			FAssetPickerConfig AssetPickerConfig;
-			AssetPickerConfig.Filter.ClassPaths.Add(FamilyAssetType->GetClassPathName());
+			AssetPickerConfig.bCanShowClasses = false;
 			for (const FAssetData& AssetData : AssetDatas)
 			{
 				AssetPickerConfig.Filter.SoftObjectPaths.Add(AssetData.GetSoftObjectPath());

@@ -6,7 +6,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
-#include "Family/GameplayCamerasFamilyConstants.h"
+#include "Family/GameplayCamerasFamilyHelper.h"
 
 #define LOCTEXT_NAMESPACE "CameraAssetFamily"
 
@@ -27,6 +27,7 @@ UObject* FCameraAssetFamily::GetRootAsset() const
 void FCameraAssetFamily::GetAssetTypes(TArray<UClass*>& OutAssetTypes) const
 {
 	OutAssetTypes.Add(UCameraAsset::StaticClass());
+	OutAssetTypes.Add(UCameraDirector::StaticClass());
 	OutAssetTypes.Add(UCameraRigAsset::StaticClass());
 	OutAssetTypes.Add(UCameraRigProxyAsset::StaticClass());
 }
@@ -47,6 +48,14 @@ void FCameraAssetFamily::FindAssetsOfType(UClass* InAssetType, TArray<FAssetData
 	UCameraDirector* CameraDirector = RootAsset->GetCameraDirector();
 	if (!CameraDirector)
 	{
+		return;
+	}
+
+	if (InAssetType == UCameraDirector::StaticClass())
+	{
+		TArray<FAssetData> ThisAsset{ FAssetData(RootAsset) };
+		TArray<FAssetData> ExternalCameraDirectors;
+		FGameplayCamerasFamilyHelper::GetExternalCameraDirectorAssets(ThisAsset, OutAssets);
 		return;
 	}
 
@@ -84,12 +93,12 @@ FText FCameraAssetFamily::GetAssetTypeTooltip(UClass* InAssetType) const
 
 const FSlateBrush* FCameraAssetFamily::GetAssetIcon(UClass* InAssetType) const
 {
-	return FGameplayCamerasFamilyConstants::GetAssetIcon(InAssetType);
+	return FGameplayCamerasFamilyHelper::GetAssetIcon(InAssetType);
 }
 
 FSlateColor FCameraAssetFamily::GetAssetTint(UClass* InAssetType) const
 {
-	return FGameplayCamerasFamilyConstants::GetAssetTint(InAssetType);
+	return FGameplayCamerasFamilyHelper::GetAssetTint(InAssetType);
 }
 
 }  // namespace UE::Cameras

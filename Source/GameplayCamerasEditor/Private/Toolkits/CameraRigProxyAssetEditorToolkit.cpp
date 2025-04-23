@@ -6,7 +6,9 @@
 #include "Core/CameraRigProxyAsset.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
+#include "IGameplayCamerasFamily.h"
 #include "PropertyEditorModule.h"
+#include "Widgets/SCameraFamilyShortcutBar.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigProxyAssetEditorToolkit"
 
@@ -34,6 +36,11 @@ FCameraRigProxyAssetEditorToolkit::FCameraRigProxyAssetEditorToolkit(UCameraRigP
 
 FCameraRigProxyAssetEditorToolkit::~FCameraRigProxyAssetEditorToolkit()
 {
+}
+
+void FCameraRigProxyAssetEditorToolkit::SetCameraRigProxyAsset(UCameraRigProxyAsset* InCameraRigProxyAsset)
+{
+	CameraRigProxyAsset = InCameraRigProxyAsset;
 }
 
 void FCameraRigProxyAssetEditorToolkit::AddReferencedObjects(FReferenceCollector& Collector)
@@ -75,6 +82,22 @@ void FCameraRigProxyAssetEditorToolkit::CreateWidgets()
 	LayoutExtender = MakeShared<FLayoutExtender>();
 
 	DetailsView = CreateDetailsView();
+}
+
+void FCameraRigProxyAssetEditorToolkit::RegisterToolbar()
+{
+	TSharedRef<IGameplayCamerasFamily> Family = IGameplayCamerasFamily::CreateFamily(CameraRigProxyAsset).ToSharedRef();
+	TSharedRef<FExtender> ToolbarExtender = MakeShared<FExtender>();
+	AddToolbarExtender(ToolbarExtender);
+	ToolbarExtender->AddToolBarExtension(
+			"Asset",
+			EExtensionHook::After,
+			GetToolkitCommands(),
+			FToolBarExtensionDelegate::CreateLambda([this, Family](FToolBarBuilder& Builder)
+				{
+					AddToolbarWidget(SNew(SCameraFamilyShortcutBar, SharedThis(this), Family));
+				})
+			);
 }
 
 void FCameraRigProxyAssetEditorToolkit::PostInitAssetEditor()

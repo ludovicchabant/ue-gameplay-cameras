@@ -152,6 +152,7 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 
 	// Family icons.
 	Set("Family.CameraAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraKit", Icon20x20));
+	Set("Family.CameraDirector", new IMAGE_BRUSH_SVG("Icons/CameraEditor-CameraDirector", Icon20x20));
 	Set("Family.CameraRigAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraRig", Icon20x20));
 	Set("Family.CameraRigProxyAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraRigProxy", Icon20x20));
 

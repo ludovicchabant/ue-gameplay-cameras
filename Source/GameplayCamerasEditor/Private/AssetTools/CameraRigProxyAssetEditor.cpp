@@ -22,6 +22,8 @@ void UCameraRigProxyAssetEditor::GetObjectsToEdit(TArray<UObject*>& InObjectsToE
 TSharedPtr<FBaseAssetToolkit> UCameraRigProxyAssetEditor::CreateToolkit()
 {
 	using namespace UE::Cameras;
-	return MakeShared<FCameraRigProxyAssetEditorToolkit>(this);
+	TSharedPtr<FCameraRigProxyAssetEditorToolkit> Toolkit = MakeShared<FCameraRigProxyAssetEditorToolkit>(this);
+	Toolkit->SetCameraRigProxyAsset(CameraRigProxyAsset);
+	return Toolkit;
 }
 

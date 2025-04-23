@@ -243,10 +243,23 @@ void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 		return;
 	}
 
-	FOutgoingReferenceFinder ReferenceFinder(const_cast<UStateTree*>(StateTree), UCameraRigAsset::StaticClass());
+	TArray<UClass*> RefClasses { UCameraRigAsset::StaticClass(), UCameraRigProxyAsset::StaticClass() };
+	FOutgoingReferenceFinder ReferenceFinder(const_cast<UStateTree*>(StateTree), RefClasses);
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 	ReferenceFinder.GetReferencesOfClass<UCameraRigProxyAsset>(UsageInfo.CameraRigProxies);
+}
+
+void UStateTreeCameraDirector::OnExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const
+{
+	if (const UStateTree* StateTree = StateTreeReference.GetStateTree())
+	{
+		FAssetRegistryTag ExternalDirectorTag;
+		ExternalDirectorTag.Type = FAssetRegistryTag::ETagType::TT_Hidden;
+		ExternalDirectorTag.Name = TEXT("ExternalDirector");
+		ExternalDirectorTag.Value = StateTree->GetPathName();
+		Context.AddTag(ExternalDirectorTag);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
