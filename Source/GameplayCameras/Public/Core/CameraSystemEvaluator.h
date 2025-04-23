@@ -54,7 +54,7 @@ enum class ECameraSystemEvaluatorRole
 /**
  * Parameter structure for initializing a new camera system evaluator.
  */
-struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
+struct FCameraSystemEvaluatorCreateParams
 {
 	/** The owner of the camera system, if any. */
 	TObjectPtr<UObject> Owner;
@@ -70,7 +70,7 @@ struct GAMEPLAYCAMERAS_API FCameraSystemEvaluatorCreateParams
 /**
  * Parameter structure for updating the camera system.
  */
-struct GAMEPLAYCAMERAS_API FCameraSystemEvaluationParams
+struct FCameraSystemEvaluationParams
 {
 	/** Time interval for the update. */
 	float DeltaTime = 0.f;

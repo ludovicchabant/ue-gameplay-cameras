@@ -8,6 +8,8 @@
 
 #include "CameraDirector.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraRigProxyTable;
 
 namespace UE::Cameras { class FCameraBuildLog; }
@@ -35,8 +37,8 @@ struct FCameraDirectorRigUsageInfo
 /**
  * Base class for a camera director.
  */
-UCLASS(Abstract, DefaultToInstanced)
-class GAMEPLAYCAMERAS_API UCameraDirector : public UObject
+UCLASS(MinimalAPI, Abstract, DefaultToInstanced)
+class UCameraDirector : public UObject
 {
 	GENERATED_BODY()
 
@@ -45,17 +47,17 @@ public:
 	using FCameraDirectorEvaluatorBuilder = UE::Cameras::FCameraDirectorEvaluatorBuilder;
 
 	/** Build the evaluator for this director. */
-	FCameraDirectorEvaluatorPtr BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const;
+	UE_API FCameraDirectorEvaluatorPtr BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const;
 
 	/** Builds and validates this camera director. */
-	void BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog);
+	UE_API void BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog);
 
 	/** Gets the list of camera rigs used by this camera director. */
-	void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo);
+	UE_API void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo);
 
 #if WITH_EDITOR
 	/** Called by the asset factories to setup new data before the editor opens. */
-	void FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams);
+	UE_API void FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams);
 #endif
 
 protected:
@@ -90,3 +92,4 @@ protected:
 	bool bHasCameraRigProxyTable = true;
 };
 
+#undef UE_API

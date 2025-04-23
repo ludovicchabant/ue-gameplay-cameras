@@ -9,6 +9,8 @@
 
 #include "BlueprintCameraPose.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraComponent;
 class UCineCameraComponent;
 
@@ -22,7 +24,7 @@ struct FCameraNodeEvaluationResult;
 
 /** Represents a camera pose. */
 USTRUCT(BlueprintType, meta=(DisplayName="Camera Pose"))
-struct GAMEPLAYCAMERAS_API FBlueprintCameraPose
+struct FBlueprintCameraPose
 {
 	GENERATED_BODY()
 
@@ -134,10 +136,10 @@ public:
 public:
 
 	/** Creates a new BP camera pose from a raw camera pose structure. */
-	static FBlueprintCameraPose FromCameraPose(const FCameraPose& InCameraPose);
+	static UE_API FBlueprintCameraPose FromCameraPose(const FCameraPose& InCameraPose);
 
 	/** Applies this BP camera pose's values to the given raw camera pose. */
-	void ApplyTo(FCameraPose& OutCameraPose) const;
+	UE_API void ApplyTo(FCameraPose& OutCameraPose) const;
 };
 
 /**
@@ -195,3 +197,4 @@ public:
 	static FBlueprintCameraPose MakeCameraPoseFromCineCameraComponent(const UCineCameraComponent* CameraComponent);
 };
 
+#undef UE_API
