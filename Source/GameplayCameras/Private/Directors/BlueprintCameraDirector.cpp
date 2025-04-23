@@ -383,7 +383,12 @@ void UBlueprintCameraDirectorEvaluator::NativeRunCameraDirector(const UE::Camera
 			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		RunCameraDirector(Params.DeltaTime, EvaluationContextOwner);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		FBlueprintCameraDirectorEvaluationParams OldParams;
+		OldParams.DeltaTime = Params.DeltaTime;
+		OldParams.EvaluationContextOwner = EvaluationContextOwner;
+		RunCameraDirector(Params.DeltaTime, EvaluationContextOwner, OldParams);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 
