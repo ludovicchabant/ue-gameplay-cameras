@@ -29,7 +29,7 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::Push(const FBlendSta
 	if (!Entries.IsEmpty())
 	{
 		FCameraRigEntry& TopEntry(Entries.Top());
-		if (!TopEntry.bIsFrozen 
+		if (!TopEntry.Flags.bIsFrozen 
 				&& TopEntry.EvaluationContext == Params.EvaluationContext)
 		{
 			// Don't push anything if what is being requested is already the active 
@@ -177,7 +177,7 @@ void FTransientBlendStackCameraNodeEvaluator::Freeze(const FBlendStackCameraFree
 		// Freeze any entries matching the given context and rig asset.
 		for (FCameraRigEntry& Entry : Entries)
 		{
-			if (!Entry.bIsFrozen && 
+			if (!Entry.Flags.bIsFrozen && 
 					Entry.CameraRig == Params.CameraRig &&
 					Entry.EvaluationContext == Params.EvaluationContext)
 			{
@@ -191,7 +191,7 @@ void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<const FCamera
 {
 	for (FCameraRigEntry& Entry : Entries)
 	{
-		if (!Entry.bIsFrozen && Entry.EvaluationContext == EvaluationContext)
+		if (!Entry.Flags.bIsFrozen && Entry.EvaluationContext == EvaluationContext)
 		{
 			FreezeEntry(Entry);
 		}
@@ -243,14 +243,14 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (UNLIKELY(Entry.bIsFrozen))
+		if (UNLIKELY(Entry.Flags.bIsFrozen))
 		{
 			continue;
 		}
 
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
-		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
@@ -323,11 +323,11 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen)
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
 
 			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
 			PreBlendParams.VariableTableFilter = VariableTableFilter;
@@ -359,7 +359,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-		if (!Entry.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen)
 		{
 			FCameraNodeEvaluationResult& CurResult(Entry.Result);
 			CurResult.VariableTable.Override(PreBlendVariableTable, ECameraVariableTableFilter::KnownOnly);
@@ -374,7 +374,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (UNLIKELY(Entry.bIsFrozen))
+		if (UNLIKELY(Entry.Flags.bIsFrozen))
 		{
 			continue;
 		}
@@ -383,7 +383,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
-		CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
 
 		// Start with the input given to us.
 		CurResult.Reset();
@@ -394,7 +394,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		// Override it with whatever the evaluation context has set on its result.
 		const FCameraNodeEvaluationResult& ContextResult(Entry.ContextResult);
 		CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
-		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
+		CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.Flags.bForceCameraCut;
 		
 		CurResult.bIsValid = true;
 
@@ -421,11 +421,11 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen)
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
 			FCameraNodeBlendParams BlendParams(CurParams, CurResult);
 
 			FCameraNodeBlendResult BlendResult(OutResult);
@@ -457,12 +457,15 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 	}
 
 	// Pop out camera rigs that have been blended out.
-	const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
-	if (BlendStackNode->BlendStackType == ECameraBlendStackType::IsolatedTransient && PopEntriesBelow != INDEX_NONE)
+	if (!Params.IsStatelessEvaluation())
 	{
-		PopEntries(PopEntriesBelow);
+		const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
+		if (BlendStackNode->BlendStackType == ECameraBlendStackType::IsolatedTransient && PopEntriesBelow != INDEX_NONE)
+		{
+			PopEntries(PopEntriesBelow);
 
-		EntryExtraInfos.RemoveAt(0, PopEntriesBelow);
+			EntryExtraInfos.RemoveAt(0, PopEntriesBelow);
+		}
 	}
 }
 
@@ -521,7 +524,7 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 		TArray<const UCameraRigAsset*> FromCombinedCameraRigs;
 		UCombinedCameraRigsCameraNode::GetAllCombinationCameraRigs(TopEntry.CameraRig, FromCombinedCameraRigs);
 
-		const bool bFromFrozen = TopEntry.bIsFrozen;
+		const bool bFromFrozen = TopEntry.Flags.bIsFrozen;
 		const UCameraRigTransition* TransitionToUse = nullptr;
 
 		// Start by looking at exit transitions on the last active (top) camera rig.

@@ -20,6 +20,27 @@ class FViewTargetContextReferencerService;
 }  // namespace UE::Cameras
 
 /**
+ * Defines how the GameplayCamerasPlayerCameraManager should handle the player's view rotation.
+ */
+UENUM()
+enum class EGameplayCamerasViewRotationMode
+{
+	/**
+	 * Don't do anything with the view rotation. This is suitable if the player camera input
+	 * and control rotation are handled by custom logic, and the Gameplay Cameras only use
+	 * the resulting control rotation (i.e. none of the camera rigs use player input nodes).
+	 */
+	None,
+	/**
+	 * Runs a "light" update of the whole camera system and comes up with a good approximation of
+	 * the resulting camera orientation. Computationally more expensive than just computing a
+	 * yaw and pitch angle, but handles blending camera rigs with different orientations while
+	 * preserving aim.
+	 */
+	PreviewUpdate
+};
+
+/**
  * A player camera manager that runs the GameplayCameras camera system.
  *
  * Setting the view target does the following:
@@ -94,6 +115,18 @@ private:
 
 	void EnsureCameraSystemHost();
 	void TeardownCameraSystemHost();
+
+	void RunViewRotationPreviewUpdate(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot);
+
+public:
+
+	/** The view rotation handling mode to use. */
+	UPROPERTY(EditAnywhere, Category="Camera", meta=(EditCondition="bOverrideViewRotationMode"))
+	EGameplayCamerasViewRotationMode ViewRotationMode = EGameplayCamerasViewRotationMode::None;
+
+	/** Whether the default view rotation mode setting should be overriden. */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	bool bOverrideViewRotationMode = false;
 
 private:
 

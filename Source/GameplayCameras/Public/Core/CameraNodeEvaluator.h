@@ -133,6 +133,8 @@ enum class ECameraNodeEvaluationType
 {
 	/** Normal evaluation. */
 	Standard,
+	/** View rotation evaluation. */
+	ViewRotationPreview,
 	/** Evaluation for IK aiming. */
 	IK,
 
@@ -157,6 +159,12 @@ struct FCameraNodeEvaluationParams
 	ECameraNodeEvaluationType EvaluationType = ECameraNodeEvaluationType::Standard;
 	/** Whether this is the first evaluation of this camera node hierarchy. */
 	bool bIsFirstFrame = false;
+
+	bool IsStatelessEvaluation() const
+	{
+		return EvaluationType == ECameraNodeEvaluationType::IK ||
+			EvaluationType == ECameraNodeEvaluationType::ViewRotationPreview;
+	}
 };
 
 /**

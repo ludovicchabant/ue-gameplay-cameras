@@ -444,7 +444,7 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 	{
 		Ar << Capacity;
 		Ar << Used;
-		Ar.Serialize(Memory, Capacity);
+		Ar.Serialize(Memory, Used);
 
 		int32 NumEntries = Entries.Num();
 		Ar << NumEntries;
@@ -455,7 +455,7 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 	{
 		// Load the data from the saved buffer. It should have a lesser-or-equal size to our buffer,
 		// because we might have grown since we were saved, but we wouldn't have shrunk (variable tables
-		// don't shrink). So we keep our present capacity and ignore the saved on, except to confirm
+		// don't shrink). So we keep our present capacity and ignore the saved one, except to confirm
 		// our expectations.
 		uint32 LoadedCapacity = 0;
 		Ar << LoadedCapacity;
@@ -465,8 +465,8 @@ void FCameraVariableTable::Serialize(FArchive& Ar)
 
 		ensureMsgf(LoadedCapacity <= Capacity, 
 				TEXT("Loading camera variable table data from a bigger, and probably different, table."));
-		LoadedCapacity = FMath::Min(LoadedCapacity, Capacity);
-		Ar.Serialize(Memory, LoadedCapacity);
+
+		Ar.Serialize(Memory, LoadedUsed);
 		Used = LoadedUsed;
 
 		// The number of entries may have changed, if new entries were created since we were saved.

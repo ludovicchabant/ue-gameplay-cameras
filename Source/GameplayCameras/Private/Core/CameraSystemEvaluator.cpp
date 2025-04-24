@@ -3,6 +3,7 @@
 #include "Core/CameraSystemEvaluator.h"
 
 #include "Camera/CameraTypes.h"
+#include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationService.h"
@@ -15,6 +16,8 @@
 #include "Debug/RootCameraDebugBlock.h"
 #include "GameplayCamerasSettings.h"
 #include "Math/ColorList.h"
+#include "Serialization/MemoryReader.h"
+#include "Serialization/MemoryWriter.h"
 #include "Services/CameraModifierService.h"
 #include "Services/CameraParameterSetterService.h"
 #include "Services/CameraShakeService.h"
@@ -422,6 +425,36 @@ void FCameraSystemEvaluator::PostUpdateServices(float DeltaTime, ECameraEvaluati
 			EvaluationService->PostUpdate(ServiceUpdateParams, ServiceUpdateResult);
 		}
 	}
+}
+
+void FCameraSystemEvaluator::ViewRotationPreviewUpdate(const FCameraSystemEvaluationParams& Params, FCameraSystemViewRotationEvaluationResult& OutResult)
+{
+	SCOPE_CYCLE_COUNTER(CameraSystemEval_Total);
+
+	EvaluatorSnapshot.Reset();
+
+	FMemoryWriter Writer(EvaluatorSnapshot);
+	FCameraNodeEvaluatorHierarchy CameraSystemHierarchy(RootEvaluator);
+
+	FCameraNodeEvaluatorSerializeParams SerializeParams;
+	CameraSystemHierarchy.CallSerialize(SerializeParams, Writer);
+
+	{
+		FCameraNodeEvaluationParams NodeParams;
+		NodeParams.Evaluator = this;
+		NodeParams.DeltaTime = Params.DeltaTime;
+		NodeParams.EvaluationType = ECameraNodeEvaluationType::ViewRotationPreview;
+
+		RootNodeResult.Reset();
+
+		RootEvaluator->Run(NodeParams, RootNodeResult);
+
+		const FRotator3d& PreviewRotation = RootNodeResult.CameraPose.GetRotation();
+		OutResult.DeltaRotation += (PreviewRotation - OutResult.ViewRotation).GetNormalized();
+	}
+
+	FMemoryReader Reader(EvaluatorSnapshot);
+	CameraSystemHierarchy.CallSerialize(SerializeParams, Reader);
 }
 
 void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)

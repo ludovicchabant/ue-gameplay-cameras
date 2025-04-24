@@ -15,6 +15,7 @@
 #include "GameFramework/ActorCameraEvaluationContext.h"
 #include "GameFramework/GameplayCameraComponentBase.h"
 #include "GameFramework/PlayerController.h"
+#include "GameplayCamerasSettings.h"
 #include "Services/CameraModifierService.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
@@ -211,6 +212,12 @@ void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstan
 
 void AGameplayCamerasPlayerCameraManager::InitializeFor(APlayerController* PlayerController)
 {
+	if (!bOverrideViewRotationMode)
+	{
+		const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+		ViewRotationMode = Settings->DefaultViewRotationMode;
+	}
+
 	EnsureCameraSystemHost();
 
 	Super::InitializeFor(PlayerController);
@@ -313,7 +320,34 @@ void AGameplayCamerasPlayerCameraManager::TeardownCameraSystemHost()
 
 void AGameplayCamerasPlayerCameraManager::ProcessViewRotation(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot)
 {
+	switch (ViewRotationMode)
+	{
+		case EGameplayCamerasViewRotationMode::PreviewUpdate:
+			RunViewRotationPreviewUpdate(DeltaTime, OutViewRotation, OutDeltaRot);
+			break;
+	}
+
 	Super::ProcessViewRotation(DeltaTime, OutViewRotation, OutDeltaRot);
+}
+
+void AGameplayCamerasPlayerCameraManager::RunViewRotationPreviewUpdate(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot)
+{
+	using namespace UE::Cameras;
+
+	if (HasCameraSystem())
+	{
+		FCameraSystemEvaluationParams Params;
+		Params.DeltaTime = DeltaTime;
+
+		FCameraSystemViewRotationEvaluationResult Result;
+		Result.ViewRotation = OutViewRotation;
+		Result.DeltaRotation = OutDeltaRot;
+
+		CameraSystemEvaluator->ViewRotationPreviewUpdate(Params, Result);
+
+		OutViewRotation = Result.ViewRotation;
+		OutDeltaRot = Result.DeltaRotation;
+	}
 }
 
 void AGameplayCamerasPlayerCameraManager::DoUpdateCamera(float DeltaTime)

@@ -27,7 +27,7 @@ FBlendStackEntryID FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlend
 			const FCameraRigEntry& Entry(Entries[Index]);
 			const FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[Index]);
 
-			if (!Entry.bIsFrozen &&
+			if (!Entry.Flags.bIsFrozen &&
 					Entry.CameraRig == Params.CameraRig &&
 					Entry.EvaluationContext == Params.EvaluationContext &&
 					EntryExtraInfo.StackOrder == Params.StackOrder)
@@ -233,11 +233,11 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (!Entry.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen)
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.bIsFirstFrame;
+			CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
 
 			FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
@@ -258,7 +258,7 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 				CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 				// Setup flags.
-				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.bForceCameraCut;
+				CurResult.bIsCameraCut = OutResult.bIsCameraCut || ContextResult.bIsCameraCut || Entry.Flags.bForceCameraCut;
 				CurResult.bIsValid = true;
 			}
 
@@ -342,10 +342,13 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 		}
 	}
 
-	for (int32 Index = EntriesToRemove.Num() - 1; Index >= 0; --Index)
+	if (!Params.IsStatelessEvaluation())
 	{
-		PopEntry(EntriesToRemove[Index]);
-		EntryExtraInfos.RemoveAt(EntriesToRemove[Index]);
+		for (int32 Index = EntriesToRemove.Num() - 1; Index >= 0; --Index)
+		{
+			PopEntry(EntriesToRemove[Index]);
+			EntryExtraInfos.RemoveAt(EntriesToRemove[Index]);
+		}
 	}
 }
 
@@ -375,7 +378,7 @@ const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTr
 	// Find a transition that works for blending the given camera rig out.
 	return FCameraRigTransitionFinder::FindTransition(
 			Entry.CameraRig->ExitTransitions,
-			Entry.CameraRig, nullptr, Entry.bIsFrozen,
+			Entry.CameraRig, nullptr, Entry.Flags.bIsFrozen,
 			nullptr, nullptr);
 }
 

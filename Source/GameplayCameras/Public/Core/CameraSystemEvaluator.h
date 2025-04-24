@@ -108,6 +108,18 @@ public:
 	void Reset(const FCameraNodeEvaluationResult& NodeResult);
 };
 
+/**
+ * Result structure for view rotation updates of the camera system.
+ */
+struct FCameraSystemViewRotationEvaluationResult
+{
+	/** View rotation for the player. */
+	FRotator ViewRotation;
+
+	/** Control rotation for the player. */
+	FRotator DeltaRotation;
+};
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 /**
@@ -221,6 +233,9 @@ public:
 	/** Run an update of the camera system. */
 	GAMEPLAYCAMERAS_API void Update(const FCameraSystemEvaluationParams& Params);
 
+	/** Run a view rotation preview update of the camera system. */
+	GAMEPLAYCAMERAS_API void ViewRotationPreviewUpdate(const FCameraSystemEvaluationParams& Params, FCameraSystemViewRotationEvaluationResult& OutResult);
+
 	/** Returns the root node evaluator. */
 	FRootCameraNodeEvaluator* GetRootNodeEvaluator() const { return RootEvaluator; }
 
@@ -291,6 +306,9 @@ private:
 
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationResult Result;
+
+	/** Reusable buffer for node tree snapshots (e.g. view rotation preview update). */
+	TArray<uint8> EvaluatorSnapshot;
 
 	/** The role of this camera system. */
 	ECameraSystemEvaluatorRole Role = ECameraSystemEvaluatorRole::Game;

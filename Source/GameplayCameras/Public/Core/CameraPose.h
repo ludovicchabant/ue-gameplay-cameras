@@ -60,7 +60,7 @@ enum EAspectRatioAxisConstraint : int;
 struct GAMEPLAYCAMERAS_API FCameraPoseFlags
 {
 #define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
-	bool PropName = false;
+	bool PropName:1 = false;
 
 UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 

@@ -134,8 +134,8 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.CameraRig = CameraRig;
 	NewEntry.RootNode = EntryRootNode;
 	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
-	NewEntry.bWasContextInitialResultValid = EvaluationContext->GetInitialResult().bIsValid;
-	NewEntry.bIsFirstFrame = true;
+	NewEntry.Flags.bWasContextInitialResultValid = EvaluationContext->GetInitialResult().bIsValid;
+	NewEntry.Flags.bIsFirstFrame = true;
 
 	return true;
 }
@@ -163,7 +163,7 @@ void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
 	RemoveListenedPackages(Entry);
 #endif
 	
-	Entry.bIsFrozen = true;
+	Entry.Flags.bIsFrozen = true;
 }
 
 FCameraRigEvaluationInfo FBlendStackCameraNodeEvaluator::GetActiveCameraRigEvaluationInfo() const
@@ -252,7 +252,7 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 		}
 
 		// While we make these resolved entries, emit warnings and errors as needed.
-		if (!Entry.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen)
 		{
 			// Check that we still have a valid context. If not, let's freeze the entry, since
 			// we won't be able to evaluate it anymore.
@@ -261,12 +261,12 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 				FreezeEntry(Entry);
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
-				if (Entry.bLogWarnings)
+				if (Entry.Flags.bLogWarnings)
 				{
 					UE_LOG(LogCameraSystem, Warning,
 							TEXT("Freezing camera rig '%s' because its evaluation context isn't valid anymore."),
 							*GetNameSafe(Entry.CameraRig));
-					Entry.bLogWarnings = false;
+					Entry.Flags.bLogWarnings = false;
 				}
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
@@ -278,12 +278,12 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 			if (UNLIKELY(!ContextResult.bIsValid))
 			{
 #if UE_GAMEPLAY_CAMERAS_TRACE
-				if (Entry.bLogWarnings)
+				if (Entry.Flags.bLogWarnings)
 				{
 					UE_LOG(LogCameraSystem, Warning,
 							TEXT("Camera rig '%s' may experience a hitch because its initial result isn't valid."),
 							*GetNameSafe(Entry.CameraRig));
-					Entry.bLogWarnings = false;
+					Entry.Flags.bLogWarnings = false;
 				}
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 
@@ -292,11 +292,11 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 
 			// If the context was previously invalid, and this isn't the first frame, flag
 			// this update as a camera cut.
-			if (UNLIKELY(!Entry.bWasContextInitialResultValid && !Entry.bIsFirstFrame))
+			if (UNLIKELY(!Entry.Flags.bWasContextInitialResultValid && !Entry.Flags.bIsFirstFrame))
 			{
-				Entry.bForceCameraCut = true;
+				Entry.Flags.bForceCameraCut = true;
 			}
-			Entry.bWasContextInitialResultValid = true;
+			Entry.Flags.bWasContextInitialResultValid = true;
 
 			// Reset this entry's flags for this frame.
 			FCameraNodeEvaluationResult& CurResult = Entry.Result;
@@ -324,7 +324,7 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 #if UE_GAMEPLAY_CAMERAS_TRACE
 		// This entry might have has warnings before. It's valid now, so let's
 		// re-enable warnings if it becomes invalid again in the future.
-		Entry.bLogWarnings = true;
+		Entry.Flags.bLogWarnings = true;
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 }
@@ -334,8 +334,8 @@ void FBlendStackCameraNodeEvaluator::OnRunFinished(FCameraNodeEvaluationResult& 
 	// Reset transient flags.
 	for (FCameraRigEntry& Entry : Entries)
 	{
-		Entry.bIsFirstFrame = false;
-		Entry.bForceCameraCut = false;
+		Entry.Flags.bIsFirstFrame = false;
+		Entry.Flags.bForceCameraCut = false;
 	}
 
 #if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
@@ -501,6 +501,8 @@ void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector&
 
 void FBlendStackCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
+	int32 NumEntriesToSerialize = Entries.Num();
+
 	if (Ar.IsSaving())
 	{
 		int32 NumEntries = Entries.Num();
@@ -511,18 +513,18 @@ void FBlendStackCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSeria
 		int32 LoadedNumEntries = 0;
 		Ar << LoadedNumEntries;
 
-		ensure(LoadedNumEntries == Entries.Num());
+		ensureMsgf(
+				LoadedNumEntries == Entries.Num(),
+				TEXT("The number of entries changed since this blend stack was serialized!"));
+		NumEntriesToSerialize = LoadedNumEntries;
 	}
 
-	for (FCameraRigEntry& Entry : Entries)
+	for (int32 Index = 0; Index < NumEntriesToSerialize; ++Index)
 	{
+		FCameraRigEntry& Entry(Entries[Index]);
 		Entry.ContextResult.Serialize(Ar);
 		Entry.Result.Serialize(Ar);
-		Ar << Entry.bIsFirstFrame;
-		Ar << Entry.bIsFrozen;
-#if UE_GAMEPLAY_CAMERAS_TRACE
-		Ar << Entry.bLogWarnings;
-#endif  // UE_GAMEPLAY_CAMERAS_TRACE
+		Ar.SerializeBits(static_cast<void*>(&Entry.Flags), sizeof(FCameraRigEntry::Flags));
 	}
 }
 
@@ -556,7 +558,7 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 					Index == Entries.Num() - 1);
 			if (!bInitialized)
 			{
-				Entry.bIsFrozen = true;
+				Entry.Flags.bIsFrozen = true;
 				continue;
 			}
 

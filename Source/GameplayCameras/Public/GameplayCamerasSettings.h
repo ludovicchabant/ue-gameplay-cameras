@@ -4,6 +4,7 @@
 
 #include "CoreTypes.h"
 #include "Engine/DeveloperSettings.h"
+#include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Object.h"
 
@@ -29,6 +30,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, Config, Category="General")
 	bool bAutoBuildInPIE = true;
+
+	/** 
+	 * The default view rotation handling mode to use when the game's player controller uses a
+	 * GameplayCamerasPlayerCameraManager instance as its camera manager.
+	 */
+	UPROPERTY(EditAnywhere, Config, Category="General")
+	EGameplayCamerasViewRotationMode DefaultViewRotationMode = EGameplayCamerasViewRotationMode::None;
 
 	/**
 	 * The number of camera rigs combined in one frame past which the camera system emits a warning.

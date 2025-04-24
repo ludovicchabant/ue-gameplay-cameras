@@ -51,8 +51,13 @@ void UActivateCameraRigFunctions::ActivateCameraRigImpl(UObject* WorldContextObj
 	UControllerGameplayCameraEvaluationComponent* CameraEvaluationComponent = nullptr;
 	if (IGameplayCameraSystemHost* FoundHost = IGameplayCameraSystemHost::FindActiveHost(PlayerController))
 	{
-		AActor* HostOwningActor = FoundHost->GetAsObject()->GetTypedOuter<AActor>();
-		check(HostOwningActor);
+		UObject* FoundHostObject = FoundHost->GetAsObject();
+		AActor* HostOwningActor = Cast<AActor>(FoundHostObject);
+		if (!HostOwningActor)
+		{
+			HostOwningActor = FoundHostObject->GetTypedOuter<AActor>();
+		}
+		ensure(HostOwningActor);
 
 		bool bComponentCreated = false;
 		CameraEvaluationComponent = UControllerGameplayCameraEvaluationComponent::FindOrAddComponent(HostOwningActor, &bComponentCreated);

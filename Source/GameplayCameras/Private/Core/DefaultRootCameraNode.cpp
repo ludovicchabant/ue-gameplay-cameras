@@ -79,7 +79,11 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	BaseLayer->Run(Params, OutResult);
 	MainLayer->Run(Params, OutResult);
 	GlobalLayer->Run(Params, OutResult);
-	VisualLayer->Run(Params, OutResult);
+	if (Params.EvaluationType != ECameraNodeEvaluationType::IK && 
+			Params.EvaluationType != ECameraNodeEvaluationType::ViewRotationPreview)
+	{
+		VisualLayer->Run(Params, OutResult);
+	}
 }
 
 FCameraRigInstanceID FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
