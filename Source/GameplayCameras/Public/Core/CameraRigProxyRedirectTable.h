@@ -5,7 +5,7 @@
 #include "CoreTypes.h"
 #include "UObject/Object.h"
 
-#include "CameraRigProxyTable.generated.h"
+#include "CameraRigProxyRedirectTable.generated.h"
 
 class UCameraRigAsset;
 class UCameraRigProxyAsset;
@@ -13,7 +13,7 @@ class UCameraRigProxyAsset;
 /**
  * Parameter structure for resolving a camera rig proxy from a proxy table.
  */
-struct FCameraRigProxyTableResolveParams
+struct FCameraRigProxyResolveParams
 {
 	/** The camera rig proxy to resolve. */
 	const UCameraRigProxyAsset* CameraRigProxy = nullptr;
@@ -23,7 +23,7 @@ struct FCameraRigProxyTableResolveParams
  * An entry in a camera rig proxy table.
  */
 USTRUCT()
-struct FCameraRigProxyTableEntry
+struct FCameraRigProxyRedirectTableEntry
 {
 	GENERATED_BODY()
 
@@ -40,7 +40,7 @@ struct FCameraRigProxyTableEntry
  * A table that defines mappings between camera rig proxies and actual camera rigs.
  */
 USTRUCT()
-struct FCameraRigProxyTable
+struct FCameraRigProxyRedirectTable
 {
 	GENERATED_BODY()
 
@@ -50,12 +50,29 @@ public:
 	 * Resolves a given proxy to an actual camera rig.
 	 * Returns nullptr if the given proxy wasn't found, or not mapped to anything in the table.
 	 */
-	UCameraRigAsset* ResolveProxy(const FCameraRigProxyTableResolveParams& InParams) const;
+	UCameraRigAsset* ResolveProxy(const FCameraRigProxyResolveParams& InParams) const;
+
+public:
+
+	// Internal API.
+
+	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
 
 public:
 
 	/** The entries in the table. */
 	UPROPERTY(EditAnywhere, Category="Camera")
-	TArray<FCameraRigProxyTableEntry> Entries;
+	TArray<FCameraRigProxyRedirectTableEntry> Entries;
+};
+
+UCLASS()
+class UE_DEPRECATED(5.6, "Use FCameraRigProxyRedirectTable") UCameraRigProxyTable : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	TArray<FCameraRigProxyRedirectTableEntry> Entries;
 };
 

@@ -4,7 +4,7 @@
 
 #include "Core/CameraDirector.h"
 #include "Core/CameraEvaluationContext.h"
-#include "Core/CameraRigProxyTable.h"
+#include "Core/CameraRigProxyRedirectTable.h"
 #include "Core/CameraRigTransition.h"
 
 namespace UE::Cameras
@@ -75,9 +75,9 @@ const UCameraRigAsset* FCameraDirectorEvaluator::FindCameraRigByProxy(const UCam
 		return nullptr;
 	}
 
-	const FCameraRigProxyTable& ProxyTable = PrivateCameraDirector->CameraRigProxyTable;
+	const FCameraRigProxyRedirectTable& ProxyTable = PrivateCameraDirector->CameraRigProxyRedirectTable;
 
-	FCameraRigProxyTableResolveParams ResolveParams;
+	FCameraRigProxyResolveParams ResolveParams;
 	ResolveParams.CameraRigProxy = InProxy;
 	return ProxyTable.ResolveProxy(ResolveParams);
 }

@@ -4,8 +4,22 @@
 
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
+#include "Core/CameraRigProxyRedirectTable.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraDirector)
+
+void UCameraDirector::PostLoad()
+{
+	Super::PostLoad();
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	if (CameraRigProxyTable_DEPRECATED)
+	{
+		CameraRigProxyRedirectTable.Entries = CameraRigProxyTable_DEPRECATED->Entries;
+		CameraRigProxyTable_DEPRECATED = nullptr;
+	}
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
+}
 
 FCameraDirectorEvaluatorPtr UCameraDirector::BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const
 {

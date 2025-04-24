@@ -5,7 +5,7 @@
 #include "CoreTypes.h"
 #include "UObject/Object.h"
 #include "Core/CameraDirectorEvaluator.h"
-#include "Core/CameraRigProxyTable.h"
+#include "Core/CameraRigProxyRedirectTable.h"
 #include "UObject/AssetRegistryTagsContext.h"
 
 #include "CameraDirector.generated.h"
@@ -69,6 +69,11 @@ public:
 	UE_API void FactoryCreateAsset(const FCameraDirectorFactoryCreateParams& InParams);
 #endif
 
+public:
+
+	// UObject interface.
+	UE_API virtual void PostLoad() override;
+
 protected:
 
 	/** Build the evaluator for this director. */
@@ -95,7 +100,14 @@ public:
 	 * to actual camera rigs.
 	 */
 	UPROPERTY(EditAnywhere, Category="Evaluation")
-	FCameraRigProxyTable CameraRigProxyTable;
+	FCameraRigProxyRedirectTable CameraRigProxyRedirectTable;
+
+private:
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	UPROPERTY()
+	TObjectPtr<UCameraRigProxyTable> CameraRigProxyTable_DEPRECATED;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 #undef UE_API
