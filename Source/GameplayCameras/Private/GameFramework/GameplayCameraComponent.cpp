@@ -58,15 +58,7 @@ UCameraAsset* UGameplayCameraComponent::GetCameraAsset()
 
 bool UGameplayCameraComponent::OnValidateCameraEvaluationContextActivation()
 {
-	if (!CameraReference.IsValid())
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't activate gameplay camera component: no camera asset was set!"),
-				ELogVerbosity::Error);
-		return false;
-	}
-	
-	return true;
+	return CameraReference.IsValid();
 }
 
 void UGameplayCameraComponent::OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)

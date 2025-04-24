@@ -248,7 +248,6 @@ void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerContro
 
 	if (!OnValidateCameraEvaluationContextActivation())
 	{
-		// We expect the sub-class to print a useful error or warning message.
 		return;
 	}
 
@@ -645,7 +644,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 		EnsureCameraSystemHost();
 
 		ActivateCameraEvaluationContext(nullptr, this, EGameplayCameraComponentActivationMode::Push);
-		if (ensure(EvaluationContext))
+		if (EvaluationContext)
 		{
 			EvaluationContext->SetEditorPreviewCameraRigIndex(EditorPreviewCameraRigIndex);
 		}
