@@ -86,7 +86,7 @@ FText FCameraAssetFamily::GetAssetTypeTooltip(UClass* InAssetType) const
 	}
 	else if (InAssetType == UCameraRigProxyAsset::StaticClass())
 	{
-		return LOCTEXT("CameraRigAssetTypeTooltip", "Open camera rig proxies referenced by this asset.");
+		return LOCTEXT("CameraRigProxyAssetTypeTooltip", "Open camera rig proxies referenced by this asset.");
 	}
 	return FText();
 }
