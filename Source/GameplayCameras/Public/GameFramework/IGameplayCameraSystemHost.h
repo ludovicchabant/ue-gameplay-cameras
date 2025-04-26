@@ -70,6 +70,11 @@ protected:
 	/** Updates the camera system, if it exists. */
 	GAMEPLAYCAMERAS_API void UpdateCameraSystem(float DeltaTime);
 
+#if WITH_EDITOR
+	/** Updates the camera system, if it exists, for an editor world preview. */
+	GAMEPLAYCAMERAS_API void UpdateCameraSystemForEditorPreview(float DeltaTime);
+#endif  // WITH_EDITOR
+
 protected:
 
 	/** The camera system evaluator. */

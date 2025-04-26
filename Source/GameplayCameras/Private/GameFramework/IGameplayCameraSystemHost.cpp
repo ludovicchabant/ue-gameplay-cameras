@@ -105,6 +105,22 @@ void IGameplayCameraSystemHost::UpdateCameraSystem(float DeltaTime)
 	}
 }
 
+#if WITH_EDITOR
+
+void IGameplayCameraSystemHost::UpdateCameraSystemForEditorPreview(float DeltaTime)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator.IsValid())
+	{
+		FCameraSystemEvaluationParams Params;
+		Params.DeltaTime = DeltaTime;
+		CameraSystemEvaluator->EditorPreviewUpdate(Params);
+	}
+}
+
+#endif  // WITH_EDITOR
+
 TSharedPtr<UE::Cameras::FCameraSystemEvaluator> IGameplayCameraSystemHost::GetCameraSystemEvaluator()
 {
 	return CameraSystemEvaluator;

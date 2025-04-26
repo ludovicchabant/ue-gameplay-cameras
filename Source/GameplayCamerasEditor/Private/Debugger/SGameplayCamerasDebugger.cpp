@@ -3,27 +3,34 @@
 #include "Debugger/SGameplayCamerasDebugger.h"
 
 #include "Commands/GameplayCamerasDebuggerCommands.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Debug/CameraDebugColors.h"
+#include "Debug/CameraSystemDebugRegistry.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "Debugger/SDebugCategoryButton.h"
 #include "Debugger/SDebugWidgetUtils.h"
+#include "Editor.h"
+#include "Engine/Engine.h"
+#include "Engine/EngineTypes.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Framework/Docking/LayoutService.h"
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "GameFramework/Actor.h"
+#include "GameplayCamerasEditorSettings.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "Modules/ModuleManager.h"
 #include "String/ParseTokens.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Styling/SlateTypes.h"
-#include "ToolMenus.h"
 #include "ToolMenuDelegates.h"
+#include "ToolMenuSection.h"
+#include "ToolMenus.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SExpandableArea.h"
 #include "Widgets/Layout/SGridPanel.h"
-#include "Widgets/Text/STextBlock.h"
 #include "Widgets/SNullWidget.h"
+#include "Widgets/Text/STextBlock.h"
 #include "WorkspaceMenuStructure.h"
 #include "WorkspaceMenuStructureModule.h"
 
@@ -37,6 +44,89 @@ namespace UE::Cameras
 const FName SGameplayCamerasDebugger::WindowName(TEXT("GameplayCamerasDebugger"));
 const FName SGameplayCamerasDebugger::MenubarName(TEXT("GameplayCamerasDebugger.Menubar"));
 const FName SGameplayCamerasDebugger::ToolbarName(TEXT("GameplayCamerasDebugger.Toolbar"));
+
+FGameplayCamerasDebuggerContext::FGameplayCamerasDebuggerContext()
+{
+	FEditorDelegates::MapChange.AddRaw(this, &FGameplayCamerasDebuggerContext::OnMapChange);
+	FEditorDelegates::BeginPIE.AddRaw(this, &FGameplayCamerasDebuggerContext::OnPieEvent);
+	FEditorDelegates::EndPIE.AddRaw(this, &FGameplayCamerasDebuggerContext::OnPieEvent);
+
+	if (GEngine)
+	{
+		GEngine->OnWorldAdded().AddRaw(this, &FGameplayCamerasDebuggerContext::OnWorldListChanged);
+		GEngine->OnWorldDestroyed().AddRaw(this, &FGameplayCamerasDebuggerContext::OnWorldListChanged);
+	}
+}
+
+FGameplayCamerasDebuggerContext::~FGameplayCamerasDebuggerContext()
+{
+	FEditorDelegates::MapChange.RemoveAll(this);
+	FEditorDelegates::BeginPIE.RemoveAll(this);
+	FEditorDelegates::EndPIE.RemoveAll(this);
+
+	if (GEngine)
+	{
+		GEngine->OnWorldAdded().RemoveAll(this);
+		GEngine->OnWorldDestroyed().RemoveAll(this);
+	}
+}
+
+UWorld* FGameplayCamerasDebuggerContext::GetContext()
+{
+	UpdateContext();
+	return WeakContext.Get();
+}
+
+void FGameplayCamerasDebuggerContext::UpdateContext()
+{
+	if (WeakContext.IsValid())
+	{
+		return;
+	}
+
+	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
+
+	// Pick the first editor world we find, but if there's any PIE/SIE world, prefer those.
+	UWorld* NewContext = nullptr;
+	for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
+	{
+		if (WorldContext.WorldType == EWorldType::PIE)
+		{
+			NewContext = WorldContext.World();
+			break;
+		}
+		else if (WorldContext.WorldType == EWorldType::Editor)
+		{
+			if (NewContext == nullptr)
+			{
+				NewContext = WorldContext.World();
+			}
+		}
+	}
+	ensure(NewContext);
+	WeakContext = NewContext;
+}
+
+void FGameplayCamerasDebuggerContext::InvalidateContext()
+{
+	WeakContext = nullptr;
+	OnContextChangedEvent.Broadcast();
+}
+
+void FGameplayCamerasDebuggerContext::OnPieEvent(bool bIsSimulating)
+{
+	InvalidateContext();
+}
+
+void FGameplayCamerasDebuggerContext::OnMapChange(uint32 MapChangeFlags)
+{
+	InvalidateContext();
+}
+
+void FGameplayCamerasDebuggerContext::OnWorldListChanged(UWorld* InWorld)
+{
+	InvalidateContext();
+}
 
 void SGameplayCamerasDebugger::RegisterTabSpawners()
 {
@@ -74,10 +164,12 @@ TSharedRef<SDockTab> SGameplayCamerasDebugger::SpawnGameplayCamerasDebugger(cons
 
 SGameplayCamerasDebugger::SGameplayCamerasDebugger()
 {
+	DebugContext.OnContextChanged().AddRaw(this, &SGameplayCamerasDebugger::OnDebugContextChanged);
 }
 
 SGameplayCamerasDebugger::~SGameplayCamerasDebugger()
 {
+	DebugContext.OnContextChanged().RemoveAll(this);
 }
 
 void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
@@ -92,9 +184,9 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 	TSharedRef<FUICommandList> CommandList = MakeShareable(new FUICommandList);
 	CommandList->MapAction(
 			Commands.EnableDebugInfo,
-			FExecuteAction::CreateLambda([]() { GGameplayCamerasDebugEnable = !GGameplayCamerasDebugEnable; }),
-			FCanExecuteAction(),
-			FIsActionChecked::CreateLambda([]() { return GGameplayCamerasDebugEnable; }));
+			FExecuteAction::CreateSP(this, &SGameplayCamerasDebugger::ToggleDebugDraw),
+			FCanExecuteAction::CreateSP(this, &SGameplayCamerasDebugger::CanToggleDebugDraw),
+			FIsActionChecked::CreateSP(this, &SGameplayCamerasDebugger::IsDebugDrawing));
 
 	// Build all UI elements.
 	TSharedRef<SWidget> MenubarContents = ConstructMenubar();
@@ -139,6 +231,52 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 	if (!ActiveCategories.IsEmpty())
 	{
 		SetActiveDebugCategoryPanel(FString(ActiveCategories[0]));
+	}
+
+	bRefreshDebugID = true;
+}
+
+void SGameplayCamerasDebugger::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+	
+	if (bRefreshDebugID)
+	{
+		// Auto-set the camera system debug ID when PIE starts/ends, and for other similar events.
+		UWorld* DebugWorld = DebugContext.GetContext();
+		if (DebugWorld)
+		{
+			const bool bIsEditorWorld = (
+					DebugWorld->WorldType == EWorldType::Editor || 
+					DebugWorld->WorldType == EWorldType::EditorPreview);
+
+			if (bIsEditorWorld)
+			{
+				DebugID = FCameraSystemDebugID::Any();
+			}
+			else
+			{
+				FCameraSystemDebugRegistry::FRegisteredCameraSystems CameraSystems;
+				FCameraSystemDebugRegistry::Get().GetRegisteredCameraSystemEvaluators(CameraSystems);
+
+				DebugID = FCameraSystemDebugID::Invalid();
+				for (TSharedPtr<FCameraSystemEvaluator> CameraSystem : CameraSystems)
+				{
+					UObject* CameraSystemOwner = CameraSystem->GetOwner();
+					if (CameraSystemOwner && CameraSystemOwner->GetWorld() == DebugWorld)
+					{
+						DebugID = CameraSystem->GetDebugID();
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			DebugID = FCameraSystemDebugID::Invalid();
+		}
+
+		bRefreshDebugID = false;
 	}
 }
 
@@ -202,6 +340,16 @@ TSharedRef<SWidget> SGameplayCamerasDebugger::ConstructToolbar(TSharedRef<FUICom
 						TAttribute<FText>(),
 						TAttribute<FSlateIcon>::CreateSP(This, &SGameplayCamerasDebugger::GetToggleDebugDrawIcon));
 				MainSection.AddEntry(ToggleDebugInfo);
+
+				FToolMenuEntry BindComboEntry = FToolMenuEntry::InitComboButton(
+						"BindToCameraSystemsMenu",
+						FUIAction(),
+						FNewToolMenuDelegate::CreateSP(This, &SGameplayCamerasDebugger::GetCameraSystemPickerContent),
+						LOCTEXT("BindToCameraSystemsMenu", "Bind to..."),
+						LOCTEXT("BindToCameraSystemsMenuToolTip", "Pick a camera system instance to bind to"),
+						FSlateIcon(This->GameplayCamerasEditorStyleName, "Debugger.BindToCameraSystem"),
+						true);
+				MainSection.AddEntry(BindComboEntry);
 			}));
 	
 		Toolbar->AddDynamicSection(TEXT("DebugCategories"), FNewToolMenuDelegate::CreateLambda(
@@ -376,9 +524,31 @@ void SGameplayCamerasDebugger::ConstructDebugPanels()
 	}
 }
 
+void SGameplayCamerasDebugger::ToggleDebugDraw()
+{
+	if (GGameplayCamerasDebugEnableID < 0)
+	{
+		GGameplayCamerasDebugEnableID = DebugID.GetValue();
+	}
+	else
+	{
+		GGameplayCamerasDebugEnableID = -1;
+	}
+}
+
+bool SGameplayCamerasDebugger::CanToggleDebugDraw() const
+{
+	return DebugID.IsValid();
+}
+
+bool SGameplayCamerasDebugger::IsDebugDrawing() const
+{
+	return GGameplayCamerasDebugEnableID >= 0;
+}
+
 FText SGameplayCamerasDebugger::GetToggleDebugDrawText() const
 {
-	if (GGameplayCamerasDebugEnable)
+	if (GGameplayCamerasDebugEnableID >= 0)
 	{
 		return LOCTEXT("DebugInfoEnabled", "Debug Info Enabled");
 	}
@@ -390,7 +560,7 @@ FText SGameplayCamerasDebugger::GetToggleDebugDrawText() const
 
 FSlateIcon SGameplayCamerasDebugger::GetToggleDebugDrawIcon() const
 {
-	if (GGameplayCamerasDebugEnable)
+	if (GGameplayCamerasDebugEnableID >= 0)
 	{
 		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DebugInfoEnabled.Icon");
 	}
@@ -398,6 +568,97 @@ FSlateIcon SGameplayCamerasDebugger::GetToggleDebugDrawIcon() const
 	{
 		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DebugInfoDisabled.Icon");
 	}
+}
+
+void SGameplayCamerasDebugger::GetCameraSystemPickerContent(UToolMenu* ToolMenu)
+{
+	FCameraSystemDebugRegistry::FRegisteredCameraSystems CameraSystems;
+	FCameraSystemDebugRegistry::Get().GetRegisteredCameraSystemEvaluators(CameraSystems);
+
+	UWorld* DebugWorld = DebugContext.GetContext();
+	FToolMenuSection& CameraSystemsSection = ToolMenu->AddSection(
+			"CameraSystems",
+			FText::Format(
+				LOCTEXT("BoundToWorldName", "Camera Systems in {0}"),
+				FText::FromName(DebugWorld->GetFName()))
+			);
+
+	if (DebugWorld)
+	{
+		const bool bIsEditorWorld = (
+				DebugWorld->WorldType == EWorldType::Editor || 
+				DebugWorld->WorldType == EWorldType::EditorPreview);
+
+		if (bIsEditorWorld)
+		{
+			CameraSystemsSection.AddMenuEntry(
+					TEXT("SelectToBindInEditorWorld"),
+					LOCTEXT("SelectToBindInEditorWorld", "Select actor to show debug info"),
+					LOCTEXT("SelectToBindInEditorWorldToolTip", "In editor worlds, debug info is shown for the selected camera actor."),
+					FSlateIcon(),
+					FUIAction(
+						FExecuteAction(),
+						FCanExecuteAction::CreateLambda([]() { return false; }))
+					);
+		}
+		else if (CameraSystems.Num() > 0)
+		{
+			for (TSharedPtr<FCameraSystemEvaluator> CameraSystem : CameraSystems)
+			{
+				UObject* CameraSystemOwner = CameraSystem->GetOwner();
+				if (CameraSystemOwner && CameraSystemOwner->GetWorld() == DebugWorld)
+				{
+					AActor* OwnerActor = Cast<AActor>(CameraSystemOwner);
+					if (!OwnerActor)
+					{
+						OwnerActor = CameraSystemOwner->GetTypedOuter<AActor>();
+					}
+					const FName OwnerName = (OwnerActor ? OwnerActor->GetFName() : CameraSystemOwner->GetFName());
+
+					CameraSystemsSection.AddMenuEntry(
+							NAME_None,
+							FText::Format(
+								LOCTEXT("BindToCameraSystem", "{0} (ID={1})"),
+								FText::FromName(OwnerName),
+								FText::FromString(LexToString(CameraSystem->GetDebugID()))),
+							LOCTEXT("BindToCameraSystemToolTip", "Bind to this camera system instance"),
+							FSlateIcon(),
+							FUIAction(
+								FExecuteAction::CreateSP(
+									this, &SGameplayCamerasDebugger::BindToCameraSystem, CameraSystem->GetDebugID()),
+								FCanExecuteAction(),
+								FIsActionChecked::CreateSP(
+									this, &SGameplayCamerasDebugger::IsBoundToCameraSystem, CameraSystem->GetDebugID())),
+							EUserInterfaceActionType::Check);
+				}
+			}
+		}
+		else
+		{
+			CameraSystemsSection.AddMenuEntry(
+					TEXT("NoCameraSystem"),
+					LOCTEXT("NoCameraSystem", "None"),
+					LOCTEXT("NoCameraSystemToolTip", "No camera systems found"),
+					FSlateIcon(),
+					FUIAction());
+		}
+	}
+}
+
+void SGameplayCamerasDebugger::BindToCameraSystem(FCameraSystemDebugID InDebugID)
+{
+	DebugID = InDebugID;
+	GGameplayCamerasDebugEnableID = InDebugID.GetValue();
+}
+
+bool SGameplayCamerasDebugger::IsBoundToCameraSystem(FCameraSystemDebugID InDebugID)
+{
+	return DebugID == InDebugID;
+}
+
+void SGameplayCamerasDebugger::OnDebugContextChanged()
+{
+	bRefreshDebugID = true;
 }
 
 bool SGameplayCamerasDebugger::IsDebugCategoryActive(FString InCategoryName)

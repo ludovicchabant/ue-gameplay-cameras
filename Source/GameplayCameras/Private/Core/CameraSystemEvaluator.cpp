@@ -30,7 +30,7 @@ DECLARE_CYCLE_STAT(TEXT("Camera System Eval"), CameraSystemEval_Total, STATGROUP
 namespace UE::Cameras
 {
 
-extern bool GGameplayCamerasDebugEnable;
+extern int32 GGameplayCamerasDebugEnableID;
 
 void FCameraSystemEvaluationResult::Reset()
 {
@@ -106,6 +106,13 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 		InitParams.Evaluator = this;
 		RootEvaluator->Initialize(InitParams, RootNodeResult);
 	}
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	if (!DebugID.IsValid())
+	{
+		DebugID = FCameraSystemDebugRegistry::Get().RegisterCameraSystemEvaluator(SharedThis(this));
+	}
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 }
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()
@@ -121,6 +128,14 @@ FCameraSystemEvaluator::~FCameraSystemEvaluator()
 		}
 		EvaluationServices.Reset();
 	}
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	if (DebugID.IsValid())
+	{
+		FCameraSystemDebugRegistry::Get().UnregisterCameraSystemEvaluator(DebugID);
+		DebugID = FCameraSystemDebugID();
+	}
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 }
 
 void FCameraSystemEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
@@ -507,7 +522,7 @@ void FCameraSystemEvaluator::DrawEditorPreview(const FCameraSystemEditorPreviewP
 
 	Renderer.BeginDrawing();
 
-	if (GGameplayCamerasDebugEnable && RootDebugBlock)
+	if (RootDebugBlock)
 	{
 		RootDebugBlock->RootDebugDraw(Renderer);
 	}
@@ -546,7 +561,7 @@ bool FCameraSystemEvaluator::IsDebugTraceEnabled()
 bool FCameraSystemEvaluator::ShouldBuildOrDrawDebugBlocks()
 {
 	const bool bTraceEnabled = IsDebugTraceEnabled();
-	return bTraceEnabled || GGameplayCamerasDebugEnable;
+	return bTraceEnabled || GGameplayCamerasDebugEnableID >= 0;
 }
 
 void FCameraSystemEvaluator::BuildDebugBlocksIfNeeded()

@@ -27,11 +27,11 @@
 namespace UE::Cameras
 {
 
-bool GGameplayCamerasDebugEnable = false;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnable(
-	TEXT("GameplayCameras.Debug.Enable"),
-	GGameplayCamerasDebugEnable,
-	TEXT("(Default: false. Enables debug drawing for the GamplayCameras system."));
+int32 GGameplayCamerasDebugEnableID = INDEX_NONE;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnableID(
+	TEXT("GameplayCameras.Debug.EnableID"),
+	GGameplayCamerasDebugEnableID,
+	TEXT("(Default: -1. Enables debug drawing for the GamplayCameras system with the given debug ID."));
 
 FString GGameplayCamerasDebugCategories = "nodetree";
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugCategories(
@@ -56,6 +56,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK(FRootCameraDebugBlock)
 void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
 {
 	ensureMsgf(GetChildren().IsEmpty() && GetAttachments().IsEmpty(), TEXT("This root debug block has already been initialized!"));
+
+	DebugID = CameraSystem.GetDebugID();
 
 	// Debug block for showing the directors and context stack.
 	FCategoryTitleDebugBlock& DirectorTreeCategory = Builder.StartChildDebugBlock<FCategoryTitleDebugBlock>();
@@ -135,7 +137,8 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 
 void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer)
 {
-	if (!GGameplayCamerasDebugEnable)
+	FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugEnableID);
+	if (WantedDebugID != DebugID && !WantedDebugID.IsAny())
 	{
 		return;
 	}
@@ -154,6 +157,11 @@ void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer)
 	Renderer.BeginDrawing();
 	FCameraDebugBlock::DebugDraw(Params, Renderer);
 	Renderer.EndDrawing();
+}
+
+void FRootCameraDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << DebugID;
 }
 
 }  // namespace UE::Cameras

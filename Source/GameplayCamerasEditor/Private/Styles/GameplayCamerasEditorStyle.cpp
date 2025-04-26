@@ -128,6 +128,8 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	// Debugger tool icons.
 	Set("Debugger.TabIcon", new IMAGE_BRUSH_SVG("Icons/GameplayCameraSystem_16", Icon16x16));
 
+	Set("Debugger.BindToCameraSystem", new IMAGE_BRUSH_SVG("Icons/DebugLink", Icon16x16));
+
 	Set("Debugger.DebugInfoEnabled.Icon", new IMAGE_BRUSH_SVG("Icons/DebugInfo-ToggleCheck", Icon16x16, FStyleColors::AccentGreen));
 	Set("Debugger.DebugInfoDisabled.Icon", new IMAGE_BRUSH_SVG("Icons/DebugInfo-ToggleCheck", Icon16x16, FStyleColors::AccentGray));
 

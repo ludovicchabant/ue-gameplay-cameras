@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Debug/CameraDebugBlock.h"
-#include "Debug/CameraDebugBlockStorage.h"
+#include "Debug/CameraSystemDebugRegistry.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -14,7 +14,7 @@ class FCameraSystemEvaluator;
 struct FCameraDebugBlockBuildParams;
 struct FCameraDebugBlockBuilder;
 
-GAMEPLAYCAMERAS_API extern bool GGameplayCamerasDebugEnable;
+GAMEPLAYCAMERAS_API extern int32 GGameplayCamerasDebugEnableID;
 GAMEPLAYCAMERAS_API extern FString GGameplayCamerasDebugCategories;
 
 /**
@@ -31,6 +31,15 @@ public:
 
 	/** Initiate the debug drawing. */
 	GAMEPLAYCAMERAS_API void RootDebugDraw(FCameraDebugRenderer& Renderer);
+
+protected:
+
+	// FCameraDebugBlock interface.
+	virtual void OnSerialize(FArchive& Ar) override;
+
+private:
+
+	FCameraSystemDebugID DebugID; 
 };
 
 }  // namespace UE::Cameras

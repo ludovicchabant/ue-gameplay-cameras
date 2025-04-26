@@ -473,7 +473,23 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 		UpdateCameraEvaluationContext(false);
 	}
 
+#if WITH_EDITOR
+
+	if (bIsEditorWorld)
+	{
+		UpdateCameraSystemForEditorPreview(DeltaTime);
+	}
+	else
+	{
+		UpdateCameraSystem(DeltaTime);
+	}
+
+#else
+
 	UpdateCameraSystem(DeltaTime);
+
+#endif  // WITH_EDITOR
+
 	UpdateOutputCameraComponent();
 
 	CheckPendingDeactivation();

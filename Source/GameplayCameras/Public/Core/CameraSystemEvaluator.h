@@ -10,6 +10,7 @@
 #include "Core/CameraPose.h"
 #include "CoreTypes.h"
 #include "Debug/CameraDebugBlockStorage.h"
+#include "Debug/CameraSystemDebugRegistry.h"
 #include "GameplayCameras.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/GCObject.h"
@@ -190,6 +191,11 @@ public:
 	/** Gets the role of this camera system. */
 	ECameraSystemEvaluatorRole GetRole() const { return Role; }
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** Gets the debug ID for this camera system. */
+	FCameraSystemDebugID GetDebugID() const { return DebugID; }
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 public:
 
 	/** Push a new evaluation context on the stack. */
@@ -314,6 +320,9 @@ private:
 	ECameraSystemEvaluatorRole Role = ECameraSystemEvaluatorRole::Game;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
+	/** The debug ID for this camera system. */
+	FCameraSystemDebugID DebugID;
+
 	/** Storage for debug drawing blocks. */
 	FCameraDebugBlockStorage DebugBlockStorage;
 
