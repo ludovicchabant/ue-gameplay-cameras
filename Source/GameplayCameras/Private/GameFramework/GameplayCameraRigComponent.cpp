@@ -89,15 +89,11 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuilt(const UCameraRigAsset* I
 		TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
 		GeneratedCameraAsset->BuildCamera();
 	}
+	CameraRigReference.RebuildParametersIfNeeded();
 	if (HasCameraEvaluationContext())
 	{
 		const FCameraObjectAllocationInfo& AllocationInfo = InCameraRigAsset->AllocationInfo;
-		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
-		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
-
-		CameraRigReference.RebuildParametersIfNeeded();
-
+		ReinitializeCameraEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
 		UpdateCameraEvaluationContext(true);
 	}
 }
@@ -117,7 +113,7 @@ void UGameplayCameraRigComponent::PostEditChangeProperty( struct FPropertyChange
 			{
 				// The camera rig asset has changed! Recreate the context.
 				GeneratedCameraAsset = nullptr;
-				RecreateCameraEvaluationContext();
+				RecreateEditorWorldCameraEvaluationContext();
 			}
 			else
 			{

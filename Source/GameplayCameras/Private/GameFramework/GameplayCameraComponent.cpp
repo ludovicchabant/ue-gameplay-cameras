@@ -84,15 +84,11 @@ void UGameplayCameraComponent::OnCameraAssetBuilt(const UCameraAsset* InCameraAs
 
 	// If our camera asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
+	CameraReference.RebuildParametersIfNeeded();
 	if (HasCameraEvaluationContext())
 	{
 		const FCameraAssetAllocationInfo& AllocationInfo = InCameraAsset->GetAllocationInfo();
-		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
-		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
-
-		CameraReference.RebuildParametersIfNeeded();
-
+		ReinitializeCameraEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
 		UpdateCameraEvaluationContext(true);
 	}
 }
@@ -111,7 +107,7 @@ void UGameplayCameraComponent::PostEditChangeProperty( struct FPropertyChangedEv
 			if (PropertyChangedEvent.GetPropertyName() == TEXT("CameraAsset"))
 			{
 				// The camera asset has changed! Recreate the context.
-				RecreateCameraEvaluationContext();
+				RecreateEditorWorldCameraEvaluationContext();
 			}
 			else
 			{

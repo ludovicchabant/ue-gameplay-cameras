@@ -6,13 +6,13 @@
 #include "Build/CameraBuildLog.h"
 #include "CineCameraComponent.h"
 #include "Core/CameraAsset.h"
+#include "Core/CameraEvaluationContextStack.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Engine/Canvas.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
-#include "GameplayCamerasDelegates.h"
 #include "GameplayCamerasSettings.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
@@ -431,19 +431,6 @@ void UGameplayCameraComponentBase::EndPlay(const EEndPlayReason::Type EndPlayRea
 	Super::EndPlay(EndPlayReason);
 }
 
-void UGameplayCameraComponentBase::OnUnregister()
-{
-	using namespace UE::Cameras;
-
-#if WITH_EDITOR
-
-	FGameplayCamerasDelegates::OnCameraAssetBuilt().RemoveAll(this);
-
-#endif  // WITH_EDITOR
-
-	Super::OnUnregister();
-}
-
 void UGameplayCameraComponentBase::Activate(bool bReset)
 {
 	// When auto-activing, this method gets called during OnRegister, before we have started playing.
@@ -550,11 +537,69 @@ void UGameplayCameraComponentBase::UpdateCameraEvaluationContext(bool bForceAppl
 #endif  // WITH_EDITOR
 }
 
-void UGameplayCameraComponentBase::RecreateCameraEvaluationContext()
+#if WITH_EDITOR
+
+void UGameplayCameraComponentBase::ReinitializeCameraEvaluationContext(
+			const FCameraVariableTableAllocationInfo& VariableTableAllocationInfo,
+			const FCameraContextDataTableAllocationInfo& ContextDataTableAllocationInfo)
 {
-	EvaluationContext = nullptr;
-	TryCreateCameraEvaluationContext(nullptr);
+	using namespace UE::Cameras;
+
+	if (EvaluationContext)
+	{
+		FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
+		InitialResult.VariableTable.Initialize(VariableTableAllocationInfo);
+		InitialResult.ContextDataTable.Initialize(ContextDataTableAllocationInfo);
+
+		// Also freeze/remove any of our currently running camera rigs, because they might continue
+		// accessing variables and data that don't exist anymore.
+		if (CameraSystemEvaluator)
+		{
+			FRootCameraNodeEvaluator* RootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+			RootEvaluator->DeactivateAllCameraRigs(EvaluationContext, true);
+		}
+	}
 }
+
+void UGameplayCameraComponentBase::RecreateEditorWorldCameraEvaluationContext()
+{
+	using namespace UE::Cameras;
+
+	if (!bIsEditorWorld)
+	{
+		return;
+	}
+
+	// We should only be calling this method to recreate the editor preview evaluator, so check that
+	// this is indeed the case.
+	if (EvaluationContext && CameraSystemEvaluator)
+	{
+		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+		TArray<TSharedPtr<FCameraEvaluationContext>> AllContexts;
+		ContextStack.GetAllContexts(AllContexts);
+		ensure(AllContexts.Num() == 1 && AllContexts[0] == EvaluationContext);
+	}
+
+	// Teardown and rebuild the evaluation context.
+	if (EvaluationContext)
+	{
+		if (CameraSystemEvaluator)
+		{
+			FRootCameraNodeEvaluator* RootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+			RootEvaluator->DeactivateAllCameraRigs(EvaluationContext.ToSharedRef(), true);
+			CameraSystemEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
+		}
+		EvaluationContext = nullptr;
+
+		TryCreateCameraEvaluationContext(nullptr);
+		if (CameraSystemEvaluator)
+		{
+			CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
+		}
+	}
+}
+
+#endif  // WITH_EDITOR
 
 void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 {

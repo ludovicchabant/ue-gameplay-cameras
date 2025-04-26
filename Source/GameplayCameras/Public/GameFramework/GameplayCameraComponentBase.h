@@ -18,6 +18,8 @@ class FViewport;
 class UCameraAsset;
 class UCanvas;
 class UCineCameraComponent;
+struct FCameraContextDataTableAllocationInfo;
+struct FCameraVariableTableAllocationInfo;
 
 namespace UE::Cameras
 {
@@ -127,7 +129,6 @@ public:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void OnUnregister() override;
 	virtual void Activate(bool bReset = false) override;
 	virtual void Deactivate() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
@@ -167,7 +168,12 @@ protected:
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
 	bool HasCameraEvaluationContext() const { return EvaluationContext.IsValid(); }
 
-	void RecreateCameraEvaluationContext();
+#if WITH_EDITOR
+	void ReinitializeCameraEvaluationContext(
+			const FCameraVariableTableAllocationInfo& VariableTableAllocationInfo,
+			const FCameraContextDataTableAllocationInfo& ContextDataTableAllocationInfo);
+	void RecreateEditorWorldCameraEvaluationContext();
+#endif  // WITH_EDITOR
 
 private:
 
