@@ -576,18 +576,18 @@ void SGameplayCamerasDebugger::GetCameraSystemPickerContent(UToolMenu* ToolMenu)
 	FCameraSystemDebugRegistry::Get().GetRegisteredCameraSystemEvaluators(CameraSystems);
 
 	UWorld* DebugWorld = DebugContext.GetContext();
-	FToolMenuSection& CameraSystemsSection = ToolMenu->AddSection(
-			"CameraSystems",
-			FText::Format(
-				LOCTEXT("BoundToWorldName", "Camera Systems in {0}"),
-				FText::FromName(DebugWorld->GetFName()))
-			);
-
 	if (DebugWorld)
 	{
 		const bool bIsEditorWorld = (
 				DebugWorld->WorldType == EWorldType::Editor || 
 				DebugWorld->WorldType == EWorldType::EditorPreview);
+
+		FToolMenuSection& CameraSystemsSection = ToolMenu->AddSection(
+				"CameraSystems",
+				FText::Format(
+					LOCTEXT("BoundToWorldName", "Camera Systems in {0}"),
+					FText::FromName(DebugWorld->GetFName()))
+				);
 
 		if (bIsEditorWorld)
 		{
