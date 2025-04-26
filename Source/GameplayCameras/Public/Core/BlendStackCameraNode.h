@@ -143,7 +143,7 @@ protected:
 
 	struct FCameraRigEntry;
 
-	bool InitializeEntry(
+	void InitializeEntry(
 		FCameraRigEntry& NewEntry, 
 		const UCameraRigAsset* CameraRig,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,

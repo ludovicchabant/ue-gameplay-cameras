@@ -56,16 +56,12 @@ FBlendStackEntryID FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlend
 	}
 
 	FCameraRigEntry NewEntry;
-	const bool bInitialized = InitializeEntry(
+	InitializeEntry(
 			NewEntry, 
 			Params.CameraRig,
 			Params.EvaluationContext,
 			EntryRootNode,
 			false);
-	if (!bInitialized)
-	{
-		return FBlendStackEntryID();
-	}
 
 	FCameraRigEntryExtraInfo NewExtraInfo;
 	NewExtraInfo.StackOrder = Params.StackOrder;

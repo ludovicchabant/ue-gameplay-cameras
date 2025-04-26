@@ -40,7 +40,7 @@ private:
 
 	FShakeEntry* AddCameraShake(const FStartCameraShakeParams& Params);
 
-	bool InitializeEntry(
+	void InitializeEntry(
 		FShakeEntry& NewEntry, 
 		const UCameraShakeAsset* CameraShake,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext);
@@ -160,11 +160,7 @@ FCameraShakeServiceCameraNodeEvaluator::FShakeEntry* FCameraShakeServiceCameraNo
 	ensure(Params.CameraShake);
 
 	FShakeEntry NewEntry;
-	const bool bInitialized = InitializeEntry(NewEntry, Params.CameraShake, ShakeContext);
-	if (!bInitialized)
-	{
-		return nullptr;
-	}
+	InitializeEntry(NewEntry, Params.CameraShake, ShakeContext);
 
 	NewEntry.ShakeScale = Params.ShakeScale;
 	NewEntry.PlaySpace = Params.PlaySpace;
@@ -289,7 +285,7 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 	}
 }
 
-bool FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
+void FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	FShakeEntry& NewEntry, 
 	const UCameraShakeAsset* CameraShake,
 	TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
@@ -299,10 +295,6 @@ bool FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	BuildParams.RootCameraNode = CameraShake->RootNode;
 	BuildParams.AllocationInfo = &CameraShake->AllocationInfo.EvaluatorInfo;
 	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
-	if (!ensureMsgf(RootEvaluator, TEXT("No root evaluator was created for new camera rig!")))
-	{
-		return false;
-	}
 
 	// Generate the blend-in and blend-out evaluators.
 	FBlendCameraNodeEvaluator* BlendInEvaluator = nullptr;
@@ -333,20 +325,24 @@ bool FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	NewEntry.Result.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 	// Initialize the node evaluators.
-	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
-	InitParams.Evaluator = OwningEvaluator;
-	InitParams.EvaluationContext = EvaluationContext;
-	RootEvaluator->Initialize(InitParams, NewEntry.Result);
+	if (RootEvaluator)
+	{
+		FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
+		InitParams.Evaluator = OwningEvaluator;
+		InitParams.EvaluationContext = EvaluationContext;
+		RootEvaluator->Initialize(InitParams, NewEntry.Result);
+	}
 
 	// Wrap up!
 	NewEntry.EvaluationContext = EvaluationContext;
 	NewEntry.CameraShake = CameraShake;
-	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FShakeCameraNodeEvaluator>();
 	NewEntry.BlendInEvaluator = BlendInEvaluator;
 	NewEntry.BlendOutEvaluator = BlendOutEvaluator;
 	NewEntry.bIsFirstFrame = true;
-
-	return true;
+	if (RootEvaluator)
+	{
+		NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FShakeCameraNodeEvaluator>();
+	}
 }
 
 void FCameraShakeServiceCameraNodeEvaluator::PopEntry(int32 EntryIndex)

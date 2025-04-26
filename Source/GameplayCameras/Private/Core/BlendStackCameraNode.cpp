@@ -73,7 +73,7 @@ FBlendStackCameraNodeEvaluator::~FBlendStackCameraNodeEvaluator()
 	PopEntries(Entries.Num());
 }
 
-bool FBlendStackCameraNodeEvaluator::InitializeEntry(
+void FBlendStackCameraNodeEvaluator::InitializeEntry(
 		FCameraRigEntry& NewEntry, 
 		const UCameraRigAsset* CameraRig,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
@@ -88,10 +88,6 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	BuildParams.RootCameraNode = EntryRootNode;
 	BuildParams.AllocationInfo = &CameraRig->AllocationInfo.EvaluatorInfo;
 	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
-	if (!ensureMsgf(RootEvaluator, TEXT("No root evaluator was created for new camera rig!")))
-	{
-		return false;
-	}
 
 	// Allocate variable table and context data table.
 	NewEntry.ContextResult.VariableTable.Initialize(CameraRig->AllocationInfo.VariableTableInfo);
@@ -116,11 +112,14 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	}
 
 	// Initialize the node evaluators.
-	FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
-	InitParams.Evaluator = OwningEvaluator;
-	InitParams.EvaluationContext = EvaluationContext;
-	InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
-	RootEvaluator->Initialize(InitParams, NewEntry.ContextResult);  // Initializing with the context result here.
+	if (RootEvaluator)
+	{
+		FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
+		InitParams.Evaluator = OwningEvaluator;
+		InitParams.EvaluationContext = EvaluationContext;
+		InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
+		RootEvaluator->Initialize(InitParams, NewEntry.ContextResult);  // Initializing with the context result here.
+	}
 
 	// Set default values for unset entries in the variable table, so that pre-blending from default 
 	// values works.
@@ -133,11 +132,12 @@ bool FBlendStackCameraNodeEvaluator::InitializeEntry(
 	NewEntry.EvaluationContext = EvaluationContext;
 	NewEntry.CameraRig = CameraRig;
 	NewEntry.RootNode = EntryRootNode;
-	NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
 	NewEntry.Flags.bWasContextInitialResultValid = EvaluationContext->GetInitialResult().bIsValid;
 	NewEntry.Flags.bIsFirstFrame = true;
-
-	return true;
+	if (RootEvaluator)
+	{
+		NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FBlendStackRootCameraNodeEvaluator>();
+	}
 }
 
 int32 FBlendStackCameraNodeEvaluator::IndexOfEntry(const FBlendStackEntryID EntryID) const
@@ -550,17 +550,12 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 			Entry.RootNode->Blend = NewObject<UPopBlendCameraNode>(Entry.RootNode, NAME_None);
 
 			// Rebuild the evaluator tree.
-			const bool bInitialized = InitializeEntry(
+			InitializeEntry(
 					Entry,
 					Entry.CameraRig,
 					Entry.EvaluationContext.Pin(),
 					Entry.RootNode,
 					Index == Entries.Num() - 1);
-			if (!bInitialized)
-			{
-				Entry.Flags.bIsFrozen = true;
-				continue;
-			}
 
 			OnEntryReinitialized(Index);
 		}

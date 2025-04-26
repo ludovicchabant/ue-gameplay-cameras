@@ -102,16 +102,12 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const F
 
 	// Make the new stack entry, and use its storage buffer to build the tree of evaluators.
 	FCameraRigEntry NewEntry;
-	const bool bInitialized = InitializeEntry(
+	InitializeEntry(
 			NewEntry, 
 			Params.CameraRig,
 			Params.EvaluationContext,
 			EntryRootNode,
 			true);
-	if (!bInitialized)
-	{
-		return FBlendStackEntryID();
-	}
 	
 #if WITH_EDITOR
 	// Listen to changes to the packages inside which this camera rig is defined. We will hot-reload the

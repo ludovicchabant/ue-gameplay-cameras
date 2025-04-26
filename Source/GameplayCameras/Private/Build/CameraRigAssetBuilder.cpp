@@ -50,14 +50,6 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig, FCusto
 
 void FCameraRigAssetBuilder::BuildCameraRigImpl()
 {
-	if (!CameraRig->RootNode)
-	{
-		BuildLog.AddMessage(EMessageSeverity::Error, CameraRig, 
-				FText::Format(LOCTEXT("MissingRootNode", "Camera rig '{0}' has no root node."), 
-					FText::FromString(GetPathNameSafe(CameraRig))));
-		return;
-	}
-
 	FCameraNodeHierarchyBuilder NodeBuilder(BuildLog, CameraRig);
 	NodeBuilder.PreBuild();
 

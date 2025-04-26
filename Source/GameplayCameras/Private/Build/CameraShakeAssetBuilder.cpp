@@ -41,14 +41,6 @@ void FCameraShakeAssetBuilder::BuildCameraShake(UCameraShakeAsset* InCameraShake
 
 void FCameraShakeAssetBuilder::BuildCameraShakeImpl()
 {
-	if (!CameraShake->RootNode)
-	{
-		BuildLog.AddMessage(EMessageSeverity::Error, CameraShake, 
-				FText::Format(LOCTEXT("MissingRootNode", "Camera shake '{0}' has no root node."), 
-					FText::FromString(GetPathNameSafe(CameraShake))));
-		return;
-	}
-
 	FCameraNodeHierarchyBuilder NodeBuilder(BuildLog, CameraShake);
 	NodeBuilder.PreBuild();
 
