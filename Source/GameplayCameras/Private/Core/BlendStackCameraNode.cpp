@@ -495,6 +495,7 @@ void FBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector&
 	{
 		Collector.AddReferencedObject(Entry.CameraRig);
 		Collector.AddReferencedObject(Entry.RootNode);
+		Entry.ContextResult.AddReferencedObjects(Collector);
 		Entry.Result.AddReferencedObjects(Collector);
 	}
 }
