@@ -395,6 +395,7 @@ void FCameraShakeService::EnsureShakeContextCreated()
 	if (!ShakeContext)
 	{
 		ShakeContext = MakeShared<FCameraEvaluationContext>();
+		ShakeContext->GetInitialResult().bIsValid = true;
 	}
 
 	// Create the camera rig that will contain and run all the camera shakes.
