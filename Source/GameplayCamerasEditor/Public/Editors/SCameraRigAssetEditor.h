@@ -104,6 +104,8 @@ protected:
 	FText GetCameraRigAssetName(UObjectTreeGraph* ForGraph) const;
 	bool IsGraphEditorEnabled() const;
 
+	bool FindAndJumpToObjectNode(UObject* InObject, ECameraRigAssetEditorMode InEditorMode);
+
 private:
 
 	/** The asset being edited */
