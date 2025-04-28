@@ -2,6 +2,8 @@
 
 #include "IGameplayCamerasEditorModule.h"
 
+#include "ActorFactories/GameplayCameraActorFactory.h"
+#include "ActorFactories/GameplayCameraRigActorFactory.h"
 #include "AssetTools/CameraAssetEditor.h"
 #include "AssetTools/CameraRigAssetEditor.h"
 #include "AssetTools/CameraRigProxyAssetEditor.h"
@@ -42,8 +44,8 @@
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasModule.h"
 #include "IRewindDebuggerExtension.h"
-#include "ISettingsModule.h"
 #include "ISequencerModule.h"
+#include "ISettingsModule.h"
 #include "K2Node_Event.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Modules/ModuleManager.h"
@@ -52,6 +54,7 @@
 #include "Sequencer/CameraFramingZoneTrackEditor.h"
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "Subsystems/PlacementSubsystem.h"
 #include "ToolMenus.h"
 #include "Toolkits/BlueprintCameraDirectorAssetEditorMode.h"
 #include "Toolkits/CameraAssetEditorToolkit.h"
@@ -267,6 +270,16 @@ private:
 		using namespace UE::Cameras;
 
 		SGameplayCamerasDebugger::RegisterTabSpawners();
+
+		GameplayCameraActorFactory.Reset(NewObject<UGameplayCameraActorFactory>());
+		GameplayCameraRigActorFactory.Reset(NewObject<UGameplayCameraRigActorFactory>());
+		GEditor->ActorFactories.Add(GameplayCameraActorFactory.Get());
+		GEditor->ActorFactories.Add(GameplayCameraRigActorFactory.Get());
+		if (UPlacementSubsystem* PlacementSubsystem = GEditor->GetEditorSubsystem<UPlacementSubsystem>())
+		{
+			PlacementSubsystem->RegisterAssetFactory(GameplayCameraActorFactory.Get());
+			PlacementSubsystem->RegisterAssetFactory(GameplayCameraRigActorFactory.Get());
+		}
 	}
 
 	void OnPreExit()
@@ -274,6 +287,15 @@ private:
 		using namespace UE::Cameras;
 
 		SGameplayCamerasDebugger::UnregisterTabSpawners();
+
+		GEditor->ActorFactories.RemoveAll([this](const UActorFactory* ActorFactory)
+				{
+					return ActorFactory == GameplayCameraActorFactory.Get() || ActorFactory == GameplayCameraRigActorFactory.Get();
+				});
+		if (UPlacementSubsystem* PlacementSubsystem = GEditor->GetEditorSubsystem<UPlacementSubsystem>())
+		{
+			PlacementSubsystem->UnregisterAssetFactory(GameplayCameraActorFactory.Get());
+		}
 	}
 	
 	void OnPreForceDeleteObjects(const TArray<UObject*>& ObjectsToDelete)
@@ -625,6 +647,9 @@ private:
 	
 	FDelegateHandle GameplayCameraComponentTrackCreateEditorHandle;
 	FDelegateHandle CameraFramingZoneTrackCreateEditorHandle;
+
+	TStrongObjectPtr<UGameplayCameraActorFactory> GameplayCameraActorFactory;
+	TStrongObjectPtr<UGameplayCameraRigActorFactory> GameplayCameraRigActorFactory;
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 	TSharedPtr<UE::Cameras::FCameraSystemTraceModule> TraceModule;
