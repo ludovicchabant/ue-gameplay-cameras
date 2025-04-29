@@ -29,18 +29,18 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 		.BuildCameraAsset()
 		.Get();
 
-	FCameraSystemEvaluator Evaluator;
-	Evaluator.Initialize();
-	Evaluator.PushEvaluationContext(EvaluationContext);
+	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorBuilder::Build();
+	Evaluator->Initialize();
+	Evaluator->PushEvaluationContext(EvaluationContext);
 
 	EvaluationContext->GetInitialResult().bIsValid = true;
 
 	FCameraSystemEvaluationParams Params;
 	Params.DeltaTime = 0.3f;
-	Evaluator.Update(Params);
+	Evaluator->Update(Params);
 
 	FCameraRigEvaluationInfo CameraRigInfo;
-	FRootCameraNodeEvaluator* RootEvaluator = Evaluator.GetRootNodeEvaluator();
+	FRootCameraNodeEvaluator* RootEvaluator = Evaluator->GetRootNodeEvaluator();
 	RootEvaluator->GetActiveCameraRigInfo(CameraRigInfo);
 	UTEST_NOT_NULL("RootEvaluator", CameraRigInfo.RootEvaluator);
 
@@ -55,7 +55,7 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 		UTEST_TRUE("IsFirstFrame", Update.bIsFirstFrame);
 	}
 
-	Evaluator.Update(Params);
+	Evaluator->Update(Params);
 
 	{
 		UTEST_EQUAL("NumReceivedUpdates", UpdateTracker->ReceivedUpdates.Num(), 2);
@@ -67,7 +67,7 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 
 	EvaluationContext->GetInitialResult().bIsCameraCut = true;
 
-	Evaluator.Update(Params);
+	Evaluator->Update(Params);
 
 	{
 		UTEST_EQUAL("NumReceivedUpdates", UpdateTracker->ReceivedUpdates.Num(), 3);

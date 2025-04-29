@@ -10,6 +10,7 @@
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/CameraVariableTableFwd.h"
 #include "Directors/SingleCameraDirector.h"
@@ -736,6 +737,22 @@ private:
 	TSharedPtr<FCameraEvaluationContext> EvaluationContext;
 
 	TSharedPtr<FNamedObjectRegistry> NamedObjectRegistry;
+};
+
+/**
+ * Builder class for a camera system evaluator.
+ */
+class FCameraSystemEvaluatorBuilder
+{
+public:
+
+	/** Makes a new camera system evaluator. */
+	static TSharedRef<FCameraSystemEvaluator> Build(UObject* OwnerObject = nullptr)
+	{
+		TSharedRef<FCameraSystemEvaluator> NewEvaluator = MakeShared<FCameraSystemEvaluator>();
+		NewEvaluator->Initialize(OwnerObject);
+		return NewEvaluator;
+	}
 };
 
 }  // namespace UE::Cameras::Test

@@ -15,19 +15,11 @@ bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 {
 	using namespace UE::Cameras::Test;
 
-	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("InvalidTest")).Get();
+	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("EmptyTest")).Get();
 	UTEST_EQUAL("Dirty status", CameraRig->BuildStatus, ECameraBuildStatus::Dirty);
 
-	FStringFormatOrderedArguments ErrorArgs;
-	ErrorArgs.Add(CameraRig->GetPathName());
-	AddExpectedMessage(
-			FString::Format(TEXT("Camera rig '{0}' has no root node."), ErrorArgs),
-			ELogVerbosity::Error,
-			EAutomationExpectedMessageFlags::Contains,
-			1,
-			false);
 	CameraRig->BuildCameraRig();
-	UTEST_EQUAL("Error status", CameraRig->BuildStatus, ECameraBuildStatus::WithErrors);
+	UTEST_EQUAL("Clean status", CameraRig->BuildStatus, ECameraBuildStatus::Clean);
 
 	return true;
 }

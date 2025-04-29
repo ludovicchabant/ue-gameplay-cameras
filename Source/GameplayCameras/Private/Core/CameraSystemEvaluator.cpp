@@ -117,6 +117,7 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 
 FCameraSystemEvaluator::~FCameraSystemEvaluator()
 {
+	ContextStack.OnStackChanged().Clear();
 	ContextStack.Reset();
 
 	{
