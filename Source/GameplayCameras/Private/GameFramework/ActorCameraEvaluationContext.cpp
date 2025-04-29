@@ -95,14 +95,13 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraComponentCameraNodeEvaluator)
 void FCameraComponentCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	UCameraComponent* CameraComponent = Cast<UCameraComponent>(Params.EvaluationContext->GetOwner());
-	if (!ensure(CameraComponent))
-	{
-		return;
-	}
 
-	FMinimalViewInfo CameraView;
-	CameraComponent->GetCameraView(Params.DeltaTime, CameraView);
-	FActorCameraEvaluationContext::ApplyMinimalViewInfo(CameraView, OutResult);
+	if (CameraComponent)
+	{
+		FMinimalViewInfo CameraView;
+		CameraComponent->GetCameraView(Params.DeltaTime, CameraView);
+		FActorCameraEvaluationContext::ApplyMinimalViewInfo(CameraView, OutResult);
+	}
 }
 
 class FCalcCameraActorCameraNodeEvaluator : public FCameraNodeEvaluator
@@ -120,14 +119,13 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCalcCameraActorCameraNodeEvaluator)
 void FCalcCameraActorCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	AActor* Actor = Cast<AActor>(Params.EvaluationContext->GetOwner());
-	if (!ensure(Actor))
-	{
-		return;
-	}
 
-	FMinimalViewInfo CameraView;
-	Actor->CalcCamera(Params.DeltaTime, CameraView);
-	FActorCameraEvaluationContext::ApplyMinimalViewInfo(CameraView, OutResult);
+	if (Actor)
+	{
+		FMinimalViewInfo CameraView;
+		Actor->CalcCamera(Params.DeltaTime, CameraView);
+		FActorCameraEvaluationContext::ApplyMinimalViewInfo(CameraView, OutResult);
+	}
 }
 
 }  // namespace UE::Cameras

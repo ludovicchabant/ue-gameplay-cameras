@@ -53,6 +53,8 @@ void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationCont
 			FContextEntry EntryCopy(MoveTemp(Entries[ExistingIndex]));
 			Entries.RemoveAt(ExistingIndex);
 			Entries.Add(MoveTemp(EntryCopy));
+
+			OnStackChangedEvent.Broadcast();
 		}
 		return;
 	}
@@ -66,6 +68,8 @@ void FCameraEvaluationContextStack::PushContext(TSharedRef<FCameraEvaluationCont
 	
 	NewEntry.WeakContext = Context;
 	Entries.Push(MoveTemp(NewEntry));
+
+	OnStackChangedEvent.Broadcast();
 }
 
 bool FCameraEvaluationContextStack::AddChildContext(TSharedRef<FCameraEvaluationContext> Context, TSharedPtr<FCameraEvaluationContext> ParentContext)
@@ -115,6 +119,8 @@ bool FCameraEvaluationContextStack::RemoveContext(TSharedRef<FCameraEvaluationCo
 			Context->Deactivate(DeactivateParams);
 
 			It.RemoveCurrent();
+
+			OnStackChangedEvent.Broadcast();
 			return true;
 		}
 	}
@@ -146,12 +152,18 @@ bool FCameraEvaluationContextStack::RemoveContextsOwnedBy(UObject* ContextOwner,
 		}
 	}
 
+	if (bRemovedAny)
+	{
+		OnStackChangedEvent.Broadcast();
+	}
+
 	return bRemovedAny;
 }
 
 void FCameraEvaluationContextStack::PopContext()
 {
 	Entries.Pop();
+	OnStackChangedEvent.Broadcast();
 }
 
 void FCameraEvaluationContextStack::GetAllContexts(TArray<TSharedPtr<FCameraEvaluationContext>>& OutContexts) const
@@ -176,6 +188,7 @@ void FCameraEvaluationContextStack::Reset()
 		}
 	}
 	Entries.Reset();
+	OnStackChangedEvent.Broadcast();
 }
 
 void FCameraEvaluationContextStack::Initialize(FCameraSystemEvaluator& InEvaluator)
@@ -199,6 +212,7 @@ void FCameraEvaluationContextStack::OnEndCameraSystemUpdate()
 	// Reset all written-this-frame flags on evaluation contexts, so we properly get those flags set
 	// regardless of when, during next frame, they set their variables. This is because various 
 	// gameplay systems, Blueprint scripting, whatever, might set variables at any time.
+	bool bRemovedAny = false;
 	TArray<TSharedPtr<FCameraEvaluationContext>> ContextsToVisit;
 	for (auto It = Entries.CreateIterator(); It; ++It)
 	{
@@ -209,6 +223,7 @@ void FCameraEvaluationContextStack::OnEndCameraSystemUpdate()
 		else
 		{
 			It.RemoveCurrent();
+			bRemovedAny = true;
 		}
 	}
 	while (!ContextsToVisit.IsEmpty())
@@ -224,6 +239,11 @@ void FCameraEvaluationContextStack::OnEndCameraSystemUpdate()
 				ContextsToVisit.Add(ChildContext);
 			}
 		}
+	}
+
+	if (bRemovedAny)
+	{
+		OnStackChangedEvent.Broadcast();
 	}
 }
 

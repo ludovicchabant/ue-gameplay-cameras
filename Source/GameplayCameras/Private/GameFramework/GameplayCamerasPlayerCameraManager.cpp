@@ -9,6 +9,7 @@
 #include "Core/CameraEvaluationService.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -23,6 +24,10 @@
 namespace UE::Cameras
 {
 
+/**
+ * A blend node evaluator for UViewTargetTransitionParamsBlendCameraNode, which emulates the basic engine
+ * blend curves for view targets.
+ */
 class FViewTargetTransitionParamsBlendCameraNodeEvaluator : public FSimpleBlendCameraNodeEvaluator
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FViewTargetTransitionParamsBlendCameraNodeEvaluator, FSimpleBlendCameraNodeEvaluator)
@@ -64,57 +69,6 @@ void FViewTargetTransitionParamsBlendCameraNodeEvaluator::OnComputeBlendFactor(c
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FViewTargetTransitionParamsBlendCameraNodeEvaluator)
 
-class FViewTargetContextReferencerService : public FCameraEvaluationService
-{
-public:
-
-	FViewTargetContextReferencerService()
-	{
-		SetEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsRootCameraNodeEvents);
-	}
-
-	void AddViewTargetContext(AActor* InViewTarget, TSharedRef<FCameraEvaluationContext> InContext)
-	{
-		Entries.Add(FEntry{ InViewTarget, InContext });
-	}
-
-protected:
-
-	virtual void OnInitialize(const FCameraEvaluationServiceInitializeParams& Params) override
-	{
-		Evaluator = Params.Evaluator;
-	}
-
-	virtual void OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent) override
-	{
-		if (InEvent.EventType == ERootCameraNodeCameraRigEventType::Deactivated)
-		{
-			TSharedPtr<const FCameraEvaluationContext> Context = InEvent.CameraRigInfo.EvaluationContext;
-			if (Context)
-			{
-				for (auto It = Entries.CreateIterator(); It; ++It)
-				{
-					if (It->Context == Context)
-					{
-						It.RemoveCurrent();
-					}
-				}
-			}
-		}
-	}
-
-private:
-
-	struct FEntry
-	{
-		TWeakObjectPtr<AActor> WeakViewTarget;
-		TSharedPtr<FCameraEvaluationContext> Context;
-	};
-
-	FCameraSystemEvaluator* Evaluator = nullptr;
-	TArray<FEntry> Entries;
-};
-
 }  // namespace UE::Cameras
 
 AGameplayCamerasPlayerCameraManager::AGameplayCamerasPlayerCameraManager(const FObjectInitializer& ObjectInitializer)
@@ -124,7 +78,7 @@ AGameplayCamerasPlayerCameraManager::AGameplayCamerasPlayerCameraManager(const F
 
 void AGameplayCamerasPlayerCameraManager::BeginDestroy()
 {
-	TeardownCameraSystemHost();
+	DestroyCameraSystem();
 
 	Super::BeginDestroy();
 }
@@ -168,7 +122,7 @@ void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
 
 	OriginalCameraManager = nullptr;
 
-	TeardownCameraSystemHost();
+	DestroyCameraSystem();
 
 	PCOwner = nullptr;
 }
@@ -212,13 +166,20 @@ void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstan
 
 void AGameplayCamerasPlayerCameraManager::InitializeFor(APlayerController* PlayerController)
 {
+	using namespace UE::Cameras;
+
 	if (!bOverrideViewRotationMode)
 	{
 		const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
 		ViewRotationMode = Settings->DefaultViewRotationMode;
 	}
 
-	EnsureCameraSystemHost();
+	EnsureCameraSystemInitialized();
+	if (ensure(CameraSystemEvaluator))
+	{
+		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+		ContextStack.OnStackChanged().AddUObject(this, &AGameplayCamerasPlayerCameraManager::OnContextStackChanged);
+	}
 
 	Super::InitializeFor(PlayerController);
 }
@@ -231,9 +192,14 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 	// If that context owner isn't an actor, and isn't inside an actor (like a component), we use the player
 	// controller as the view target.
 
+	ensure(bIsSettingNewViewTarget == false);
+	TGuardValue<bool> ReentrancyGuard(bIsSettingNewViewTarget, true);
+	FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+
+	// If the view target is null, this is sort of a shortcut for "we're done with the current view target",
+	// so pop the context stack and reactivate the previous context.
 	if (NewViewTarget == nullptr)
 	{
-		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
 		ContextStack.PopContext();
 
 		if (TSharedPtr<FCameraEvaluationContext> NewActiveContext = ContextStack.GetActiveContext())
@@ -257,64 +223,57 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 		return;
 	}
 
-	if (UGameplayCameraComponentBase* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponentBase>())
+	// See if we can find the view target in the context stack. If so, reactivate it instead of potentially
+	// making a new context for the same thing.
+	bool bFoundContext = false;
+	TArray<TSharedPtr<FCameraEvaluationContext>> CurrentContexts;
+	ContextStack.GetAllContexts(CurrentContexts);
+	for (TSharedPtr<FCameraEvaluationContext> CurrentContext : CurrentContexts)
 	{
-		GameplayCameraComponent->ActivateCameraForPlayerController(PCOwner);
+		UObject* CurrentContextOwner = CurrentContext ? CurrentContext->GetOwner() : nullptr;
+		if (CurrentContextOwner && 
+				(CurrentContext->GetOwner() == NewViewTarget || 
+				 CurrentContextOwner->GetTypedOuter<AActor>() == NewViewTarget))
+		{
+			// This will move the context to the top if it's already in the stack (which it is, we
+			// found it there).
+			ContextStack.PushContext(CurrentContext.ToSharedRef());
+			bFoundContext = true;
+		}
 	}
-	else if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
+
+	if (!bFoundContext)
 	{
-		TSharedRef<FActorCameraEvaluationContext> NewContext = MakeShared<FActorCameraEvaluationContext>(CameraComponent);
-		CameraSystemEvaluator->PushEvaluationContext(NewContext);
-	}
-	else
-	{
-		TSharedRef<FActorCameraEvaluationContext> NewContext = MakeShared<FActorCameraEvaluationContext>(NewViewTarget);
-		CameraSystemEvaluator->PushEvaluationContext(NewContext);
+		if (UGameplayCameraComponentBase* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponentBase>())
+		{
+			GameplayCameraComponent->ActivateCameraForPlayerController(PCOwner);
+		}
+		else if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
+		{
+			TSharedRef<FActorCameraEvaluationContext> NewContext = MakeShared<FActorCameraEvaluationContext>(CameraComponent);
+			CameraSystemEvaluator->PushEvaluationContext(NewContext);
+			ViewTargetContexts.Add(NewContext);
+		}
+		else
+		{
+			TSharedRef<FActorCameraEvaluationContext> NewContext = MakeShared<FActorCameraEvaluationContext>(NewViewTarget);
+			CameraSystemEvaluator->PushEvaluationContext(NewContext);
+			ViewTargetContexts.Add(NewContext);
+		}
 	}
 
 	// If transition parameters were given, override the next activation for the new evaluation context.
 	TSharedPtr<FCameraEvaluationContext> NextContext = CameraSystemEvaluator->GetEvaluationContextStack().GetActiveContext();
-	if (NextContext)
+	if (NextContext && TransitionParams.BlendTime > 0.f)
 	{
-		ViewTargetContextReferencerService->AddViewTargetContext(NewViewTarget, NextContext.ToSharedRef());
+		UViewTargetTransitionParamsBlendCameraNode* BlendNode = NewObject<UViewTargetTransitionParamsBlendCameraNode>(GetTransientPackage());
+		BlendNode->TransitionParams = TransitionParams;
 
-		if (TransitionParams.BlendTime > 0.f)
-		{
-			UViewTargetTransitionParamsBlendCameraNode* BlendNode = NewObject<UViewTargetTransitionParamsBlendCameraNode>(GetTransientPackage());
-			BlendNode->TransitionParams = TransitionParams;
+		UCameraRigTransition* Transition = NewObject<UCameraRigTransition>(GetTransientPackage());
+		Transition->Blend = BlendNode;
 
-			UCameraRigTransition* Transition = NewObject<UCameraRigTransition>(GetTransientPackage());
-			Transition->Blend = BlendNode;
-
-			FCameraDirectorEvaluator* DirectorEvaluator = NextContext->GetDirectorEvaluator();
-			DirectorEvaluator->OverrideNextActivationTransition(Transition);
-		}
-	}
-}
-
-void AGameplayCamerasPlayerCameraManager::EnsureCameraSystemHost()
-{
-	using namespace UE::Cameras;
-
-	if (!HasCameraSystem())
-	{
-		InitializeCameraSystem();
-
-		ViewTargetContextReferencerService = MakeShared<FViewTargetContextReferencerService>();
-		CameraSystemEvaluator->RegisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
-	}
-}
-
-void AGameplayCamerasPlayerCameraManager::TeardownCameraSystemHost()
-{
-	if (HasCameraSystem())
-	{
-		if (ensure(ViewTargetContextReferencerService))
-		{
-			CameraSystemEvaluator->UnregisterEvaluationService(ViewTargetContextReferencerService.ToSharedRef());
-		}
-
-		DestroyCameraSystem();
+		FCameraDirectorEvaluator* DirectorEvaluator = NextContext->GetDirectorEvaluator();
+		DirectorEvaluator->OverrideNextActivationTransition(Transition);
 	}
 }
 
@@ -370,6 +329,55 @@ void AGameplayCamerasPlayerCameraManager::DoUpdateCamera(float DeltaTime)
 		FillCameraCache(DesiredView);
 
 		LastFrameDesiredView = DesiredView;
+
+		CleanUpViewTargetContexts();
+	}
+}
+
+void AGameplayCamerasPlayerCameraManager::OnContextStackChanged()
+{
+	using namespace UE::Cameras;
+
+	// When the context stack changes, such as when a gameplay camera component activates directly
+	// against our camera system host, we want to update the view target so that it's always in sync
+	// with whichever owns the active evaluation context.
+	//
+	// This is as opposed to going through SetViewTarget or some other APlayerCameraManager method.
+
+	if (ensure(CameraSystemEvaluator) && !bIsSettingNewViewTarget)
+	{
+		TGuardValue<bool> ReentrancyGuard(bIsSettingNewViewTarget, true);
+
+		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+		TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
+		UObject* ActiveContextOwner = ActiveContext->GetOwner();
+		if (ActiveContextOwner)
+		{
+			ViewTarget.SetNewTarget(ActiveContextOwner->GetTypedOuter<AActor>());
+		}
+		else
+		{
+			ViewTarget.SetNewTarget(nullptr);
+		}
+
+		ViewTarget.CheckViewTarget(PCOwner);
+		BlendParams = FViewTargetTransitionParams();
+	}
+}
+
+void AGameplayCamerasPlayerCameraManager::CleanUpViewTargetContexts()
+{
+	using namespace UE::Cameras;
+
+	FRootCameraNodeEvaluator* RootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+
+	for (auto It = ViewTargetContexts.CreateIterator(); It; ++It)
+	{
+		TSharedRef<FCameraEvaluationContext> Context(*It);
+		if (!RootEvaluator->HasAnyRunningCameraRig(Context))
+		{
+			It.RemoveCurrent();
+		}
 	}
 }
 

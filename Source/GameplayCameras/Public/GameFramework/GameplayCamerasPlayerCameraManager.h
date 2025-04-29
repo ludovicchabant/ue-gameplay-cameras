@@ -14,6 +14,7 @@ struct FCameraRigInstanceID;
 namespace UE::Cameras
 {
 
+class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
 class FViewTargetContextReferencerService;
 
@@ -113,10 +114,10 @@ protected:
 
 private:
 
-	void EnsureCameraSystemHost();
-	void TeardownCameraSystemHost();
-
 	void RunViewRotationPreviewUpdate(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot);
+
+	void OnContextStackChanged();
+	void CleanUpViewTargetContexts();
 
 public:
 
@@ -133,9 +134,11 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<APlayerCameraManager> OriginalCameraManager;
 
-	TSharedPtr<UE::Cameras::FViewTargetContextReferencerService> ViewTargetContextReferencerService;
+	TArray<TSharedRef<UE::Cameras::FCameraEvaluationContext>> ViewTargetContexts;
 
 	FMinimalViewInfo LastFrameDesiredView;
+
+	bool bIsSettingNewViewTarget = false;
 };
 
 /**

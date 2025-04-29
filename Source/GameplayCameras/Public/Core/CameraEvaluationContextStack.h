@@ -64,6 +64,9 @@ public:
 	/** Empties the stack of all contexts. */
 	void Reset();
 
+	/** An event raised when the stack changes. */ 
+	FSimpleMulticastDelegate& OnStackChanged() { return OnStackChangedEvent; }
+
 public:
 
 	// Internal API
@@ -83,6 +86,9 @@ private:
 
 	/** The owner evaluator. */
 	FCameraSystemEvaluator* Evaluator = nullptr;
+
+	/** An event raised when the stack changes. */ 
+	FSimpleMulticastDelegate OnStackChangedEvent;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	friend class FCameraDirectorTreeDebugBlock;
