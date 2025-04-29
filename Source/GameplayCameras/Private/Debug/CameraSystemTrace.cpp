@@ -29,6 +29,7 @@ UE_TRACE_CHANNEL(CameraSystemChannel)
 UE_TRACE_EVENT_BEGIN(CameraSystem, CameraSystemEvaluation)
 	UE_TRACE_EVENT_FIELD(uint64, Cycle)
 	UE_TRACE_EVENT_FIELD(double, RecordingTime)
+	UE_TRACE_EVENT_FIELD(int32, CameraSystemDebugID)
 	UE_TRACE_EVENT_FIELD(double, EvaluatedLocationX)
 	UE_TRACE_EVENT_FIELD(double, EvaluatedLocationY)
 	UE_TRACE_EVENT_FIELD(double, EvaluatedLocationZ)
@@ -281,7 +282,7 @@ bool FCameraSystemTrace::IsTraceEnabled()
 	return GGameplayCamerasDebugTrace || UE_TRACE_CHANNELEXPR_IS_ENABLED(CameraSystemChannel);
 }
 
-void FCameraSystemTrace::TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationResult& InResult, FCameraDebugBlock& InRootDebugBlock)
+void FCameraSystemTrace::TraceEvaluation(UWorld* InWorld, const FCameraSystemEvaluationResult& InResult, FRootCameraDebugBlock& InRootDebugBlock)
 {
 	if (!IsTraceEnabled())
 	{
@@ -296,6 +297,7 @@ void FCameraSystemTrace::TraceEvaluation(UWorld* InWorld, const FCameraSystemEva
 	UE_TRACE_LOG(CameraSystem, CameraSystemEvaluation, CameraSystemChannel)
 		<< CameraSystemEvaluation.Cycle(FPlatformTime::Cycles64())
 		<< CameraSystemEvaluation.RecordingTime(FObjectTrace::GetWorldElapsedTime(InWorld))
+		<< CameraSystemEvaluation.CameraSystemDebugID(InRootDebugBlock.GetDebugID().GetValue())
 		<< CameraSystemEvaluation.EvaluatedLocationX(InResult.CameraPose.GetLocation().X)
 		<< CameraSystemEvaluation.EvaluatedLocationY(InResult.CameraPose.GetLocation().Y)
 		<< CameraSystemEvaluation.EvaluatedLocationZ(InResult.CameraPose.GetLocation().Z)

@@ -31,6 +31,7 @@ bool FCameraSystemTraceAnalyzer::OnEvent(uint16 RouteId, EStyle Style, const FOn
 
 	uint64 Cycle = Context.EventData.GetValue<uint64>("Cycle");
 	double RecordingTime = Context.EventData.GetValue<double>("RecordingTime");
+	FrameData.CameraSystemID = Context.EventData.GetValue<int32>("CameraSystemDebugID");
 	FrameData.EvaluatedLocation.X = Context.EventData.GetValue<double>("EvaluatedLocationX");
 	FrameData.EvaluatedLocation.Y = Context.EventData.GetValue<double>("EvaluatedLocationY");
 	FrameData.EvaluatedLocation.Z = Context.EventData.GetValue<double>("EvaluatedLocationZ");

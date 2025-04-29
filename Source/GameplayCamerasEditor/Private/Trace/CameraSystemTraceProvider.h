@@ -19,6 +19,7 @@ namespace UE::Cameras
 /** Data for one frame of tracing. */
 struct FCameraSystemTraceFrameData
 {
+	int32 CameraSystemID;
 	FVector3d EvaluatedLocation;
 	FRotator3d EvaluatedRotation;
 	float EvaluatedFieldOfView;

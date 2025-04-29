@@ -13,8 +13,10 @@ namespace UE::Cameras
 class FCameraSystemEvaluator;
 struct FCameraDebugBlockBuildParams;
 struct FCameraDebugBlockBuilder;
+struct FCameraSystemDebugID;
 
-GAMEPLAYCAMERAS_API extern int32 GGameplayCamerasDebugEnableID;
+GAMEPLAYCAMERAS_API extern bool GGameplayCamerasDebugEnable;
+GAMEPLAYCAMERAS_API extern int32 GGameplayCamerasDebugSystemID;
 GAMEPLAYCAMERAS_API extern FString GGameplayCamerasDebugCategories;
 
 /**
@@ -30,7 +32,10 @@ public:
 	GAMEPLAYCAMERAS_API void BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 
 	/** Initiate the debug drawing. */
-	GAMEPLAYCAMERAS_API void RootDebugDraw(FCameraDebugRenderer& Renderer);
+	GAMEPLAYCAMERAS_API void RootDebugDraw(FCameraDebugRenderer& Renderer, bool bForceDraw = false);
+
+	/** Gets the debug ID of the camera system that generated this debug info. */
+	const FCameraSystemDebugID& GetDebugID() const { return DebugID; }
 
 protected:
 

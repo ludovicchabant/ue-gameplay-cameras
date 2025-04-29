@@ -24,13 +24,15 @@ struct FCameraSystemDebugID
 	FCameraSystemDebugID() : Value(INVALID) {}
 	FCameraSystemDebugID(int32 InValue) : Value(InValue) {}
 
-	bool IsValid() const { return Value != INVALID; }
+	bool IsValid() const { return Value >= 0; }
+	bool IsAuto() const { return Value == AUTO; }
 	bool IsAny() const { return Value == ANY; }
 	operator bool() const { return IsValid(); }
 
 	int32 GetValue() const { return Value; }
 
 	static FCameraSystemDebugID Invalid() { return FCameraSystemDebugID(INVALID); }
+	static FCameraSystemDebugID Auto() { return FCameraSystemDebugID(AUTO); }
 	static FCameraSystemDebugID Any() { return FCameraSystemDebugID(ANY); }
 
 public:
@@ -59,7 +61,8 @@ public:
 
 private:
 
-	constexpr static int32 INVALID = INDEX_NONE;
+	constexpr static int32 INVALID = -1;
+	constexpr static int32 AUTO = 0;
 	constexpr static int32 ANY = MAX_int32;
 
 	int32 Value;

@@ -53,13 +53,17 @@ void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugg
 	if (FrameProvider.GetFrameFromTime(ETraceFrameType::TraceFrameType_Game, CurrentTraceTime, Frame))
 	{
 		const FCameraSystemTraceFrameData* FoundFrameData = nullptr;
+		const FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
 
 		const FCameraSystemTraceTimeline* CameraSystemTimeline = CameraSystemProvider->GetTimeline();
 		CameraSystemTimeline->EnumerateEvents(
 				Frame.StartTime, Frame.EndTime, 
-				[&FoundFrameData](double InStartTime, double InEndTime, uint32 InDepth, const FCameraSystemTraceFrameData& FrameData)  
+				[&FoundFrameData, WantedDebugID](double InStartTime, double InEndTime, uint32 InDepth, const FCameraSystemTraceFrameData& FrameData)  
 				{
-					FoundFrameData = &FrameData;
+					if (WantedDebugID.IsAny() || WantedDebugID.GetValue() == FrameData.CameraSystemID)
+					{
+						FoundFrameData = &FrameData;
+					}
 					return TraceServices::EEventEnumerate::Continue;
 				});
 

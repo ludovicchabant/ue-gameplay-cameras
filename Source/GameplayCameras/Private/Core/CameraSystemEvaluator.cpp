@@ -30,7 +30,7 @@ DECLARE_CYCLE_STAT(TEXT("Camera System Eval"), CameraSystemEval_Total, STATGROUP
 namespace UE::Cameras
 {
 
-extern int32 GGameplayCamerasDebugEnableID;
+extern bool GGameplayCamerasDebugEnable;
 
 void FCameraSystemEvaluationResult::Reset()
 {
@@ -561,7 +561,7 @@ bool FCameraSystemEvaluator::IsDebugTraceEnabled()
 bool FCameraSystemEvaluator::ShouldBuildOrDrawDebugBlocks()
 {
 	const bool bTraceEnabled = IsDebugTraceEnabled();
-	return bTraceEnabled || GGameplayCamerasDebugEnableID >= 0;
+	return bTraceEnabled || GGameplayCamerasDebugEnable;
 }
 
 void FCameraSystemEvaluator::BuildDebugBlocksIfNeeded()
@@ -600,7 +600,7 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 #endif
 
 	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject, Params.bIsDebugCameraEnabled);
-	RootDebugBlock->RootDebugDraw(Renderer);
+	RootDebugBlock->RootDebugDraw(Renderer, Params.bForceDraw);
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

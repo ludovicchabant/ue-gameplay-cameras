@@ -2,13 +2,22 @@
 
 #include "GameFramework/IGameplayCameraSystemHost.h"
 
+#include "Camera/PlayerCameraManager.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationContextStack.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Debug/CameraSystemDebugRegistry.h"
 #include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+
+namespace UE::Cameras
+{
+
+extern int32 GGameplayCamerasDebugSystemID;
+
+}  // namespace UE::Cameras
 
 void IGameplayCameraSystemHost::InitializeCameraSystem()
 {
@@ -134,18 +143,48 @@ void IGameplayCameraSystemHost::DebugDraw(UCanvas* Canvas, APlayerController* Pl
 
 	if (CameraSystemEvaluator.IsValid())
 	{
+		UWorld* OwnerWorld = nullptr;
+		if (UObject* CameraSystemOwner = CameraSystemEvaluator->GetOwner())
+		{
+			OwnerWorld = CameraSystemOwner->GetWorld();
+		}
+
+		// Find the actual player controller as best we can.
+		APlayerController* ActualPlayerController = PlayerController;
+		if (!ActualPlayerController)
+		{
+			const FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+			if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
+			{
+				ActualPlayerController = ActiveContext->GetPlayerController();
+			}
+		}
+
+		if (!ActualPlayerController && OwnerWorld)
+		{
+			ActualPlayerController = OwnerWorld->GetFirstPlayerController();
+		}
+
+		const UObject* ThisAsObject = GetAsObject();
+		const AActor* ViewTarget = ActualPlayerController ? ActualPlayerController->GetViewTarget() : nullptr;
+		const bool bThisIsCameraManager = (ActualPlayerController && ThisAsObject == ActualPlayerController->PlayerCameraManager);
+		const bool bThisIsViewTarget = (ThisAsObject && ViewTarget && ThisAsObject->GetTypedOuter<AActor>() == ViewTarget);
+
 		// We're looking from the outside if we are not the view target, or if we don't have a player
 		// anymore (which happens in spectator mode like with the debug camera).
-		bool bIsDebugCameraEnabled = false;
-		if (TSharedPtr<FCameraEvaluationContext> ActiveContext = CameraSystemEvaluator->GetEvaluationContextStack().GetActiveContext())
-		{
-			const APlayerController* ActivePlayerController = ActiveContext->GetPlayerController();
-			bIsDebugCameraEnabled = !ActivePlayerController || !ActivePlayerController->Player;
-		}
+		bool bIsDebugCameraEnabled = (
+				(!bThisIsCameraManager && !bThisIsViewTarget) ||
+				!ActualPlayerController || !ActualPlayerController->Player);
+
+		// Force draw this host's camera system if the wanted debug ID is "auto" and we are the
+		// view target or camera manager.
+		FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
+		bool bForceDraw = WantedDebugID.IsAuto() && (bThisIsCameraManager || bThisIsViewTarget);
 
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
 		DebugUpdateParams.CanvasObject = Canvas;
 		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
+		DebugUpdateParams.bForceDraw = bForceDraw;
 		CameraSystemEvaluator->DebugUpdate(DebugUpdateParams);
 	}
 }

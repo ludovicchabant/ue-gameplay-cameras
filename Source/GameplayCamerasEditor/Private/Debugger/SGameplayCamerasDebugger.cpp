@@ -16,6 +16,7 @@
 #include "Framework/Docking/TabManager.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
 #include "GameplayCamerasEditorSettings.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "Modules/ModuleManager.h"
@@ -185,7 +186,7 @@ void SGameplayCamerasDebugger::Construct(const FArguments& InArgs)
 	CommandList->MapAction(
 			Commands.EnableDebugInfo,
 			FExecuteAction::CreateSP(this, &SGameplayCamerasDebugger::ToggleDebugDraw),
-			FCanExecuteAction::CreateSP(this, &SGameplayCamerasDebugger::CanToggleDebugDraw),
+			FCanExecuteAction(),
 			FIsActionChecked::CreateSP(this, &SGameplayCamerasDebugger::IsDebugDrawing));
 
 	// Build all UI elements.
@@ -243,6 +244,7 @@ void SGameplayCamerasDebugger::Tick(const FGeometry& AllottedGeometry, const dou
 	if (bRefreshDebugID)
 	{
 		// Auto-set the camera system debug ID when PIE starts/ends, and for other similar events.
+		FCameraSystemDebugID DebugID;
 		UWorld* DebugWorld = DebugContext.GetContext();
 		if (DebugWorld)
 		{
@@ -256,26 +258,11 @@ void SGameplayCamerasDebugger::Tick(const FGeometry& AllottedGeometry, const dou
 			}
 			else
 			{
-				FCameraSystemDebugRegistry::FRegisteredCameraSystems CameraSystems;
-				FCameraSystemDebugRegistry::Get().GetRegisteredCameraSystemEvaluators(CameraSystems);
-
-				DebugID = FCameraSystemDebugID::Invalid();
-				for (TSharedPtr<FCameraSystemEvaluator> CameraSystem : CameraSystems)
-				{
-					UObject* CameraSystemOwner = CameraSystem->GetOwner();
-					if (CameraSystemOwner && CameraSystemOwner->GetWorld() == DebugWorld)
-					{
-						DebugID = CameraSystem->GetDebugID();
-						break;
-					}
-				}
+				DebugID = FCameraSystemDebugID::Auto();
 			}
 		}
-		else
-		{
-			DebugID = FCameraSystemDebugID::Invalid();
-		}
 
+		GGameplayCamerasDebugSystemID = DebugID.GetValue();
 		bRefreshDebugID = false;
 	}
 }
@@ -526,29 +513,17 @@ void SGameplayCamerasDebugger::ConstructDebugPanels()
 
 void SGameplayCamerasDebugger::ToggleDebugDraw()
 {
-	if (GGameplayCamerasDebugEnableID < 0)
-	{
-		GGameplayCamerasDebugEnableID = DebugID.GetValue();
-	}
-	else
-	{
-		GGameplayCamerasDebugEnableID = -1;
-	}
-}
-
-bool SGameplayCamerasDebugger::CanToggleDebugDraw() const
-{
-	return DebugID.IsValid();
+	GGameplayCamerasDebugEnable = !GGameplayCamerasDebugEnable;
 }
 
 bool SGameplayCamerasDebugger::IsDebugDrawing() const
 {
-	return GGameplayCamerasDebugEnableID >= 0;
+	return GGameplayCamerasDebugEnable;
 }
 
 FText SGameplayCamerasDebugger::GetToggleDebugDrawText() const
 {
-	if (GGameplayCamerasDebugEnableID >= 0)
+	if (GGameplayCamerasDebugEnable)
 	{
 		return LOCTEXT("DebugInfoEnabled", "Debug Info Enabled");
 	}
@@ -560,7 +535,7 @@ FText SGameplayCamerasDebugger::GetToggleDebugDrawText() const
 
 FSlateIcon SGameplayCamerasDebugger::GetToggleDebugDrawIcon() const
 {
-	if (GGameplayCamerasDebugEnableID >= 0)
+	if (GGameplayCamerasDebugEnable)
 	{
 		return FSlateIcon(GameplayCamerasEditorStyleName, "Debugger.DebugInfoEnabled.Icon");
 	}
@@ -603,6 +578,21 @@ void SGameplayCamerasDebugger::GetCameraSystemPickerContent(UToolMenu* ToolMenu)
 		}
 		else if (CameraSystems.Num() > 0)
 		{
+			CameraSystemsSection.AddMenuEntry(
+					TEXT("AutoBindToViewTarget"),
+					LOCTEXT("AutoBindToViewTarget", "Auto-bind to the current view target"),
+					LOCTEXT("AutoBindToViewTargetToolTip", "Show the debug info for the view target of the local player."),
+					FSlateIcon(),
+					FUIAction(
+						FExecuteAction::CreateSP(
+							this, &SGameplayCamerasDebugger::BindToCameraSystem, FCameraSystemDebugID::Auto()),
+						FCanExecuteAction(),
+						FIsActionChecked::CreateSP(
+							this, &SGameplayCamerasDebugger::IsBoundToCameraSystem, FCameraSystemDebugID::Auto())),
+						EUserInterfaceActionType::Check);
+
+			CameraSystemsSection.AddSeparator(NAME_None);
+
 			for (TSharedPtr<FCameraSystemEvaluator> CameraSystem : CameraSystems)
 			{
 				UObject* CameraSystemOwner = CameraSystem->GetOwner();
@@ -647,13 +637,12 @@ void SGameplayCamerasDebugger::GetCameraSystemPickerContent(UToolMenu* ToolMenu)
 
 void SGameplayCamerasDebugger::BindToCameraSystem(FCameraSystemDebugID InDebugID)
 {
-	DebugID = InDebugID;
-	GGameplayCamerasDebugEnableID = InDebugID.GetValue();
+	GGameplayCamerasDebugSystemID = InDebugID.GetValue();
 }
 
 bool SGameplayCamerasDebugger::IsBoundToCameraSystem(FCameraSystemDebugID InDebugID)
 {
-	return DebugID == InDebugID;
+	return GGameplayCamerasDebugSystemID == InDebugID.GetValue();
 }
 
 void SGameplayCamerasDebugger::OnDebugContextChanged()

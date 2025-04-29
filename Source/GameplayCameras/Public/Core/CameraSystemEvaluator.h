@@ -133,6 +133,9 @@ struct FCameraSystemDebugUpdateParams
 
 	/** Whether the debug camera is enabled, giving an "outside" view of camera system. */
 	bool bIsDebugCameraEnabled = false;
+
+	/** Whether to force drawing debug info for this camera system. */
+	bool bForceDraw = false;
 };
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

@@ -87,7 +87,6 @@ protected:
 	void SetActiveDebugCategoryPanel(FString InCategoryName);
 
 	void ToggleDebugDraw();
-	bool CanToggleDebugDraw() const;
 	bool IsDebugDrawing() const;
 	FText GetToggleDebugDrawText() const;
 	FSlateIcon GetToggleDebugDrawIcon() const;
@@ -104,7 +103,6 @@ private:
 	FName GameplayCamerasEditorStyleName;
 
 	FGameplayCamerasDebuggerContext DebugContext;
-	FCameraSystemDebugID DebugID;
 	bool bRefreshDebugID = false;
 
 	TSharedPtr<SBox> PanelHost;

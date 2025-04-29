@@ -27,14 +27,14 @@ FCameraSystemDebugID FCameraSystemDebugRegistry::RegisterCameraSystemEvaluator(T
 	const FString OwnerName = GetNameSafe(InEvaluator->GetOwner());
 	FEntry NewEntry{ InEvaluator, OwnerName };
 	const int32 NewIndex = Entries.Add(NewEntry);
-	return FCameraSystemDebugID(NewIndex);
+	return FCameraSystemDebugID(NewIndex + 1);
 }
 
 void FCameraSystemDebugRegistry::UnregisterCameraSystemEvaluator(FCameraSystemDebugID InDebugID)
 {
-	if (ensure(InDebugID.IsValid()))
+	if (ensure(InDebugID.IsValid() && !InDebugID.IsAny() && !InDebugID.IsAuto()))
 	{
-		Entries.RemoveAt(InDebugID.Value);
+		Entries.RemoveAt(InDebugID.Value - 1);
 	}
 }
 

@@ -27,17 +27,23 @@
 namespace UE::Cameras
 {
 
-int32 GGameplayCamerasDebugEnableID = INDEX_NONE;
-static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnableID(
-	TEXT("GameplayCameras.Debug.EnableID"),
-	GGameplayCamerasDebugEnableID,
-	TEXT("(Default: -1. Enables debug drawing for the GamplayCameras system with the given debug ID."));
+bool GGameplayCamerasDebugEnable = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugEnable(
+	TEXT("GameplayCameras.Debug.Enable"),
+	GGameplayCamerasDebugEnable,
+	TEXT("(Default: false. Enables debug drawing for the GameplayCameras system."));
+
+int32 GGameplayCamerasDebugSystemID = INDEX_NONE;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugSystemID(
+	TEXT("GameplayCameras.Debug.SystemID"),
+	GGameplayCamerasDebugSystemID,
+	TEXT("(Default: -1. Specifies the GameplayCameras system instance to show debug drawing for."));
 
 FString GGameplayCamerasDebugCategories = "nodetree";
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugCategories(
 	TEXT("GameplayCameras.Debug.Categories"),
 	GGameplayCamerasDebugCategories,
-	TEXT("(Default: nodes. Specifies which debug categories to display the GamplayCameras system."));
+	TEXT("(Default: nodes. Specifies which debug categories to display the GameplayCameras system."));
 
 bool GGameplayCamerasDebugPoseStatsShowUnchanged = false;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowUnchanged(
@@ -135,10 +141,16 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 	AddChild(&Builder.BuildDebugBlock<FViewfinderDebugBlock>());
 }
 
-void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer)
+void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer, bool bForceDraw)
 {
-	FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugEnableID);
-	if (WantedDebugID != DebugID && !WantedDebugID.IsAny())
+	if (!GGameplayCamerasDebugEnable)
+	{
+		return;
+	}
+
+	FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
+	const bool bDoDebugDraw = (bForceDraw || WantedDebugID.IsAny() || WantedDebugID == DebugID);
+	if (!bDoDebugDraw)
 	{
 		return;
 	}
