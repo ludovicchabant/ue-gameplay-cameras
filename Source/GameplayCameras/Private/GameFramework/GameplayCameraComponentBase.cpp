@@ -482,11 +482,13 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 	else
 	{
 		UpdateCameraSystem(DeltaTime);
+		UpdateControlRotationIfNeeded();
 	}
 
 #else
 
 	UpdateCameraSystem(DeltaTime);
+	UpdateControlRotationIfNeeded();
 
 #endif  // WITH_EDITOR
 
@@ -551,6 +553,38 @@ void UGameplayCameraComponentBase::UpdateCameraEvaluationContext(bool bForceAppl
 	EvaluationContext->UpdateForEditorPreview();
 
 #endif  // WITH_EDITOR
+}
+
+void UGameplayCameraComponentBase::UpdateControlRotationIfNeeded()
+{
+	using namespace UE::Cameras;
+
+	if (!HasCameraSystem() || !HasCameraEvaluationContext() || !bSetControlRotationWhenViewTarget)
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = EvaluationContext->GetPlayerController();
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	// If the player camera manager is hosting a camera system, it probably already handles control
+	// rotation in its own way.
+	if (IGameplayCameraSystemHost* CameraManagerHost = Cast<IGameplayCameraSystemHost>(PlayerController->PlayerCameraManager))
+	{
+		return;
+	}
+
+	// Set control rotation if we are the view target.
+	AActor* OwnerActor = GetOwner();
+	if (OwnerActor && PlayerController->GetViewTarget() == OwnerActor)
+	{
+		const FCameraSystemEvaluationResult& Result = CameraSystemEvaluator->GetEvaluatedResult();
+		const FRotator3d& ControlRotation = Result.CameraPose.GetRotation();
+		PlayerController->SetControlRotation(ControlRotation);
+	}
 }
 
 #if WITH_EDITOR

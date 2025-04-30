@@ -168,6 +168,8 @@ protected:
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
 	bool HasCameraEvaluationContext() const { return EvaluationContext.IsValid(); }
 
+	void UpdateControlRotationIfNeeded();
+
 #if WITH_EDITOR
 	void ReinitializeCameraEvaluationContext(
 			const FCameraVariableTableAllocationInfo& VariableTableAllocationInfo,
@@ -200,6 +202,15 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation, meta=(EditCondition="bAutoActivate"))
 	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
+
+	/**
+	 * Specifies whether this component should set the player controller's control rotation 
+	 * to the computed point of view's orientation every frame. This is only used when a 
+	 * player controller is associated with this component, and the view target is that
+	 * component.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
+	bool bSetControlRotationWhenViewTarget = true;
 
 #if WITH_EDITORONLY_DATA
 
