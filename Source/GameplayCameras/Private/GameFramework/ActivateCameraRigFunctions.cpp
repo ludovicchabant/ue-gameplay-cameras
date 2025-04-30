@@ -63,7 +63,7 @@ void UActivateCameraRigFunctions::ActivateCameraRigImpl(UObject* WorldContextObj
 		CameraEvaluationComponent = UControllerGameplayCameraEvaluationComponent::FindOrAddComponent(HostOwningActor, &bComponentCreated);
 		if (bComponentCreated)
 		{
-			CameraEvaluationComponent->Initialize(FoundHost->GetAsScriptInterface());
+			CameraEvaluationComponent->Initialize(FoundHost->GetAsScriptInterface(), PlayerController);
 		}
 	}
 

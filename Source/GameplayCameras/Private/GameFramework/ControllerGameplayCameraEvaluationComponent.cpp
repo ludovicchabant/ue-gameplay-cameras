@@ -17,10 +17,31 @@ UControllerGameplayCameraEvaluationComponent::UControllerGameplayCameraEvaluatio
 	bAutoActivate = true;
 }
 
-void UControllerGameplayCameraEvaluationComponent::Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost)
+void UControllerGameplayCameraEvaluationComponent::Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost, APlayerController* InPlayerController)
 {
+	using namespace UE::Cameras;
+
+	if (!ensureMsgf(
+				CameraSystemHost == nullptr,
+				TEXT("This component has already been initialized!")))
+	{
+		return;
+	}
+
 	ensure(InCameraSystemHost);
 	CameraSystemHost = InCameraSystemHost;
+
+	APlayerController* PlayerController = InPlayerController;
+	if (!PlayerController)
+	{
+		PlayerController = GetOwner<APlayerController>();
+	}
+
+	FCameraEvaluationContextInitializeParams InitParams;
+	InitParams.Owner = this;
+	InitParams.PlayerController = PlayerController;
+	EvaluationContext = MakeShared<FCameraEvaluationContext>(InitParams);
+	EvaluationContext->GetInitialResult().bIsValid = true;	
 }
 
 void UControllerGameplayCameraEvaluationComponent::ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
@@ -56,13 +77,9 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 {
 	using namespace UE::Cameras;
 
-	if (!ensure(CameraSystemHost))
-	{
-		return;
-	}
-	
-	EnsureEvaluationContext();
-	if (!EvaluationContext)
+	if (!ensureMsgf(
+				CameraSystemHost && EvaluationContext,
+				TEXT("This component hasn't been initialized!")))
 	{
 		return;
 	}
@@ -82,23 +99,6 @@ void UControllerGameplayCameraEvaluationComponent::ActivateCameraRigs()
 
 			CameraRigInfo.bActivated = true;
 		}
-	}
-}
-
-void UControllerGameplayCameraEvaluationComponent::EnsureEvaluationContext()
-{
-	using namespace UE::Cameras;
-
-	if (!EvaluationContext.IsValid())
-	{
-		// TODO: we won't find a player controller this way if we are under a view target.
-		APlayerController* PlayerController = GetOwner<APlayerController>();
-
-		FCameraEvaluationContextInitializeParams InitParams;
-		InitParams.Owner = this;
-		InitParams.PlayerController = PlayerController;
-		EvaluationContext = MakeShared<FCameraEvaluationContext>(InitParams);
-		EvaluationContext->GetInitialResult().bIsValid = true;	
 	}
 }
 

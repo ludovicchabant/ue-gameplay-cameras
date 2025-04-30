@@ -30,7 +30,8 @@ public:
 
 	UControllerGameplayCameraEvaluationComponent(const FObjectInitializer& ObjectInitializer);
 
-	void Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost);
+	/** Initializes this component's evaluation context. */
+	void Initialize(TScriptInterface<IGameplayCameraSystemHost> InCameraSystemHost, APlayerController* InPlayerController = nullptr);
 
 	/** Activates a new camera rig. */
 	void ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer);
@@ -49,7 +50,6 @@ public:
 private:
 
 	void ActivateCameraRigs();
-	void EnsureEvaluationContext();
 
 private:
 
