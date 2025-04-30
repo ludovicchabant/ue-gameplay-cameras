@@ -50,6 +50,7 @@ public:
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
@@ -123,7 +124,7 @@ void FSplineOrbitCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildPar
 
 void FSplineOrbitCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
 
 	RebuildCurves();
 

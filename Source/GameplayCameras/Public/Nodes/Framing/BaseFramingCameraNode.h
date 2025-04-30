@@ -159,6 +159,7 @@ class FBaseFramingCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
 #if WITH_EDITOR

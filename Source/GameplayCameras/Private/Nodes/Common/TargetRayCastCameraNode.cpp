@@ -69,6 +69,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FTargetRayCastCameraDebugBlock)
 
 void FTargetRayCastCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const UTargetRayCastCameraNode* RayCastNode = GetCameraNodeAs<UTargetRayCastCameraNode>();
 	AutoFocusReader.Initialize(RayCastNode->AutoFocus);
 }

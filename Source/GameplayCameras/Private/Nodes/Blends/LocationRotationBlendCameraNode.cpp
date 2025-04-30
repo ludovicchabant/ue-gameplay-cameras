@@ -16,6 +16,13 @@ class FLocationRotationBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluat
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FLocationRotationBlendCameraNodeEvaluator)
 
+public:
+
+	FLocationRotationBlendCameraNodeEvaluator()
+	{
+		SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+	}
+
 protected:
 
 	// FCameraNodeEvaluator interface.

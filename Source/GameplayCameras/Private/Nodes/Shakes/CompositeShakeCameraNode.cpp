@@ -13,6 +13,11 @@ class FCompositeShakeCameraNodeEvaluator : public FShakeCameraNodeEvaluator
 
 public:
 
+	FCompositeShakeCameraNodeEvaluator()
+	{
+		SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+	}
+
 protected:
 
 	// FShakeCameraNodeEvaluator interface.

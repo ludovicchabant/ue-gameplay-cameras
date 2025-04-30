@@ -359,6 +359,8 @@ UE_DEFINE_CAMERA_EVALUATION_SERVICE(FCameraShakeService)
 
 void FCameraShakeService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
+	SetEvaluationServiceFlags(ECameraEvaluationServiceFlags::None);
+
 	ensure(Evaluator == nullptr);
 	Evaluator = Params.Evaluator;
 }

@@ -27,6 +27,7 @@ public:
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
@@ -53,6 +54,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FSplineOffsetCameraNodeEvaluator)
 
 void FSplineOffsetCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const USplineOffsetCameraNode* SplineOffsetNode = GetCameraNodeAs<USplineOffsetCameraNode>();
 	SplineInputReader.Initialize(SplineOffsetNode->SplineInput);
 

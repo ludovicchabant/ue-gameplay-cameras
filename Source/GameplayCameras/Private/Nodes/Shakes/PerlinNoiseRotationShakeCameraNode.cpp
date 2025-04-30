@@ -59,6 +59,8 @@ UE_DEFINE_SHAKE_CAMERA_NODE_EVALUATOR(FPerlinNoiseRotationShakeCameraNodeEvaluat
 
 void FPerlinNoiseRotationShakeCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 	const UPerlinNoiseRotationShakeCameraNode* ShakeNode = GetCameraNodeAs<UPerlinNoiseRotationShakeCameraNode>();
 
 	AmplitudeMultiplier.Initialize(ShakeNode->AmplitudeMultiplier);

@@ -24,6 +24,13 @@ class FOrbitBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 {
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FOrbitBlendCameraNodeEvaluator)
 
+public:
+
+	FOrbitBlendCameraNodeEvaluator()
+	{
+		SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+	}
+
 protected:
 
 	// FCameraNodeEvaluator interface.

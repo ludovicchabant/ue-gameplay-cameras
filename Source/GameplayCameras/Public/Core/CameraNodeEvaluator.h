@@ -41,7 +41,7 @@ enum class ECameraNodeEvaluatorFlags
 	NeedsSerialize = 1 << 1,
 	SupportsOperations = 1 << 2,
 
-	Default = NeedsSerialize
+	Default = NeedsParameterUpdate | NeedsSerialize | SupportsOperations
 };
 ENUM_CLASS_FLAGS(ECameraNodeEvaluatorFlags)
 
@@ -327,11 +327,18 @@ public:
 
 protected:
 
-	/** Adds flags for this evaluator. */
-	void AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
-
-	/** Sets the flags for this evaluator. */
+	/**
+	 * Sets the flags for this evaluator.
+	 * Can be called from the constructor, or during OnInitialize().
+	 */
 	void SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
+
+	/**
+	 * Adds flags for this evaluator.
+	 * Evaluators default to having all flags enabled, so this is mostly only for re-adding a
+	 * flag that was removed by a base class.
+	 */
+	void AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags InFlags);
 
 protected:
 

@@ -52,7 +52,7 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraShakeCameraNodeEvaluator)
 
 FCameraShakeCameraNodeEvaluator::FCameraShakeCameraNodeEvaluator()
 {
-	AddNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate);
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsParameterUpdate);
 }
 
 FCameraNodeEvaluatorChildrenView FCameraShakeCameraNodeEvaluator::OnGetChildren()
@@ -104,7 +104,7 @@ void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 		CameraShakeRootEvaluator->Run(Params, OutResult);
 	}
 	// If evaluating the shake later in the visual layer, keep requesting that the shake service
-	// maintains this shake alive. We already put the shake's parameters inside the vairable table so
+	// maintains this shake alive. We already put the shake's parameters inside the variable table so
 	// its values will blend with whoever else wants this shake, and it will eventually run with the
 	// blended values.
 	else if (CameraShakeService)

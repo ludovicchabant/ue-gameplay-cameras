@@ -66,6 +66,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FDampenRotationCameraDebugBlock)
 
 void FDampenRotationCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 	const UDampenRotationCameraNode* DampenNode = GetCameraNodeAs<UDampenRotationCameraNode>();
 
 	YawDampingFactorReader.Initialize(DampenNode->YawDampingFactor);

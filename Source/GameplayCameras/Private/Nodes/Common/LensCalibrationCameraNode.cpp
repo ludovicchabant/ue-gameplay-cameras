@@ -19,6 +19,7 @@ class FLensCalibrationCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
@@ -33,6 +34,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FLensCalibrationCameraNodeEvaluator)
 
 void FLensCalibrationCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const ULensCalibrationCameraNode* LensCalibrationNode = GetCameraNodeAs<ULensCalibrationCameraNode>();
 	if (LensCalibrationNode->LensFile)
 	{

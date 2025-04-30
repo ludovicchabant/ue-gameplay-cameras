@@ -51,6 +51,8 @@ class FSimpleBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 
 public:
 
+	FSimpleBlendCameraNodeEvaluator();
+
 	/** Gets the last evaluated blend factor. */
 	float GetBlendFactor() const { return BlendFactor; }
 

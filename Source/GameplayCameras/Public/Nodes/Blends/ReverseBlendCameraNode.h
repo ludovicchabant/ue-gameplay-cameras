@@ -20,11 +20,8 @@ class FReverseBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 
 public:
 
-	FReverseBlendCameraNodeEvaluator()
-	{}
-	FReverseBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend) 
-		: ChildBlend(InChildBlend)
-	{}
+	FReverseBlendCameraNodeEvaluator();
+	FReverseBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend);
 
 protected:
 

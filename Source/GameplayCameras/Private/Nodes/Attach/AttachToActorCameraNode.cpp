@@ -47,6 +47,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FAttachToActorCameraDebugBlock)
 
 void FAttachToActorCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 	const UAttachToActorCameraNode* AttachNode = GetCameraNodeAs<UAttachToActorCameraNode>();
 	AttachmentReader.Initialize(AttachNode->Attachment, AttachNode->AttachmentDataID);
 	AttachToLocationReader.Initialize(AttachNode->AttachToLocation);

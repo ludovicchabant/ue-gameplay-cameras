@@ -62,6 +62,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
 
 FBlendStackCameraNodeEvaluator::FBlendStackCameraNodeEvaluator()
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 #if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 	bAutoCameraPoseMovementTrail = false;
 #endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG

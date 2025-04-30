@@ -13,8 +13,16 @@ class FPostProcessCameraNodeEvaluator : public FCameraNodeEvaluator
 {
 	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FPostProcessCameraNodeEvaluator)
 
+public:
+
+	FPostProcessCameraNodeEvaluator()
+	{
+		SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+	}
+
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 };
 

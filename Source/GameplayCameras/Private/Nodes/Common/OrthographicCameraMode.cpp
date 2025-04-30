@@ -18,6 +18,7 @@ class FOrthographicCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
@@ -31,6 +32,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FOrthographicCameraNodeEvaluator)
 
 void FOrthographicCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const UOrthographicCameraNode* OrthographicNode = GetCameraNodeAs<UOrthographicCameraNode>();
 	EnableOrthographicModeReader.Initialize(OrthographicNode->EnableOrthographicMode);
 	OrthographicWidthReader.Initialize(OrthographicNode->OrthographicWidth);

@@ -7,6 +7,17 @@ namespace UE::Cameras
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FReverseBlendCameraNodeEvaluator)
 
+FReverseBlendCameraNodeEvaluator::FReverseBlendCameraNodeEvaluator()
+{
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+}
+
+FReverseBlendCameraNodeEvaluator::FReverseBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend) 
+	: ChildBlend(InChildBlend)
+{
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+}
+
 FCameraNodeEvaluatorChildrenView FReverseBlendCameraNodeEvaluator::OnGetChildren()
 {
 	return FCameraNodeEvaluatorChildrenView{ ChildBlend };

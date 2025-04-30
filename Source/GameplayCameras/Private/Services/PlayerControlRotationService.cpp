@@ -42,6 +42,7 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FPlayerControlRotationDebugBlock)
 FPlayerControlRotationEvaluationService::FPlayerControlRotationEvaluationService()
 	: PreviousAxisBindingValue(EForceInit::ForceInit)
 {
+	SetEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPostUpdate);
 }
 
 FPlayerControlRotationEvaluationService::FPlayerControlRotationEvaluationService(const FPlayerControlRotationParams& InParams)

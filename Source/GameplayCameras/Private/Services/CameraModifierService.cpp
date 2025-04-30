@@ -14,6 +14,8 @@ UE_DEFINE_CAMERA_EVALUATION_SERVICE(FCameraModifierService)
 
 void FCameraModifierService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
+	SetEvaluationServiceFlags(ECameraEvaluationServiceFlags::None);
+
 	ensure(Evaluator == nullptr);
 	Evaluator = Params.Evaluator;
 }

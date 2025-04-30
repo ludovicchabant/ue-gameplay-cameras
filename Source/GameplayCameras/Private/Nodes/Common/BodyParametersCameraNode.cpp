@@ -16,6 +16,7 @@ class FBodyParametersCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
@@ -29,6 +30,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FBodyParametersCameraNodeEvaluator)
 
 void FBodyParametersCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const UBodyParametersCameraNode* BodyParametersNode = GetCameraNodeAs<UBodyParametersCameraNode>();
 	ShutterSpeedReader.Initialize(BodyParametersNode->ShutterSpeed);
 	ISOReader.Initialize(BodyParametersNode->ISO);

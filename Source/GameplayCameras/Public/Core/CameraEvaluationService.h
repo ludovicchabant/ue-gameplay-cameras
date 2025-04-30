@@ -22,7 +22,9 @@ enum class ECameraEvaluationServiceFlags
 	None = 0,
 	NeedsPreUpdate = 1 << 0,
 	NeedsPostUpdate = 1 << 1,
-	NeedsRootCameraNodeEvents = 1 << 2
+	NeedsRootCameraNodeEvents = 1 << 2,
+
+	Default = NeedsPreUpdate | NeedsPostUpdate | NeedsRootCameraNodeEvents
 };
 ENUM_CLASS_FLAGS(ECameraEvaluationServiceFlags);
 
@@ -123,7 +125,10 @@ protected:
 
 protected:
 
-	/** Sets the flags on this service. */
+	/**
+	 * Sets the flags on this service.
+	 * Can be called from the constructor, or during OnInitialize().
+	 */
 	void SetEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags);
 
 private:

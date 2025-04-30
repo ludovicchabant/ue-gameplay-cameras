@@ -7,6 +7,18 @@ namespace UE::Cameras
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FInterruptedBlendCameraNodeEvaluator)
 
+FInterruptedBlendCameraNodeEvaluator::FInterruptedBlendCameraNodeEvaluator()
+{
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+}
+
+FInterruptedBlendCameraNodeEvaluator::FInterruptedBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend, FBlendCameraNodeEvaluator* InFrozenBlend) 
+	: ChildBlend(InChildBlend)
+	, FrozenBlend(InFrozenBlend)
+{
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+}
+
 FCameraNodeEvaluatorChildrenView FInterruptedBlendCameraNodeEvaluator::OnGetChildren()
 {
 	return FCameraNodeEvaluatorChildrenView{ ChildBlend, FrozenBlend };

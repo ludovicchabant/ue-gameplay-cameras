@@ -13,8 +13,6 @@ class FEnvelopeShakeCameraNodeEvaluator : public FShakeCameraNodeEvaluator
 {
 	UE_DECLARE_SHAKE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FEnvelopeShakeCameraNodeEvaluator)
 
-public:
-
 protected:
 
 	// FShakeCameraNodeEvaluator interface.
@@ -52,6 +50,8 @@ FCameraNodeEvaluatorChildrenView FEnvelopeShakeCameraNodeEvaluator::OnGetChildre
 
 void FEnvelopeShakeCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 	const UEnvelopeShakeCameraNode* EnvelopeNode = GetCameraNodeAs<UEnvelopeShakeCameraNode>();
 
 	EaseInTime = EnvelopeNode->EaseInTime.GetValue(OutResult.VariableTable);

@@ -31,6 +31,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FAttachToActorGroupCameraNodeEvaluator)
 
 void FAttachToActorGroupCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const UAttachToActorGroupCameraNode* AttachNode = GetCameraNodeAs<UAttachToActorGroupCameraNode>();
 	AttachmentsReader.Initialize(AttachNode->Attachments, AttachNode->AttachmentsDataID);
 }

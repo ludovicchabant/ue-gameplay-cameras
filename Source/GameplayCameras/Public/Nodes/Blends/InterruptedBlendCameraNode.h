@@ -21,12 +21,8 @@ class FInterruptedBlendCameraNodeEvaluator : public FBlendCameraNodeEvaluator
 
 public:
 
-	FInterruptedBlendCameraNodeEvaluator()
-	{}
-	FInterruptedBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend, FBlendCameraNodeEvaluator* InFrozenBlend) 
-		: ChildBlend(InChildBlend)
-		, FrozenBlend(InFrozenBlend)
-	{}
+	FInterruptedBlendCameraNodeEvaluator();
+	FInterruptedBlendCameraNodeEvaluator(FBlendCameraNodeEvaluator* InChildBlend, FBlendCameraNodeEvaluator* InFrozenBlend);
 
 protected:
 

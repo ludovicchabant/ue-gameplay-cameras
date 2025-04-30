@@ -17,6 +17,7 @@ class FSetRotationCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
@@ -29,6 +30,8 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FSetRotationCameraNodeEvaluator)
 
 void FSetRotationCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const USetRotationCameraNode* RotationNode = GetCameraNodeAs<USetRotationCameraNode>();
 	RotationReader.Initialize(RotationNode->Rotation);
 }

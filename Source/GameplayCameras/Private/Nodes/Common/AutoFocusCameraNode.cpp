@@ -21,6 +21,7 @@ class FAutoFocusCameraNodeEvaluator : public FCameraNodeEvaluator
 
 protected:
 
+	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
@@ -53,6 +54,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FAutoFocusCameraDebugBlock)
 
 void FAutoFocusCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
+
 	const UAutoFocusCameraNode* AutoFocusNode = GetCameraNodeAs<UAutoFocusCameraNode>();
 
 	EnableAutoFocusReader.Initialize(AutoFocusNode->EnableAutoFocus);

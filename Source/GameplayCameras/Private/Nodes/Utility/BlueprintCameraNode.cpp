@@ -68,6 +68,8 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FBlueprintCameraDebugBlock)
 
 void FBlueprintCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
+
 	const UBlueprintCameraNode* BlueprintNode = GetCameraNodeAs<UBlueprintCameraNode>();
 	if (!ensure(BlueprintNode))
 	{
