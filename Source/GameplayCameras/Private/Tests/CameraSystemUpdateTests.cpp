@@ -30,7 +30,6 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 		.Get();
 
 	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorBuilder::Build();
-	Evaluator->Initialize();
 	Evaluator->PushEvaluationContext(EvaluationContext);
 
 	EvaluationContext->GetInitialResult().bIsValid = true;
