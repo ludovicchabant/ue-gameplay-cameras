@@ -10,7 +10,9 @@
 /**
  * A component that can run a camera asset inside its own camera evaluation context.
  */
-UCLASS(Blueprintable, MinimalAPI)
+UCLASS(Blueprintable, MinimalAPI, 
+		ClassGroup=Camera, 
+		meta=(BlueprintSpawnableComponent))
 class UGameplayCameraComponent : public UGameplayCameraComponentBase
 {
 	GENERATED_BODY()
