@@ -25,7 +25,7 @@ class USimpleFixedTimeBlendCameraNode : public USimpleBlendCameraNode
 
 public:
 
-	GAMEPLAYCAMERAS_API void SetBlendTime(float BlendTimeIn) { BlendTime = BlendTimeIn; }
+	void SetBlendTime(float BlendTimeIn) { BlendTime = BlendTimeIn; }
 
 public:
 

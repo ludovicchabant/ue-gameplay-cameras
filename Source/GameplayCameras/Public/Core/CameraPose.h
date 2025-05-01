@@ -11,6 +11,8 @@
 
 #include "CameraPose.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class FArchive;
 struct FPostProcessSettings;
 enum EAspectRatioAxisConstraint : int;
@@ -57,7 +59,7 @@ enum EAspectRatioAxisConstraint : int;
 /**
  * Boolean flags for each of the properties inside FCameraPose.
  */
-struct GAMEPLAYCAMERAS_API FCameraPoseFlags
+struct FCameraPoseFlags
 {
 #define UE_CAMERA_POSE_FOR_PROPERTY(PropType, PropName)\
 	bool PropName:1 = false;
@@ -69,22 +71,22 @@ UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 public:
 
 	/** Returns a structure where all flags are set. */
-	static const FCameraPoseFlags& All();
+	static UE_API const FCameraPoseFlags& All();
 
 	/** Creates a new flags structure. */
-	FCameraPoseFlags();
+	UE_API FCameraPoseFlags();
 	/** Creates a new flags structure with all flags set to the given value. */
-	FCameraPoseFlags(bool bInValue);
+	UE_API FCameraPoseFlags(bool bInValue);
 
 	/** Sets all flags to the given value. */
-	FCameraPoseFlags& SetAllFlags(bool bInValue);
+	UE_API FCameraPoseFlags& SetAllFlags(bool bInValue);
 	/** Sets the flags that are set in OtherFlags, but checks that no flag is set on both structures. */
-	FCameraPoseFlags& ExclusiveCombine(const FCameraPoseFlags& OtherFlags);
+	UE_API FCameraPoseFlags& ExclusiveCombine(const FCameraPoseFlags& OtherFlags);
 
 	/** Combines the flags with an AND logical operation. */
-	FCameraPoseFlags& AND(const FCameraPoseFlags& OtherFlags);
+	UE_API FCameraPoseFlags& AND(const FCameraPoseFlags& OtherFlags);
 	/** Combines the flags with an OR logical operation. */
-	FCameraPoseFlags& OR(const FCameraPoseFlags& OtherFlags);
+	UE_API FCameraPoseFlags& OR(const FCameraPoseFlags& OtherFlags);
 };
 
 /**
@@ -94,16 +96,16 @@ public:
  * The ChangedFlags structure keeps track of which fields were changed via the setters.
  */
 USTRUCT()
-struct GAMEPLAYCAMERAS_API FCameraPose
+struct FCameraPose
 {
 	GENERATED_BODY()
 
 public:
 
-	FCameraPose();
+	UE_API FCameraPose();
 
 	/** Resets this camera pose to its default values, with all changed flags off. */
-	void Reset();
+	UE_API void Reset();
 
 public:
 
@@ -139,58 +141,58 @@ public:
 	/** Set the changed flags. */
 	void SetChangedFlags(const FCameraPoseFlags& InChangedFlags) { ChangedFlags = InChangedFlags; }
 	/** Set all fields as changed. */
-	void SetAllChangedFlags();
+	UE_API void SetAllChangedFlags();
 	/** Set all fields as clean. */
-	void ClearAllChangedFlags();
+	UE_API void ClearAllChangedFlags();
 
 public:
 
 	// Utility
 
 	/** Gets the transform of the camera. */
-	FTransform3d GetTransform() const;
+	UE_API FTransform3d GetTransform() const;
 
 	/** Sets the transform of the camera. */
-	void SetTransform(FTransform3d Transform, bool bForceSet = false);
+	UE_API void SetTransform(FTransform3d Transform, bool bForceSet = false);
 
 	/**
 	 * Computes the horizontal field of view of the camera.
 	 * The effective field of view can be driven by the FieldOfView property, or
 	 * the FocalLength property in combination with the sensor size.
 	 */
-	double GetEffectiveFieldOfView(bool bIncludeOverscan = true) const;
+	UE_API double GetEffectiveFieldOfView(bool bIncludeOverscan = true) const;
 
 	/** Gets the aspect ratio of the camera sensor. */
-	double GetSensorAspectRatio() const;
+	UE_API double GetSensorAspectRatio() const;
 
 	/** Gets the horizontal projection offset. */
-	double GetHorizontalProjectionOffset() const;
+	UE_API double GetHorizontalProjectionOffset() const;
 
 	/** Gets the vertical projection offset. */
-	double GetVerticalProjectionOffset() const;
+	UE_API double GetVerticalProjectionOffset() const;
 
 	/** Gets the aiming ray of the camera. */
-	FRay3d GetAimRay() const;
+	UE_API FRay3d GetAimRay() const;
 
 	/** Gets the aiming direction of the camera. */
-	FVector3d GetAimDir() const;
+	UE_API FVector3d GetAimDir() const;
 
 	/** Gets the location of the camera's target. */
-	FVector3d GetTarget() const;
+	UE_API FVector3d GetTarget() const;
 
 	/** Gets the location of the camera's target given a specific distance. */
-	FVector3d GetTarget(double InTargetDistance) const;
+	UE_API FVector3d GetTarget(double InTargetDistance) const;
 
 public:
 
 	/** Computes the horizontal field of view of a camera. */
-	static double GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor = 1.f, float Overscan = 1.f);
+	static UE_API double GetEffectiveFieldOfView(float FocalLength, float FieldOfView, float SensorWidth, float SensorHeight, float SqueezeFactor = 1.f, float Overscan = 1.f);
 	
 	/** Computes the aspect ratio of a camera sensor. */
-	static double GetSensorAspectRatio(float SensorWidth, float SensorHeight);
+	static UE_API double GetSensorAspectRatio(float SensorWidth, float SensorHeight);
 
 	/** Gets the default sensor size. */
-	static void GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight);
+	static UE_API void GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight);
 
 	/**
 	 * Applies the necessary post-process settings given the current values
@@ -203,35 +205,35 @@ public:
 	 * @param bOverwriteSettings   Whether to overwrite values found to already be set
 	 * @return  Whether post-process settings were created.
 	 */
-	bool ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings = false) const;
+	UE_API bool ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings = false) const;
 
 public:
 
 	// Interpolation
 	
 	/** Takes all properties from OtherPose and sets them on this camera pose. */
-	void OverrideAll(const FCameraPose& OtherPose);
+	UE_API void OverrideAll(const FCameraPose& OtherPose);
 	/** Takes all changed properties from OtherPose and sets them on this camera pose. */
-	void OverrideChanged(const FCameraPose& OtherPose);
+	UE_API void OverrideChanged(const FCameraPose& OtherPose);
 	/** Interpolates all properties from ToPose using the given factor. */
-	void LerpAll(const FCameraPose& ToPose, float Factor);
+	UE_API void LerpAll(const FCameraPose& ToPose, float Factor);
 	/** Interpolates all changed properties from ToPose using the given factor. */
-	void LerpChanged(const FCameraPose& ToPose, float Factor);
+	UE_API void LerpChanged(const FCameraPose& ToPose, float Factor);
 	/** Interpolates changed properties from ToPose using the given factor. Only properties defined by InMask are taken into account. */
-	void LerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask);
+	UE_API void LerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask);
 
 public:
 
 	/** Serializes the given camera pose including the written-property flags. */
-	static void SerializeWithFlags(FArchive& Ar, FCameraPose& CameraPose);
+	static UE_API void SerializeWithFlags(FArchive& Ar, FCameraPose& CameraPose);
 
 	/** Serializes this camera pose including the written-property flags. */
-	void SerializeWithFlags(FArchive& Ar);
+	UE_API void SerializeWithFlags(FArchive& Ar);
 
 private:
 
-	void InternalOverrideChanged(const FCameraPose& OtherPose, bool bChangedOnly);
-	void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask, bool bChangedOnly);
+	UE_API void InternalOverrideChanged(const FCameraPose& OtherPose, bool bChangedOnly);
+	UE_API void InternalLerpChanged(const FCameraPose& ToPose, float Factor, const FCameraPoseFlags& InMask, bool bInvertMask, FCameraPoseFlags& OutMask, bool bChangedOnly);
 
 private:
 
@@ -358,3 +360,4 @@ private:
 	FCameraPoseFlags ChangedFlags;
 };
 
+#undef UE_API

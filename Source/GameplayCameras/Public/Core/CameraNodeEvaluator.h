@@ -15,6 +15,8 @@
 #include "GameplayCameras.h"
 #include "UObject/ObjectPtr.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class FReferenceCollector;
 class UCameraNode;
 class UCameraRigAsset;
@@ -170,7 +172,7 @@ struct FCameraNodeEvaluationParams
 /**
  * Input/output result structure for running a camera node evaluator.
  */
-struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
+struct FCameraNodeEvaluationResult
 {
 	/** The camera pose. */
 	FCameraPose CameraPose;
@@ -196,24 +198,24 @@ struct GAMEPLAYCAMERAS_API FCameraNodeEvaluationResult
 public:
 
 	/** Reset this result to its default (non-valid) state.  */
-	void Reset();
+	UE_API void Reset();
 
 	/** Reset all written-this-frame flags on the camera pose and tables. */
-	void ResetFrameFlags();
+	UE_API void ResetFrameFlags();
 
 	/** Override this result with the given other result. */
-	void OverrideAll(const FCameraNodeEvaluationResult& OtherResult, bool bIncludePrivateValues = false);
+	UE_API void OverrideAll(const FCameraNodeEvaluationResult& OtherResult, bool bIncludePrivateValues = false);
 
 	/** Interpolate this result towards the other given result. */
-	void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor, bool bIncludePrivateValues = false);
+	UE_API void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor, bool bIncludePrivateValues = false);
 
 	/** Serializes this result to the given archive. */
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 public:
 
 	/** Collects objects from the context data table. */
-	void AddReferencedObjects(FReferenceCollector& Collector);
+	UE_API void AddReferencedObjects(FReferenceCollector& Collector);
 
 #if WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -221,10 +223,10 @@ public:
 
 	// Internal API.
 
-	void AddCameraPoseTrailPointIfNeeded();
-	void AddCameraPoseTrailPointIfNeeded(const FVector3d& Point);
-	void AppendCameraPoseLocationTrail(const FCameraNodeEvaluationResult& InResult);
-	TConstArrayView<FVector3d> GetCameraPoseLocationTrail() const;
+	UE_API void AddCameraPoseTrailPointIfNeeded();
+	UE_API void AddCameraPoseTrailPointIfNeeded(const FVector3d& Point);
+	UE_API void AppendCameraPoseLocationTrail(const FCameraNodeEvaluationResult& InResult);
+	UE_API TConstArrayView<FVector3d> GetCameraPoseLocationTrail() const;
 
 private:
 
@@ -247,7 +249,7 @@ struct FCameraOperationParams
 /**
  * Parameter structure for serializing the state of a camera node evaluator.
  */
-struct GAMEPLAYCAMERAS_API FCameraNodeEvaluatorSerializeParams
+struct FCameraNodeEvaluatorSerializeParams
 {
 };
 
@@ -271,8 +273,8 @@ class FCameraNodeEvaluator
 
 public:
 
-	GAMEPLAYCAMERAS_API FCameraNodeEvaluator() = default;
-	GAMEPLAYCAMERAS_API virtual ~FCameraNodeEvaluator() = default;
+	FCameraNodeEvaluator() = default;
+	virtual ~FCameraNodeEvaluator() = default;
 
 	/** Called to build any children evaluators. */
 	void Build(const FCameraNodeEvaluatorBuildParams& Params);
@@ -343,42 +345,42 @@ protected:
 protected:
 
 	/** Called to build any children evaluators. */
-	GAMEPLAYCAMERAS_API virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
+	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) {}
 
 	/** Initialize this evaluator. Children and descendants will be automatically initialized too. */
-	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) {}
 
 	/** Collect referenced UObjects for this node. */
-	GAMEPLAYCAMERAS_API virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 	/** Get the list of children under this evaluator. */
-	GAMEPLAYCAMERAS_API virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
+	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() { return FCameraNodeEvaluatorChildrenView(); }
 
 	/**
 	 * Called to update and store the blended parameters for this node.
 	 * Requires setting the ECameraNodeEvaluatorFlags::NeedsParameterUpdate flag.
 	 */
-	GAMEPLAYCAMERAS_API virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) {}
+	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) {}
 
 	/**
 	 * Run this evaluator. This node evaluator is responsible for calling Run() on its children as appropriate.
 	 */
-	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
 
 	/** 
 	 * Execute an IK operation.
 	 * Requires setting the ECameraNodeEvaluatorFlags::SupportsOperations flag.
 	 */
-	GAMEPLAYCAMERAS_API virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) {}
+	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) {}
 
 	/**
 	 * Serializes the state of this evaluator.
 	 * Requires setting the ECameraNodeEvaluatorFlags::NeedsSerialize flag, which is set by default.
 	 */
-	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) {}
+	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) {}
 
 #if WITH_EDITOR
-	GAMEPLAYCAMERAS_API virtual void OnDrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+	virtual void OnDrawEditorPreview(const FCameraEditorPreviewDrawParams& Params, FCameraDebugRenderer& Renderer) {}
 #endif  // WITH_EDITOR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -442,3 +444,4 @@ EvaluatorType* FCameraNodeEvaluatorBuildParams::BuildEvaluatorAs(const UCameraNo
 #define UE_DEFINE_CAMERA_NODE_EVALUATOR(ClassName)\
 	UE_GAMEPLAY_CAMERAS_DEFINE_RTTI(ClassName)
 
+#undef UE_API
