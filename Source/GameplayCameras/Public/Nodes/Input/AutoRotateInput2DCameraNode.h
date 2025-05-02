@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/CameraParameters.h"
+#include "Core/CameraVariableReferences.h"
 #include "Math/MathFwd.h"
 #include "Nodes/Input/Input2DCameraNode.h"
 
@@ -16,8 +17,16 @@ enum class ECameraAutoRotateDirection
 {
 	/** Re-align towards the evaluation context's facing. */
 	Facing,
-	/** Re-align towards the evaluation context's movement direction. */
-	Movement
+	/** 
+	 * Re-align towards the evaluation context's movement direction. 
+	 * Doesn't do anything when there is no movement.
+	 */
+	Movement,
+	/**
+	 * Re-align towards the evaluation context's movement direction if there is movement,
+	 * or towards its facing otherwise.
+	 */
+	MovementOrFacing
 };
 
 /**
@@ -34,6 +43,10 @@ public:
 	/** The direction to re-align towards. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
 	ECameraAutoRotateDirection Direction;
+
+	/** An override for the direction to re-align towards. */
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	FVector3dCameraVariableReference DirectionVector;
 
 	/** The time, in seconds, to wait before re-aligning. */
 	UPROPERTY(EditAnywhere, Category="Auto-Rotate")

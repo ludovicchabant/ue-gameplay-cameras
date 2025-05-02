@@ -7,13 +7,14 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraOperation.h"
 #include "Core/CameraParameterReader.h"
-#include "Core/CameraRigAsset.h"
 #include "Core/CameraValueInterpolator.h"
-#include "Core/CameraVariableTableFwd.h"
+#include "Core/CameraVariableReferenceReader.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
+#include "ValueInterpolators/CriticalDamperValueInterpolator.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AutoRotateInput2DCameraNode)
 
@@ -49,9 +50,11 @@ protected:
 private:
 
 	void DeactivateAutoRotate(FCameraNodeEvaluationResult& OutResult);
+	APlayerController* GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const;
 
 private:
 
+	TCameraVariableReferenceReader<FVector3d> DirectionVectorReader;
 	TCameraParameterReader<float> WaitTimeReader;
 	TCameraParameterReader<float> DeactivationThresholdReader;
 	TCameraParameterReader<bool> FreezeControlRotationReader;
@@ -112,9 +115,15 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalua
 	{
 		LastInputValue = InputNodeEvaluator->GetInputValue();
 	}
+	else if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
+	{
+		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
+		LastInputValue = FVector2d(ControlRotation.Yaw, ControlRotation.Pitch);
+	}
 
 	const UAutoRotateInput2DCameraNode* AutoRotateNode = GetCameraNodeAs<UAutoRotateInput2DCameraNode>();
 
+	DirectionVectorReader.Initialize(AutoRotateNode->DirectionVector);
 	WaitTimeReader.Initialize(AutoRotateNode->WaitTime);
 	DeactivationThresholdReader.Initialize(AutoRotateNode->DeactivationThreshold);
 	FreezeControlRotationReader.Initialize(AutoRotateNode->FreezeControlRotation);
@@ -136,6 +145,11 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 		InputNodeEvaluator->Run(Params, OutResult);
 
 		InputValue = InputNodeEvaluator->GetInputValue();
+	}
+	else if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
+	{
+		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
+		InputValue = FVector2d(ControlRotation.Yaw, ControlRotation.Pitch);
 	}
 
 	// Bail out if auto-rotate is disabled.
@@ -171,11 +185,43 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 	}
 
 	// Figure out which direction we should auto-rotate towards.
-	FVector3d AutoRotateDir = InitialResult.CameraPose.GetAimDir();
-	if (AutoRotateNode->Direction == ECameraAutoRotateDirection::Movement)
+	bool bHasAutoRotateDir = false;
+	const FVector3d ContextAimDir = InitialResult.CameraPose.GetAimDir();
+	FVector3d AutoRotateDir = ContextAimDir;
+	if (DirectionVectorReader.IsDriven())
 	{
-		AutoRotateDir = ContextMovement.GetSafeNormal(UE_SMALL_NUMBER, AutoRotateDir);
+		bHasAutoRotateDir = DirectionVectorReader.TryGet(OutResult.VariableTable, AutoRotateDir);
 	}
+	else
+	{
+		switch (AutoRotateNode->Direction)
+		{
+			case ECameraAutoRotateDirection::Facing:
+			default:
+				bHasAutoRotateDir = true;
+				break;
+			case ECameraAutoRotateDirection::Movement:
+				if (!ContextMovement.IsNearlyZero())
+				{
+					AutoRotateDir = ContextMovement.GetSafeNormal(UE_SMALL_NUMBER, AutoRotateDir);
+					bHasAutoRotateDir = true;
+				}
+				break;
+			case ECameraAutoRotateDirection::MovementOrFacing:
+				if (!ContextMovement.IsNearlyZero())
+				{
+					AutoRotateDir = ContextMovement.GetSafeNormal(UE_SMALL_NUMBER, AutoRotateDir);
+				}
+				bHasAutoRotateDir = true;
+				break;
+		}
+	}
+	if (!bHasAutoRotateDir)
+	{
+		DeactivateAutoRotate(OutResult);
+		return;
+	}
+
 	const FRotator3d AutoRotateRot = AutoRotateDir.ToOrientationRotator();
 
 	// Figure out how much work we have to do.
@@ -255,6 +301,14 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 			bDeactivateAutoRotate = true;
 		}
 	}
+	else if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
+	{
+		const FVector2d NewInputValue(InputValue.X + NewDeltaVector.X, InputValue.Y + NewDeltaVector.Y);
+		const FRotator3d NewControlRotation(NewInputValue.Y, NewInputValue.X, 0.0);
+		PlayerController->SetControlRotation(NewControlRotation);
+
+		LastInputValue = NewInputValue;
+	}
 
 	if (Interpolator->IsFinished() || bDeactivateAutoRotate)
 	{
@@ -284,6 +338,15 @@ void FAutoRotateInput2DCameraNodeEvaluator::DeactivateAutoRotate(FCameraNodeEval
 			OutResult.VariableTable.SetValue<bool>(BuiltInVariables.FreezeControlRotationDefinition, false);
 		}
 	}
+}
+
+APlayerController* FAutoRotateInput2DCameraNodeEvaluator::GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const
+{
+	if (EvaluationContext)
+	{
+		return EvaluationContext->GetPlayerController();
+	}
+	return nullptr;
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -318,6 +381,10 @@ UAutoRotateInput2DCameraNode::UAutoRotateInput2DCameraNode(const FObjectInitiali
 	: Super(ObjInit)
 {
 	AddNodeFlags(ECameraNodeFlags::CustomGetChildren);
+
+	UCriticalDamperValueInterpolator* DefaultInterpolator = ObjInit.CreateDefaultSubobject<UCriticalDamperValueInterpolator>(this, "Interpolator");
+	DefaultInterpolator->DampingFactor = 10.f;
+	Interpolator = DefaultInterpolator;
 }
 
 FCameraNodeChildrenView UAutoRotateInput2DCameraNode::OnGetChildren()
