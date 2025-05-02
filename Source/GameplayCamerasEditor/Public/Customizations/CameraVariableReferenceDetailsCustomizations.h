@@ -33,11 +33,14 @@ public:
 
 protected:
 
+	virtual bool HasNonUserOverride(void* InRawData) const = 0;
 	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
 private:
 
 	TSharedRef<SWidget> BuildCameraVariableBrowser();
+
+	bool IsCameraVariableBrowserEnabled() const;
 
 	FText GetVariableName() const;
 
@@ -64,6 +67,7 @@ protected:
 class F##ValueName##CameraVariableReferenceDetailsCustomization : public FCameraVariableReferenceDetailsCustomization\
 {\
 protected:\
+	virtual bool HasNonUserOverride(void* InRawData) const override;\
 	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()

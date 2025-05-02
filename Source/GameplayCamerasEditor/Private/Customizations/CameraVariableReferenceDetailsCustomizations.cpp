@@ -82,6 +82,7 @@ void FCameraVariableReferenceDetailsCustomization::CustomizeHeader(TSharedRef<IP
 		.HasDownArrow(true)
 		.ContentPadding(1.f)
 		.ToolTipText(LOCTEXT("SetVariable_ToolTip", "Selects the camera variable"))
+		.IsEnabled(this, &FCameraVariableReferenceDetailsCustomization::IsCameraVariableBrowserEnabled)
 		.ButtonContent()
 		[
 			SNew(SHorizontalBox)
@@ -169,6 +170,22 @@ TSharedRef<SWidget> FCameraVariableReferenceDetailsCustomization::BuildCameraVar
 	return MenuBuilder.MakeWidget();
 }
 
+bool FCameraVariableReferenceDetailsCustomization::IsCameraVariableBrowserEnabled() const
+{
+	TArray<void*> RawData;
+	StructProperty->AccessRawData(RawData);
+
+	for (int32 ValueIndex = 0; ValueIndex < RawData.Num(); ++ValueIndex)
+	{
+		if (HasNonUserOverride(RawData[ValueIndex]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 FText FCameraVariableReferenceDetailsCustomization::GetVariableName() const
 {
 	UObject* VariableObject = nullptr;
@@ -247,6 +264,11 @@ void FCameraVariableReferenceDetailsCustomization::OnResetToDefault()
 }
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+bool F##ValueName##CameraVariableReferenceDetailsCustomization::HasNonUserOverride(void* InRawData) const\
+{\
+	F##ValueName##CameraVariableReference* TypedData = reinterpret_cast<F##ValueName##CameraVariableReference*>(InRawData);\
+	return TypedData->HasNonUserOverride();\
+}\
 void F##ValueName##CameraVariableReferenceDetailsCustomization::SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable)\
 {\
 	F##ValueName##CameraVariableReference* TypedData = reinterpret_cast<F##ValueName##CameraVariableReference*>(InRawData);\

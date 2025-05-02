@@ -16,6 +16,7 @@ namespace UE::Cameras
 	F##ValueName##CameraVariableReference(VariableAssetType* InVariable) : Variable(InVariable) {}\
 	bool IsValid() const { return VariableID.IsValid(); }\
 	bool HasVariable() const { return Variable != nullptr; }\
+	bool HasNonUserOverride() const { return VariableID.IsValid() && (!Variable || Variable->GetVariableID() != VariableID); }\
 	const F##ValueName##CameraVariableReference::ValueType* GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const;
 
 // All camera references have:
