@@ -190,6 +190,7 @@ void FSplineOrbitCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
 		OrbitRotation = ControlRotation;
 	}
+	OrbitRotation.Normalize();
 
 	const USplineOrbitCameraNode* SplineOrbitNode = GetCameraNodeAs<USplineOrbitCameraNode>();
 
