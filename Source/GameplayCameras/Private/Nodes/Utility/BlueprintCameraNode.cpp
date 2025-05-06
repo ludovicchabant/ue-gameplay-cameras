@@ -214,6 +214,7 @@ void UBlueprintCameraNodeEvaluator::SetupExecution(TSharedPtr<const FCameraEvalu
 
 	ensure(!CameraData.IsValid());
 	CameraData = FBlueprintCameraEvaluationDataRef::MakeExternalRef(&OutResult);
+	VariableTable = FBlueprintCameraEvaluationDataRef::MakeExternalRef(&OutResult);;
 
 	ensure(!CurrentContext.IsValid());
 	CurrentContext = EvaluationContext;
@@ -221,6 +222,7 @@ void UBlueprintCameraNodeEvaluator::SetupExecution(TSharedPtr<const FCameraEvalu
 
 void UBlueprintCameraNodeEvaluator::TeardownExecution()
 {
+	VariableTable = FBlueprintCameraEvaluationDataRef();
 	CameraData = FBlueprintCameraEvaluationDataRef();
 	CurrentContext = nullptr;
 }
@@ -260,9 +262,9 @@ FBlueprintCameraPose UBlueprintCameraNodeEvaluator::GetCurrentCameraPose() const
 	return UBlueprintCameraEvaluationDataFunctionLibrary::GetCameraPose(CameraData);
 }
 
-void UBlueprintCameraNodeEvaluator::SetCurrentCameraPose(const FBlueprintCameraPose& CameraPose)
+void UBlueprintCameraNodeEvaluator::SetCurrentCameraPose(const FBlueprintCameraPose& InCameraPose)
 {
-	UBlueprintCameraEvaluationDataFunctionLibrary::SetCameraPose(CameraData, CameraPose);
+	UBlueprintCameraEvaluationDataFunctionLibrary::SetCameraPose(CameraData, InCameraPose);
 }
 
 void UBlueprintCameraNodeEvaluator::SetDefaultOwningCameraRigParameters(FBlueprintCameraEvaluationDataRef TargetCameraData) const

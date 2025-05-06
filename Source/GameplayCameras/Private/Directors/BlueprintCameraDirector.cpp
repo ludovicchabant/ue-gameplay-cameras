@@ -355,7 +355,11 @@ void UBlueprintCameraDirectorEvaluator::NativeActivateCameraDirector(const UE::C
 			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		ActivateCameraDirector(EvaluationContextOwner);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		FBlueprintCameraDirectorActivateParams OldParams;
+		OldParams.EvaluationContextOwner = EvaluationContextOwner;
+		ActivateCameraDirector(EvaluationContextOwner, OldParams);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 
@@ -369,7 +373,11 @@ void UBlueprintCameraDirectorEvaluator::NativeDeactivateCameraDirector(const UE:
 			EvaluationContextOwner = EvaluationContext->GetOwner();
 		}
 
-		DeactivateCameraDirector(EvaluationContextOwner);
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	FBlueprintCameraDirectorDeactivateParams OldParams;
+		OldParams.EvaluationContextOwner = EvaluationContextOwner;
+		DeactivateCameraDirector(EvaluationContextOwner, OldParams);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 

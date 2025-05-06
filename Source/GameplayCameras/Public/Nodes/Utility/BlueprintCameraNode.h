@@ -100,6 +100,26 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="Evaluation")
 	FBlueprintCameraEvaluationDataRef CameraData;
 
+public:
+
+	// Deprecated methods.
+
+	UFUNCTION(BlueprintPure, BlueprintGetter, meta=(DeprecatedFunction, DeprecationMessage="Please use GetCurrentCameraPose"))
+	FBlueprintCameraPose GetCameraPose() const { return GetCurrentCameraPose(); }
+
+	UFUNCTION(BlueprintSetter, meta=(DeprecatedFunction, DeprecationMessage="Please use SetCurrentCameraPose"))
+	void SetCameraPose(UPARAM(DisplayName="Camera Pose") const FBlueprintCameraPose& InCameraPose) { SetCurrentCameraPose(InCameraPose); }
+
+protected:
+
+	// Deprecated fields.
+
+	UPROPERTY(BlueprintGetter=GetCameraPose, BlueprintSetter=SetCameraPose, Category="Evaluation", meta=(DeprecatedProperty, DeprecationMessage="Please use CameraData, or GetCurrentCameraPose and SetCurrentCameraPose"))
+	FBlueprintCameraPose CameraPose;
+
+	UPROPERTY(BlueprintReadOnly, Category="Evaluation", meta=(DeprecatedProperty, DeprecationMessage="Please use CameraData"))
+	FBlueprintCameraEvaluationDataRef VariableTable;
+
 private:
 
 	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> CurrentContext;

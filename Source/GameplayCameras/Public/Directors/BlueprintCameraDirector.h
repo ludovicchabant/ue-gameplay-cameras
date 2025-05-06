@@ -28,6 +28,26 @@ struct UE_DEPRECATED(5.6, "This parameter structure is deprecated, parameters ar
 	TObjectPtr<UObject> EvaluationContextOwner;
 };
 
+USTRUCT(BlueprintType)
+struct UE_DEPRECATED(5.6, "This parameter structure is deprecated, parameters are now passed directly to ActivateCameraDirector.") FBlueprintCameraDirectorActivateParams
+{
+	GENERATED_BODY()
+
+	/** The owner (if any) of the evaluation context we are running inside of. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TObjectPtr<UObject> EvaluationContextOwner;
+};
+
+USTRUCT(BlueprintType)
+struct UE_DEPRECATED(5.6, "This parameter structure is deprecated, parameters are now passed directly to DeactivateCameraDirector.") FBlueprintCameraDirectorDeactivateParams
+{
+	GENERATED_BODY()
+
+	/** The owner (if any) of the evaluation context we were running inside of. */
+	UPROPERTY(BlueprintReadWrite, Category="Evaluation")
+	TObjectPtr<UObject> EvaluationContextOwner;
+};
+
 /**
  * Base class for a Blueprint camera director evaluator.
  */
@@ -42,15 +62,19 @@ public:
 	 * Override this method in Blueprint to execute custom logic when this
 	 * camera director gets activated.
 	 */
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
-	void ActivateCameraDirector(UObject* EvaluationContextOwner);
+	void ActivateCameraDirector(UObject* EvaluationContextOwner, const FBlueprintCameraDirectorActivateParams& Params);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/**
 	 * Override this method in Blueprint to execute custom logic when this
 	 * camera director gets deactivated.
 	 */
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Camera Director|Activation")
-	void DeactivateCameraDirector(UObject* EvaluationContextOwner);
+	void DeactivateCameraDirector(UObject* EvaluationContextOwner, const FBlueprintCameraDirectorDeactivateParams& Params);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	
 	/**
 	 * Override this method in Blueprint to execute the custom logic that determines

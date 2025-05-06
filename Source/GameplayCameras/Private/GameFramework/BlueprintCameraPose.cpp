@@ -123,3 +123,40 @@ FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::MakeCameraPoseFromCine
 	return Result;
 }
 
+// Deprecated methods.
+
+FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::SetLocation(const FBlueprintCameraPose& CameraPose, const FVector& Location)
+{
+	FBlueprintCameraPose Result(CameraPose);
+	Result.Location = Location;
+	return Result;
+}
+
+FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::SetRotation(const FBlueprintCameraPose& CameraPose, const FRotator& Rotation)
+{
+	FBlueprintCameraPose Result(CameraPose);
+	Result.Rotation = Rotation;
+	return Result;
+}
+
+FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::SetTargetDistance(const FBlueprintCameraPose& CameraPose, double TargetDistance)
+{
+	FBlueprintCameraPose Result(CameraPose);
+	Result.TargetDistance = TargetDistance;
+	return Result;
+}
+
+FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::SetFieldOfView(const FBlueprintCameraPose& CameraPose, float FieldOfView)
+{
+	FBlueprintCameraPose Result(CameraPose);
+	Result.FieldOfView = FieldOfView;
+	return Result;
+}
+
+FBlueprintCameraPose UBlueprintCameraPoseFunctionLibrary::SetFocalLength(const FBlueprintCameraPose& CameraPose, float FocalLength)
+{
+	FBlueprintCameraPose Result(CameraPose);
+	Result.FocalLength = FocalLength;
+	return Result;
+}
+

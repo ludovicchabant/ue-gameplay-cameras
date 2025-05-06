@@ -195,6 +195,38 @@ public:
 	/** Creates a new camera pose given a cine-camera component. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	static FBlueprintCameraPose MakeCameraPoseFromCineCameraComponent(const UCineCameraComponent* CameraComponent);
+
+public:
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Break node"))
+	static inline FVector GetLocation(const FBlueprintCameraPose& CameraPose) { return CameraPose.Location; }
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Break node"))
+	static inline FRotator GetRotation(const FBlueprintCameraPose& CameraPose) { return CameraPose.Rotation; }
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Break node"))
+	static inline double GetTargetDistance(const FBlueprintCameraPose& CameraPose) { return CameraPose.TargetDistance; }
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Break node"))
+	static inline double GetFieldOfView(const FBlueprintCameraPose& CameraPose) { return CameraPose.FieldOfView; }
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Break node"))
+	static inline double GetFocalLength(const FBlueprintCameraPose& CameraPose) { return CameraPose.FocalLength; }
+	
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Set Members node"))
+	static FBlueprintCameraPose SetLocation(const FBlueprintCameraPose& CameraPose, const FVector& Location);
+
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Set Members node"))
+	static FBlueprintCameraPose SetRotation(const FBlueprintCameraPose& CameraPose, const FRotator& Rotation);
+
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Set Members node"))
+	static FBlueprintCameraPose SetTargetDistance(const FBlueprintCameraPose& CameraPose, double TargetDistance);
+
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Set Members node"))
+	static FBlueprintCameraPose SetFieldOfView(const FBlueprintCameraPose& CameraPose, float FieldOfView);
+
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(DeprecatedFunction, DeprecationMessage="Please use the standard Set Members node"))
+	static FBlueprintCameraPose SetFocalLength(const FBlueprintCameraPose& CameraPose, float FocalLength);
 };
 
 #undef UE_API
