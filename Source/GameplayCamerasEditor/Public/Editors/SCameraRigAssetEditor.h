@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "Core/CameraRigAsset.h"
 #include "CoreTypes.h"
 #include "GraphEditor.h"

@@ -13,6 +13,7 @@
 #include "Kismet/BlueprintInstancedStructLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
+#include "Misc/EngineVersionComparison.h"
 #include "Styling/AppStyle.h"
 #include "Styling/SlateIconFinder.h"
 
@@ -101,10 +102,12 @@ FSlateIcon UK2Node_SetCameraRigParameter::GetIconAndTint(FLinearColor& OutColor)
 		const UEdGraphSchema_K2* K2Schema = GetDefault<UEdGraphSchema_K2>();
 		OutColor = K2Schema->GetPinTypeColor(ParameterValuePin->PinType);
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		if (UStruct* Struct = Cast<UStruct>(ParameterValuePin->PinType.PinSubCategoryObject.Get()))
 		{
 			return FSlateIconFinder::FindIconForClass(Struct);
 		}
+#endif
 	}
 
 	return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Kismet.AllClasses.VariableIcon");

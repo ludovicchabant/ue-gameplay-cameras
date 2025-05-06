@@ -16,13 +16,13 @@
 #include "ICurveEditorBounds.h"
 #include "IDetailChildrenBuilder.h"
 #include "IGameplayCamerasEditorModule.h"
+#include "Misc/EngineVersionComparison.h"
 #include "PropertyEditorModule.h"
 #include "RichCurveEditorModel.h"
 #include "SCurveEditorPanel.h"
 #include "SCurveKeyDetailPanel.h"
 #include "Slate/SlateTextures.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
-#include "SResizeBox.h"
 #include "Toolkits/ToolkitManager.h"
 #include "Tree/CurveEditorTree.h"
 #include "Tree/SCurveEditorTree.h"
@@ -32,6 +32,12 @@
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SViewport.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+#include "SResizeBox.h"
+#else
+#include "Compat/SResizeBox.h"
+#endif
 
 #define LOCTEXT_NAMESPACE "RichCurveDetailsCustomizations"
 

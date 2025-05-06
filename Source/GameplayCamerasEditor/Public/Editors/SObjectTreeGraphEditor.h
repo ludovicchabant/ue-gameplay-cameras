@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "EditorUndoClient.h"
 #include "GraphEditor.h"
 #include "Widgets/SCompoundWidget.h"
@@ -78,7 +79,7 @@ protected:
 	void OnDoubleClicked();
 
 	FString ExportNodesToText(const FGraphPanelSelectionSet& Nodes, bool bOnlyCanDuplicateNodes, bool bOnlyCanDeleteNodes);
-	void ImportNodesFromText(const FVector2D& Location, const FString& TextToImport);
+	void ImportNodesFromText(const FSlateCompatVector2f& Location, const FString& TextToImport);
 	bool CanImportNodesFromText(const FString& TextToImport);
 	void DeleteNodes(TArrayView<UEdGraphNode*> NodesToDelete);
 

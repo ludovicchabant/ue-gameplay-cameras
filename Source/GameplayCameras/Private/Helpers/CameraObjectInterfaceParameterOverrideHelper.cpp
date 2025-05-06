@@ -7,6 +7,7 @@
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableTable.h"
+#include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"
 
 namespace UE::Cameras
@@ -67,7 +68,11 @@ void ApplyBlendableParameterOverride(
 		return;
 	}
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc);
+#else
+	TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc.Name);
+#endif
 	if (!ensureMsgf(
 				ParameterValueOrError.HasValue() && !ParameterValueOrError.HasError(),
 				TEXT("Camera parameter has no valid value! Error: %s"),
@@ -195,13 +200,21 @@ void ApplyDataParameterSingleOverride(
 	{
 		case ECameraContextDataType::Name:
 			{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 				TValueOrError<FName, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueName(PropertyBagPropertyDesc);
+#else
+				TValueOrError<FName, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueName(PropertyBagPropertyDesc.Name);
+#endif
 				ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 			}
 			break;
 		case ECameraContextDataType::String:
 			{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 				TValueOrError<FString, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueString(PropertyBagPropertyDesc);
+#else
+				TValueOrError<FString, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueString(PropertyBagPropertyDesc.Name);
+#endif
 				ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 			}
 			break;
@@ -210,7 +223,11 @@ void ApplyDataParameterSingleOverride(
 				const UEnum* EnumType = Cast<const UEnum>(ParameterDefinition.DataTypeObject);
 				if (ensure(EnumType))
 				{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 					TValueOrError<uint8, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueEnum(PropertyBagPropertyDesc, EnumType);
+#else
+					TValueOrError<uint8, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueEnum(PropertyBagPropertyDesc.Name, EnumType);
+#endif
 					ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 				}
 			}
@@ -220,20 +237,32 @@ void ApplyDataParameterSingleOverride(
 				const UScriptStruct* StructType = Cast<const UScriptStruct>(ParameterDefinition.DataTypeObject);
 				if (ensure(StructType))
 				{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 					TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc, StructType);
+#else
+					TValueOrError<FStructView, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueStruct(PropertyBagPropertyDesc.Name, StructType);
+#endif
 					ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 				}
 			}
 			break;
 		case ECameraContextDataType::Object:
 			{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 				TValueOrError<UObject*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueObject(PropertyBagPropertyDesc);
+#else
+				TValueOrError<UObject*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueObject(PropertyBagPropertyDesc.Name);
+#endif
 				ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 			}
 			break;
 		case ECameraContextDataType::Class:
 			{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 				TValueOrError<UClass*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueClass(PropertyBagPropertyDesc);
+#else
+				TValueOrError<UClass*, EPropertyBagResult> ParameterValueOrError = PropertyBag.GetValueClass(PropertyBagPropertyDesc.Name);
+#endif
 				ApplyDataParameterOverride(ParameterDefinition, ParameterValueOrError, ContextDataTable);
 			}
 			break;
@@ -250,7 +279,11 @@ void ApplyDataParameterArrayOverride(
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraContextDataTable& ContextDataTable)
 {
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	TValueOrError<const FPropertyBagArrayRef, EPropertyBagResult> ArrayOrError = PropertyBag.GetArrayRef(PropertyBagPropertyDesc);
+#else
+	TValueOrError<const FPropertyBagArrayRef, EPropertyBagResult> ArrayOrError = PropertyBag.GetArrayRef(PropertyBagPropertyDesc.Name);
+#endif
 	if (!ensureMsgf(
 				ArrayOrError.HasValue() && !ArrayOrError.HasError(),
 				TEXT("Camera parameter has no valid value! Error: %s"),

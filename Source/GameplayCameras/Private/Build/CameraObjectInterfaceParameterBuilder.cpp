@@ -8,6 +8,7 @@
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/UnrealType.h"
 
@@ -176,7 +177,9 @@ void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(co
 			FPropertyBagPropertyDesc NewProperty(Definition.ParameterName, ContainerType, PropertyType, PropertyTypeObject);
 			// Make the property bag match the camera interface parameter GUIDs.
 			NewProperty.ID = Definition.ParameterGuid;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 			NewProperty.PropertyFlags |= PropertyFlags;
+#endif
 
 			OutProperties.Add(NewProperty);
 		}

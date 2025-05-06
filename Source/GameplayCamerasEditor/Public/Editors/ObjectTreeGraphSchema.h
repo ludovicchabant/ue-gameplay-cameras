@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "CoreTypes.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "GraphEditor.h"
@@ -165,8 +166,7 @@ public:
 	// FEdGraphSchemaAction interface.
 	static FName StaticGetTypeId() { static FName Type("FObjectTreeGraphSchemaAction_NewNode"); return Type; }
 	virtual FName GetTypeId() const override { return StaticGetTypeId(); }
-	using FEdGraphSchemaAction::PerformAction; // Prevent hiding of deprecated base class function with FVector2D
-	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode = true) override;
+	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, FPerformGraphActionLocation Location, bool bSelectNewNode = true) override;
 
 protected:
 
@@ -189,6 +189,6 @@ public:
 	// FEdGraphSchemaAction interface.
 	static FName StaticGetTypeId() { static FName Type("FObjectTreeGraphSchemaAction_NewComment"); return Type; }
 	virtual FName GetTypeId() const override { return StaticGetTypeId(); } 
-	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode = true) override;
+	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, FPerformGraphActionLocation Location, bool bSelectNewNode = true) override;
 };
 

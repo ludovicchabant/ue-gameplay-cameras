@@ -12,7 +12,7 @@ void SObjectTreeGraphCommentNode::Construct(const FArguments& InArgs)
 	ObjectGraphNode = InArgs._GraphNode;
 }
 
-void SObjectTreeGraphCommentNode::MoveTo(const FVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty)
+void SObjectTreeGraphCommentNode::MoveTo(const FSlateCompatVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty)
 {
 	SGraphNodeComment::MoveTo(NewPosition, NodeFilter, bMarkDirty);
 

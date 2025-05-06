@@ -18,9 +18,15 @@
 #include "IGameplayCamerasModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "Misc/AssertionMacros.h"
-#include "PrimitiveDrawInterface.h"
+#include "Misc/EngineVersionComparison.h"
 #include "SceneView.h"
 #include "ShowFlags.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+#include "PrimitiveDrawInterface.h"
+#else
+#include "SceneManagement.h"
+#endif
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -792,7 +798,11 @@ void UGameplayCameraComponentBase::OnDrawVisualizationHUD(const FViewport* Viewp
 	{
 		const AActor* OwnerActor = GetOwner();
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		const AActor* ViewActor = SceneView->ViewActor.Get();
+#else
+		const AActor* ViewActor = SceneView->ViewActor;
+#endif
 		const bool bIsLockedToCamera = (ViewActor == OwnerActor);
 
 		FCameraSystemEditorPreviewParams Params;

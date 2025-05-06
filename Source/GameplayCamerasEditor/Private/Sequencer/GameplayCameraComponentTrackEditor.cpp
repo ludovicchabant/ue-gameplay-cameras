@@ -2,6 +2,8 @@
 
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+
 #include "Core/CameraAsset.h"
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
@@ -417,4 +419,6 @@ void FGameplayCameraComponentTrackEditor::BuildAddParameterTrackSubMenuItems(FMe
 }
 
 #undef LOCTEXT_NAMESPACE
+
+#endif  // >=5.6.0
 

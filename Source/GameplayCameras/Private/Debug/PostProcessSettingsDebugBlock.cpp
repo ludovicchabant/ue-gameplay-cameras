@@ -11,6 +11,7 @@
 #include "Engine/Texture2D.h"
 #include "Engine/TextureCube.h"
 #include "Math/ColorList.h"
+#include "Misc/EngineVersionComparison.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -135,8 +136,10 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(LocalExposureDetailStrength);
 		UE_DRAW_PP(LocalExposureBlurredLuminanceBlend);
 		UE_DRAW_PP(LocalExposureBlurredLuminanceKernelSizePercent);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UE_DRAW_PP(LocalExposureHighlightThresholdStrength);
 		UE_DRAW_PP(LocalExposureShadowThresholdStrength);
+#endif
 		UE_DRAW_PP(LocalExposureMiddleGreyBias);
 		UE_DRAW_PP(LensFlareIntensity);
 		UE_DRAW_PP(LensFlareTint);
@@ -186,6 +189,7 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(DepthOfFieldOcclusion);
 		UE_DRAW_PP(DepthOfFieldSkyFocusDistance);
 		UE_DRAW_PP(DepthOfFieldVignetteSize);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UE_DRAW_PP(DepthOfFieldAspectRatioScalar);
 		UE_DRAW_PP(DepthOfFieldPetzvalBokeh);
 		UE_DRAW_PP(DepthOfFieldPetzvalBokehFalloff);
@@ -203,6 +207,7 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 			}
 			Renderer.AddText(TEXT("\n"));
 		}
+#endif
 
 		UE_DRAW_PP(MotionBlurAmount);
 		UE_DRAW_PP(MotionBlurMax);
@@ -231,7 +236,9 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 
 		UE_DRAW_PP(LumenDiffuseColorBoost);
 		UE_DRAW_PP(LumenSkylightLeaking);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UE_DRAW_PP(LumenSkylightLeakingTint);
+#endif
 		UE_DRAW_PP(LumenFullSkylightLeakingDistance);
 
 		UE_DRAW_PP(LumenRayLightingMode);

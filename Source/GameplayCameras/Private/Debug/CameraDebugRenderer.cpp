@@ -15,6 +15,7 @@
 #include "Engine/World.h"
 #include "HAL/IConsoleManager.h"
 #include "Math/Box2D.h"
+#include "Misc/EngineVersionComparison.h"
 #include "SceneView.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -645,7 +646,11 @@ void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FVecto
 
 ULineBatchComponent* FCameraDebugRenderer::GetDebugLineBatcher() const
 {
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	return World ? World->GetLineBatcher(UWorld::ELineBatcherType::Foreground) : nullptr;
+#else
+	return World ? World->ForegroundLineBatcher : nullptr;
+#endif
 }
 
 void FCameraDebugRenderer::SkipAttachedBlocks()

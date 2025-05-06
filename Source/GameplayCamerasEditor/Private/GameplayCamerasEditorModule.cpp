@@ -601,16 +601,20 @@ private:
 	{
 		using namespace UE::Cameras;
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
 		GameplayCameraComponentTrackCreateEditorHandle = SequencerModule.RegisterTrackEditor(FOnCreateTrackEditor::CreateStatic(&FGameplayCameraComponentTrackEditor::CreateTrackEditor));
 		CameraFramingZoneTrackCreateEditorHandle = SequencerModule.RegisterPropertyTrackEditor<FCameraFramingZoneTrackEditor>();
+#endif
 	}
 
 	void UnregisterSequencerTracks()
 	{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		ISequencerModule& SequencerModule = FModuleManager::Get().LoadModuleChecked<ISequencerModule>("Sequencer");
 		SequencerModule.UnRegisterTrackEditor(GameplayCameraComponentTrackCreateEditorHandle);
 		SequencerModule.UnRegisterTrackEditor(CameraFramingZoneTrackCreateEditorHandle);
+#endif
 	}
 
 	void InitializeLiveEditManager()

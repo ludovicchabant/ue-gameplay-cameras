@@ -237,7 +237,7 @@ FReply SObjectTreeGraphEditor::OnDrop(const FGeometry& MyGeometry, const FDragDr
 	if (ObjectClassOp)
 	{
 		SGraphPanel* GraphPanel = GraphEditor->GetGraphPanel();
-		FVector2D NewLocation = GraphPanel->PanelCoordToGraphCoord(MyGeometry.AbsoluteToLocal(DragDropEvent.GetScreenSpacePosition()));
+		FSlateCompatVector2f NewLocation = GraphPanel->PanelCoordToGraphCoord(MyGeometry.AbsoluteToLocal(DragDropEvent.GetScreenSpacePosition()));
 
 		return ObjectClassOp->ExecuteDrop(GraphEditor, NewLocation);
 	}
@@ -324,7 +324,7 @@ FString SObjectTreeGraphEditor::ExportNodesToText(const FGraphPanelSelectionSet&
 	return Schema->ExportNodesToText(Nodes, bOnlyCanDuplicateNodes, bOnlyCanDeleteNodes);
 }
 
-void SObjectTreeGraphEditor::ImportNodesFromText(const FVector2D& Location, const FString& TextToImport)
+void SObjectTreeGraphEditor::ImportNodesFromText(const FSlateCompatVector2f& Location, const FString& TextToImport)
 {
 	// Start a transaction and flag things as modified.
 	const FScopedTransaction Transaction(LOCTEXT("PasteNodes", "Paste Nodes"));
@@ -491,7 +491,12 @@ void SObjectTreeGraphEditor::PasteNodes()
 	FString TextToImport;
 	FPlatformApplicationMisc::ClipboardPaste(TextToImport);
 	
-	ImportNodesFromText(GraphEditor->GetPasteLocation2f(), TextToImport);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+	FVector2f PasteLocation = GraphEditor->GetPasteLocation2f();
+#else
+	FVector2D PasteLocation = GraphEditor->GetPasteLocation();
+#endif
+	ImportNodesFromText(PasteLocation, TextToImport);
 }
 
 bool SObjectTreeGraphEditor::CanPasteNodes()

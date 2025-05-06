@@ -60,7 +60,7 @@ FReply FObjectTreeClassDragDropOp::ExecuteDragOver(TSharedPtr<SGraphEditor> Grap
 	return FReply::Handled();
 }
 
-FReply FObjectTreeClassDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const UE::Slate::FDeprecateVector2DParameter& NewLocation)
+FReply FObjectTreeClassDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FSlateCompatVector2f& NewLocation)
 {
 	const FScopedTransaction Transaction(LOCTEXT("DropObjectClasses", "Drop New Nodes"));
 
@@ -69,7 +69,7 @@ FReply FObjectTreeClassDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEdi
 
 	GraphEditor->ClearSelectionSet();
 
-	FVector2f CurLocation = NewLocation;
+	FSlateCompatVector2f CurLocation = NewLocation;
 	for (UClass* PlaceableClass : PlaceableClasses)
 	{
 		FObjectTreeGraphSchemaAction_NewNode Action;
@@ -77,7 +77,7 @@ FReply FObjectTreeClassDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEdi
 		UEdGraphNode* NewNode = Action.PerformAction(Graph, nullptr, CurLocation, false);
 		GraphEditor->SetNodeSelection(NewNode, true);
 
-		CurLocation += FVector2f(20.0f, 20.0f);
+		CurLocation += FSlateCompatVector2f(20.0f, 20.0f);
 	}
 
 	return FReply::Handled();

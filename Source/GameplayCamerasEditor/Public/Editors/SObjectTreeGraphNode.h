@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "SGraphNode.h"
 #include "SGraphPin.h"
 
@@ -37,7 +38,7 @@ public:
 	virtual const FSlateBrush* GetNodeBodyBrush() const override;
 
 	// SNodePanel::SNode interface.
-	virtual void MoveTo(const FVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
+	virtual void MoveTo(const FSlateCompatVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
 
 protected:
 

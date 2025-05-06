@@ -2,6 +2,8 @@
 
 #include "MovieScene/MovieSceneCameraParameterInstantiator.h"
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+
 #include "Core/CameraAsset.h"
 #include "Core/CameraAssetReference.h"
 #include "Core/CameraRigAsset.h"
@@ -270,4 +272,6 @@ void UMovieSceneCameraParameterInstantiator::OnRun(FSystemTaskPrerequisites& InP
 	.FilterNone({ BuiltInComponents->Tags.NeedsUnlink, BuiltInComponents->Tags.Ignored })
 	.RunInline_PerEntity(&Linker->EntityManager, FSetupCameraParameterOverrideTask(PreAnimatedStorage));
 }
+
+#endif  // 5.6.0
 

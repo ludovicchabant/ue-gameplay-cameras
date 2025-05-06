@@ -5,6 +5,7 @@
 #include "Containers/Array.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Editors/ObjectTreeGraphConfig.h"
+#include "Misc/EngineVersionComparison.h"
 #include "UObject/UObjectGlobals.h"
 
 #include "ObjectTreeGraphNode.generated.h"
@@ -63,7 +64,9 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	virtual FLinearColor GetNodeTitleColor() const override;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	virtual FLinearColor GetNodeTitleTextColor() const override;
+#endif
 	virtual FLinearColor GetNodeBodyTintColor() const override;
 	virtual FText GetTooltipText() const override;
 	virtual void AllocateDefaultPins() override;

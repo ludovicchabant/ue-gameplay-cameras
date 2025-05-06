@@ -5,6 +5,7 @@
 #include "Debug/CameraDebugColors.h"
 #include "GameplayCameras.h"
 #include "Logging/MessageLog.h"
+#include "Misc/EngineVersionComparison.h"
 #include "Modules/ModuleManager.h"
 #include "MovieScene/MovieSceneCameraParameterInstantiator.h"
 #include "MovieSceneSection.h"
@@ -122,15 +123,19 @@ private:
 	void RegisterMovieSceneIntegration()
 	{
 #if WITH_EDITORONLY_DATA
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		OnMovieSceneSectionAddedToTrackHandle = UMovieSceneSection::GetOnSectionAddedToTrack().AddStatic(
 				&UMovieSceneCameraParameterInstantiator::OnMovieSceneSectionAddedToTrack);
+#endif
 #endif
 	}
 
 	void UnregisterMovieSceneIntegration()
 	{
 #if WITH_EDITORONLY_DATA
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UMovieSceneSection::GetOnSectionAddedToTrack().Remove(OnMovieSceneSectionAddedToTrackHandle);
+#endif
 #endif
 	}
 

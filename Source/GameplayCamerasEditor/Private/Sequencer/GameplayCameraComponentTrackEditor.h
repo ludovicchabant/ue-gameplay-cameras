@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include "Misc/EngineVersionComparison.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+
 #include "ISequencerTrackEditor.h"
 #include "MovieSceneTrackEditor.h"
 #include "Templates/SharedPointerFwd.h"
@@ -70,4 +74,6 @@ private:
 	void AddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding);
 	bool CanAddCameraParameterTrack(FPropertyMenuData PropertyMenuData, FGuid ObjectBinding) const;
 };
+
+#endif  // >= 5.6.0
 

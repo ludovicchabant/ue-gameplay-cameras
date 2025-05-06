@@ -99,7 +99,7 @@ void UObjectTreeGraphCommentNode::PostPlacedNewNode()
 	}
 }
 
-void UObjectTreeGraphCommentNode::ResizeNode(const FVector2f& NewSize)
+void UObjectTreeGraphCommentNode::ResizeNode(const FSlateCompatVector2f& NewSize)
 {
 	Super::ResizeNode(NewSize);
 

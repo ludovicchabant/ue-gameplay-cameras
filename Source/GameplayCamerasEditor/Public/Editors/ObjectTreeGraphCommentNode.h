@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "EdGraphNode_Comment.h"
 #include "UObject/WeakObjectPtrFwd.h"
 
@@ -28,7 +29,7 @@ public:
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	virtual void GetNodeContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const override;
 	virtual void PostPlacedNewNode() override;
-	virtual void ResizeNode(const FVector2f& NewSize) override;
+	virtual void ResizeNode(const FSlateCompatVector2f& NewSize) override;
 	virtual void OnRenameNode(const FString& NewName) override;
 
 public:

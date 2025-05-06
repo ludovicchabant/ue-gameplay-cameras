@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include "Misc/EngineVersionComparison.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+
 #include "EntitySystem/IMovieSceneEntityDecorator.h"
 #include "EntitySystem/MovieSceneEntityInstantiatorSystem.h"
 #include "UObject/ObjectMacros.h"
@@ -59,4 +63,5 @@ private:
 	TSharedPtr<UE::Cameras::FPreAnimatedCameraParameterStorage> PreAnimatedStorage;
 };
 
+#endif  // UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Compat/EditorCompat.h"
 #include "SGraphNodeComment.h"
 
 class UObjectTreeGraphCommentNode;
@@ -26,7 +27,7 @@ public:
 public:
 
 	// SNodePanel::SNode interface.
-	virtual void MoveTo(const FVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
+	virtual void MoveTo(const FSlateCompatVector2f& NewPosition, FNodeSet& NodeFilter, bool bMarkDirty=true) override;
 
 protected:
 

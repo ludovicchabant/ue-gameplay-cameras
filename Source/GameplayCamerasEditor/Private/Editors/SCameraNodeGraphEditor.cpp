@@ -2,6 +2,7 @@
 
 #include "Editors/SCameraNodeGraphEditor.h"
 
+#include "Compat/EditorCompat.h"
 #include "Editors/CameraNodeGraphDragDropOp.h"
 #include "SGraphPanel.h"
 
@@ -24,7 +25,7 @@ FReply SCameraNodeGraphEditor::OnDrop(const FGeometry& MyGeometry, const FDragDr
 	if (InterfaceParameterOp)
 	{
 		SGraphPanel* GraphPanel = GraphEditor->GetGraphPanel();
-		FVector2D NewLocation = GraphPanel->PanelCoordToGraphCoord(MyGeometry.AbsoluteToLocal(DragDropEvent.GetScreenSpacePosition()));
+		FSlateCompatVector2f NewLocation = GraphPanel->PanelCoordToGraphCoord(MyGeometry.AbsoluteToLocal(DragDropEvent.GetScreenSpacePosition()));
 
 		return InterfaceParameterOp->ExecuteDrop(GraphEditor, NewLocation);
 	}

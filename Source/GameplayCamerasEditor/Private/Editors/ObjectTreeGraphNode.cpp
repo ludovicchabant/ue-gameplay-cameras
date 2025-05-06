@@ -58,11 +58,13 @@ FLinearColor UObjectTreeGraphNode::GetNodeTitleColor() const
 	return NodeContext.ObjectClassConfigs.NodeTitleColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleColor);
 }
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 FLinearColor UObjectTreeGraphNode::GetNodeTitleTextColor() const
 {
 	const FNodeContext NodeContext = GetNodeContext();
 	return NodeContext.ObjectClassConfigs.NodeTitleTextColor().Get(NodeContext.GraphConfig.DefaultGraphNodeTitleTextColor);
 }
+#endif
 
 FLinearColor UObjectTreeGraphNode::GetNodeBodyTintColor() const
 {

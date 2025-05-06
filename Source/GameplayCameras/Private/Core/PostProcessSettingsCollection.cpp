@@ -2,14 +2,24 @@
 
 #include "Core/PostProcessSettingsCollection.h"
 
+#include "Misc/EngineVersionComparison.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 #include "Engine/PostProcessUtils.h"
+#else
+#include "Compat/PostProcessUtils.h"
+#endif
 
 namespace UE::Cameras
 {
 
 void FPostProcessSettingsCollection::Reset()
 {
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	PostProcessSettings = FPostProcessSettings::GetDefault();
+#else
+	PostProcessSettings = FPostProcessSettings();
+#endif
 }
 
 void FPostProcessSettingsCollection::OverrideAll(const FPostProcessSettingsCollection& OtherCollection)
@@ -51,7 +61,12 @@ void FPostProcessSettingsCollection::InternalLerp(const FPostProcessSettings& To
 void FPostProcessSettingsCollection::Serialize(FArchive& Ar)
 {
 	UScriptStruct* PostProcessSettingsStruct = FPostProcessSettings::StaticStruct();
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 	PostProcessSettingsStruct->SerializeItem(Ar, &PostProcessSettings, &FPostProcessSettings::GetDefault());
+#else
+	FPostProcessSettings DefaultSettings;
+	PostProcessSettingsStruct->SerializeItem(Ar, &PostProcessSettings, &DefaultSettings);
+#endif
 }
 
 }  // namespace UE::Cameras
