@@ -74,6 +74,7 @@ private:
 
 	bool IsValueEditorEnabled() const;
 	bool IsCameraVariableBrowserEnabled() const;
+	FText GetCameraVariableBrowserToolTip() const;
 
 	FText GetVariableInfoText() const;
 	EVisibility GetVariableInfoTextVisibility() const;
@@ -82,6 +83,9 @@ private:
 	FText GetVariableErrorText() const;
 	EVisibility GetVariableErrorTextVisibility() const;
 	FOptionalSize GetVariableErrorTextMaxWidth() const;
+
+	bool CanGoToVariable() const;
+	void OnGoToVariable();
 
 	bool CanClearVariable() const;
 	void OnClearVariable();

@@ -31,6 +31,9 @@ public:
 	FCameraVariableCollectionEditorToolkit(UCameraVariableCollectionEditor* InOwningAssetEditor);
 	~FCameraVariableCollectionEditorToolkit();
 
+	// IAssetEditorInstance interface
+	virtual void FocusWindow(UObject* ObjectToFocusOn = nullptr) override;
+
 protected:
 
 	// FBaseAssetToolkit interface

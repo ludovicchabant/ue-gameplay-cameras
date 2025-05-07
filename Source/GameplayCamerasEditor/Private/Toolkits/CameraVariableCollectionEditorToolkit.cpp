@@ -345,6 +345,16 @@ bool FCameraVariableCollectionEditorToolkit::CanDeleteVariable()
 	return !Selection.IsEmpty();
 }
 
+void FCameraVariableCollectionEditorToolkit::FocusWindow(UObject* ObjectToFocusOn)
+{
+	FBaseAssetToolkit::FocusWindow(ObjectToFocusOn);
+
+	if (UCameraVariableAsset* VariableToFocusOn = Cast<UCameraVariableAsset>(ObjectToFocusOn))
+	{
+		VariableCollectionEditorWidget->SelectVariable(VariableToFocusOn);
+	}
+}
+
 void FCameraVariableCollectionEditorToolkit::PostUndo(bool bSuccess)
 {
 	VariableCollectionEditorWidget->RequestListRefresh();

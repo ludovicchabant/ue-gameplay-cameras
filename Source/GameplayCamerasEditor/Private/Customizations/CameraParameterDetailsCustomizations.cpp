@@ -20,6 +20,9 @@
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Styling/StyleColors.h"
+#include "Subsystems/AssetEditorSubsystem.h"
+#include "Toolkits/CameraVariableCollectionEditorToolkit.h"
+#include "Toolkits/ToolkitManager.h"
 #include "UObject/Object.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SComboButton.h"
@@ -116,7 +119,7 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 			.ContentPadding(1.f)
 			.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 			.IsEnabled(this, &FCameraParameterDetailsCustomization::IsCameraVariableBrowserEnabled)
-			.ToolTipText(LOCTEXT("SetVariable_ToolTip", "Selects a camera variable to drive this parameter"))
+			.ToolTipText(this, &FCameraParameterDetailsCustomization::GetCameraVariableBrowserToolTip)
 			.ButtonContent()
 			[
 				SNew(SHorizontalBox)
@@ -166,6 +169,11 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 			.OnGetMenuContent(this, &FCameraParameterDetailsCustomization::BuildCameraVariableBrowser)
 		]
 	];
+
+	HeaderRow.OverrideResetToDefault(
+			FResetToDefaultOverride::Create(
+				FIsResetToDefaultVisible::CreateSP(this, &FCameraParameterDetailsCustomization::IsResetToDefaultVisible),
+				FResetToDefaultHandler::CreateSP(this, &FCameraParameterDetailsCustomization::OnResetToDefault)));
 }
 
 void FCameraParameterDetailsCustomization::CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
@@ -252,6 +260,14 @@ TSharedRef<SWidget> FCameraParameterDetailsCustomization::BuildCameraVariableBro
 	MenuBuilder.BeginSection(NAME_None, LOCTEXT("CameraVariableOperations", "Current Parameter"));
 	{
 		MenuBuilder.AddMenuEntry(
+			LOCTEXT("GoToVariable", "Go to variable"),
+			LOCTEXT("GoToVariable_ToolTip", "Open the referenced camera variable collection asset"),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.BrowseContent"),
+			FUIAction(
+				FExecuteAction::CreateSP(this, &FCameraParameterDetailsCustomization::OnGoToVariable),
+				FCanExecuteAction::CreateSP(this, &FCameraParameterDetailsCustomization::CanGoToVariable))
+			);
+		MenuBuilder.AddMenuEntry(
 			LOCTEXT("ClearVariable", "Clear"),
 			LOCTEXT("ClearVariable_ToolTip", "Clears the variable from the camera parameter"),
 			FSlateIcon(FAppStyle::GetAppStyleSetName(), "GenericCommands.Delete"),
@@ -300,6 +316,22 @@ bool FCameraParameterDetailsCustomization::IsCameraVariableBrowserEnabled() cons
 	return !VariableInfo.bHasNonUserOverride;
 }
 
+FText FCameraParameterDetailsCustomization::GetCameraVariableBrowserToolTip() const
+{
+	if (!VariableInfo.bHasNonUserOverride)
+	{
+		return LOCTEXT(
+				"SetVariable_ToolTip", 
+				"Selects a camera variable to drive this parameter");
+	}
+	else
+	{
+		return LOCTEXT(
+				"SetVariableDisabled_ToolTip",
+				"This parameter is exposed by the camera rig and cannot be also driven by a camera variable");
+	}
+}
+
 FText FCameraParameterDetailsCustomization::GetVariableInfoText() const
 {
 	return VariableInfo.InfoText;
@@ -342,6 +374,35 @@ FOptionalSize FCameraParameterDetailsCustomization::GetVariableErrorTextMaxWidth
 	const bool bShowVariableErrorText = !VariableInfo.ErrorText.IsEmpty();
 	const float LayoutBoxWidth = LayoutBox ? LayoutBox->GetPaintSpaceGeometry().GetLocalSize().X : 0.f;
 	return bShowVariableErrorText ? FOptionalSize((LayoutBoxWidth - FixedSpace) / 3.f) : FOptionalSize(0);
+}
+
+bool FCameraParameterDetailsCustomization::CanGoToVariable() const
+{
+	UObject* VariableObject = nullptr;
+	FPropertyAccess::Result PropertyAccessResult = VariableProperty->GetValue(VariableObject);
+	return PropertyAccessResult == FPropertyAccess::Success;
+}
+
+void FCameraParameterDetailsCustomization::OnGoToVariable()
+{
+	UObject* VariableObject = nullptr;
+	FPropertyAccess::Result PropertyAccessResult = VariableProperty->GetValue(VariableObject);
+	if (VariableObject && PropertyAccessResult == FPropertyAccess::Success)
+	{
+		UCameraVariableCollection* VariableCollection = VariableObject->GetTypedOuter<UCameraVariableCollection>();
+		if (VariableCollection)
+		{
+			GEditor->GetEditorSubsystem<UAssetEditorSubsystem>()->OpenEditorForAsset(VariableCollection);
+
+			TSharedPtr<IToolkit> FoundToolkit = FToolkitManager::Get().FindEditorForAsset(VariableCollection);
+			if (FoundToolkit)
+			{
+				TSharedPtr<FCameraVariableCollectionEditorToolkit> VariableCollectionToolkit = 
+					StaticCastSharedPtr<FCameraVariableCollectionEditorToolkit>(FoundToolkit);
+				VariableCollectionToolkit->FocusWindow(VariableObject);
+			}
+		}
+	}
 }
 
 bool FCameraParameterDetailsCustomization::CanClearVariable() const
@@ -420,3 +481,4 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 }  // namespace UE::Cameras
 
 #undef LOCTEXT_NAMESPACE
+

@@ -9,6 +9,7 @@
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "ToolMenus.h"
+#include "Types/SlateEnums.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
@@ -244,6 +245,11 @@ SCameraVariableCollectionEditor::~SCameraVariableCollectionEditor()
 void SCameraVariableCollectionEditor::GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const
 {
 	ListView->GetSelectedItems(OutSelection);
+}
+
+void SCameraVariableCollectionEditor::SelectVariable(UCameraVariableAsset* InItem)
+{
+	ListView->SetSelection(InItem, ESelectInfo::Direct);
 }
 
 void SCameraVariableCollectionEditor::RequestRenameVariable(UCameraVariableAsset* InItem, FSimpleDelegate InOnRenamedItem)

@@ -48,6 +48,9 @@ public:
 	/** Gets the selected variables in the list view. */
 	void GetSelectedVariables(TArray<UCameraVariableAsset*>& OutSelection) const;
 
+	/** Selects the given variable if it is in the list view. */
+	void SelectVariable(UCameraVariableAsset* InItem);
+
 	/** Enter editing mode for the given variable's name. */
 	void RequestRenameVariable(UCameraVariableAsset* InItem, FSimpleDelegate InOnRenamedItem);
 
