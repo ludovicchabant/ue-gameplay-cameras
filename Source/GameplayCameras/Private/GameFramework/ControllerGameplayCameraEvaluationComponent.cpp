@@ -42,6 +42,8 @@ void UControllerGameplayCameraEvaluationComponent::Initialize(TScriptInterface<I
 	InitParams.PlayerController = PlayerController;
 	EvaluationContext = MakeShared<FCameraEvaluationContext>(InitParams);
 	EvaluationContext->GetInitialResult().bIsValid = true;	
+	
+	RegisterComponent();
 }
 
 void UControllerGameplayCameraEvaluationComponent::ActivateCameraRig(UCameraRigAsset* CameraRig, ECameraRigLayer EvaluationLayer)
@@ -114,7 +116,6 @@ UControllerGameplayCameraEvaluationComponent* UControllerGameplayCameraEvaluatio
 	{
 		ControllerComponent = NewObject<UControllerGameplayCameraEvaluationComponent>(
 				OwnerActor, TEXT("ControllerGameplayCameraEvaluationComponent"), RF_Transient);
-		ControllerComponent->RegisterComponent();
 		if (bOutCreated)
 		{
 			*bOutCreated = true;
