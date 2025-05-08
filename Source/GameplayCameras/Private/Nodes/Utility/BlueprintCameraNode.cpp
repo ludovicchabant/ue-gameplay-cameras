@@ -278,6 +278,16 @@ void UBlueprintCameraNodeEvaluator::SetDefaultOwningCameraRigParameters(FBluepri
 	}
 }
 
+APlayerController* UBlueprintCameraNodeEvaluator::GetPlayerController() const
+{
+	if (CurrentContext)
+	{
+		return CurrentContext->GetPlayerController();
+	}
+
+	return nullptr;
+}
+
 UWorld* UBlueprintCameraNodeEvaluator::GetWorld() const
 {
 	if (UWorld* CachedWorld = WeakCachedWorld.Get())

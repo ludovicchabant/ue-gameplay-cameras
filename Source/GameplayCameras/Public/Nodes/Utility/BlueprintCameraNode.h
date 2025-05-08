@@ -60,6 +60,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void SetDefaultOwningCameraRigParameters(FBlueprintCameraEvaluationDataRef TargetCameraData) const;
 
+	/** Gets the player controller that the node is running for, if any. */
+	UFUNCTION(BlueprintPure, Category="Evaluation")
+	APlayerController* GetPlayerController() const;
+
 public:
 
 	using FCameraNodeEvaluatorInitializeParams = UE::Cameras::FCameraNodeEvaluatorInitializeParams;
