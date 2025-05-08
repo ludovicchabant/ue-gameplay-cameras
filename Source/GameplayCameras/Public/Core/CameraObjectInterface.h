@@ -201,5 +201,18 @@ public:
 
 	/** Returns whether an exposed parameter with the given name exists. */
 	GAMEPLAYCAMERAS_API bool HasBlendableParameter(const FString& ParameterName) const;
+
+public:
+
+	// Deprecated methods.
+	UE_DEPRECATED(5.6, "Camera rigs are now all standalone assets and don't need a separate display name.")
+	FString GetDisplayName() const { return DisplayName_DEPRECATED; }
+
+private:
+
+	// Deprecated properties.
+
+	UPROPERTY()
+	FString DisplayName_DEPRECATED;
 };
 
