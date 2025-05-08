@@ -539,6 +539,11 @@ void FCameraAssetEditorToolkit::UpgradeLegacyCameraAssets()
 		for (FName OnDiskReferencer : OnDiskReferencers)
 		{
 			UPackage* ReferencerPackage = FindPackage(nullptr, *OnDiskReferencer.ToString());
+			if (!ReferencerPackage)
+			{
+				FPackagePath PackagePath = FPackagePath::FromPackageNameChecked(OnDiskReferencer);
+				ReferencerPackage = LoadPackage(nullptr, PackagePath, LOAD_None);
+			}
 			if (!ensure(ReferencerPackage))
 			{
 				continue;
