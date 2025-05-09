@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 48 48"
+   fill="none"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="ContentBrowser-CameraShake.svg"
+   inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#979797"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="13.04833"
+     inkscape:cx="21.726919"
+     inkscape:cy="24.102702"
+     inkscape:window-width="2560"
+     inkscape:window-height="1377"
+     inkscape:window-x="2552"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3">
+    <sodipodi:guide
+       position="0,42"
+       orientation="0,1"
+       id="guide3"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="42,48"
+       orientation="-1,0"
+       id="guide4"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="48,6"
+       orientation="0,1"
+       id="guide5"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="6,0"
+       orientation="-1,0"
+       id="guide6"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+  </sodipodi:namedview>
+  <g
+     clip-path="url(#clip0)"
+     id="g3"
+     transform="matrix(2.2519587,0,0,2.2519587,7.3354504,5.9686608)">
+    <path
+       opacity="0.5"
+       d="m 12.1,4.90002 c 0,0 -1.3,-1.2 -3.49995,-1.8 -2.6,-0.8 -5.6,0.6 -5.6,0.6 0,0 2.6,-2.3 5.8,-1.6 2.59995,0.6 3.29995,2.8 3.29995,2.8 z M 10.7,0.400017 c -2.79995,-1.1 -5.29995,0.5 -5.29995,0.5 0,0 2.2,-1.0000003 4.69995,-0.1 2.4,0.900003 3.3,2.600003 3.3,2.600003 0,0 0.1,-1.9 -2.7,-3.000003 z M 5.20005,14 c 3.3,-0.2 4.6,-3.4 4.6,-3.4 0,0 -2.1,2.3 -4.9,2.3 -2.3,0 -4.100001,-0.9 -4.100001,-0.9 0,0 1.700001,2.1 4.400001,2 z m 2.3,1.8 C 10.1,15.1 10.5,12.6 10.5,12.6 c 0,0 -0.69995,1.9 -2.99995,2.6 -2.2,0.7 -4,0 -4,0 0,0 1.4,1.3 4,0.6 z"
+       fill="#ffffff"
+       id="path1" />
+    <path
+       d="M 8.2,11 H 2.8 C 2.3,11 2,10.7 2,10.2 V 5.8 C 2,5.3 2.3,5 2.8,5 H 8.3 C 8.7,5 9,5.3 9,5.8 v 4.5 C 9,10.7 8.7,11 8.2,11 Z"
+       fill="#ffffff"
+       id="path2" />
+    <path
+       d="m 10.2,7.50005 v 1 L 14,11.2 V 4.80005 Z"
+       fill="#ffffff"
+       id="path3" />
+  </g>
+  <defs
+     id="defs3">
+    <clipPath
+       id="clip0">
+      <rect
+         width="16"
+         height="16"
+         fill="#ffffff"
+         id="rect3"
+         x="0"
+         y="0" />
+    </clipPath>
+  </defs>
+</svg>

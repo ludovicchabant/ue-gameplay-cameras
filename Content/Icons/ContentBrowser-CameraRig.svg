@@ -22,16 +22,45 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:document-units="mm"
+     inkscape:document-units="px"
      inkscape:zoom="16.833558"
-     inkscape:cx="17.257196"
-     inkscape:cy="25.573916"
+     inkscape:cx="22.722469"
+     inkscape:cy="24.385813"
      inkscape:window-width="2560"
      inkscape:window-height="1377"
      inkscape:window-x="2552"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1">
+    <sodipodi:guide
+       position="0,11.1125"
+       orientation="0,1"
+       id="guide1"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="11.1125,12.7"
+       orientation="-1,0"
+       id="guide2"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="12.7,1.5875"
+       orientation="0,1"
+       id="guide3"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+    <sodipodi:guide
+       position="1.5875,0"
+       orientation="-1,0"
+       id="guide4"
+       inkscape:locked="false"
+       inkscape:label=""
+       inkscape:color="rgb(0,134,229)" />
+  </sodipodi:namedview>
   <defs
      id="defs1" />
   <g
@@ -39,14 +68,14 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       d="M 8.5901615,5.9059468 12.142587,3.2416282 V 9.4583718 L 8.5901615,6.7940532 Z"
+       d="M 8.2092792,5.9821233 11.152293,3.7748635 v 5.150273 L 8.2092792,6.7178767 Z"
        fill="#ffffff"
        id="path3"
-       style="stroke-width:0.888105" />
+       style="stroke-width:0.735752" />
     <path
-       d="M 7.7020551,3.2416282 H 1.4853118 c -0.2355442,0 -0.4613622,0.093526 -0.62791742,0.2600811 C 0.69083871,3.6682582 0.59720581,3.894191 0.59720581,4.1297346 v 4.4405308 c 0,0.2355274 0.0936335,0.46146 0.26018857,0.6280689 C 1.02395,9.3648529 1.2497684,9.4583718 1.4853118,9.4583718 h 6.2167433 c 0.2355239,0 0.4613715,-0.093518 0.6278903,-0.2600375 C 8.4965549,9.0317249 8.5901615,8.8057911 8.5901615,8.5702654 V 4.1297346 c 0,-0.2355442 -0.093603,-0.4614778 -0.2602161,-0.6280243 C 8.1634279,3.3351548 7.9375808,3.2416292 7.7020551,3.2416282 Z M 3.2615244,9.0143185 V 3.6856814 L 7.524434,6.35 Z"
+       d="M 7.4735258,3.7748635 H 2.3232531 c -0.195137,0 -0.3822164,0.077482 -0.5201994,0.2154648 C 1.6650703,4.128306 1.5875,4.3154804 1.5875,4.510617 v 3.678766 c 0,0.1951231 0.077571,0.3822974 0.2155537,0.5203249 0.1379834,0.1379527 0.325063,0.2154286 0.5201994,0.2154286 h 5.1502727 c 0.1951201,0 0.382224,-0.077475 0.5201768,-0.2154286 C 8.1317306,8.57168 8.2092792,8.3845048 8.2092792,8.189383 V 4.510617 c 0,-0.1951371 -0.077545,-0.3823122 -0.2155766,-0.5202879 C 7.8557509,3.8523458 7.6686475,3.7748644 7.4735258,3.7748635 Z M 3.7947598,8.5572597 V 4.1427403 L 7.3263753,6.35 Z"
        fill="#ffffff"
        id="path4"
-       style="stroke-width:0.888105" />
+       style="stroke-width:0.735752" />
   </g>
 </svg>
