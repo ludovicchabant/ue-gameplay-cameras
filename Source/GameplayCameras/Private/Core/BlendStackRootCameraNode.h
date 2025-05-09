@@ -46,6 +46,7 @@ namespace UE::Cameras
 {
 
 class FBlendCameraNodeEvaluator;
+class FCameraRigCameraNodeEvaluator;
 
 enum class ECameraRigMergingEligibility
 {
@@ -95,8 +96,10 @@ private:
 	static const UCameraRigAsset* FindInnermostCameraRigPrefab(const UCameraRigAsset* CameraRig);
 	static FCameraNodeEvaluator* FindInnermostCameraRigEvaluator(FCameraNodeEvaluator* CameraNodeEvaluator);
 
+	static const UCameraRigAsset* BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes);
+	static FCameraNodeEvaluator* BuildNestedEvaluatorTrail(FCameraNodeEvaluator* CameraNodeEvaluator, TArray<FCameraRigCameraNodeEvaluator*>& OutPrefabEvaluators);
+
 	void InitializeBlendedParameterOverridesStack();
-	void BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes);
 	void RunBlendedParameterOverridesStack(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
 
 private:

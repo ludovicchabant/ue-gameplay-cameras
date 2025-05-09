@@ -168,25 +168,18 @@ const UCameraRigAsset* FBlendStackRootCameraNodeEvaluator::FindInnermostCameraRi
 {
 	if (CameraRig)
 	{
-		if (const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(CameraRig->RootNode))
-		{
-			if (const UCameraRigAsset* InnerCameraRig = PrefabNode->CameraRigReference.GetCameraRig())
-			{
-				return FindInnermostCameraRigPrefab(InnerCameraRig);
-			}
-		}
+		TArray<TObjectPtr<const UCameraRigCameraNode>> PrefabTrail;
+		return BuildNestedPrefabTrail(CameraRig, PrefabTrail);
 	}
-	return CameraRig;
+	return nullptr;
 }
 
 FCameraNodeEvaluator* FBlendStackRootCameraNodeEvaluator::FindInnermostCameraRigEvaluator(FCameraNodeEvaluator* CameraNodeEvaluator)
 {
-	if (FCameraRigCameraNodeEvaluator* PrefabNodeEvaluator = CameraNodeEvaluator->CastThis<FCameraRigCameraNodeEvaluator>())
+	if (CameraNodeEvaluator)
 	{
-		if (FCameraNodeEvaluator* InnerNodeEvaluator = PrefabNodeEvaluator->GetCameraRigRootEvaluator())
-		{
-			return FindInnermostCameraRigEvaluator(InnerNodeEvaluator);
-		}
+		TArray<FCameraRigCameraNodeEvaluator*> EvaluatorTrail;
+		return BuildNestedEvaluatorTrail(CameraNodeEvaluator, EvaluatorTrail);
 	}
 	return CameraNodeEvaluator;
 }
@@ -218,18 +211,38 @@ void FBlendStackRootCameraNodeEvaluator::InitializeBlendedParameterOverridesStac
 	BlendedParameterOverridesStack.Add(MoveTemp(InitialParameterOverrides));
 }
 
-void FBlendStackRootCameraNodeEvaluator::BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes)
+const UCameraRigAsset* FBlendStackRootCameraNodeEvaluator::BuildNestedPrefabTrail(const UCameraRigAsset* CameraRig, TArray<TObjectPtr<const UCameraRigCameraNode>>& OutPrefabNodes)
 {
 	if (const UCameraRigCameraNode* PrefabNode = Cast<const UCameraRigCameraNode>(CameraRig->RootNode))
 	{
-		if (const UCameraRigAsset* InnerCameraRig = PrefabNode->CameraRigReference.GetCameraRig())
+		if (ensureMsgf(!OutPrefabNodes.Contains(PrefabNode), TEXT("Circular camera rig prefab reference detected!")))
 		{
 			OutPrefabNodes.Add(PrefabNode);
-			return BuildNestedPrefabTrail(InnerCameraRig, OutPrefabNodes);
+
+			if (const UCameraRigAsset* InnerCameraRig = PrefabNode->CameraRigReference.GetCameraRig())
+			{
+				return BuildNestedPrefabTrail(InnerCameraRig, OutPrefabNodes);
+			}
 		}
 	}
+	return CameraRig;
+}
 
-	ensure(CameraRig == BlendablePrefabCameraRig);
+FCameraNodeEvaluator* FBlendStackRootCameraNodeEvaluator::BuildNestedEvaluatorTrail(FCameraNodeEvaluator* CameraNodeEvaluator, TArray<FCameraRigCameraNodeEvaluator*>& OutPrefabEvaluators)
+{
+	if (FCameraRigCameraNodeEvaluator* PrefabNodeEvaluator = CameraNodeEvaluator->CastThis<FCameraRigCameraNodeEvaluator>())
+	{
+		if (ensureMsgf(!OutPrefabEvaluators.Contains(PrefabNodeEvaluator), TEXT("Circular camera rig prefab reference detected!")))
+		{
+			OutPrefabEvaluators.Add(PrefabNodeEvaluator);
+
+			if (FCameraNodeEvaluator* InnerNodeEvaluator = PrefabNodeEvaluator->GetCameraRigRootEvaluator())
+			{
+				return BuildNestedEvaluatorTrail(InnerNodeEvaluator, OutPrefabEvaluators);
+			}
+		}
+	}
+	return CameraNodeEvaluator;
 }
 
 void FBlendStackRootCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
