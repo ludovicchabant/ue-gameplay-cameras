@@ -137,7 +137,12 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(cons
 	FCameraRigEntry& TopEntry = Entries.Top();
 	FCameraNodeEvaluatorBuilder Builder(TopEntry.EvaluatorStorage);
 	FCameraNodeEvaluatorBuildParams BuildParams(Builder);
-	TopEntry.RootEvaluator->MergeCameraRig(BuildParams, PushParams.CameraRig, Blend);
+
+	FCameraNodeEvaluatorInitializeParams InitParams;
+	InitParams.Evaluator = OwningEvaluator;
+	InitParams.EvaluationContext = TopEntry.EvaluationContext.Pin();
+
+	TopEntry.RootEvaluator->MergeCameraRig(BuildParams, InitParams, TopEntry.Result, PushParams.CameraRig, Blend);
 
 	// Merging a camera rig the first time changes the evaluator tree by removing any prefab nodes
 	// near the root... so we need to rebuild our hierarchy cache.

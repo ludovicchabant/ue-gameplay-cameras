@@ -73,7 +73,12 @@ public:
 
 	ECameraRigMergingEligibility CompareCameraRigForMerging(const UCameraRigAsset* CameraRig) const;
 
-	void MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigAsset* CameraRig, const UBlendCameraNode* Blend);
+	void MergeCameraRig(
+			const FCameraNodeEvaluatorBuildParams& BuildParams, 
+			const FCameraNodeEvaluatorInitializeParams& InitParams, 
+			FCameraNodeEvaluationResult& InitResult,
+			const UCameraRigAsset* CameraRig, 
+			const UBlendCameraNode* Blend);
 
 protected:
 

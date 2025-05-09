@@ -127,7 +127,12 @@ ECameraRigMergingEligibility FBlendStackRootCameraNodeEvaluator::CompareCameraRi
 	return ECameraRigMergingEligibility::EligibleForMerge;
 }
 
-void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluatorBuildParams& Params, const UCameraRigAsset* CameraRig, const UBlendCameraNode* Blend)
+void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(
+		const FCameraNodeEvaluatorBuildParams& BuildParams,
+		const FCameraNodeEvaluatorInitializeParams& InitParams,
+		FCameraNodeEvaluationResult& InitResult,
+		const UCameraRigAsset* CameraRig,
+		const UBlendCameraNode* Blend)
 {
 	if (!ensureMsgf(CameraRig, TEXT("No camera rig given.")))
 	{
@@ -153,7 +158,11 @@ void FBlendStackRootCameraNodeEvaluator::MergeCameraRig(const FCameraNodeEvaluat
 
 	if (Blend)
 	{
-		BlendedParameterOverrides.BlendEvaluator = Params.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(Blend);
+		BlendedParameterOverrides.BlendEvaluator = BuildParams.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(Blend);
+	}
+	if (BlendedParameterOverrides.BlendEvaluator)
+	{
+		BlendedParameterOverrides.BlendEvaluator->Initialize(InitParams, InitResult);
 	}
 
 	BlendedParameterOverridesStack.Add(MoveTemp(BlendedParameterOverrides));
