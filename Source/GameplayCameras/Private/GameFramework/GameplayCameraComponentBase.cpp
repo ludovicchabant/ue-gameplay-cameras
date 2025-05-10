@@ -593,6 +593,15 @@ void UGameplayCameraComponentBase::UpdateControlRotationIfNeeded()
 	}
 }
 
+bool UGameplayCameraComponentBase::IsEditorWorld() const
+{
+#if WITH_EDITOR
+	return bIsEditorWorld;
+#else
+	return false;
+#endif  // WITH_EDITOR
+}
+
 #if WITH_EDITOR
 
 void UGameplayCameraComponentBase::ReinitializeCameraEvaluationContext(

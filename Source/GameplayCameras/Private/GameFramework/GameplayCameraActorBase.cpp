@@ -16,17 +16,7 @@ AGameplayCameraActorBase::AGameplayCameraActorBase(const FObjectInitializer& Obj
 
 void AGameplayCameraActorBase::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
 {
-	using namespace UE::Cameras;
-
-	UGameplayCameraComponentBase* CameraComponentBase = GetCameraComponentBase();
-	if (ensure(CameraComponentBase))
-	{
-		CameraComponentBase->CalcCamera(DeltaTime, OutResult);
-	}
-	else
-	{
-		Super::CalcCamera(DeltaTime, OutResult);
-	}
+	Super::CalcCamera(DeltaTime, OutResult);
 }
 
 #undef LOCTEXT_NAMESPACE

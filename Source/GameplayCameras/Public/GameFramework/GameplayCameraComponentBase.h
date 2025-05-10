@@ -168,6 +168,7 @@ protected:
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
 	bool HasCameraEvaluationContext() const { return EvaluationContext.IsValid(); }
 
+	bool IsEditorWorld() const;
 	void UpdateControlRotationIfNeeded();
 
 #if WITH_EDITOR
