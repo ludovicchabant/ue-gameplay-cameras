@@ -246,6 +246,7 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	if (UNLIKELY(!ActiveContext.IsValid()))
 	{
 		Result.bIsValid = false;
+		PreVisualResult.bIsValid = false;
 		return;
 	}
 
@@ -274,6 +275,7 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	PostUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);
 
 	// Harvest the result.
+	PreVisualResult.Reset(RootEvaluator->GetPreVisualLayerResult());
 	Result.Reset(RootNodeResult);
 
 	// Generate debug information if needed.

@@ -100,6 +100,16 @@ void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluati
 	OnRunSingleCameraRig(Params, OutResult);
 }
 
+const FCameraNodeEvaluationResult& FRootCameraNodeEvaluator::GetPreVisualLayerResult() const
+{
+	return PreVisualResult;
+}
+
+void FRootCameraNodeEvaluator::SetPreVisualLayerResult(const FCameraNodeEvaluationResult& InResult)
+{
+	PreVisualResult.OverrideAll(InResult, true);
+}
+
 void FRootCameraNodeEvaluator::BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const
 {
 	if (ensure(OwningEvaluator))

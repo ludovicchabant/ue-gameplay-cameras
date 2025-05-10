@@ -79,6 +79,7 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	BaseLayer->Run(Params, OutResult);
 	MainLayer->Run(Params, OutResult);
 	GlobalLayer->Run(Params, OutResult);
+	SetPreVisualLayerResult(OutResult);
 	if (Params.EvaluationType != ECameraNodeEvaluationType::IK && 
 			Params.EvaluationType != ECameraNodeEvaluationType::ViewRotationPreview)
 	{

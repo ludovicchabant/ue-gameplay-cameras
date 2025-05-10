@@ -587,7 +587,7 @@ void UGameplayCameraComponentBase::UpdateControlRotationIfNeeded()
 	AActor* OwnerActor = GetOwner();
 	if (OwnerActor && PlayerController->GetViewTarget() == OwnerActor)
 	{
-		const FCameraSystemEvaluationResult& Result = CameraSystemEvaluator->GetEvaluatedResult();
+		const FCameraSystemEvaluationResult& Result = CameraSystemEvaluator->GetPreVisualLayerEvaluatedResult();
 		const FRotator3d& ControlRotation = Result.CameraPose.GetRotation();
 		PlayerController->SetControlRotation(ControlRotation);
 	}

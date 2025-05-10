@@ -145,6 +145,9 @@ public:
 	/** Gets the variable table containing the blended camera object interfaces parameters. */
 	const FCameraVariableTable* GetBlendedParameters() const;
 
+	/** Returns the evaluation result without the contribution of the visual layer. */
+	const FCameraNodeEvaluationResult& GetPreVisualLayerResult() const;
+
 	/**
 	 * Builds the hierarchy of the system for a given single camera rig.
 	 * This is expected to return the nodes of all the layers, except for the main layer which
@@ -199,12 +202,17 @@ protected:
 
 protected:
 
+	void SetPreVisualLayerResult(const FCameraNodeEvaluationResult& InResult);
+
 	void BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const;
 
 private:
 
 	/** The camera system that owns this root node. */
 	FCameraSystemEvaluator* OwningEvaluator = nullptr;
+
+	/** Evaluation result before the contribution of the visual layer. */
+	FCameraNodeEvaluationResult PreVisualResult;
 
 	/** The delegate to notify when an event happens. */
 	FOnRootCameraNodeCameraRigEvent OnCameraRigEventDelegate;

@@ -251,6 +251,9 @@ public:
 	/** Gets the evaluated result. */
 	const FCameraSystemEvaluationResult& GetEvaluatedResult() const { return Result; }
 
+	/** Gets the evaluated result without the contribution of the visual layer. */
+	const FCameraSystemEvaluationResult& GetPreVisualLayerEvaluatedResult() const { return PreVisualResult; }
+
 	/** Get the last evaluated camera. */
 	GAMEPLAYCAMERAS_API void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
 
@@ -315,6 +318,9 @@ private:
 
 	/** The current overall result of the camera system. */
 	FCameraSystemEvaluationResult Result;
+
+	/** The current overall result of the camera system without the contribution of the visual layer. */
+	FCameraSystemEvaluationResult PreVisualResult;
 
 	/** Reusable buffer for node tree snapshots (e.g. view rotation preview update). */
 	TArray<uint8> EvaluatorSnapshot;
