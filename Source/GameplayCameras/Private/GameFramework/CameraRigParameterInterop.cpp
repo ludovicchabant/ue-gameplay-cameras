@@ -23,7 +23,7 @@ void UCameraRigParameterInterop::GetCameraParameter(const FBlueprintCameraEvalua
 	checkNoEntry();
 }
 
-void UCameraRigParameterInterop::SetCameraParameter(FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, const int32& NewValue)
+void UCameraRigParameterInterop::SetCameraParameter(const FBlueprintCameraEvaluationDataRef& CameraData, UCameraRigAsset* CameraRig, FName ParameterName, const int32& NewValue)
 {
 	checkNoEntry();
 }
