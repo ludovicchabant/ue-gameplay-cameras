@@ -8,6 +8,8 @@
 
 #include "CameraParameters.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 	class FCameraVariableTable;
@@ -39,7 +41,7 @@ namespace UE::Cameras
 
 /** Boolean camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
+struct FBooleanCameraParameter
 {
 	GENERATED_BODY()
 
@@ -55,14 +57,14 @@ struct GAMEPLAYCAMERAS_API FBooleanCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UBooleanCameraVariable> Variable;
 
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(FBooleanCameraParameter)
 };
 
 /** Integer camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
+struct FInteger32CameraParameter
 {
 	GENERATED_BODY()
 
@@ -78,7 +80,7 @@ struct GAMEPLAYCAMERAS_API FInteger32CameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UInteger32CameraVariable> Variable;
 
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(FInteger32CameraParameter)
 };
@@ -108,7 +110,7 @@ struct FFloatCameraParameter
 
 /** Double camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
+struct FDoubleCameraParameter
 {
 	GENERATED_BODY()
 
@@ -124,14 +126,14 @@ struct GAMEPLAYCAMERAS_API FDoubleCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UDoubleCameraVariable> Variable;
 
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(FDoubleCameraParameter)
 };
 
 /** Vector2f camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
+struct FVector2fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -147,15 +149,15 @@ struct GAMEPLAYCAMERAS_API FVector2fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2fCameraVariable> Variable;
 
-	FVector2fCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector2fCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector2fCameraParameter)
 };
 
 /** Vector2d camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
+struct FVector2dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -171,15 +173,15 @@ struct GAMEPLAYCAMERAS_API FVector2dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector2dCameraVariable> Variable;
 
-	FVector2dCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector2dCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector2dCameraParameter)
 };
 
 /** Vector3f camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
+struct FVector3fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -195,15 +197,15 @@ struct GAMEPLAYCAMERAS_API FVector3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3fCameraVariable> Variable;
 
-	FVector3fCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector3fCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector3fCameraParameter)
 };
 
 /** Vector3d camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
+struct FVector3dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -219,15 +221,15 @@ struct GAMEPLAYCAMERAS_API FVector3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector3dCameraVariable> Variable;
 
-	FVector3dCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector3dCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector3dCameraParameter)
 };
 
 /** Vector4f camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
+struct FVector4fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -243,15 +245,15 @@ struct GAMEPLAYCAMERAS_API FVector4fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4fCameraVariable> Variable;
 
-	FVector4fCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector4fCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector4fCameraParameter)
 };
 
 /** Vector4d camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FVector4dCameraParameter
+struct FVector4dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -267,15 +269,15 @@ struct GAMEPLAYCAMERAS_API FVector4dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UVector4dCameraVariable> Variable;
 
-	FVector4dCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FVector4dCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FVector4dCameraParameter)
 };
 
 /** Rotator3f camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
+struct FRotator3fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -291,15 +293,15 @@ struct GAMEPLAYCAMERAS_API FRotator3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3fCameraVariable> Variable;
 
-	FRotator3fCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FRotator3fCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FRotator3fCameraParameter)
 };
 
 /** Rotator3d camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
+struct FRotator3dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -315,15 +317,15 @@ struct GAMEPLAYCAMERAS_API FRotator3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<URotator3dCameraVariable> Variable;
 
-	FRotator3dCameraParameter();
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API FRotator3dCameraParameter();
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_VALUE_CONSTRUCTORS(FRotator3dCameraParameter)
 };
 
 /** Transform3f camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
+struct FTransform3fCameraParameter
 {
 	GENERATED_BODY()
 
@@ -339,14 +341,14 @@ struct GAMEPLAYCAMERAS_API FTransform3fCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UTransform3fCameraVariable> Variable;
 
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(FTransform3fCameraParameter)
 };
 
 /** Transform3d camera parameter. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
+struct FTransform3dCameraParameter
 {
 	GENERATED_BODY()
 
@@ -362,7 +364,7 @@ struct GAMEPLAYCAMERAS_API FTransform3dCameraParameter
 	UPROPERTY(EditAnywhere, Category=Common)
 	TObjectPtr<UTransform3dCameraVariable> Variable;
 
-	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
+	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
 	UE_DEFINE_CAMERA_PARAMETER_ALL_CONSTRUCTORS(FTransform3dCameraParameter)
 };
@@ -402,3 +404,4 @@ inline bool CameraParameterValueEquals<FTransform3d>(const FTransform3d& A, cons
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
+#undef UE_API

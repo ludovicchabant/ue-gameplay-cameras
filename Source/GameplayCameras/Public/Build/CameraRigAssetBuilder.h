@@ -5,6 +5,8 @@
 #include "Build/CameraBuildLog.h"
 #include "Core/CameraNodeHierarchy.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraRigAsset;
 
 namespace UE::Cameras
@@ -19,20 +21,20 @@ namespace UE::Cameras
  *
  * Once the build process is done, the BuildStatus property is set on the camera rig.
  */
-class GAMEPLAYCAMERAS_API FCameraRigAssetBuilder
+class FCameraRigAssetBuilder
 {
 public:
 
 	DECLARE_DELEGATE_TwoParams(FCustomBuildStep, UCameraRigAsset*, FCameraBuildLog&);
 
 	/** Creates a new camera rig builder. */
-	FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog);
 
 	/** Builds the given camera rig. */
-	void BuildCameraRig(UCameraRigAsset* InCameraRig);
+	UE_API void BuildCameraRig(UCameraRigAsset* InCameraRig);
 
 	/** Builds the given camera rig. */
-	void BuildCameraRig(UCameraRigAsset* InCameraRig, FCustomBuildStep InCustomBuildStep);
+	UE_API void BuildCameraRig(UCameraRigAsset* InCameraRig, FCustomBuildStep InCustomBuildStep);
 
 private:
 
@@ -51,3 +53,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

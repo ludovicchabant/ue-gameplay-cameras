@@ -33,8 +33,8 @@ struct FCameraDebugBlockDrawParams
  */
 struct FCameraDebugBlockField
 {
-	GAMEPLAYCAMERAS_API virtual ~FCameraDebugBlockField() {}
-	GAMEPLAYCAMERAS_API virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) = 0;
+	virtual ~FCameraDebugBlockField() {}
+	virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) = 0;
 
 	FName FieldName;
 	uint16 FieldIndex = 0;
@@ -47,13 +47,13 @@ struct FCameraDebugBlockField
 template<typename FieldType>
 struct TCameraDebugBlockField : FCameraDebugBlockField
 {
-	GAMEPLAYCAMERAS_API TCameraDebugBlockField(const FName& InName, uint16 InOffset) 
+	TCameraDebugBlockField(const FName& InName, uint16 InOffset) 
 	{
 		FieldName = InName;
 		FieldOffset = InOffset;
 	}
 
-	GAMEPLAYCAMERAS_API virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) override
+	virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) override
 	{
 		FieldType* Value = reinterpret_cast<FieldType*>(reinterpret_cast<uint8*>(This) + FieldOffset);
 		Ar << (*Value);
@@ -71,7 +71,7 @@ class FCameraDebugBlock
 
 public:
 
-	GAMEPLAYCAMERAS_API virtual ~FCameraDebugBlock() {}
+	virtual ~FCameraDebugBlock() {}
 
 	/** Attaches a block to this block. */
 	GAMEPLAYCAMERAS_API void Attach(FCameraDebugBlock* InAttachment);
@@ -92,12 +92,12 @@ public:
 protected:
 
 	/** Called to let this block display its information on screen. */
-	GAMEPLAYCAMERAS_API virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
 	/** Called after attached and children blocks' debug draw. */
-	GAMEPLAYCAMERAS_API virtual void OnPostDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
+	virtual void OnPostDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) {}
 
 	/** Serializes this debug block into a buffer, for recording/replaying purposes. */
-	GAMEPLAYCAMERAS_API virtual void OnSerialize(FArchive& Ar) {}
+	virtual void OnSerialize(FArchive& Ar) {}
 
 protected:
 

@@ -9,43 +9,45 @@
 
 #include "CameraVariableAssets.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 /**
  * The base asset class for all camera variables.
  */
-UCLASS(Abstract)
-class GAMEPLAYCAMERAS_API UCameraVariableAsset : public UObject
+UCLASS(MinimalAPI, Abstract)
+class UCameraVariableAsset : public UObject
 {
 	GENERATED_BODY()
 
 public:
 
-	UCameraVariableAsset(const FObjectInitializer& ObjectInit);
+	UE_API UCameraVariableAsset(const FObjectInitializer& ObjectInit);
 
-	FCameraVariableID GetVariableID() const;
+	UE_API FCameraVariableID GetVariableID() const;
 
-	FCameraVariableDefinition GetVariableDefinition() const;
+	UE_API FCameraVariableDefinition GetVariableDefinition() const;
 
 	const FGuid& GetGuid() const { return Guid; }
 
-	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
-	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
+	UE_API virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
+	UE_API virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
 #if WITH_EDITORONLY_DATA
-	FString GetDisplayName() const;
+	UE_API FString GetDisplayName() const;
 #endif  // WITH_EDITORONLY_DATA
 
 #if WITH_EDITOR
-	FText GetDisplayText() const;
+	UE_API FText GetDisplayText() const;
 
-	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
+	UE_API virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
 #endif  // WITH_EDITOR
 
 public:
 
 	// UObject interface
-	virtual void PostLoad() override;
-	virtual void PostInitProperties() override;
-	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
+	UE_API virtual void PostLoad() override;
+	UE_API virtual void PostInitProperties() override;
+	UE_API virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
 public:
 
@@ -74,8 +76,8 @@ private:
 };
 
 /** Boolean camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UBooleanCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UBooleanCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -100,8 +102,8 @@ public:
 };
 
 /** Integer camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UInteger32CameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UInteger32CameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -126,8 +128,8 @@ public:
 };
 
 /** Float camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UFloatCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UFloatCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -152,8 +154,8 @@ public:
 };
 
 /** Double camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UDoubleCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UDoubleCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -178,8 +180,8 @@ public:
 };
 
 /** Vector2f camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector2fCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector2fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -204,8 +206,8 @@ public:
 };
 
 /** Vector2d camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector2dCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector2dCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -230,8 +232,8 @@ public:
 };
 
 /** Vector3f camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector3fCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -256,8 +258,8 @@ public:
 };
 
 /** Vector3d camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector3dCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector3dCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -282,8 +284,8 @@ public:
 };
 
 /** Vector4f camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector4fCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector4fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -308,8 +310,8 @@ public:
 };
 
 /** Vector4d camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UVector4dCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UVector4dCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -334,8 +336,8 @@ public:
 };
 
 /** Rotator3f camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API URotator3fCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class URotator3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -360,8 +362,8 @@ public:
 };
 
 /** Rotator3d camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API URotator3dCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class URotator3dCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -386,8 +388,8 @@ public:
 };
 
 /** Transform3f camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UTransform3fCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UTransform3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -412,8 +414,8 @@ public:
 };
 
 /** Transform3d camera variable. */
-UCLASS()
-class GAMEPLAYCAMERAS_API UTransform3dCameraVariable : public UCameraVariableAsset
+UCLASS(MinimalAPI)
+class UTransform3dCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
 
@@ -437,3 +439,4 @@ public:
 	FTransform3d DefaultValue;
 };
 
+#undef UE_API

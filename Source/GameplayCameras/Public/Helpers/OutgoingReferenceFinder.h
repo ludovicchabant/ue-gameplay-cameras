@@ -8,6 +8,8 @@
 #include "CoreTypes.h"
 #include "Serialization/ArchiveUObject.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
@@ -15,36 +17,36 @@ namespace UE::Cameras
  * A utility class for finding outgoing references from a given package to external UObjects
  * of a given class.
  */
-class GAMEPLAYCAMERAS_API FOutgoingReferenceFinder : public FArchiveUObject
+class FOutgoingReferenceFinder : public FArchiveUObject
 {
 public:
 
 	/** Creates a new instance of the reference finder. */
-	FOutgoingReferenceFinder(UObject* InRootObject, UClass* InReferencedObjectClass);
+	UE_API FOutgoingReferenceFinder(UObject* InRootObject, UClass* InReferencedObjectClass);
 
 	/** Creates a new instance of the reference finder. */
-	FOutgoingReferenceFinder(UObject* InRootObject, TArrayView<UClass*> InReferencedObjectClasses);
+	UE_API FOutgoingReferenceFinder(UObject* InRootObject, TArrayView<UClass*> InReferencedObjectClasses);
 
 	/** Runs the reference finding. */
-	void CollectReferences();
+	UE_API void CollectReferences();
 
 	/** Gets the references of a given class. */
 	template<typename ObjectClass>
 	bool GetReferencesOfClass(TArray<ObjectClass*>& OutReferencedObjects) const;
 
 	/** Gets all referenced objects. */
-	bool GetAllReferences(TArray<UObject*>& OutReferencedObjects) const;
+	UE_API bool GetAllReferences(TArray<UObject*>& OutReferencedObjects) const;
 
 protected:
 
 	// FArchive interface.
-	virtual FArchive& operator<<(UObject*& ObjRef) override;
+	UE_API virtual FArchive& operator<<(UObject*& ObjRef) override;
 
 private:
 
-	void Initialize(UObject* InRootObject);
+	UE_API void Initialize(UObject* InRootObject);
 
-	bool MatchesAnyTargetClass(UClass* InObjClass) const;
+	UE_API bool MatchesAnyTargetClass(UClass* InObjClass) const;
 
 private:
 
@@ -75,3 +77,4 @@ bool FOutgoingReferenceFinder::GetReferencesOfClass(TArray<ObjectClass*>& OutRef
 
 }  // namespace UE::Cameras
 
+#undef UE_API

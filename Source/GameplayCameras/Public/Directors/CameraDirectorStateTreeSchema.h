@@ -12,6 +12,8 @@
 
 #include "CameraDirectorStateTreeSchema.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraRigAsset;
 class UCameraRigProxyAsset;
 struct FStateTreeExternalDataDesc;
@@ -29,21 +31,21 @@ struct FStateTreeContextDataNames
 /**
  * The schema of the StateTree for a StateTree camera director.
  */
-UCLASS(BlueprintType, EditInlineNew, CollapseCategories, meta=(DisplayName="Gameplay Camera Director"))
-class GAMEPLAYCAMERAS_API UCameraDirectorStateTreeSchema : public UStateTreeSchema
+UCLASS(MinimalAPI, BlueprintType, EditInlineNew, CollapseCategories, meta=(DisplayName="Gameplay Camera Director"))
+class UCameraDirectorStateTreeSchema : public UStateTreeSchema
 {
 	GENERATED_BODY()
 
 public:
 
-	UCameraDirectorStateTreeSchema();
+	UE_API UCameraDirectorStateTreeSchema();
 
 protected:
 
 	// UStateTreeSchema interface.
-	virtual bool IsStructAllowed(const UScriptStruct* InScriptStruct) const override;
-	virtual bool IsClassAllowed(const UClass* InScriptStruct) const override;
-	virtual bool IsExternalItemAllowed(const UStruct& InStruct) const override;
+	UE_API virtual bool IsStructAllowed(const UScriptStruct* InScriptStruct) const override;
+	UE_API virtual bool IsClassAllowed(const UClass* InScriptStruct) const override;
+	UE_API virtual bool IsExternalItemAllowed(const UStruct& InStruct) const override;
 	virtual TConstArrayView<FStateTreeExternalDataDesc> GetContextDataDescs() const override { return ContextDataDescs; }
 
 private:
@@ -54,7 +56,7 @@ private:
 
 /** The evaluation data for the StateTree camera director. */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FCameraDirectorStateTreeEvaluationData
+struct FCameraDirectorStateTreeEvaluationData
 {
 	GENERATED_BODY()
 
@@ -69,20 +71,21 @@ struct GAMEPLAYCAMERAS_API FCameraDirectorStateTreeEvaluationData
 public:
 
 	/** Reset this evaluation data for a new frame. */
-	void Reset();
+	UE_API void Reset();
 };
 
 /** Base classs for camera director StateTree tasks. */
 USTRUCT(meta = (Hidden))
-struct GAMEPLAYCAMERAS_API FGameplayCamerasStateTreeTask : public FStateTreeTaskBase
+struct FGameplayCamerasStateTreeTask : public FStateTreeTaskBase
 {
 	GENERATED_BODY()
 };
 
 /** Base classs for camera director StateTree conditions. */
 USTRUCT(meta = (Hidden))
-struct GAMEPLAYCAMERAS_API FGameplayCamerasStateTreeCondition : public FStateTreeConditionBase
+struct FGameplayCamerasStateTreeCondition : public FStateTreeConditionBase
 {
 	GENERATED_BODY()
 };
 
+#undef UE_API

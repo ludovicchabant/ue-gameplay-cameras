@@ -13,7 +13,7 @@ class AActor;
  * Attachment information for a camera rig.
  */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FCameraActorAttachmentInfo
+struct FCameraActorAttachmentInfo
 {
 	GENERATED_BODY()
 

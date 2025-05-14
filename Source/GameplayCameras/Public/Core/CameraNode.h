@@ -10,6 +10,8 @@
 
 #include "CameraNode.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 	class FCameraBuildLog;
@@ -32,8 +34,8 @@ ENUM_CLASS_FLAGS(ECameraNodeFlags)
 /**
  * The base class for a camera node.
  */
-UCLASS(Abstract, DefaultToInstanced, EditInlineNew, meta=(CameraNodeCategories="Miscellaneous"))
-class GAMEPLAYCAMERAS_API UCameraNode 
+UCLASS(MinimalAPI, Abstract, DefaultToInstanced, EditInlineNew, meta=(CameraNodeCategories="Miscellaneous"))
+class UCameraNode 
 	: public UObject
 	, public IObjectTreeGraphObject
 {
@@ -46,16 +48,16 @@ public:
 	using FCameraNodeEvaluatorBuilder = UE::Cameras::FCameraNodeEvaluatorBuilder;
 
 	/** Get the list of children under this node. */
-	FCameraNodeChildrenView GetChildren();
+	UE_API FCameraNodeChildrenView GetChildren();
 
 	/** Optional build step executed at the beginning of the build process. */
-	void PreBuild(FCameraBuildLog& BuildLog);
+	UE_API void PreBuild(FCameraBuildLog& BuildLog);
 
 	/** Gets optional info about this node's required allocations at runtime. */
-	void Build(FCameraObjectBuildContext& BuildContext);
+	UE_API void Build(FCameraObjectBuildContext& BuildContext);
 
 	/** Builds the evaluator for this node. */
-	FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
+	UE_API FCameraNodeEvaluatorPtr BuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const;
 
 protected:
 
@@ -82,15 +84,15 @@ protected:
 protected:
 
 	// UObject interface.
-	virtual void PostLoad() override;
+	UE_API virtual void PostLoad() override;
 
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
-	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+	UE_API virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	UE_API virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
 	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
-	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
-	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
+	UE_API virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
+	UE_API virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
 #endif
 
 public:
@@ -128,3 +130,4 @@ private:
 	ECameraNodeFlags PrivateFlags = ECameraNodeFlags::None;
 };
 
+#undef UE_API

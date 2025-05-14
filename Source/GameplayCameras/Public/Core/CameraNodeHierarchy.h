@@ -5,6 +5,8 @@
 #include "Containers/Array.h"
 #include "Core/CameraNode.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UBaseCameraObject;
 
 namespace UE::Cameras
@@ -14,31 +16,31 @@ namespace UE::Cameras
  * A utility class that stores a flattened hierarchy of camera nodes.
  * Unconnected camera nodes aren't included, of course.
  */
-class GAMEPLAYCAMERAS_API FCameraNodeHierarchy
+class FCameraNodeHierarchy
 {
 public:
 
 	/** Build an empty hierarchy. */
-	FCameraNodeHierarchy();
+	UE_API FCameraNodeHierarchy();
 	/** Build a hierarchy starting from the given camera object's root node. */
-	FCameraNodeHierarchy(UBaseCameraObject* InCameraObject);
+	UE_API FCameraNodeHierarchy(UBaseCameraObject* InCameraObject);
 	/** Build a hierarchy starting from the given root node. */
-	FCameraNodeHierarchy(UCameraNode* InRootCameraNode);
+	UE_API FCameraNodeHierarchy(UCameraNode* InRootCameraNode);
 
 	/** Get the list of camera nodes in depth-first order. */
-	TArrayView<UCameraNode* const> GetFlattenedHierarchy() const;
+	UE_API TArrayView<UCameraNode* const> GetFlattenedHierarchy() const;
 
 	/** Returns the number of camera nodes in this hierarchy. */
-	int32 Num() const;
+	UE_API int32 Num() const;
 
 public:
 
 	/** Build a hierarchy starting from the given camera object's root node. */
-	void Build(UBaseCameraObject* InCameraObject);
+	UE_API void Build(UBaseCameraObject* InCameraObject);
 	/** Build a hierarchy starting from the given root node. */
-	void Build(UCameraNode* InRootCameraNode);
+	UE_API void Build(UCameraNode* InRootCameraNode);
 	/** Resets this object to an empty hierarchy. */
-	void Reset();
+	UE_API void Reset();
 
 public:
 
@@ -57,8 +59,8 @@ public:
 	// Internal API.
 
 #if WITH_EDITORONLY_DATA
-	bool FindMissingConnectableObjects(TArrayView<UObject* const> ConnectableObjects, TSet<UObject*>& OutMissingObjects);
-	bool FindMissingConnectableObjects(const TSet<UObject*> ConnectableObjectsSet, TSet<UObject*>& OutMissingObjects);
+	UE_API bool FindMissingConnectableObjects(TArrayView<UObject* const> ConnectableObjects, TSet<UObject*>& OutMissingObjects);
+	UE_API bool FindMissingConnectableObjects(const TSet<UObject*> ConnectableObjectsSet, TSet<UObject*>& OutMissingObjects);
 #endif  // WITH_EDITORONLY_DATA
 
 private:
@@ -68,3 +70,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

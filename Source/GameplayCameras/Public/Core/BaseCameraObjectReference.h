@@ -69,7 +69,7 @@ public:
 public:
 
 	/** Gets the camera object that this reference points to. */
-	GAMEPLAYCAMERAS_API virtual const UBaseCameraObject* GetCameraObject() const { return nullptr; }
+	virtual const UBaseCameraObject* GetCameraObject() const { return nullptr; }
 
 	/** Returns whether the override parameters structure needs to be rebuilt. */
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;

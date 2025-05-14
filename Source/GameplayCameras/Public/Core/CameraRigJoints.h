@@ -5,6 +5,8 @@
 #include "Core/CameraVariableTableFwd.h"
 #include "CoreTypes.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 struct FCameraVariableDefinition;
 
 namespace UE::Cameras
@@ -13,7 +15,7 @@ namespace UE::Cameras
 /**
  * A structure describing a joint in a camera rig.
  */
-struct GAMEPLAYCAMERAS_API FCameraRigJoint
+struct FCameraRigJoint
 {
 	/** The variable driving the rotation of this joint. */
 	FCameraVariableID VariableID;
@@ -28,32 +30,32 @@ FArchive& operator<< (FArchive& Ar, FCameraRigJoint& RigJoint);
  * These joints allow for "manipulating" the rig, e.g. to make it point
  * towards a desired target or direction.
  */
-class GAMEPLAYCAMERAS_API FCameraRigJoints
+class FCameraRigJoints
 {
 public:
 
 	/** Add a joint. */
-	void AddJoint(const FCameraRigJoint& InJoint);
+	UE_API void AddJoint(const FCameraRigJoint& InJoint);
 	/** Add a joint. */
-	void AddJoint(const FCameraVariableDefinition& InVariableDefinition, const FTransform3d& InTransform);
+	UE_API void AddJoint(const FCameraVariableDefinition& InVariableDefinition, const FTransform3d& InTransform);
 	/** Add a joint related to the yaw/pitch built-in variable. */
-	void AddYawPitchJoint(const FTransform3d& InTransform);
+	UE_API void AddYawPitchJoint(const FTransform3d& InTransform);
 
 	/** Gets the joints. */
 	TArrayView<const FCameraRigJoint> GetJoints() const { return Joints; }
 
 	/** Removes all previously added joints. */
-	void Reset();
+	UE_API void Reset();
 
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 public:
 
 	/** Override the joints with another set of joints. */
-	void OverrideAll(const FCameraRigJoints& OtherJoints);
+	UE_API void OverrideAll(const FCameraRigJoints& OtherJoints);
 
 	/** Interpolate the joints towards anoter set of joints. */
-	void LerpAll(const FCameraRigJoints& ToJoints, float BlendFactor);
+	UE_API void LerpAll(const FCameraRigJoints& ToJoints, float BlendFactor);
 
 private:
 
@@ -63,3 +65,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

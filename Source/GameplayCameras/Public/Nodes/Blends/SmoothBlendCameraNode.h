@@ -26,7 +26,7 @@ class USmoothBlendCameraNode : public USimpleFixedTimeBlendCameraNode
 
 public:
 
-	GAMEPLAYCAMERAS_API void SetCameraBlendType(ESmoothCameraBlendType BlendTypeIn) { BlendType = BlendTypeIn; }
+	void SetCameraBlendType(ESmoothCameraBlendType BlendTypeIn) { BlendType = BlendTypeIn; }
 
 protected:
 

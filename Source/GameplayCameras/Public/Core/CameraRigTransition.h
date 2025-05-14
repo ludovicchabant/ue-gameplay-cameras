@@ -9,6 +9,8 @@
 
 #include "CameraRigTransition.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UBlendCameraNode;
 class UCameraAsset;
 class UCameraRigAsset;
@@ -21,7 +23,7 @@ namespace UE::Cameras
 /**
  * Parameter structure for camera transitions.
  */
-struct GAMEPLAYCAMERAS_API FCameraRigTransitionConditionMatchParams
+struct FCameraRigTransitionConditionMatchParams
 {
 	/** The previous camera rig. */
 	const UCameraRigAsset* FromCameraRig = nullptr;
@@ -37,11 +39,11 @@ struct GAMEPLAYCAMERAS_API FCameraRigTransitionConditionMatchParams
 /**
  * Base class for a camera transition condition.
  */
-UCLASS(Abstract, DefaultToInstanced, meta=(
+UCLASS(MinimalAPI, Abstract, DefaultToInstanced, meta=(
 			ObjectTreeGraphCategory="Transition Conditions",
 			ObjectTreeGraphSelfPinDirection="Output",
 			ObjectTreeGraphDefaultPropertyPinDirection="Input"))
-class GAMEPLAYCAMERAS_API UCameraRigTransitionCondition
+class UCameraRigTransitionCondition
 	: public UObject
 	, public IObjectTreeGraphObject
 {
@@ -52,10 +54,10 @@ public:
 	using FCameraObjectBuildContext = UE::Cameras::FCameraObjectBuildContext;
 
 	/** Evaluates whether this transition should be used. */
-	bool TransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const;
+	UE_API bool TransitionMatches(const FCameraRigTransitionConditionMatchParams& Params) const;
 
 	/** Build process callback for this transition. */
-	void Build(FCameraObjectBuildContext& BuildContext);
+	UE_API void Build(FCameraObjectBuildContext& BuildContext);
 
 protected:
 
@@ -68,15 +70,15 @@ protected:
 protected:
 
 	// UObject interface.
-	virtual void PostLoad() override;
+	UE_API virtual void PostLoad() override;
 
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
-	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+	UE_API virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	UE_API virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
 	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
-	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
-	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
+	UE_API virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
+	UE_API virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
 #endif
 
 private:
@@ -130,8 +132,8 @@ enum class ECameraRigInitialOrientation
 /**
  * A camera transition.
  */
-UCLASS()
-class GAMEPLAYCAMERAS_API UCameraRigTransition
+UCLASS(MinimalAPI)
+class UCameraRigTransition
 	: public UObject
 	, public IObjectTreeGraphObject
 {
@@ -170,23 +172,23 @@ public:
 	using FCameraObjectBuildContext = UE::Cameras::FCameraObjectBuildContext;
 
 	/** Returns whether all transition condition matches the given parameters. */
-	bool AllConditionsMatch(const FCameraRigTransitionConditionMatchParams& Params) const;
+	UE_API bool AllConditionsMatch(const FCameraRigTransitionConditionMatchParams& Params) const;
 
 	/** Build process callback for this transition. */
-	void Build(FCameraObjectBuildContext& BuildContext);
+	UE_API void Build(FCameraObjectBuildContext& BuildContext);
 
 protected:
 
 	// UObject interface.
-	virtual void PostLoad() override;
+	UE_API virtual void PostLoad() override;
 
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
-	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+	UE_API virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	UE_API virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
 	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override { return EObjectTreeGraphObjectSupportFlags::CommentText; }
-	virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
-	virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
+	UE_API virtual const FString& GetGraphNodeCommentText(FName InGraphName) const override;
+	UE_API virtual void OnUpdateGraphNodeCommentText(FName InGraphName, const FString& NewComment) override;
 #endif
 
 private:
@@ -212,3 +214,4 @@ private:
 #endif  // WITH_EDITORONLY_DATA
 };
 
+#undef UE_API

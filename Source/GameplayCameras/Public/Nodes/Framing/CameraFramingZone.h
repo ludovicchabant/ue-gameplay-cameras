@@ -118,7 +118,7 @@ template <> struct TIsPODType<FCameraFramingZone>
 
 /** Framing zone camera parameter. */
 USTRUCT()
-struct GAMEPLAYCAMERAS_API FCameraFramingZoneParameter
+struct FCameraFramingZoneParameter
 {
 	GENERATED_BODY()
 

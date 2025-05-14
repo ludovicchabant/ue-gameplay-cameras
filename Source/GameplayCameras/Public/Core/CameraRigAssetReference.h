@@ -193,7 +193,7 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
  * per parameter type.
  */
 USTRUCT()
-struct GAMEPLAYCAMERAS_API FCameraRigParameterOverrides
+struct FCameraRigParameterOverrides
 {
 	GENERATED_BODY()
 

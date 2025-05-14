@@ -6,13 +6,15 @@
 #include "CoreTypes.h"
 #include "Logging/TokenizedMessage.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
 /**
  * A message emitted by a camera build process.
  */
-struct GAMEPLAYCAMERAS_API FCameraBuildLogMessage
+struct FCameraBuildLogMessage
 {
 	/** Severity of the message. */
 	EMessageSeverity::Type Severity = EMessageSeverity::Info;
@@ -22,15 +24,15 @@ struct GAMEPLAYCAMERAS_API FCameraBuildLogMessage
 	FText Text;
 
 	/** Generates a plain string representation of this message. */
-	FString ToString() const;
+	UE_API FString ToString() const;
 	/** Sends a string version of this message to the LogCameraSystem console log. */
-	void SendToLogging(const FString& InLoggingPrefix) const;
+	UE_API void SendToLogging(const FString& InLoggingPrefix) const;
 };
 
 /**
  * Build log, populated when building a camera rig, or other camera asset.
  */
-class GAMEPLAYCAMERAS_API FCameraBuildLog
+class FCameraBuildLog
 {
 public:
 
@@ -39,17 +41,17 @@ public:
 	 * Only useful when IsForwardingMessagesToLogging is true.
 	 * This is generally set to the name of the camera asset being built.
 	 */
-	void SetLoggingPrefix(const FString& InPrefix);
+	UE_API void SetLoggingPrefix(const FString& InPrefix);
 
 	/** Returns whether build messages are sent to the console. */
 	bool IsForwardingMessagesToLogging() const { return bForwardToLogging; }
 	/** Sets whether build messages are sent to the console. */
-	void SetForwardMessagesToLogging(bool bInForwardToLogging);
+	UE_API void SetForwardMessagesToLogging(bool bInForwardToLogging);
 
 	/** Adds a new message. */
-	void AddMessage(EMessageSeverity::Type InSeverity, FText&& InText);
+	UE_API void AddMessage(EMessageSeverity::Type InSeverity, FText&& InText);
 	/** Adds a new message. */
-	void AddMessage(EMessageSeverity::Type InSeverity, const UObject* InObject, FText&& InText);
+	UE_API void AddMessage(EMessageSeverity::Type InSeverity, const UObject* InObject, FText&& InText);
 
 	/** Gets the list of received messages so far. */
 	TArrayView<const FCameraBuildLogMessage> GetMessages() const { return Messages; }
@@ -72,3 +74,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

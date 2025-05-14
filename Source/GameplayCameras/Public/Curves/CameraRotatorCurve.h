@@ -7,15 +7,18 @@
 
 #include "CameraRotatorCurve.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 USTRUCT()
-struct GAMEPLAYCAMERAS_API FCameraRotatorCurve
+struct FCameraRotatorCurve
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
 	FRichCurve Curves[3];
 
-	FRotator GetValue(float InTime) const;
-	bool HasAnyData() const;
+	UE_API FRotator GetValue(float InTime) const;
+	UE_API bool HasAnyData() const;
 };
 
+#undef UE_API

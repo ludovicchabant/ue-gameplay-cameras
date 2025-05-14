@@ -19,7 +19,7 @@ public:
 
 	UOrbitBlendCameraNode(const FObjectInitializer& ObjInit);
 
-	GAMEPLAYCAMERAS_API void SetDrivingBlend(USimpleBlendCameraNode* DrivingBlendIn) { DrivingBlend = DrivingBlendIn; }
+	void SetDrivingBlend(USimpleBlendCameraNode* DrivingBlendIn) { DrivingBlend = DrivingBlendIn; }
 
 public:
 

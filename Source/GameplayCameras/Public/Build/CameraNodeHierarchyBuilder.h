@@ -5,6 +5,8 @@
 #include "Build/CameraBuildLog.h"
 #include "Core/CameraNodeHierarchy.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UBaseCameraObject;
 
 namespace UE::Cameras
@@ -15,26 +17,26 @@ struct FCameraObjectBuildContext;
 /**
  * A helper class that can build a hierarchy of camera nodes.
  */
-class GAMEPLAYCAMERAS_API FCameraNodeHierarchyBuilder
+class FCameraNodeHierarchyBuilder
 {
 public:
 
 	/** Creates a new camera node hierarchy builder. */
-	FCameraNodeHierarchyBuilder(FCameraBuildLog& InBuildLog, UBaseCameraObject* InCameraObject);
+	UE_API FCameraNodeHierarchyBuilder(FCameraBuildLog& InBuildLog, UBaseCameraObject* InCameraObject);
 
 	/** Gets the camera node hierarchy. */
 	const FCameraNodeHierarchy& GetHierarchy() const { return CameraNodeHierarchy; }
 
 	/** Calls PreBuild on all the camera nodes. */
-	void PreBuild();
+	UE_API void PreBuild();
 
 	/** Calls Build on all the camera nodes and computes the allocation info. */
-	void Build();
+	UE_API void Build();
 
 private:
 
-	void CallBuild(FCameraObjectBuildContext& BuildContext, UCameraNode* CameraNode);
-	void BuildParametersAllocationInfo(FCameraObjectBuildContext& BuildContext);
+	UE_API void CallBuild(FCameraObjectBuildContext& BuildContext, UCameraNode* CameraNode);
+	UE_API void BuildParametersAllocationInfo(FCameraObjectBuildContext& BuildContext);
 
 private:
 
@@ -45,3 +47,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

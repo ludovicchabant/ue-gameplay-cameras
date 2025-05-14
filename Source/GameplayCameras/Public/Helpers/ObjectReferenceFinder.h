@@ -8,32 +8,34 @@
 #include "CoreTypes.h"
 #include "Serialization/ArchiveUObject.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
 /**
  * A utility class for finding references from a given package to a set of UObjects.
  */
-class GAMEPLAYCAMERAS_API FObjectReferenceFinder : public FArchiveUObject
+class FObjectReferenceFinder : public FArchiveUObject
 {
 public:
 
 	/** Creates a new instance of the reference finder. */
-	FObjectReferenceFinder(UObject* InRootObject, TArrayView<UObject*> InReferencedObjects);
+	UE_API FObjectReferenceFinder(UObject* InRootObject, TArrayView<UObject*> InReferencedObjects);
 
 	/** Runs the reference finding. */
-	void CollectReferences();
+	UE_API void CollectReferences();
 
 	/** Whether any object was found in the package that references any of the target objects. */
-	bool HasAnyObjectReference() const;
+	UE_API bool HasAnyObjectReference() const;
 
 	/** Returns the number of found references to the given target object. */
-	int32 GetObjectReferenceCount(UObject* InObject) const;
+	UE_API int32 GetObjectReferenceCount(UObject* InObject) const;
 
 protected:
 
 	// FArchive interface.
-	virtual FArchive& operator<<(UObject*& ObjRef) override;
+	UE_API virtual FArchive& operator<<(UObject*& ObjRef) override;
 
 private:
 
@@ -54,3 +56,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

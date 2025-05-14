@@ -5,6 +5,8 @@
 #include "Containers/Array.h"
 #include "StructUtils/PropertyBag.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UBaseCameraObject;
 class UCameraObjectInterfaceDataParameter;
 
@@ -20,19 +22,19 @@ namespace UE::Cameras
  * Builds the property bag that contains a property for each exposed parameter on the given camera object.
  * Each property's value is set to the default value of the corresponding parameter.
  */
-class GAMEPLAYCAMERAS_API FCameraObjectInterfaceParameterBuilder
+class FCameraObjectInterfaceParameterBuilder
 {
 public:
 
-	FCameraObjectInterfaceParameterBuilder();
+	UE_API FCameraObjectInterfaceParameterBuilder();
 
-	void BuildParameters(UBaseCameraObject* InCameraObject);
+	UE_API void BuildParameters(UBaseCameraObject* InCameraObject);
 
 public:
 
-	static void BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag);
-	static void AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties);
-	static void SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag);
+	static UE_API void BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag);
+	static UE_API void AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties);
+	static UE_API void SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag);
 
 private:
 
@@ -50,3 +52,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

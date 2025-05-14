@@ -30,7 +30,7 @@ enum class ECameraTargetShape : uint8
  * Targeting information for a camera rig.
  */
 USTRUCT(BlueprintType)
-struct GAMEPLAYCAMERAS_API FCameraActorTargetInfo
+struct FCameraActorTargetInfo
 {
 	GENERATED_BODY()
 

@@ -7,15 +7,18 @@
 
 #include "CameraSingleCurve.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 USTRUCT()
-struct GAMEPLAYCAMERAS_API FCameraSingleCurve
+struct FCameraSingleCurve
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
 	FRichCurve Curve;
 
-	float GetValue(float InTime) const;
-	bool HasAnyData() const;
+	UE_API float GetValue(float InTime) const;
+	UE_API bool HasAnyData() const;
 };
 
+#undef UE_API

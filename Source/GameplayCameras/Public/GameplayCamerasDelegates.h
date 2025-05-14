@@ -5,6 +5,8 @@
 #include "CoreTypes.h"
 #include "Delegates/Delegate.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraAsset;
 class UCameraNode;
 class UCameraRigAsset;
@@ -23,7 +25,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraNodeChanged, const UCameraNode*);
 /**
  * Global delegates for the GameplayCameras module.
  */
-class GAMEPLAYCAMERAS_API FGameplayCamerasDelegates
+class FGameplayCamerasDelegates
 {
 public:
 
@@ -53,11 +55,12 @@ public:
 
 private:
 
-	static FOnCameraAssetBuilt OnCameraAssetBuiltDelegate;
-	static FOnCameraRigAssetBuilt OnCameraRigAssetBuiltDelegate;
-	static FOnCameraShakeAssetBuilt OnCameraShakeAssetBuiltDelegate;
-	static FOnCameraNodeChanged OnCustomCameraNodeParametersChangedDelegate;
+	static UE_API FOnCameraAssetBuilt OnCameraAssetBuiltDelegate;
+	static UE_API FOnCameraRigAssetBuilt OnCameraRigAssetBuiltDelegate;
+	static UE_API FOnCameraShakeAssetBuilt OnCameraShakeAssetBuiltDelegate;
+	static UE_API FOnCameraNodeChanged OnCustomCameraNodeParametersChangedDelegate;
 };
 
 }  // namespace UE::Cameras
 
+#undef UE_API

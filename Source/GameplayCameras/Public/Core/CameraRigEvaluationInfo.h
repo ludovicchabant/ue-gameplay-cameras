@@ -21,7 +21,7 @@ struct FCameraNodeEvaluationResult;
  * A structure describing an active camera rig being evaluated, generally
  * inside a blend stack.
  */
-struct GAMEPLAYCAMERAS_API FCameraRigEvaluationInfo
+struct FCameraRigEvaluationInfo
 {
 	/** The instance ID of this camera rig. */
 	FCameraRigInstanceID InstanceID;

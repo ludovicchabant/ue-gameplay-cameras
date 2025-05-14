@@ -11,6 +11,8 @@
 #include "Misc/EnumClassFlags.h"
 #include "Templates/UnrealTypeTraits.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
@@ -66,27 +68,27 @@ struct FCameraVariableTableFlags
  * a map of metadata keyed by variable ID. A variable ID can be anything, but will
  * generally be the hash of the variable name.
  */
-class GAMEPLAYCAMERAS_API FCameraVariableTable
+class FCameraVariableTable
 {
 public:
 
-	FCameraVariableTable();
-	FCameraVariableTable(FCameraVariableTable&& Other);
-	FCameraVariableTable& operator=(FCameraVariableTable&& Other);
-	~FCameraVariableTable();
+	UE_API FCameraVariableTable();
+	UE_API FCameraVariableTable(FCameraVariableTable&& Other);
+	UE_API FCameraVariableTable& operator=(FCameraVariableTable&& Other);
+	UE_API ~FCameraVariableTable();
 
 	FCameraVariableTable(const FCameraVariableTable&) = delete;
 	FCameraVariableTable& operator=(const FCameraVariableTable&) = delete;
 
 	/** Initializes the variable table so that it fits the provided allocation info. */
-	void Initialize(const FCameraVariableTableAllocationInfo& AllocationInfo);
+	UE_API void Initialize(const FCameraVariableTableAllocationInfo& AllocationInfo);
 
 	/** Adds a variable to the table.
 	 *
 	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
 	 * the allocation information needed for a table, and initialize it once.
 	 */
-	void AddVariable(const FCameraVariableDefinition& VariableDefinition);
+	UE_API void AddVariable(const FCameraVariableDefinition& VariableDefinition);
 
 public:
 
@@ -110,7 +112,7 @@ public:
 	template<typename VariableAssetType>
 	bool TryGetValue(const VariableAssetType* VariableAsset, typename VariableAssetType::ValueType& OutValue) const;
 
-	bool ContainsValue(FCameraVariableID VariableID) const;
+	UE_API bool ContainsValue(FCameraVariableID VariableID) const;
 
 public:
 
@@ -138,68 +140,68 @@ public:
 
 	// Interpolation.
 	
-	void OverrideAll(const FCameraVariableTable& OtherTable, bool bIncludePrivateValues = false);
-	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter);
-	void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+	UE_API void OverrideAll(const FCameraVariableTable& OtherTable, bool bIncludePrivateValues = false);
+	UE_API void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter);
+	UE_API void Override(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
-	void LerpAll(const FCameraVariableTable& ToTable, float Factor, bool bIncludePrivateValues = false);
-	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor);
-	void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
+	UE_API void LerpAll(const FCameraVariableTable& ToTable, float Factor, bool bIncludePrivateValues = false);
+	UE_API void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor);
+	UE_API void Lerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags& InMask, bool bInvertMask, FCameraVariableTableFlags& OutMask);
 
 public:
 
 	// Lower level API.
 
-	const uint8* GetValue(
+	UE_API const uint8* GetValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
 			const UScriptStruct* ExpectedBlendableStructType) const;
 
-	const uint8* TryGetValue(
+	UE_API const uint8* TryGetValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
 			const UScriptStruct* ExpectedBlendableStructType) const;
 
-	uint8* TryGetMutableValue(
+	UE_API uint8* TryGetMutableValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
 			const UScriptStruct* ExpectedBlendableStructType);
 
-	void SetValue(
+	UE_API void SetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 
 			const UScriptStruct* ExpectedBlendableStructType,
 			const uint8* InRawValuePtr,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool TrySetValue(
+	UE_API bool TrySetValue(
 			FCameraVariableID VariableID, 
 			ECameraVariableType ExpectedVariableType, 
 			const UScriptStruct* ExpectedBlendableStructType,
 			const uint8* InRawValuePtr,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool IsValueWritten(FCameraVariableID VariableID) const;
-	void UnsetValue(FCameraVariableID VariableID);
-	void UnsetAllValues();
+	UE_API bool IsValueWritten(FCameraVariableID VariableID) const;
+	UE_API void UnsetValue(FCameraVariableID VariableID);
+	UE_API void UnsetAllValues();
 
-	bool IsValueWrittenThisFrame(FCameraVariableID VariableID) const;
-	void ClearAllWrittenThisFrameFlags();
+	UE_API bool IsValueWrittenThisFrame(FCameraVariableID VariableID) const;
+	UE_API void ClearAllWrittenThisFrameFlags();
 
-	void AutoResetValues();
+	UE_API void AutoResetValues();
 
-	bool TryGetVariableDefinition(FCameraVariableID VariableID, FCameraVariableDefinition& OutVariableDefinition) const;
+	UE_API bool TryGetVariableDefinition(FCameraVariableID VariableID, FCameraVariableDefinition& OutVariableDefinition) const;
 
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 private:
 
 	struct FEntry;
 
-	static void CacheBlendableStructs();
-	static FBlendableStructTypeErasedInterpolator GetBlendableStructInterpolator(const UScriptStruct* StructType);
+	static UE_API void CacheBlendableStructs();
+	static UE_API FBlendableStructTypeErasedInterpolator GetBlendableStructInterpolator(const UScriptStruct* StructType);
 
-	static bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf);
+	static UE_API bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf);
 
 	template<typename ValueType>
 	static bool CheckVariableType(ECameraVariableType InType)
@@ -207,13 +209,13 @@ private:
 		return ensure(TCameraVariableTraits<ValueType>::Type == InType);
 	}
 
-	void ReallocateBuffer(uint32 MinRequired = 0);
+	UE_API void ReallocateBuffer(uint32 MinRequired = 0);
 
-	FEntry* FindEntry(FCameraVariableID VariableID);
-	const FEntry* FindEntry(FCameraVariableID VariableID) const;
+	UE_API FEntry* FindEntry(FCameraVariableID VariableID);
+	UE_API const FEntry* FindEntry(FCameraVariableID VariableID) const;
 
-	void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
-	void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+	UE_API void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+	UE_API void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 
 private:
 
@@ -247,8 +249,8 @@ private:
 	uint32 Capacity = 0;
 	uint32 Used = 0;
 
-	static TArray<FBlendableStructInfo> CachedBlendableStructs;
-	static bool bCachedBlendableStructs;
+	static UE_API TArray<FBlendableStructInfo> CachedBlendableStructs;
+	static UE_API bool bCachedBlendableStructs;
 
 	template<typename T>
 	friend struct TCameraVariableInterpolation;
@@ -450,3 +452,4 @@ struct TCameraVariableInterpolation<UE::Math::TTransform<T>>
 
 }  // namespace UE::Cameras
 
+#undef UE_API

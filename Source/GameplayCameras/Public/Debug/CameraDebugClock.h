@@ -9,6 +9,8 @@
 #include "Misc/TVariant.h"
 #include "Serialization/Archive.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 class FCanvas;
@@ -72,7 +74,7 @@ private:
 /**
  * A debug clock, for showing a real-time angle or 2D vector in a graphical way.
  */
-class GAMEPLAYCAMERAS_API FCameraDebugClock
+class FCameraDebugClock
 {
 public:
 
@@ -81,23 +83,23 @@ public:
 	 * edge of the clock face and oriented according to this angle, relative to
 	 * the direction pointing straight upwards on the screen.
 	 */
-	void Update(double InAngle);
+	UE_API void Update(double InAngle);
 
 	/**
 	 * Update the clock with the given 2D vector. The clock's arrow will represent
 	 * this vector, relative to the direction pointing straight updwards on the
 	 * screen.
 	 */
-	void Update(const FVector2d& InValue);
+	UE_API void Update(const FVector2d& InValue);
 
 	/**
 	 * Draw the debug clock onto the given canvas.
 	 */
-	void Draw(FCanvas* Canvas, const FCameraDebugClockDrawParams& DrawParams);
+	UE_API void Draw(FCanvas* Canvas, const FCameraDebugClockDrawParams& DrawParams);
 
 public:
 
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 	friend FCameraDebugClock& operator<< (FArchive& Ar, FCameraDebugClock& This)
 	{
@@ -140,3 +142,4 @@ inline FCameraDebugClock::FAngleValue& operator<< (FArchive& Ar, FCameraDebugClo
 
 #endif
 
+#undef UE_API

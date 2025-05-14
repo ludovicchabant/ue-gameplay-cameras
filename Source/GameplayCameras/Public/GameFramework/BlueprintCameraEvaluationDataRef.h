@@ -9,6 +9,8 @@
 
 #include "BlueprintCameraEvaluationDataRef.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraRigAsset;
 
 namespace UE::Cameras
@@ -23,7 +25,7 @@ struct FCameraNodeEvaluationResult;
  */
 USTRUCT(BlueprintType, DisplayName="Camera Evaluation Data Ref", 
 		meta=(HasNativeMake="/Script/GameplayCameras.BlueprintCameraEvaluationDataFunctionLibrary.MakeCameraEvaluationData"))
-struct GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef
+struct FBlueprintCameraEvaluationDataRef
 {
 	GENERATED_BODY()
 
@@ -31,7 +33,7 @@ public:
 
 	using FCameraNodeEvaluationResult = UE::Cameras::FCameraNodeEvaluationResult;
 
-	FBlueprintCameraEvaluationDataRef();
+	UE_API FBlueprintCameraEvaluationDataRef();
 
 	bool IsValid() const { return Result != nullptr; }
 
@@ -39,8 +41,8 @@ public:
 
 public:
 
-	static FBlueprintCameraEvaluationDataRef MakeExternalRef(FCameraNodeEvaluationResult* InResult);
-	static FBlueprintCameraEvaluationDataRef MakeOwningRef();
+	static UE_API FBlueprintCameraEvaluationDataRef MakeExternalRef(FCameraNodeEvaluationResult* InResult);
+	static UE_API FBlueprintCameraEvaluationDataRef MakeOwningRef();
 
 private:
 
@@ -232,3 +234,4 @@ public:
 	static bool SetClassData(const FBlueprintCameraEvaluationDataRef& CameraData, FCameraContextDataID DataID, UClass* Data);
 };
 
+#undef UE_API

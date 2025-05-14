@@ -5,39 +5,41 @@
 #include "Containers/Array.h"
 #include "Core/CameraNodeEvaluator.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
 /**
  * A utility class that stores a flattened hierarchy of camera node evaluators.
  */
-class GAMEPLAYCAMERAS_API FCameraNodeEvaluatorHierarchy
+class FCameraNodeEvaluatorHierarchy
 {
 public:
 
 	/** Builds an empty hierarchy. */
-	FCameraNodeEvaluatorHierarchy();
+	UE_API FCameraNodeEvaluatorHierarchy();
 	/** Builds a hierarchy starting from the given root evaluator. */
-	FCameraNodeEvaluatorHierarchy(FCameraNodeEvaluator* InRootEvaluator);
+	UE_API FCameraNodeEvaluatorHierarchy(FCameraNodeEvaluator* InRootEvaluator);
 
 	/** Get the list of evaluators in depth-first order. */
-	TArrayView<FCameraNodeEvaluator* const> GetFlattenedHierarchy() const;
+	UE_API TArrayView<FCameraNodeEvaluator* const> GetFlattenedHierarchy() const;
 
 	/** Get the list of evaluators matching the given evaluator flags, in depth-first order. */
-	void GetFlattenedHierarchy(ECameraNodeEvaluatorFlags FilterFlags, TArray<FCameraNodeEvaluator*> OutEvaluators) const;
+	UE_API void GetFlattenedHierarchy(ECameraNodeEvaluatorFlags FilterFlags, TArray<FCameraNodeEvaluator*> OutEvaluators) const;
 
 public:
 
 	/** Builds a hierarchy starting from the given root evaluator. */
-	void Build(FCameraNodeEvaluator* InRootEvaluator);
+	UE_API void Build(FCameraNodeEvaluator* InRootEvaluator);
 	/** Append another hierarchy to the existing hierarchy, starting from the given root evaluator. */
-	void Append(FCameraNodeEvaluator* InRootEvaluator);
+	UE_API void Append(FCameraNodeEvaluator* InRootEvaluator);
 	/** Append and tag another hierarchy to the existing hierarchy, starting from the given root evaluator. */
-	void AppendTagged(const FName TaggedRangeName, FCameraNodeEvaluator* InRootEvaluator);
+	UE_API void AppendTagged(const FName TaggedRangeName, FCameraNodeEvaluator* InRootEvaluator);
 	/** Add an evaluator to the existing hierarchy. */
-	void AddEvaluator(FCameraNodeEvaluator* Evaluator);
+	UE_API void AddEvaluator(FCameraNodeEvaluator* Evaluator);
 	/** Resets this object to an emtpy hierarchy. */
-	void Reset();
+	UE_API void Reset();
 
 public:
 
@@ -100,11 +102,11 @@ public:
 public:
 
 	/** Helper method to call UpdateParameters on the appropriate nodes in the hierarchy. */
-	void CallUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
+	UE_API void CallUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult);
 	/** Helper method to call ExecuteOperation on the appropriate nodes in the hierarchy. */
-	void CallExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation);
+	UE_API void CallExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation);
 	/** Helper method to call Serialize on the appropriate nodes in the hierarchy. */
-	void CallSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar);
+	UE_API void CallSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar);
 
 private:
 
@@ -120,3 +122,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

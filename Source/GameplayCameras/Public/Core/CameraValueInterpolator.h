@@ -101,14 +101,14 @@ public:
 	}
 
 	/** Evaluates the interpolator, advancing the current value towards the target. */
-	GAMEPLAYCAMERAS_API ValueType Run(const FCameraValueInterpolationParams& Params, FCameraValueInterpolationResult& OutResult)
+	ValueType Run(const FCameraValueInterpolationParams& Params, FCameraValueInterpolationResult& OutResult)
 	{
 		OnRun(Params, OutResult);
 		return CurrentValue;
 	}
 
 	/** Serializes the value interpolator to/from the given archive. */
-	GAMEPLAYCAMERAS_API void Serialize(const FCameraValueInterpolatorSerializeParams& Params, FArchive& Ar)
+	void Serialize(const FCameraValueInterpolatorSerializeParams& Params, FArchive& Ar)
 	{
 		Ar << CurrentValue;
 		Ar << TargetValue;

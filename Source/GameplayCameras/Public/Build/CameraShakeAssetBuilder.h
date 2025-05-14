@@ -5,18 +5,20 @@
 #include "Build/CameraBuildLog.h"
 #include "Core/CameraNodeHierarchy.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraShakeAsset;
 
 namespace UE::Cameras
 {
 
-class GAMEPLAYCAMERAS_API FCameraShakeAssetBuilder
+class FCameraShakeAssetBuilder
 {
 public:
 
-	FCameraShakeAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraShakeAssetBuilder(FCameraBuildLog& InBuildLog);
 
-	void BuildCameraShake(UCameraShakeAsset* InCameraShake);
+	UE_API void BuildCameraShake(UCameraShakeAsset* InCameraShake);
 
 private:
 
@@ -35,3 +37,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

@@ -6,6 +6,8 @@
 
 #include "PerlinNoise.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class FArchive;
 
 USTRUCT()
@@ -37,19 +39,19 @@ namespace UE::Cameras
  *   - The ability to dynamically change the frequency.
  *   - Input is a delta-time, instead of an absolute undefined value.
  */
-struct GAMEPLAYCAMERAS_API FPerlinNoise
+struct FPerlinNoise
 {
 public:
 
-	FPerlinNoise();
-	FPerlinNoise(const FPerlinNoiseData& InData, uint8 InOctaves = 1);
-	FPerlinNoise(float InAmplitude, float InFrequency, uint8 InOctaves = 1);
+	UE_API FPerlinNoise();
+	UE_API FPerlinNoise(const FPerlinNoiseData& InData, uint8 InOctaves = 1);
+	UE_API FPerlinNoise(float InAmplitude, float InFrequency, uint8 InOctaves = 1);
 
 	float GetAmplitude() const { return Amplitude; }
 	void SetAmplitude(float InAmplitude) { Amplitude = InAmplitude; }
 
 	float GetFrequency() const { return Octaves[0].Frequency; }
-	void SetFrequency(float InFrequency);
+	UE_API void SetFrequency(float InFrequency);
 
 	float GetLacunarity() const { return Lacunarity; }
 	void SetLacunarity(float InLacunarity) { Lacunarity = InLacunarity; }
@@ -58,11 +60,11 @@ public:
 	void SetOctaveGain(float InOctaveGain) { OctaveGain = InOctaveGain; }
 
 	uint8 GetNumOctaves() const { return NumOctaves; }
-	void SetNumOctaves(uint8 InNumOctaves);
+	UE_API void SetNumOctaves(uint8 InNumOctaves);
 
-	float GenerateValue(float DeltaTime);
+	UE_API float GenerateValue(float DeltaTime);
 
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 	friend FArchive& operator<< (FArchive& Ar, FPerlinNoise& This)
 	{
@@ -72,7 +74,7 @@ public:
 
 private:
 
-	void Initialize(float InFrequency);
+	UE_API void Initialize(float InFrequency);
 
 private:
 
@@ -98,3 +100,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API

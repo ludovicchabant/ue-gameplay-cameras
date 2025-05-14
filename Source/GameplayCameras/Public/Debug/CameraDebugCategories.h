@@ -5,6 +5,8 @@
 #include "Containers/StringFwd.h"
 #include "GameplayCameras.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 namespace UE::Cameras
@@ -13,17 +15,18 @@ namespace UE::Cameras
 /**
  * Standard debug categories for showing different "debug modes".
  */
-struct GAMEPLAYCAMERAS_API FCameraDebugCategories
+struct FCameraDebugCategories
 {
-	static const FString NodeTree;
-	static const FString DirectorTree;
-	static const FString BlendStacks;
-	static const FString Services;
-	static const FString PoseStats;
-	static const FString Viewfinder;
+	static UE_API const FString NodeTree;
+	static UE_API const FString DirectorTree;
+	static UE_API const FString BlendStacks;
+	static UE_API const FString Services;
+	static UE_API const FString PoseStats;
+	static UE_API const FString Viewfinder;
 };
 
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
+#undef UE_API

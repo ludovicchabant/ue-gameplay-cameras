@@ -7,6 +7,8 @@
 #include "GameplayCameras.h"
 #include "Templates/Tuple.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraAsset;
 
 namespace UE::Cameras
@@ -15,20 +17,20 @@ namespace UE::Cameras
 /**
  * A class that can prepare a camera asset for runtime use.
  */
-class GAMEPLAYCAMERAS_API FCameraAssetBuilder
+class FCameraAssetBuilder
 {
 public:
 
 	DECLARE_DELEGATE_TwoParams(FCustomBuildStep, UCameraAsset*, FCameraBuildLog&);
 
 	/** Creates a new camera builder. */
-	FCameraAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraAssetBuilder(FCameraBuildLog& InBuildLog);
 
 	/** Builds the given camera. */
-	void BuildCamera(UCameraAsset* InCameraAsset);
+	UE_API void BuildCamera(UCameraAsset* InCameraAsset);
 
 	/** Builds the given camera. */
-	void BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildStep InCustomBuildStep);
+	UE_API void BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildStep InCustomBuildStep);
 
 private:
 
@@ -45,3 +47,4 @@ private:
 
 }  // namespace UE::Cameras
 
+#undef UE_API
