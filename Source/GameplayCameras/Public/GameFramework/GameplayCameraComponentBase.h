@@ -211,7 +211,7 @@ public:
 	 * component.
 	 */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
-	bool bSetControlRotationWhenViewTarget = true;
+	bool bSetControlRotationWhenViewTarget = false;
 
 #if WITH_EDITORONLY_DATA
 
