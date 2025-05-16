@@ -45,6 +45,7 @@ UGameplayCameraComponentBase::UGameplayCameraComponentBase(const FObjectInitiali
 	bWantsOnUpdateTransform = true;
 
 	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.TickGroup = TG_PostPhysics;
 
 	OutputCameraComponent = ObjectInit.CreateDefaultSubobject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), true);
 	OutputCameraComponent->SetupAttachment(this);
