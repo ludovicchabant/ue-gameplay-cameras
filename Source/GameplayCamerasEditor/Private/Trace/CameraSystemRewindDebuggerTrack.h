@@ -5,6 +5,7 @@
 #include "GameplayCameras.h"
 #include "IRewindDebuggerTrackCreator.h"
 #include "Math/Color.h"
+#include "Misc/EngineVersionComparison.h"
 #include "RewindDebuggerTrack.h"
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
@@ -62,7 +63,11 @@ protected:
 	virtual FName GetTargetTypeNameInternal() const override;
 	virtual FName GetNameInternal() const override;
 	virtual void GetTrackTypesInternal(TArray<RewindDebugger::FRewindDebuggerTrackType>& Types) const override;
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 	virtual TSharedPtr<RewindDebugger::FRewindDebuggerTrack> CreateTrackInternal(const RewindDebugger::FObjectId& InObjectId) const override;
+#else
+	virtual TSharedPtr<RewindDebugger::FRewindDebuggerTrack> CreateTrackInternal(uint64 InObjectId) const override;
+#endif
 };
 
 }  // namespace UE::Cameras

@@ -156,7 +156,12 @@ void FCameraSystemRewindDebuggerTrackCreator::GetTrackTypesInternal(TArray<Rewin
 	Types.Add({GetNameInternal(), LOCTEXT("DisplayName", "Gameplay Camera System")});
 }
 
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 TSharedPtr<RewindDebugger::FRewindDebuggerTrack> FCameraSystemRewindDebuggerTrackCreator::CreateTrackInternal(const RewindDebugger::FObjectId& InObjectId) const
+#else
+TSharedPtr<RewindDebugger::FRewindDebuggerTrack> FCameraSystemRewindDebuggerTrackCreator::CreateTrackInternal(uint64 InObjectId) const
+#endif
 {
 	return MakeShared<FCameraSystemRewindDebuggerTrack>();
 }
