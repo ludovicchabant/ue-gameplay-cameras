@@ -281,13 +281,15 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 			if (EntryBlendEvaluator)
 			{
 				FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+				PreBlendParams.VariableTableFilter = ECameraVariableTableFilter::InputOnly;
+
 				FCameraNodePreBlendResult PreBlendResult(OutResult.VariableTable);
 
 				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
 			}
 			else
 			{
-				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::None);
+				OutResult.VariableTable.Override(CurResult.VariableTable, ECameraVariableTableFilter::InputOnly);
 			}
 
 			// Run the camera rig's root node.

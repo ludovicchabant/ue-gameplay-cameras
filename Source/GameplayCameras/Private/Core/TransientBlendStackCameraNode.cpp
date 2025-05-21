@@ -315,7 +315,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 		return;
 	}
 
-	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::None;
+	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::InputOnly;
 
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
