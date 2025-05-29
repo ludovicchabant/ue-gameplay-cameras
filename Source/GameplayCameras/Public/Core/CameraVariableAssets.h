@@ -29,8 +29,8 @@ public:
 
 	const FGuid& GetGuid() const { return Guid; }
 
-	UE_API virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
-	UE_API virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
+	virtual ECameraVariableType GetVariableType() const PURE_VIRTUAL(UCameraVariableAsset::GetVariableType, return ECameraVariableType::Boolean;);
+	virtual const uint8* GetDefaultValuePtr() const PURE_VIRTUAL(UCameraVariableAsset::GetDefaultValuePtr, return nullptr;);
 
 #if WITH_EDITORONLY_DATA
 	UE_API FString GetDisplayName() const;
@@ -39,7 +39,7 @@ public:
 #if WITH_EDITOR
 	UE_API FText GetDisplayText() const;
 
-	UE_API virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
+	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
 #endif  // WITH_EDITOR
 
 public:
