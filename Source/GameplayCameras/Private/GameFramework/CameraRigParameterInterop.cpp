@@ -32,7 +32,7 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 {
 	P_GET_STRUCT_REF(FBlueprintCameraEvaluationDataRef, CameraData);
 	P_GET_OBJECT(UCameraRigAsset, CameraRig);
-	P_GET_STRUCT(FName, ParameterName);
+	P_GET_PROPERTY(FNameProperty, ParameterName);
 
 	// Read wildcard value input.
 	Stack.MostRecentPropertyAddress = nullptr;
@@ -113,7 +113,7 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 {
 	P_GET_STRUCT_REF(FBlueprintCameraEvaluationDataRef, CameraData);
 	P_GET_OBJECT(UCameraRigAsset, CameraRig);
-	P_GET_STRUCT(FName, ParameterName);
+	P_GET_PROPERTY(FNameProperty, ParameterName);
 
 	// Read wildcard value input.
 	Stack.MostRecentPropertyAddress = nullptr;
@@ -184,6 +184,31 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 
 		P_NATIVE_END
 	}
+}
+
+FVector UCameraRigParameterInteropLibrary::MakeLiteralVector(FVector Value)
+{
+	return Value;
+}
+
+FVector3f UCameraRigParameterInteropLibrary::MakeLiteralVector3f(FVector3f Value)
+{
+	return Value;
+}
+
+FVector2D UCameraRigParameterInteropLibrary::MakeLiteralVector2D(FVector2D Value)
+{
+	return Value;
+}
+
+FRotator UCameraRigParameterInteropLibrary::MakeLiteralRotator(FRotator Value)
+{
+	return Value;
+}
+
+FLinearColor UCameraRigParameterInteropLibrary::MakeLiteralLinearColor(FLinearColor Value)
+{
+	return Value;
 }
 
 #undef LOCTEXT_NAMESPACE

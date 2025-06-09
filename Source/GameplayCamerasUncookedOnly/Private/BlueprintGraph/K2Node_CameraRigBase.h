@@ -14,6 +14,7 @@
 class UCameraRigAsset;
 class UCameraObjectInterfaceBlendableParameter;
 class UCameraObjectInterfaceDataParameter;
+class UK2Node_CallFunction;
 
 /**
  * Utility base class for Blueprint nodes that can set camera rig parameters.
@@ -62,6 +63,12 @@ protected:
 	bool ValidateCameraRigBeforeExpandNode(FKismetCompilerContext& CompilerContext) const;
 
 	void OnCameraRigAssetBuilt(const UCameraRigAsset* InBuiltCameraRig);
+
+protected:
+
+	static UK2Node_CallFunction* CreateMakeLiteralNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph, UK2Node* SourceNode, UClass* FunctionLibraryClass, const TCHAR* FunctionName, UEdGraphPin* SourceValuePin);
+
+	static UK2Node_CallFunction* MakeLiteralValueForPin(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph, UK2Node* SourceNode, UEdGraphPin* InValuePin);
 
 protected:
 

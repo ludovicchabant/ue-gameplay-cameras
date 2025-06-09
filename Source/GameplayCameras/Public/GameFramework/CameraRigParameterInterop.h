@@ -42,3 +42,29 @@ private:
 	DECLARE_FUNCTION(execSetCameraParameter);
 };
 
+/**
+ * Internal Blueprint function library for creating default values of the SetCameraParameter node above.
+ */
+UCLASS(MinimalAPI, Hidden)
+class UCameraRigParameterInteropLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(BlueprintThreadSafe, BlueprintInternalUseOnly="true"))
+	static FVector MakeLiteralVector(FVector Value);
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(BlueprintThreadSafe, BlueprintInternalUseOnly="true"))
+	static FVector3f MakeLiteralVector3f(FVector3f Value);
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(BlueprintThreadSafe, BlueprintInternalUseOnly="true"))
+	static FVector2D MakeLiteralVector2D(FVector2D Value);
+	
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(BlueprintThreadSafe, BlueprintInternalUseOnly="true"))
+	static FRotator MakeLiteralRotator(FRotator Value);
+
+	UFUNCTION(BlueprintPure, Category="Camera", meta=(BlueprintThreadSafe, BlueprintInternalUseOnly="true"))
+	static FLinearColor MakeLiteralLinearColor(FLinearColor Value);
+};
+
