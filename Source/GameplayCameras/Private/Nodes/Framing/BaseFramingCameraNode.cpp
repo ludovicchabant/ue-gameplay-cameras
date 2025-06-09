@@ -156,6 +156,7 @@ bool FBaseFramingCameraNodeEvaluator::AcquireTargetInfo(TSharedPtr<const FCamera
 		{
 			OutInfo.LocalBounds = RootComponent->Bounds;
 		}
+		OutInfos.Add(OutInfo);
 		return true;
 	}
 
