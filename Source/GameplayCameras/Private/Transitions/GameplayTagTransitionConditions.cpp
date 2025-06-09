@@ -12,6 +12,8 @@ bool UGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransi
 
 	if (!PreviousGameplayTagQuery.IsEmpty())
 	{
+		bPreviousMatches = false;
+
 		if (Params.FromCameraRig)
 		{
 			FGameplayTagContainer TagContainer;
@@ -21,16 +23,14 @@ bool UGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransi
 				bPreviousMatches = true;
 			}
 		}
-		else
-		{
-			bPreviousMatches = false;
-		}
 	}
 
 	bool bNextMatches = true;
 
 	if (!NextGameplayTagQuery.IsEmpty())
 	{
+		bNextMatches = false;
+
 		if (Params.ToCameraRig)
 		{
 			FGameplayTagContainer TagContainer;
@@ -39,10 +39,6 @@ bool UGameplayTagTransitionCondition::OnTransitionMatches(const FCameraRigTransi
 			{
 				bNextMatches = true;
 			}
-		}
-		else
-		{
-			bNextMatches = false;
 		}
 	}
 
