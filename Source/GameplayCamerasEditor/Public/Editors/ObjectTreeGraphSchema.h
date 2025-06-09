@@ -5,6 +5,7 @@
 #include "Compat/EditorCompat.h"
 #include "CoreTypes.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "Misc/StringOutputDevice.h"
 #include "GraphEditor.h"
 
 #include "ObjectTreeGraphSchema.generated.h"
