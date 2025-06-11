@@ -117,18 +117,18 @@ public:
 		const TObjectChildrenView* Owner;
 		int32 Index;
 
-		FORCEINLINE ChildType operator*()
+		inline ChildType operator*()
 		{
 			return (*Owner)[Index];
 		}
 
-		FORCEINLINE bool operator== (const FBaseIterator& Other) const
+		inline bool operator== (const FBaseIterator& Other) const
 		{
 			return Owner == Other.Owner
 				&& Index == Other.Index;
 		}
 
-		FORCEINLINE bool operator!= (const FBaseIterator& Other) const
+		inline bool operator!= (const FBaseIterator& Other) const
 		{
 			return !(*this == Other);
 		}
@@ -136,27 +136,27 @@ public:
 
 	struct FIterator : FBaseIterator
 	{
-		FORCEINLINE FIterator& operator++()
+		inline FIterator& operator++()
 		{
 			++FBaseIterator::Index;
 			return *this;
 		}
 	};
 
-	FORCEINLINE FIterator begin() const { return FIterator{ this, 0 }; }
-	FORCEINLINE FIterator end() const { return FIterator{ this, Num() }; }
+	inline FIterator begin() const { return FIterator{ this, 0 }; }
+	inline FIterator end() const { return FIterator{ this, Num() }; }
 
 	struct FReverseIterator : FBaseIterator
 	{
-		FORCEINLINE FReverseIterator& operator++()
+		inline FReverseIterator& operator++()
 		{
 			--FBaseIterator::Index;
 			return *this;
 		}
 	};
 
-	FORCEINLINE FReverseIterator rbegin() const { return FReverseIterator{ this, Num() - 1 }; }
-	FORCEINLINE FReverseIterator rend() const { return FReverseIterator{ this, -1 }; }
+	inline FReverseIterator rbegin() const { return FReverseIterator{ this, Num() - 1 }; }
+	inline FReverseIterator rend() const { return FReverseIterator{ this, -1 }; }
 
 private:
 
