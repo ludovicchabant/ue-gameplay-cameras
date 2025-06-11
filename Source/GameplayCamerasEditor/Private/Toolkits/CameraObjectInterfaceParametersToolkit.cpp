@@ -534,6 +534,11 @@ protected:
 		{
 			NewDataType = ECameraContextDataType::Enum;
 		}
+		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Byte && 
+				PinType.PinSubCategoryObject != nullptr && PinType.PinSubCategoryObject->IsA<UEnum>())
+		{
+			NewDataType = ECameraContextDataType::Enum;
+		}
 		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Struct)
 		{
 			NewDataType = ECameraContextDataType::Struct;
