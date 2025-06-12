@@ -565,6 +565,8 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_NewInterfaceParameterNode::PerformAct
 
 	UCameraObjectInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ObjectTreeGraph, NewInterfaceParameter);
 
+	Schema->AddConnectableObject(ObjectTreeGraph, NewInterfaceParameter);
+
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
 	NewGraphNode->OnGraphNodeMoved(false);
@@ -615,6 +617,8 @@ UEdGraphNode* FCameraNodeGraphSchemaAction_AddInterfaceParameterNode::PerformAct
 	ParentGraph->Modify();
 	
 	UCameraObjectInterfaceParameterGraphNode* NewGraphNode = Schema->CreateInterfaceParameterNode(ParentGraph, InterfaceParameter);
+
+	Schema->AddConnectableObject(ObjectTreeGraph, InterfaceParameter);
 
 	NewGraphNode->NodePosX = Location.X;
 	NewGraphNode->NodePosY = Location.Y;
