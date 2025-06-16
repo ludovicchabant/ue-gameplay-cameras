@@ -160,10 +160,6 @@ void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
 	Entry.RootNode = nullptr;
 
 	Entry.EvaluationContext.Reset();
-
-#if WITH_EDITOR
-	RemoveListenedPackages(Entry);
-#endif
 	
 	Entry.Flags.bIsFrozen = true;
 }
@@ -539,8 +535,14 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 	{
 		FCameraRigEntry& Entry(Entries[Index]);
 		const bool bRebuildEntry = Entry.ListenedPackages.Contains(BuildEvent.AssetPackage);
-		if (bRebuildEntry)
+		if (!bRebuildEntry)
 		{
+			continue;
+		}
+
+		if (!Entry.Flags.bIsFrozen)
+		{
+			// Destroy the existing entry evaluators.
 			Entry.EvaluatorStorage.DestroyEvaluatorTree();
 			Entry.EvaluatorHierarchy.Reset();
 
@@ -559,9 +561,16 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 					Entry.EvaluationContext.Pin(),
 					Entry.RootNode,
 					Index == Entries.Num() - 1);
-
-			OnEntryReinitialized(Index);
 		}
+		else
+		{
+			// Leave things frozen, but also remove all the frozen data, in case the new data
+			// has different types or names for the same variables, because the user changed them.
+			Entry.Result.VariableTable.UnsetAllValues();
+			Entry.Result.ContextDataTable.UnsetAllValues();
+		}
+
+		OnEntryReinitialized(Index);
 	}
 }
 

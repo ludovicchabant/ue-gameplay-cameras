@@ -609,5 +609,17 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 	return nullptr;
 }
 
+#if WITH_EDITOR
+
+void FTransientBlendStackCameraNodeEvaluator::OnEntryReinitialized(int32 EntryIndex)
+{
+	// Empty our pre-blend variable table in case it has variables that have been changed or are
+	// not valid anymore, such as the user changing the type of a camera rig parameter.
+	FCameraVariableTableAllocationInfo EmptyAllocationInfo;
+	PreBlendVariableTable.Initialize(EmptyAllocationInfo);
+}
+
+#endif
+
 }  // namespace UE::Cameras
 
