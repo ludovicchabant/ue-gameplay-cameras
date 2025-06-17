@@ -17,10 +17,6 @@
 	"Plugins":
 	[
 		{
-			"Name": "CameraCalibrationCore",
-			"Enabled": true
-		},
-		{
 			"Name": "EnhancedInput",
 			"Enabled": true
 		},

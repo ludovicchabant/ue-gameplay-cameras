@@ -9,7 +9,6 @@ public class GameplayCameras : ModuleRules
 	{
 		PublicDependencyModuleNames.AddRange(
 			new string[] {
-				"CameraCalibrationCore",
 				"CinematicCamera",
 				"Core",
 				"CoreUObject",
