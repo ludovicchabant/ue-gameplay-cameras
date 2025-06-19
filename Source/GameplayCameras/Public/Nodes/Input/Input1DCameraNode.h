@@ -37,7 +37,7 @@ public:
 protected:
 
 	// FCameraNodeEvaluator interface.
-	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
+	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 protected:
 
