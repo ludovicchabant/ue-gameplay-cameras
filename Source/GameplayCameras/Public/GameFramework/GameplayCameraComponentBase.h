@@ -123,6 +123,10 @@ public:
 	UFUNCTION(BlueprintPure, Category=Camera, meta=(DisplayName="Get Conditional Camera Data"))
 	GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef GetConditionalResult(ECameraEvaluationDataCondition Condition) const;
 
+	/** Gets the last evaluated orientation of the camera. */
+	UFUNCTION(BlueprintPure, Category=Camera)
+	GAMEPLAYCAMERAS_API FRotator GetEvaluatedCameraRotation() const;
+
 public:
 
 	// UActorComponent interface

@@ -394,6 +394,18 @@ FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetConditionalRe
 
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
 
+FRotator UGameplayCameraComponentBase::GetEvaluatedCameraRotation() const
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator.IsValid())
+	{
+		const FCameraSystemEvaluationResult& Result = CameraSystemEvaluator->GetEvaluatedResult();
+		return Result.CameraPose.GetRotation();
+	}
+	return FRotator();
+}
+
 void UGameplayCameraComponentBase::OnRegister()
 {
 	using namespace UE::Cameras;
