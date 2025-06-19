@@ -11,7 +11,9 @@
 class UInputAction;
 
 /**
- * An input node that reads player input from an input action.
+ * An input node that reads player input from an input action and accumulates
+ * it into a usable input value. Basically a Raw Input Axis Binding node combined
+ * with an Input Accumulator node.
  */
 UCLASS(MinimalAPI, meta=(CameraNodeCategories="Input"))
 class UInputAxisBinding2DCameraNode : public UCameraRigInput2DSlot
@@ -24,21 +26,18 @@ public:
 	UPROPERTY(EditAnywhere, Category="Input")
 	TArray<TObjectPtr<UInputAction>> AxisActions;
 
-	/** Whether to revert the X axis. */
-	UPROPERTY(EditAnywhere, Category="Input Processing")
-	FBooleanCameraParameter RevertAxisX = false;
-
-	/** Whether to revert the Y axis. */
-	UPROPERTY(EditAnywhere, Category="Input Processing")
-	FBooleanCameraParameter RevertAxisY = false;
-
 	/** A multiplier to use on the input values. */
-	UPROPERTY(EditAnywhere, Category="Input Processing")
-	FVector2dCameraParameter Multiplier;
+	UPROPERTY(EditAnywhere, Category="Input")
+	FVector2dCameraParameter Multiplier = FVector2d(1.0, 1.0);
+
+	/** Whether the player input is accumulated from frame to frame. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	bool bIsAccumulated = true;
 
 public:
 
-	UInputAxisBinding2DCameraNode(const FObjectInitializer& ObjInit);
+	// UObject interface.
+	virtual void PostLoad() override;
 	
 protected:
 

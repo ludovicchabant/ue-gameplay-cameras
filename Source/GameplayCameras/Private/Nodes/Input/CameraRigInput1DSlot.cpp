@@ -27,10 +27,14 @@ FCameraRigInput1DSlotEvaluator::FCameraRigInput1DSlotEvaluator()
 
 void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	TransientInputValue = 0.f;
+	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
+
+	RevertAxisReader.Initialize(SlotNode->RevertAxis);
+	SpeedReader.Initialize(SlotNode->Speed);
+
+	DeltaInputValue = 0.f;
 	InputValue = 0.f;
 
-	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
 	if (SlotNode->GetVariableID().IsValid() && Params.LastActiveCameraRigInfo.LastResult)
 	{
 		const FCameraVariableTable& LastActiveRigVariableTable = Params.LastActiveCameraRigInfo.LastResult->VariableTable;
@@ -41,9 +45,10 @@ void FCameraRigInput1DSlotEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 void FCameraRigInput1DSlotEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
-	if (SlotNode->InputSlotParameters.bIsPreBlended)
+	if (SlotNode->bIsPreBlended)
 	{
-		OutResult.VariableTable.SetValue<double>(SlotNode->GetTransientVariableID(), TransientInputValue);
+		const double Speed = SpeedReader.Get(OutResult.VariableTable);
+		OutResult.VariableTable.SetValue<double>(SlotNode->GetSpeedVariableID(), Speed);
 	}
 }
 
@@ -51,18 +56,20 @@ void FCameraRigInput1DSlotEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 {
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
 
-	if (SlotNode->InputSlotParameters.bIsPreBlended)
-	{
-		TransientInputValue = OutResult.VariableTable.GetValue<double>(SlotNode->GetTransientVariableID());
-	}
+	const double Speed = 
+		SlotNode->bIsPreBlended ?
+			OutResult.VariableTable.GetValue<double>(SlotNode->GetSpeedVariableID()) :
+			SpeedReader.Get(OutResult.VariableTable);
 
-	if (SlotNode->InputSlotParameters.bIsAccumulated)
+	double FinalDelta(DeltaInputValue * Speed * Params.DeltaTime);
+
+	if (bIsAccumulated)
 	{
-		InputValue += TransientInputValue;
+		InputValue += FinalDelta;
 	}
 	else
 	{
-		InputValue = TransientInputValue;
+		InputValue = FinalDelta;
 	}
 
 	InputValue = SlotNode->Normalize.NormalizeValue(InputValue);
@@ -88,10 +95,21 @@ void FCameraRigInput1DSlotEvaluator::OnSerialize(const FCameraNodeEvaluatorSeria
 {
 	Super::OnSerialize(Params, Ar);
 
-	Ar << TransientInputValue;
+	Ar << DeltaInputValue;
 }
 
 }  // namespace UE::Cameras
+
+void UCameraRigInput1DSlot::PostLoad()
+{
+	if (!InputSlotParameters_DEPRECATED.bIsPreBlended)
+	{
+		InputSlotParameters_DEPRECATED.bIsPreBlended = true;
+		bIsPreBlended = false;
+	}
+
+	Super::PostLoad();
+}
 
 void UCameraRigInput1DSlot::OnBuild(FCameraObjectBuildContext& BuildContext) 
 {
@@ -107,7 +125,7 @@ void UCameraRigInput1DSlot::OnBuild(FCameraObjectBuildContext& BuildContext)
 	{
 		VariableDefinition = CustomVariable.Variable->GetVariableDefinition();
 	}
-	else if (InputSlotParameters.bIsPreBlended)
+	else if (bIsPreBlended)
 	{
 		BuildContext.BuildLog.AddMessage(
 				EMessageSeverity::Error,
@@ -124,11 +142,11 @@ void UCameraRigInput1DSlot::OnBuild(FCameraObjectBuildContext& BuildContext)
 		FCameraVariableTableAllocationInfo& VariableTableInfo = BuildContext.AllocationInfo.VariableTableInfo;
 		VariableTableInfo.VariableDefinitions.Add(VariableDefinition);
 
-		FCameraVariableDefinition TransientVariableDefinition = VariableDefinition.CreateVariant(TEXT("Transient"));
-		VariableTableInfo.VariableDefinitions.Add(TransientVariableDefinition);
+		FCameraVariableDefinition SpeedVariableDefinition = VariableDefinition.CreateVariant(TEXT("Speed"));
+		VariableTableInfo.VariableDefinitions.Add(SpeedVariableDefinition);
 
 		VariableID = VariableDefinition.VariableID;
-		TransientVariableID = TransientVariableDefinition.VariableID;
+		SpeedVariableID = SpeedVariableDefinition.VariableID;
 	}
 }
 

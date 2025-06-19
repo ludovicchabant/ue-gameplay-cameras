@@ -4,6 +4,8 @@
 
 #include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraParameterReader.h"
+#include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
 #include "Nodes/Input/CameraRigInputSlotTypes.h"
 #include "Nodes/Input/Input2DCameraNode.h"
@@ -23,10 +25,6 @@ class UCameraRigInput2DSlot : public UInput2DCameraNode
 
 public:
 
-	/** Input processing parameters. */
-	UPROPERTY(EditAnywhere, Category="Input", meta=(ShowOnlyInnerProperties))
-	FCameraRigInputSlotParameters InputSlotParameters;
-
 	/** Clamping of the final input value. */
 	UPROPERTY(EditAnywhere, Category="Input")
 	FCameraParameterClamping ClampX;
@@ -43,6 +41,18 @@ public:
 	UPROPERTY(EditAnywhere, Category="Input")
 	FCameraParameterNormalization NormalizeY;
 
+	/** Whether to revert the X axis. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	FBooleanCameraParameter RevertAxisX = false;
+
+	/** Whether to revert the Y axis. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	FBooleanCameraParameter RevertAxisY = false;
+
+	/** A speed, in units/seconds, to use on the input value. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	FVector2dCameraParameter Speed = FVector2d{ 1.0, 1.0 };
+
 	/** The variable to use to blend with other input slots. */
 	UPROPERTY(EditAnywhere, Category="Input")
 	EBuiltInVector2dCameraVariable BuiltInVariable = EBuiltInVector2dCameraVariable::YawPitch;
@@ -51,10 +61,25 @@ public:
 	UPROPERTY(EditAnywhere, Category="Input", meta=(EditCondition="BuiltInVariable == EBuiltInVector2dCameraVariable::None"))
 	FVector2dCameraVariableReference CustomVariable;
 
+	/** Whether parameters such as speed should be pre-blended. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	bool bIsPreBlended = true;
+
+
+	// Deprecated
+
+	UPROPERTY()
+	FCameraRigInputSlotParameters InputSlotParameters_DEPRECATED;
+
 public:
 
 	FCameraVariableID GetVariableID() const { return VariableID; }
-	FCameraVariableID GetTransientVariableID() const { return TransientVariableID; }
+	FCameraVariableID GetSpeedVariableID() const { return SpeedVariableID; }
+
+public:
+
+	// UObject interface.
+	virtual void PostLoad() override;
 
 protected:
 
@@ -65,7 +90,7 @@ protected:
 private:
 
 	UPROPERTY()
-	FCameraVariableID TransientVariableID;
+	FCameraVariableID SpeedVariableID;
 	UPROPERTY()
 	FCameraVariableID VariableID;
 };
@@ -94,7 +119,12 @@ protected:
 
 protected:
 
-	FVector2d TransientInputValue = FVector2d::ZeroVector;
+	TCameraParameterReader<bool> RevertAxisXReader;
+	TCameraParameterReader<bool> RevertAxisYReader;
+	TCameraParameterReader<FVector2d> SpeedReader;
+
+	FVector2d DeltaInputValue = FVector2d::ZeroVector;
+	bool bIsAccumulated = true;
 };
 
 }  // namespace UE::Cameras

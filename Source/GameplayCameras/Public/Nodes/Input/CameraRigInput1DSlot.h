@@ -4,6 +4,8 @@
 
 #include "Core/BuiltInCameraVariables.h"
 #include "Core/CameraNodeEvaluator.h"
+#include "Core/CameraParameterReader.h"
+#include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
 #include "Nodes/Input/CameraRigInputSlotTypes.h"
 #include "Nodes/Input/Input1DCameraNode.h"
@@ -23,10 +25,6 @@ class UCameraRigInput1DSlot : public UInput1DCameraNode
 
 public:
 
-	/** Input processing parameters. */
-	UPROPERTY(EditAnywhere, Category="Input", meta=(ShowOnlyInnerProperties))
-	FCameraRigInputSlotParameters InputSlotParameters;
-
 	/** Clamping of the final input value. */
 	UPROPERTY(EditAnywhere, Category="Input")
 	FCameraParameterClamping Clamp;
@@ -34,6 +32,14 @@ public:
 	/** Normalization of the final input value. */
 	UPROPERTY(EditAnywhere, Category="Input")
 	FCameraParameterNormalization Normalize;
+
+	/** Whether to revert the axis. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	FBooleanCameraParameter RevertAxis = false;
+
+	/** A speed, in units/seconds, to use on the input value. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	FDoubleCameraParameter Speed = 1.0;
 
 	/** The variable to use to blend with other input slots. */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -43,10 +49,25 @@ public:
 	UPROPERTY(EditAnywhere, Category="Input", meta=(EditCondition="BuiltInVariable == EBuiltInDoubleCameraVariable::None"))
 	FDoubleCameraVariableReference CustomVariable;
 
+	/** Whether the multiplier should be pre-blended. */
+	UPROPERTY(EditAnywhere, Category="Input")
+	bool bIsPreBlended = true;
+
+
+	// Deprecated
+
+	UPROPERTY()
+	FCameraRigInputSlotParameters InputSlotParameters_DEPRECATED;
+
 public:
 
 	FCameraVariableID GetVariableID() const { return VariableID; }
-	FCameraVariableID GetTransientVariableID() const { return TransientVariableID; }
+	FCameraVariableID GetSpeedVariableID() const { return SpeedVariableID; }
+
+public:
+
+	// UObject interface.
+	virtual void PostLoad() override;
 
 protected:
 
@@ -57,7 +78,7 @@ protected:
 private:
 
 	UPROPERTY()
-	FCameraVariableID TransientVariableID;
+	FCameraVariableID SpeedVariableID;
 	UPROPERTY()
 	FCameraVariableID VariableID;
 };
@@ -86,7 +107,11 @@ protected:
 
 protected:
 
-	double TransientInputValue = 0.f;
+	TCameraParameterReader<bool> RevertAxisReader;
+	TCameraParameterReader<double> SpeedReader;
+
+	double DeltaInputValue = 0.f;
+	bool bIsAccumulated = true;
 };
 
 }  // namespace UE::Cameras
