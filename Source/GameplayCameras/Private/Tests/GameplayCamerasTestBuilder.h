@@ -680,6 +680,45 @@ private:
 };
 
 /**
+ * Builder class for a camera asset.
+ */
+class FCameraAssetTestBuilder
+	: public TCameraObjectInitializer<UCameraAsset>
+	, public IHasNamedObjectRegistry
+{
+public:
+
+	using ThisType = FCameraAssetTestBuilder;
+
+	/** Create a new instance of this builder class. */
+	FCameraAssetTestBuilder(UObject* Owner = nullptr);
+
+	/** Gets the created camera asset. */
+	UCameraAsset* Get() const { return CameraAsset; }
+
+	/** Builds a new camera director of the given type and returns a builder object for its. */
+	template<typename DirectorType>
+	TCameraDirectorTestBuilder<ThisType, DirectorType> MakeDirector()
+	{
+		TCameraDirectorTestBuilder<ThisType, DirectorType> DirectorBuilder(*this, CameraAsset);
+		CameraAsset->SetCameraDirector(DirectorBuilder.Get());
+		return DirectorBuilder;
+	}
+
+	/** Gets the named object registry. */
+	virtual TSharedPtr<FNamedObjectRegistry> GetNamedObjectRegistry() override
+	{
+		return NamedObjectRegistry;
+	}
+
+private:
+
+	UCameraAsset* CameraAsset;
+
+	TSharedPtr<FNamedObjectRegistry> NamedObjectRegistry;
+};
+
+/**
  * Builder class for a camera evaluation context and its camera asset.
  */
 class FCameraEvaluationContextTestBuilder

@@ -97,7 +97,12 @@ void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters(const UBaseC
 
 void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties)
 {
-	for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraObject->GetParameterDefinitions())
+	AppendDefaultParameterProperties(CameraObject->GetParameterDefinitions(), OutProperties);
+}
+
+void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, TArray<FPropertyBagPropertyDesc>& OutProperties)
+{
+	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
 	{
 		bool bIsValidProperty = true;
 		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;

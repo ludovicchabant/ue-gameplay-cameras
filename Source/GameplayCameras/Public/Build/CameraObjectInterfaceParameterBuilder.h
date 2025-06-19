@@ -9,9 +9,11 @@
 
 class UBaseCameraObject;
 class UCameraObjectInterfaceDataParameter;
+struct FCameraObjectInterfaceParameterDefinition;
 
 namespace UE::Cameras
 {
+
 
 /**
  * A helper class for building an FInstancedPropertyBag from a list of camera rig
@@ -34,6 +36,7 @@ public:
 
 	static UE_API void BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag);
 	static UE_API void AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties);
+	static UE_API void AppendDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, TArray<FPropertyBagPropertyDesc>& OutProperties);
 	static UE_API void SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag);
 
 private:

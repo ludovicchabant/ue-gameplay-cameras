@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Core/CameraDirector.h"
+#include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraParameters.h"
@@ -33,6 +35,24 @@ protected:
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 };
 
+class FFixedTextCameraDirectorEvaluator : public FCameraDirectorEvaluator
+{
+	UE_DECLARE_CAMERA_DIRECTOR_EVALUATOR(GAMEPLAYCAMERAS_API, FFixedTextCameraDirectorEvaluator)
+
+public:
+
+	void SetActiveCameraRig(const FName InCameraRigName);
+
+protected:
+
+	// FCameraDirectorEvaluator interface.
+	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
+
+private:
+
+	int32 ActiveIndex = INDEX_NONE;
+};
+
 }  // namespace UE::Cameras::Tests
 
 UCLASS(MinimalAPI, Hidden)
@@ -52,5 +72,31 @@ public:
 
 	UPROPERTY(EditAnywhere, Category=Common)
 	FVector3dCameraParameter VectorParameter;
+};
+
+UCLASS(MinimalAPI, Hidden)
+class UFixedTestCameraDirector : public UCameraDirector
+{
+	GENERATED_BODY()
+
+public:
+
+	void AddCameraRig(UCameraRigAsset* InCameraRig, const FName InCameraRigName);
+	int32 GetCameraRigIndex(const FName InCameraRigName) const;
+	UCameraRigAsset* GetCameraRig(int32 Index) const;
+
+protected:
+
+	// UCameraDirector interface.
+	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const override;
+	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const override;
+
+private:
+
+	UPROPERTY()
+	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs;
+
+	UPROPERTY()
+	TArray<FName> CameraRigNames;
 };
 

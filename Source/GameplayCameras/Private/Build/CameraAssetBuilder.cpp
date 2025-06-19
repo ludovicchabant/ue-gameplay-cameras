@@ -93,17 +93,58 @@ void FCameraAssetBuilder::BuildCameraImpl()
 		CameraRigBuilder.BuildCameraRig(CameraRig);
 	}
 
-	// Get the list of all the camera rigs' interface parameters, and cache some information
-	// about them.
-	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
-	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
-
+	// Get the list of all the camera rigs' interface parameters.
+	TMap<FName, TArray<const UCameraRigAsset*>> UsedParameterNames;
+	TMap<const UCameraRigAsset*, TArray<FCameraObjectInterfaceParameterDefinition>> DefinitionsByCameraRig;
 	for (const UCameraRigAsset* CameraRig : AllCameraRigs)
 	{
-		for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
+		if (ensure(!DefinitionsByCameraRig.Contains(CameraRig)))
+		{
+			TArray<FCameraObjectInterfaceParameterDefinition>& DefinitionsForCameraRig = DefinitionsByCameraRig.Add(CameraRig);
+			DefinitionsForCameraRig.Append(CameraRig->GetParameterDefinitions());
+
+			for (const FCameraObjectInterfaceParameterDefinition& Definition : DefinitionsForCameraRig)
+			{
+				UsedParameterNames.FindOrAdd(Definition.ParameterName).Add(CameraRig);
+			}
+		}
+	}
+	// Resolve name conflicts.
+	// We can safely change the parameter definitions and property bag property names because the look-ups
+	// for setting the default values afterwards are using Guids.
+	for (const TPair<FName, TArray<const UCameraRigAsset*>>& Pair : UsedParameterNames)
+	{
+		const TArray<const UCameraRigAsset*>& ConflictCameraRigs(Pair.Value);
+		if (ConflictCameraRigs.Num() > 1)
+		{
+			const FName ConflictName(Pair.Key);
+			for (const UCameraRigAsset* CameraRig : ConflictCameraRigs)
+			{
+				TArray<FCameraObjectInterfaceParameterDefinition>& Definitions = DefinitionsByCameraRig.FindChecked(CameraRig);
+				FCameraObjectInterfaceParameterDefinition* ConflictDefinition = Definitions.FindByPredicate(
+						[ConflictName](FCameraObjectInterfaceParameterDefinition& Item)
+						{
+							return Item.ParameterName == ConflictName;
+						});
+				if (ensure(ConflictDefinition))
+				{
+					const FString NewName = FString::Format(TEXT("{0}_{1}"), { *GetNameSafe(CameraRig), *ConflictName.ToString() });
+					ConflictDefinition->ParameterName = FName(NewName);
+				}
+			}
+		}
+	}
+
+	// Build the final list of parameter definitions.
+	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
+	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
+	for (const TPair<const UCameraRigAsset*, TArray<FCameraObjectInterfaceParameterDefinition>>& Pair : DefinitionsByCameraRig)
+	{
+		const TArray<FCameraObjectInterfaceParameterDefinition>& DefinitionsForCameraRig(Pair.Value);
+		for (const FCameraObjectInterfaceParameterDefinition& Definition : DefinitionsForCameraRig)
 		{
 			ParameterDefinitions.Add(Definition);
-			ParameterOwners.Add(CameraRig);
+			ParameterOwners.Add(Pair.Key);
 		}
 	}
 
@@ -114,15 +155,14 @@ void FCameraAssetBuilder::BuildCameraImpl()
 		CameraAsset->ParameterOwners = ParameterOwners;
 	}
 
-	// Get the list of all the camera rigs' interface parameters, and rebuild our
-	// parameters property bag.
+	// Rebuild the default parameters property bag.
 	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
-	for (const UCameraRigAsset* CameraRig : AllCameraRigs)
-	{
-		FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(CameraRig, DefaultParameterProperties);
-	}
+	FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(
+			CameraAsset->ParameterDefinitions, DefaultParameterProperties);
+
 	FInstancedPropertyBag DefaultParameters;
 	DefaultParameters.AddProperties(DefaultParameterProperties);
+
 	for (const UCameraRigAsset* CameraRig : AllCameraRigs)
 	{
 		FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(CameraRig, DefaultParameters);

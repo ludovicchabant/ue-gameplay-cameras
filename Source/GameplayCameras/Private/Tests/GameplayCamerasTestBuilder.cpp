@@ -15,6 +15,20 @@ FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(TSharedPtr<FNamedObjectRe
 {
 }
 
+FCameraAssetTestBuilder::FCameraAssetTestBuilder(UObject* Owner)
+{
+	if (Owner == nullptr)
+	{
+		Owner = GetTransientPackage();
+	}
+
+	CameraAsset = NewObject<UCameraAsset>(Owner);
+
+	TCameraObjectInitializer<UCameraAsset>::SetObject(CameraAsset);
+
+	NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
+}
+
 FCameraEvaluationContextTestBuilder::FCameraEvaluationContextTestBuilder(UObject* Owner)
 {
 	if (Owner == nullptr)
