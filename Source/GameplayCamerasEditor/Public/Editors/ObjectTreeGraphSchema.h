@@ -5,8 +5,12 @@
 #include "Compat/EditorCompat.h"
 #include "CoreTypes.h"
 #include "EdGraph/EdGraphSchema.h"
-#include "Misc/StringOutputDevice.h"
 #include "GraphEditor.h"
+#include "Misc/EngineVersionComparison.h"
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
+#include "Misc/StringOutputDevice.h"
+#endif
 
 #include "ObjectTreeGraphSchema.generated.h"
 

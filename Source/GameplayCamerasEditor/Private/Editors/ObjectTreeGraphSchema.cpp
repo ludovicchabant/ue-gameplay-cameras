@@ -13,7 +13,6 @@
 #include "Exporters/Exporter.h"
 #include "Factories.h"
 #include "IGameplayCamerasEditorModule.h"
-#include "Misc/StringOutputDevice.h"
 #include "ScopedTransaction.h"
 #include "Serialization/ArchiveUObject.h"
 #include "ToolMenu.h"
