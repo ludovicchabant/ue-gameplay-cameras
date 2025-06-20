@@ -410,9 +410,15 @@ class FDataParameterPinTypeSelectorFilter : public IPinTypeSelectorFilter
 		FEdGraphPinType PinType = InItem->GetPinType(false);
 		if (PinType.PinCategory == UEdGraphSchema_K2::PC_Boolean ||
 				PinType.PinCategory == UEdGraphSchema_K2::PC_Int ||
+				PinType.PinCategory == UEdGraphSchema_K2::PC_Int64 ||
 				PinType.PinCategory == UEdGraphSchema_K2::PC_Float ||
 				PinType.PinCategory == UEdGraphSchema_K2::PC_Double ||
 				PinType.PinCategory == UEdGraphSchema_K2::PC_Real)
+		{
+			return false;
+		}
+
+		if (PinType.PinCategory == UEdGraphSchema_K2::PC_Byte && PinType.PinSubCategoryObject == nullptr)
 		{
 			return false;
 		}
