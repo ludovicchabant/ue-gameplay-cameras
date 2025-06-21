@@ -25,11 +25,12 @@ void FCameraParameterClamping::GetEffectiveClamping(double& OutMinValue, double&
 
 double FCameraParameterNormalization::NormalizeValue(double Value) const
 {
-	if (bNormalize && MaxValue > 0)
+	if (bNormalize)
 	{
-		while (Value > MaxValue)
+		Value = FMath::Fmod(Value, MaxValue);
+		if (Value < 0.0)
 		{
-			Value -= MaxValue;
+			Value += MaxValue;
 		}
 	}
 	return Value;

@@ -63,7 +63,7 @@ struct FCameraParameterNormalization
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, Category="Common", meta=(ClampMin=0, EditCondition="bNormalize"))
-	double MaxValue = 0;
+	double MaxValue = 360;
 
 	UPROPERTY(EditAnywhere, Category="Common")
 	bool bNormalize = false;
