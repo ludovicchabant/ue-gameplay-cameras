@@ -87,6 +87,11 @@ void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	}
 }
 
+void FDefaultRootCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
+{
+	MainLayer->ExecuteOperation(Params, Operation);
+}
+
 FCameraRigInstanceID FDefaultRootCameraNodeEvaluator::OnActivateCameraRig(const FActivateCameraRigParams& Params)
 {
 	if (Params.Layer == ECameraRigLayer::Main)

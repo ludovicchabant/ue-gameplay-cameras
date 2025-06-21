@@ -508,6 +508,13 @@ void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredVie
 	DesiredView.ApplyOverscan(CameraPose.GetOverscan());
 }
 
+void FCameraSystemEvaluator::ExecuteOperation(FCameraOperation& Operation)
+{
+	FCameraOperationParams Params;
+	Params.Evaluator = this;
+	RootEvaluator->ExecuteOperation(Params, Operation);
+}
+
 #if WITH_EDITOR
 
 void FCameraSystemEvaluator::EditorPreviewUpdate(const FCameraSystemEvaluationParams& Params)

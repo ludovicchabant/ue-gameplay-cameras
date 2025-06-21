@@ -257,6 +257,9 @@ public:
 	/** Get the last evaluated camera. */
 	GAMEPLAYCAMERAS_API void GetEvaluatedCameraView(FMinimalViewInfo& DesiredView);
 
+	/** Executes an operation, to be dispatched by the root node evaluator. */
+	GAMEPLAYCAMERAS_API void ExecuteOperation(FCameraOperation& Operation);
+
 	/** Collect reference objects for the garbage collector. */
 	GAMEPLAYCAMERAS_API void AddReferencedObjects(FReferenceCollector& Collector);
 

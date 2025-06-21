@@ -6,6 +6,7 @@
 #include "Core/BlendStackRootCameraNode.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraOperation.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
 #include "Core/CameraSystemEvaluator.h"
@@ -228,6 +229,25 @@ void FBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInit
 
 	const UBlendStackCameraNode* BlendStack = GetCameraNodeAs<UBlendStackCameraNode>();
 	Layer = BlendStack->Layer;
+}
+
+void FBlendStackCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
+{
+	ensure(Params.Evaluator == OwningEvaluator);
+
+	// Execute operations from top to bottom.
+	for (int32 Index = Entries.Num() - 1; Index >= 0; --Index)
+	{
+		FCameraRigEntry& Entry(Entries[Index]);
+		TSharedPtr<const FCameraEvaluationContext> CurContext = Entry.EvaluationContext.Pin();
+
+		if (!Entry.Flags.bIsFrozen)
+		{
+			FCameraOperationParams CurParams(Params);
+			CurParams.EvaluationContext = CurContext;
+			Entry.EvaluatorHierarchy.CallExecuteOperation(CurParams, Operation);
+		}
+	}
 }
 
 void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries)

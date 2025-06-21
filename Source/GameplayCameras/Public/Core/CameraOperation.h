@@ -30,6 +30,9 @@ struct FCameraOperationTypeID
 
 public:
 
+	/** Generate a new operation type ID. */
+	GAMEPLAYCAMERAS_API static FCameraOperationTypeID RegisterNew();
+
 	/** Returns whether this ID is valid. */
 	bool IsValid() const { return Value != INVALID; }
 
@@ -74,7 +77,7 @@ private:
 	FCameraOperationTypeID OperationTypeID;
 };
 
-#define UE_DEFINE_CAMERA_IK_OPERATION(OperationName, OperationType)\
+#define UE_DECLARE_BUILT_IN_CAMERA_OPERATION(OperationName, OperationType)\
 	static FCameraOperationTypeID GetOperationTypeID()\
 	{\
 		return FCameraOperationTypeID(OperationType);\
@@ -88,7 +91,7 @@ private:
  */
 struct FYawPitchCameraOperation : public FCameraOperation
 {
-	UE_DEFINE_CAMERA_IK_OPERATION(FYawPitchCameraOperation, EBuiltInCameraOperationTypes::YawPitch)
+	UE_DECLARE_BUILT_IN_CAMERA_OPERATION(FYawPitchCameraOperation, EBuiltInCameraOperationTypes::YawPitch)
 
 	FConsumableDouble Yaw;
 	FConsumableDouble Pitch;
@@ -100,10 +103,26 @@ struct FYawPitchCameraOperation : public FCameraOperation
  */
 struct FSingleValueCameraOperation : public FCameraOperation
 {
-	UE_DEFINE_CAMERA_IK_OPERATION(FSingleValueCameraOperation, EBuiltInCameraOperationTypes::SingleValue)
+	UE_DECLARE_BUILT_IN_CAMERA_OPERATION(FSingleValueCameraOperation, EBuiltInCameraOperationTypes::SingleValue)
 
 	FConsumableDouble Value;
 };
 
+#undef UE_DECLARE_BUILT_IN_CAMERA_OPERATION
+
 }  // namespace UE::Cameras
+
+#define UE_DECLARE_CAMERA_OPERATION(ApiDeclSpec, OperationName)\
+	public:\
+		ApiDeclSpec static UE::Cameras::FCameraOperationTypeID GetOperationTypeID();\
+		OperationName()\
+			: FCameraOperation(OperationName::GetOperationTypeID())\
+		{}
+
+#define UE_DEFINE_CAMERA_OPERATION(OperationName)\
+	UE::Cameras::FCameraOperationTypeID OperationName::GetOperationTypeID()\
+	{\
+		static UE::Cameras::FCameraOperationTypeID StaticOperationTypeID = UE::Cameras::FCameraOperationTypeID::RegisterNew();\
+		return StaticOperationTypeID;\
+	}\
 
