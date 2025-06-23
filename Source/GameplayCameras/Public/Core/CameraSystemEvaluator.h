@@ -237,6 +237,19 @@ public:
 		return nullptr;
 	}
 
+	/** Finds or creates/registers an evaluation service of the given type. */
+	template<typename EvaluationServiceType>
+	TSharedRef<EvaluationServiceType> FindOrRegisterEvaluationService()
+	{
+		TSharedPtr<EvaluationServiceType> EvaluationService = FindEvaluationService<EvaluationServiceType>();
+		if (!EvaluationService)
+		{
+			EvaluationService = MakeShared<EvaluationServiceType>();
+			RegisterEvaluationService(EvaluationService.ToSharedRef());
+		}
+		return EvaluationService.ToSharedRef();
+	}
+
 public:
 
 	/** Run an update of the camera system. */
