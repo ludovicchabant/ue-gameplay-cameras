@@ -141,6 +141,7 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(cons
 	FCameraNodeEvaluatorInitializeParams InitParams;
 	InitParams.Evaluator = OwningEvaluator;
 	InitParams.EvaluationContext = TopEntry.EvaluationContext.Pin();
+	InitParams.Layer = Layer;
 
 	TopEntry.RootEvaluator->MergeCameraRig(BuildParams, InitParams, TopEntry.Result, PushParams.CameraRig, Blend);
 
@@ -252,6 +253,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
 		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
+		CurParams.bIsActiveCameraRig = (ResolvedEntry.EntryIndex == Entries.Num() - 1);
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
@@ -385,6 +387,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
 		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
+		CurParams.bIsActiveCameraRig = (ResolvedEntry.EntryIndex == Entries.Num() - 1);
 
 		// Start with the input given to us.
 		CurResult.Reset();

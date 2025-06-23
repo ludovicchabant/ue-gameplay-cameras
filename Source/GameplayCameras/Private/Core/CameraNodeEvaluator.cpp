@@ -165,6 +165,19 @@ void FCameraNodeEvaluator::Initialize(const FCameraNodeEvaluatorInitializeParams
 	}
 }
 
+void FCameraNodeEvaluator::Teardown(const FCameraNodeEvaluatorTeardownParams& Params)
+{
+	OnTeardown(Params);
+
+	for (FCameraNodeEvaluator* Child : GetChildren())
+	{
+		if (Child)
+		{
+			Child->Teardown(Params);
+		}
+	}
+}
+
 void FCameraNodeEvaluator::AddReferencedObjects(FReferenceCollector& Collector)
 {
 	if (PrivateCameraNode)

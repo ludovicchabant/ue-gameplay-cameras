@@ -26,9 +26,9 @@ enum class ERootCameraNodeCameraRigEventType
 struct FRootCameraNodeCameraRigEvent
 {
 	/** The type of event. */
-	ERootCameraNodeCameraRigEventType EventType;
+	ERootCameraNodeCameraRigEventType EventType = ERootCameraNodeCameraRigEventType::Activated;
 	/** The layer on which the event happened. */
-	ECameraRigLayer EventLayer;
+	ECameraRigLayer EventLayer = ECameraRigLayer::Main;
 	/** The evaluation information of the associated camera rig. */
 	FCameraRigEvaluationInfo CameraRigInfo;
 	/** If a camera rig was activated, the transition used to activate it, if any. */

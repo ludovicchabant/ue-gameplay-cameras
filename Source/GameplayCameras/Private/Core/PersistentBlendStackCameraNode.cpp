@@ -166,6 +166,7 @@ void FPersistentBlendStackCameraNodeEvaluator::RemoveEntry(int32 EntryIndex, con
 				FCameraNodeEvaluatorInitializeParams BlendOutInitParams;
 				BlendOutInitParams.Evaluator = OwningEvaluator;
 				BlendOutInitParams.EvaluationContext = Entry.EvaluationContext.Pin();
+				BlendOutInitParams.Layer = Layer;
 				BlendOutEvaluator->Initialize(BlendOutInitParams, Entry.Result);
 
 				// Reverse this blend so it plays as a blend-out. Also, see if we are going to 

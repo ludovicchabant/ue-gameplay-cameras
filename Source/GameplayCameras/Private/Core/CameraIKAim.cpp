@@ -180,6 +180,7 @@ void FCameraIKAim::RunRootCameraNode(const FCameraIKAimParams& Params, const FCa
 		FSingleCameraRigEvaluationParams SingleParams;
 		SingleParams.EvaluationParams.DeltaTime = Params.DeltaTime;
 		SingleParams.EvaluationParams.bIsFirstFrame = Params.bIsFirstFrame;
+		SingleParams.EvaluationParams.bIsActiveCameraRig = Params.bIsActiveCameraRig;
 		SingleParams.EvaluationParams.EvaluationType = ECameraNodeEvaluationType::IK;
 		SingleParams.EvaluationParams.EvaluationContext = CameraRigInfo.EvaluationContext;
 		SingleParams.EvaluationParams.Evaluator = Params.Evaluator;

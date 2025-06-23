@@ -212,6 +212,7 @@ void FOrientationInitializationService::TryPreserveTarget(const FCameraRigEvalua
 
 	FCameraIKAimParams AimParams;
 	AimParams.bIsFirstFrame = true;
+	AimParams.bIsActiveCameraRig = true;
 	AimParams.DeltaTime = 0.f;
 	AimParams.Evaluator = Evaluator;
 	AimParams.TargetLocation = TargetToPreserve;

@@ -121,6 +121,7 @@ void FBlendStackCameraNodeEvaluator::InitializeEntry(
 		InitParams.Evaluator = OwningEvaluator;
 		InitParams.EvaluationContext = EvaluationContext;
 		InitParams.LastActiveCameraRigInfo = GetActiveCameraRigEvaluationInfo();
+		InitParams.Layer = Layer;
 		RootEvaluator->Initialize(InitParams, NewEntry.ContextResult);  // Initializing with the context result here.
 	}
 
@@ -153,6 +154,16 @@ int32 FBlendStackCameraNodeEvaluator::IndexOfEntry(const FBlendStackEntryID Entr
 
 void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
 {
+	if (Entry.RootEvaluator)
+	{
+		FCameraNodeEvaluatorTeardownParams TeardownParams;
+		TeardownParams.Evaluator = this->OwningEvaluator;
+		TeardownParams.EvaluationContext = Entry.EvaluationContext.Pin();
+		TeardownParams.Layer = Layer;
+
+		Entry.RootEvaluator->Teardown(TeardownParams);
+	}
+
 	// Deallocate our node evaluators and clear any pointers we kept to them.
 	Entry.EvaluatorStorage.DestroyEvaluatorTree(true);
 	Entry.RootEvaluator = nullptr;
@@ -408,6 +419,16 @@ void FBlendStackCameraNodeEvaluator::PopEntries(int32 FirstIndexToKeep)
 	for (int32 Index = 0; Index < FirstIndexToKeep; ++Index)
 	{
 		FCameraRigEntry& FirstEntry = Entries[0];
+
+		if (FirstEntry.RootEvaluator)
+		{
+			FCameraNodeEvaluatorTeardownParams TeardownParams;
+			TeardownParams.Evaluator = this->OwningEvaluator;
+			TeardownParams.EvaluationContext = FirstEntry.EvaluationContext.Pin();
+			TeardownParams.Layer = Layer;
+
+			FirstEntry.RootEvaluator->Teardown(TeardownParams);
+		}
 
 #if WITH_EDITOR
 		RemoveListenedPackages(LiveEditManager, FirstEntry);

@@ -88,6 +88,9 @@ struct FCameraNodeEvaluatorInitializeParams
 	 */
 	FCameraRigEvaluationInfo LastActiveCameraRigInfo;
 
+	/** The layer on which the node evaluator is being initialized. */
+	ECameraRigLayer Layer = ECameraRigLayer::Main;
+
 public:
 
 	FCameraNodeEvaluatorInitializeParams() = default;
@@ -99,6 +102,20 @@ private:
 	FCameraNodeEvaluatorHierarchy* Hierarchy = nullptr;
 
 	friend class FCameraNodeEvaluator;
+};
+
+/**
+ * Structure for tearing down a camera node evaluator.
+ */
+struct FCameraNodeEvaluatorTeardownParams
+{
+	/** The evaluation running this evaluation. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
+	/** The evaluation context (if any) responsible for this branch of the evaluation. */
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext;
+
+	/** The layer on which the node evaluator was running. */
+	ECameraRigLayer Layer = ECameraRigLayer::Main;
 };
 
 /**
@@ -161,6 +178,8 @@ struct FCameraNodeEvaluationParams
 	ECameraNodeEvaluationType EvaluationType = ECameraNodeEvaluationType::Standard;
 	/** Whether this is the first evaluation of this camera node hierarchy. */
 	bool bIsFirstFrame = false;
+	/** Whether this camera node is running inside the active camera rig in this layer. */
+	bool bIsActiveCameraRig = false;
 
 	bool IsStatelessEvaluation() const
 	{
@@ -282,6 +301,9 @@ public:
 	/** Initialize this evaluator and all its descendants. */
 	void Initialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult);
 
+	/** Tear down this evaluator and all its descendants. */
+	void Teardown(const FCameraNodeEvaluatorTeardownParams& Params);
+
 	/** Collect referenced UObjects for this node and all its descendants. */
 	void AddReferencedObjects(FReferenceCollector& Collector);
 
@@ -349,6 +371,9 @@ protected:
 
 	/** Initialize this evaluator. Children and descendants will be automatically initialized too. */
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+
+	/** Tear down this evaluator and all its descendants. */
+	virtual void OnTeardown(const FCameraNodeEvaluatorTeardownParams& Params) {}
 
 	/** Collect referenced UObjects for this node. */
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}

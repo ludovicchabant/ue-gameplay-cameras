@@ -22,6 +22,8 @@ struct FCameraIKAimParams
 	float DeltaTime = 0.f;
 	/** Whether this is the first update of the camera rig. */
 	bool bIsFirstFrame = false;
+	/** Whether this camera rig is the active one in its layer (e.g. top of the blend stack). */
+	bool bIsActiveCameraRig = false;
 	
 	/** The desired target that the camera rig should be aiming at. */
 	FVector3d TargetLocation = FVector3d::ZeroVector;

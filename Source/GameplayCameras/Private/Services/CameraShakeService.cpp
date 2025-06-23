@@ -330,6 +330,7 @@ void FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 		FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
 		InitParams.Evaluator = OwningEvaluator;
 		InitParams.EvaluationContext = EvaluationContext;
+		InitParams.Layer = ECameraRigLayer::Visual;
 		RootEvaluator->Initialize(InitParams, NewEntry.Result);
 	}
 
