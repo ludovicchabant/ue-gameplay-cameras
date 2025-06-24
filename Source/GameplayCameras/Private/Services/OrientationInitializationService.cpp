@@ -26,6 +26,16 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugOrientationInitialization
 
 UE_DEFINE_CAMERA_EVALUATION_SERVICE(FOrientationInitializationService)
 
+void FOrientationInitializationService::SetYawPitchPreservationOverride(const FRotator3d& InOrientation)
+{
+	YawPitchPreservationOverride = InOrientation;
+}
+
+void FOrientationInitializationService::SetTargetPreservationOverride(const FVector3d& InTarget)
+{
+	TargetPreservationOverride = InTarget;
+}
+
 void FOrientationInitializationService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
 	SetEvaluationServiceFlags(
@@ -49,6 +59,9 @@ void FOrientationInitializationService::OnPostUpdate(const FCameraEvaluationServ
 	}
 
 	PreviousEvaluationContext = ActiveContext;
+
+	YawPitchPreservationOverride.Reset();
+	TargetPreservationOverride.Reset();
 }
 
 void FOrientationInitializationService::OnRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
@@ -140,7 +153,11 @@ void FOrientationInitializationService::TryPreserveYawPitch(const FCameraRigEval
 		return;
 	}
 	
-	const FRotator3d LastOrientation = LastResult.CameraPose.GetRotation();
+	FRotator3d LastOrientation = LastResult.CameraPose.GetRotation();
+	if (YawPitchPreservationOverride.IsSet())
+	{
+		LastOrientation = YawPitchPreservationOverride.GetValue();
+	}
 	TryInitializeYawPitch(CameraRigInfo, LastOrientation.Yaw, LastOrientation.Pitch);
 }
 
@@ -196,18 +213,25 @@ void FOrientationInitializationService::TryPreserveTarget(const FCameraRigEvalua
 
 	FVector3d TargetToPreserve = LastResult.CameraPose.GetTarget();
 
-	// Relative target preservation means that if the context turned since last frame, we want to preserve
-	// a target that has "turned" along with it.
-	if (bUseRelativeTarget && bHasPreviousContextTransform &&
-			(PreviousEvaluationContext == nullptr || CameraRigInfo.EvaluationContext == PreviousEvaluationContext))
+	if (TargetPreservationOverride.IsSet())
 	{
-		const FRotator3d PreviousInverseContextRotation = PreviousContextRotation.GetInverse();
-		const FVector3d LastRelativeTarget = PreviousInverseContextRotation.RotateVector(TargetToPreserve - PreviousContextLocation);
+		TargetToPreserve = TargetPreservationOverride.GetValue();
+	}
+	else
+	{
+		// Relative target preservation means that if the context turned since last frame, we want to preserve
+		// a target that has "turned" along with it.
+		if (bUseRelativeTarget && bHasPreviousContextTransform &&
+				(PreviousEvaluationContext == nullptr || CameraRigInfo.EvaluationContext == PreviousEvaluationContext))
+		{
+			const FRotator3d PreviousInverseContextRotation = PreviousContextRotation.GetInverse();
+			const FVector3d LastRelativeTarget = PreviousInverseContextRotation.RotateVector(TargetToPreserve - PreviousContextLocation);
 
-		const FCameraNodeEvaluationResult& InitialResult = CameraRigInfo.EvaluationContext->GetInitialResult();
-		const FVector3d& InitialLocation = InitialResult.CameraPose.GetLocation();
-		const FRotator3d& InitialRotation = InitialResult.CameraPose.GetRotation();
-		TargetToPreserve = InitialRotation.RotateVector(LastRelativeTarget) + InitialLocation;
+			const FCameraNodeEvaluationResult& InitialResult = CameraRigInfo.EvaluationContext->GetInitialResult();
+			const FVector3d& InitialLocation = InitialResult.CameraPose.GetLocation();
+			const FRotator3d& InitialRotation = InitialResult.CameraPose.GetRotation();
+			TargetToPreserve = InitialRotation.RotateVector(LastRelativeTarget) + InitialLocation;
+		}
 	}
 
 	FCameraIKAimParams AimParams;

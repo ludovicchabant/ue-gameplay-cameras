@@ -12,9 +12,26 @@ namespace UE::Cameras
 class FCameraEvaluationContext;
 struct FCameraRigEvaluationInfo;
 
+/**
+ * A camera evaluation service responsible for initializing the orientation of newly activated camera rigs.
+ */
 class FOrientationInitializationService : public FCameraEvaluationService
 {
 	UE_DECLARE_CAMERA_EVALUATION_SERVICE(GAMEPLAYCAMERAS_API, FOrientationInitializationService)
+
+public:
+
+	/**
+	 * Override the yaw/pitch to preserve on any camera rig activated this frame. This will affect camera rigs
+	 * who have the "Preserve Yaw/Pitch" policy.
+	 */
+	GAMEPLAYCAMERAS_API void SetYawPitchPreservationOverride(const FRotator3d& InOrientation);
+
+	/**
+	 * Override the target location to preserve on any camera rig activated this frame. This will affect camera rigs
+	 * who have the "Preserve Absolute/Relative Target" policies.
+	 */
+	GAMEPLAYCAMERAS_API void SetTargetPreservationOverride(const FVector3d& InTarget);
 
 protected:
 
@@ -42,6 +59,9 @@ private:
 	FVector3d PreviousContextLocation;
 	FRotator3d PreviousContextRotation;
 	bool bHasPreviousContextTransform = false;
+
+	TOptional<FRotator3d> YawPitchPreservationOverride;
+	TOptional<FVector3d> TargetPreservationOverride;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FVector3d DebugLastEvaluatedTarget;
