@@ -4,7 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraNodeEvaluator.h"
-#include "Helpers/CameraAssetParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAssetReference)
 
@@ -17,11 +17,25 @@ FCameraAssetReference::FCameraAssetReference(UCameraAsset* InCameraAsset)
 {
 }
 
-void FCameraAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly)
+void FCameraAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const
 {
 	using namespace UE::Cameras;
-	FCameraAssetParameterOverrideEvaluator OverrideEvaluator(*this);
-	OverrideEvaluator.ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, bDrivenOverridesOnly);
+	if (CameraAsset)
+	{
+		TSet<FGuid> OverridenParameterGuids(GetOverriddenParameterGuids());
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutResult.VariableTable, &OutResult.ContextDataTable);
+		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), Parameters, OverridenParameterGuids, bDrivenOnly);
+	}
+}
+
+void FCameraAssetReference::ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
+{
+	using namespace UE::Cameras;
+	if (CameraAsset)
+	{
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutResult.VariableTable, &OutResult.ContextDataTable);
+		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), Parameters, CachedParameters);
+	}
 }
 
 bool FCameraAssetReference::IsParameterOverridden(const FGuid PropertyID) const
@@ -38,23 +52,6 @@ void FCameraAssetReference::SetParameterOverridden(const FGuid PropertyID, bool 
 	else
 	{
 		ParameterOverrideGuids.Remove(PropertyID);
-	}
-}
-
-bool FCameraAssetReference::IsParameterAnimated(const FGuid PropertyID) const
-{
-	return ParameterAnimatedGuids.Contains(PropertyID);
-}
-
-void FCameraAssetReference::SetParameterAnimated(const FGuid PropertyID, bool bIsAnimated)
-{
-	if (bIsAnimated)
-	{
-		ParameterAnimatedGuids.AddUnique(PropertyID);
-	}
-	else
-	{
-		ParameterAnimatedGuids.Remove(PropertyID);
 	}
 }
 

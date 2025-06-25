@@ -39,10 +39,6 @@ struct FCameraObjectInterfaceParameterMetaData
 	/** Whether this parameter has an override value. */
 	UPROPERTY()
 	bool bIsOverridden = false;
-
-	/** Whether this parameter is being animated. */
-	UPROPERTY()
-	bool bIsAnimated = false;
 };
 
 USTRUCT(BlueprintType)
@@ -85,16 +81,10 @@ public:
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
 
-	GAMEPLAYCAMERAS_API bool IsParameterAnimated(const FGuid& PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterAnimated(const FGuid& PropertyID, bool bIsAnimated);
-
 	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos);
 	
 	template<typename ContainerType>
 	void GetOverriddenParameterGuids(ContainerType& OutOverriddenIDs) const;
-
-	template<typename ContainerType>
-	void GetAnimatedParameterGuids(ContainerType& OutAnimatedIDs) const;
 
 private:
 
@@ -120,18 +110,6 @@ void FBaseCameraObjectReference::GetOverriddenParameterGuids(ContainerType& OutO
 		if (MetaData.bIsOverridden)
 		{
 			OutOverriddenIDs.Add(MetaData.ParameterGuid);
-		}
-	}
-}
-
-template<typename ContainerType>
-void FBaseCameraObjectReference::GetAnimatedParameterGuids(ContainerType& OutAnimatedIDs) const
-{
-	for (const FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
-	{
-		if (MetaData.bIsAnimated)
-		{
-			OutAnimatedIDs.Add(MetaData.ParameterGuid);
 		}
 	}
 }

@@ -5,7 +5,7 @@
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraNodeEvaluator.h"
-#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigAssetReference)
 
@@ -27,11 +27,43 @@ const UBaseCameraObject* FCameraRigAssetReference::GetCameraObject() const
 	return CameraRig;
 }
 
-void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly)
+void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const
+{
+	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly);
+}
+
+void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, UE::Cameras::FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly) const
+{
+	ApplyParameterOverridesImpl(&OutVariableTable, &OutContextDataTable, bDrivenOnly);
+}
+
+void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const
+{
+	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, bDrivenOnly);
+}
+
+void FCameraRigAssetReference::ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
 {
 	using namespace UE::Cameras;
-	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(*this);
-	OverrideEvaluator.ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, bDrivenOverridesOnly);
+
+	if (CameraRig)
+	{
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutResult.VariableTable, &OutResult.ContextDataTable);
+		Helper.ApplyParameterOverrides(CameraRig, CameraRig->GetParameterDefinitions(), Parameters, CachedParameters);
+	}
+}
+
+void FCameraRigAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly) const
+{
+	using namespace UE::Cameras;
+
+	if (CameraRig)
+	{
+		TSet<FGuid> OverridenParameterGuids;
+		GetOverriddenParameterGuids(OverridenParameterGuids);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
+		Helper.ApplyParameterOverrides(CameraRig, CameraRig->GetParameterDefinitions(), Parameters, OverridenParameterGuids, bDrivenOnly);
+	}
 }
 
 bool FCameraRigAssetReference::SerializeFromMismatchedTag(struct FPropertyTag const& Tag, FStructuredArchive::FSlot Slot)

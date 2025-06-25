@@ -55,6 +55,13 @@ private:
 
 private:
 
+	/** Cached parameter overrides, for detecting when some of them change. */
+	UPROPERTY(Transient)
+	FInstancedPropertyBag CachedParameterOverrides;
+
+
+	// Deprecated
+
 	UPROPERTY()
 	TObjectPtr<UCameraAsset> Camera_DEPRECATED;
 };

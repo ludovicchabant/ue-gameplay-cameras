@@ -77,7 +77,10 @@ public:
 	}
 
 	/** Applies the parameter override values to the given evaluation result. */
-	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly);
+	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const;
+
+	/** Applies the parameter override values to the given evaluation result. */
+	void ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const;
 
 public:
 
@@ -87,9 +90,6 @@ public:
 
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden);
-
-	GAMEPLAYCAMERAS_API bool IsParameterAnimated(const FGuid PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterAnimated(const FGuid PropertyID, bool bIsAnimated);
 
 	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
 	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
@@ -108,9 +108,6 @@ private:
 	/** The list of camera rig parameters with override values. */
 	UPROPERTY(EditAnywhere, Category="")
 	TArray<FGuid> ParameterOverrideGuids;
-
-	UPROPERTY()
-	TArray<FGuid> ParameterAnimatedGuids;
 
 	friend class UE::Cameras::FCameraAssetReferenceDetailsCustomization;
 };

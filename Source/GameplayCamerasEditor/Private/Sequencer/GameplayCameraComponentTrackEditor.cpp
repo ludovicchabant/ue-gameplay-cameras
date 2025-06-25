@@ -20,10 +20,16 @@
 #include "Styles/GameplayCamerasEditorStyle.h"
 #include "Tracks/MovieScenePropertyTrack.h"
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
+#include "Misc/SequencerObjectBindingHelper.h"
+#endif
+
 #define LOCTEXT_NAMESPACE "GameplayCameraComponentTrackEditor"
 
 namespace UE::Cameras::Internal
 {
+
+#if UE_VERSION_OLDER_THAN(5,7,0)
 
 // TODO: duplicated from GetKeyablePropertyPaths in ObjectBindingModel.cpp
 void GetKeyablePropertyPathsImpl(TSharedPtr<ISequencer> Sequencer, const UClass* BaseObjectClass, const UStruct* Struct, const void* StructValuePtr, FPropertyPath PropertyPath, TArray<FPropertyPath>& KeyablePropertyPaths)
@@ -71,6 +77,8 @@ void GetKeyablePropertyPathsImpl(TSharedPtr<ISequencer> Sequencer, const UClass*
 	}
 }
 
+#endif  // pre-5.7.0
+
 void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCameraComponentBase* CameraComponentBase, TArray<FPropertyPath>& KeyablePropertyPaths)
 {
 	// Start us off with the property path of the parameters struct, and then get all keyable property paths from there.
@@ -114,7 +122,11 @@ void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCa
 	PropertyPath.AddProperty(FPropertyInfo(PropertyBagStruct->FindPropertyByName(TEXT("Value"))));
 
 	const UClass* ComponentClass = CameraComponentBase->GetClass();
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
+	FSequencerObjectBindingHelper::GetKeyablePropertyPaths(ComponentClass, CameraParametersMemory, CameraParametersStruct, PropertyPath, Sequencer.ToSharedRef(), KeyablePropertyPaths);
+#else
 	GetKeyablePropertyPathsImpl(Sequencer, ComponentClass, CameraParametersStruct, CameraParametersMemory, PropertyPath, KeyablePropertyPaths);
+#endif
 }
 
 class FCameraParameterTrackSetupHandler : public UE::MovieScene::TIntrusiveEventHandler<UE::MovieScene::ISequenceDataEventHandler>

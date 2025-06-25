@@ -21,7 +21,7 @@ void ApplyBlendableParameterOverride(
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const ParameterType& ParameterValue,
 		FCameraVariableTable& VariableTable,
-		bool bDrivenOverridesOnly)
+		bool bDrivenOnly)
 {
 	using ValueType = typename ParameterType::ValueType;
 
@@ -36,7 +36,7 @@ void ApplyBlendableParameterOverride(
 				OverrideDefinition.VariableID, ParameterValue.Variable->GetDefaultValue());
 		VariableTable.SetValue<ValueType>(ParameterVariableID, OverrideValue);
 	}
-	else if (!bDrivenOverridesOnly)
+	else if (!bDrivenOnly)
 	{
 		// The override is a fixed value. Just set that on the prefab's variable.
 		VariableTable.SetValue<ValueType>(ParameterVariableID, ParameterValue.Value);
@@ -44,12 +44,12 @@ void ApplyBlendableParameterOverride(
 }
 
 void ApplyBlendableParameterOverride(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedPropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraVariableTable& VariableTable,
-		bool bDrivenOverridesOnly)
+		bool bDrivenOnly)
 {
 	ensure(ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable);
 
@@ -91,7 +91,7 @@ void ApplyBlendableParameterOverride(
 			{\
 				check(ParameterType == F##ValueName##CameraParameter::StaticStruct());\
 				const F##ValueName##CameraParameter& TypedParameterValue = ParameterValue.Get<F##ValueName##CameraParameter>();\
-				ApplyBlendableParameterOverride(ParameterDefinition, TypedParameterValue, VariableTable, bDrivenOverridesOnly);\
+				ApplyBlendableParameterOverride(ParameterDefinition, TypedParameterValue, VariableTable, bDrivenOnly);\
 			}\
 			break;
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -190,7 +190,7 @@ void ApplyDataParameterElementOverride(
 }
 
 void ApplyDataParameterSingleOverride(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedPropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
@@ -273,7 +273,7 @@ void ApplyDataParameterSingleOverride(
 }
 
 void ApplyDataParameterArrayOverride(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedPropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
@@ -360,7 +360,7 @@ void ApplyDataParameterArrayOverride(
 }
 
 void ApplyDataParameterOverride(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedPropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
@@ -399,56 +399,96 @@ FCameraObjectInterfaceParameterOverrideHelper::FCameraObjectInterfaceParameterOv
 }
 
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
+		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
 		const FInstancedPropertyBag& ParameterOverrides,
 		const TSet<FGuid>& OverridenParameterGuids,
-		const TSet<FGuid>& AnimatedParameterGuids,
-		FCameraVariableTable* OutVariableTable,
-		FCameraContextDataTable* OutContextDataTable,
-		bool bDrivenOverridesOnly)
+		bool bDrivenOnly)
 {
 	using namespace Internal;
 
-	check(OutVariableTable);
-
-	const UPropertyBag* CameraShakeParametersStruct = ParameterOverrides.GetPropertyBagStruct();
-	if (!CameraObject || !CameraShakeParametersStruct)
+	const UPropertyBag* ParameterOverridesStruct = ParameterOverrides.GetPropertyBagStruct();
+	if (!CameraObject || !ParameterOverridesStruct)
 	{
 		return;
 	}
 
-	TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions = CameraObject->GetParameterDefinitions();
-
 	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
 	{
-		if (!OutContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
+		if (!ContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
 			continue;
 		}
 
-		const bool bIsAnimated = AnimatedParameterGuids.Contains(Definition.ParameterGuid);
-		if (!OverridenParameterGuids.Contains(Definition.ParameterGuid) && !bIsAnimated)
+		if (!OverridenParameterGuids.Contains(Definition.ParameterGuid))
 		{
 			continue;
 		}
 
-		const FPropertyBagPropertyDesc* PropertyDesc = CameraShakeParametersStruct->FindPropertyDescByID(Definition.ParameterGuid);
+		const FPropertyBagPropertyDesc* PropertyDesc = ParameterOverridesStruct->FindPropertyDescByID(Definition.ParameterGuid);
 		if (!ensure(PropertyDesc))
 		{
 			continue;
 		}
 
-		const bool bThisDrivenOnly = bDrivenOverridesOnly && !bIsAnimated;
-		ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc, bThisDrivenOnly);
+		ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc, bDrivenOnly);
+	}
+}
+
+void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
+		const UObject* CameraObject,
+		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
+		const FInstancedPropertyBag& ParameterOverrides,
+		const FInstancedPropertyBag& CachedParameterOverrides)
+{
+	using namespace Internal;
+
+	const UPropertyBag* ParameterOverridesStruct = ParameterOverrides.GetPropertyBagStruct();
+	if (!CameraObject || !ParameterOverridesStruct)
+	{
+		return;
+	}
+
+	const uint8* ParameterOverridesMemory = ParameterOverrides.GetValue().GetMemory();
+	const uint8* CachedParameterOverridesMemory = CachedParameterOverrides.GetValue().GetMemory();
+	if (!ParameterOverridesMemory || !CachedParameterOverridesMemory)
+	{
+		return;
+	}
+
+	if (!ensure(ParameterOverridesStruct == CachedParameterOverrides.GetPropertyBagStruct()))
+	{
+		return;
+	}
+
+	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
+	{
+		if (!ContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
+		{
+			continue;
+		}
+
+		const FPropertyBagPropertyDesc* PropertyDesc = ParameterOverridesStruct->FindPropertyDescByID(Definition.ParameterGuid);
+		if (!ensure(PropertyDesc))
+		{
+			continue;
+		}
+
+		const void* RawValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(ParameterOverridesMemory);
+		const void* CachedRawValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(CachedParameterOverridesMemory);
+		if (!PropertyDesc->CachedProperty->Identical(RawValue, CachedRawValue))
+		{
+			ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc, false);
+		}
 	}
 }
 
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverride(
-		const UBaseCameraObject* CameraObject,
+		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedPropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
-		bool bDrivenOverridesOnly)
+		bool bDrivenOnly)
 {
 	using namespace Internal;
 
@@ -464,15 +504,14 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverride(
 							CameraObject, 
 							ParameterDefinition,
 							PropertyBag, PropertyBagPropertyDesc, 
-							*VariableTable, bDrivenOverridesOnly);
+							*VariableTable,
+							bDrivenOnly);
 				}
 			}
 			break;
 		case ECameraObjectInterfaceParameterType::Data:
 			{
-				// Data parameters can't be driven by variables so only apply them if we are not
-				// just applying driven parameters.
-				if (ensure(ContextDataTable) && !bDrivenOverridesOnly)
+				if (ensure(ContextDataTable) && !bDrivenOnly)
 				{
 					ApplyDataParameterOverride(
 							CameraObject, 

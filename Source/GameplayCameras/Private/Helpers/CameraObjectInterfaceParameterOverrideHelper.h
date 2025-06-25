@@ -5,6 +5,7 @@
 #include "StructUtils/PropertyBag.h"
 
 class UBaseCameraObject;
+class UCameraAsset;
 struct FCameraObjectInterfaceParameterDefinition;
 
 namespace UE::Cameras
@@ -44,21 +45,27 @@ public:
 
 	/** Sets overriden values of interface parameters in the given variable and context data tables. */
 	void ApplyParameterOverrides(
-			const UBaseCameraObject* CameraObject,
+			const UObject* CameraObject,
+			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
 			const FInstancedPropertyBag& ParameterOverrides,
 			const TSet<FGuid>& OverridenParameterGuids,
-			const TSet<FGuid>& AnimatedParameterGuids,
-			FCameraVariableTable* OutVariableTable,
-			FCameraContextDataTable* OutContextDataTable,
-			bool bDrivenOverridesOnly);
+			bool bDrivenOnly);
 
-	/** Sets a given override value for an interface parameter. */
+	/** Sets overriden values of interface parameters in the given variable and context data tables. */
+	void ApplyParameterOverrides(
+			const UObject* CameraObject,
+			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
+			const FInstancedPropertyBag& ParameterOverrides,
+			const FInstancedPropertyBag& CachedParameterOverrides);
+
+private:
+
 	void ApplyParameterOverride(
-			const UBaseCameraObject* CameraObject,
+			const UObject* CameraObject,
 			const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 			const FInstancedPropertyBag& PropertyBag,
 			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
-			bool bDrivenOverridesOnly);
+			bool bDrivenOnly);
 
 private:
 

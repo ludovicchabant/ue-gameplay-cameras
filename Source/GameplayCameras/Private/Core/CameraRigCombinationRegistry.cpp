@@ -3,7 +3,7 @@
 #include "Core/CameraRigCombinationRegistry.h"
 
 #include "Core/CameraRigAsset.h"
-#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCombinationRegistry)
 
@@ -125,8 +125,7 @@ void FCombinedCameraRigsCameraNodeEvaluator::ApplyParameterOverrides(FCameraVari
 	const UCombinedCameraRigsCameraNode* CombinedRigsNode = GetCameraNodeAs<UCombinedCameraRigsCameraNode>();
 	for (const FCameraRigAssetReference& IndividualCameraRigReference : CombinedRigsNode->CameraRigReferences)
 	{
-		FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(IndividualCameraRigReference);
-		OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
+		IndividualCameraRigReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
 	}
 }
 

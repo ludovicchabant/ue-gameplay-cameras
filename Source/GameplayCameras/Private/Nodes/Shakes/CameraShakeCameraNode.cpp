@@ -7,7 +7,6 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/ShakeCameraNode.h"
-#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 #include "Services/CameraShakeService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraShakeCameraNode)
@@ -124,17 +123,13 @@ void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 void FCameraShakeCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly)
 {
 	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
-
-	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraShakeReference);
-	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
+	PrefabNode->CameraShakeReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
 }
 
 void FCameraShakeCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly)
 {
 	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
-
-	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraShakeReference);
-	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
+	PrefabNode->CameraShakeReference.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
 }
 
 }  // namespace UE::Cameras

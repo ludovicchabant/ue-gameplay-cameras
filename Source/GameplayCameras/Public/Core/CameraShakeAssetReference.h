@@ -3,6 +3,8 @@
 #pragma once
 
 #include "BaseCameraObjectReference.h"
+#include "Core/CameraContextDataTable.h"
+#include "Core/CameraVariableTable.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraShakeAssetReference.generated.h"
@@ -59,8 +61,18 @@ public:
 		}
 	}
 
+	/** Applies the parameter override values to the given variable table. */
+	void ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const;
+
+	/** Applies the parameter override values to the given variable and context data tables.. */
+	void ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, UE::Cameras::FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly) const;
+
 	/** Applies the parameter override values to the given evaluation result. */
-	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOverridesOnly);
+	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const;
+
+private:
+
+	void ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly) const;
 
 public:
 

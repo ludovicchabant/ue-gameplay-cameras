@@ -54,8 +54,13 @@ private:
 
 private:
 
-	UPROPERTY()
+	/** Generated camera asset to run our camera rig. */
+	UPROPERTY(Transient)
 	TObjectPtr<UCameraAsset> GeneratedCameraAsset;
+
+	/** Cached parameter overrides, for detecting when some of them change. */
+	UPROPERTY(Transient)
+	FInstancedPropertyBag CachedParameterOverrides;
 
 #if WITH_EDITOR
 	bool bIsBuildingGeneratedCameraAsset = false;

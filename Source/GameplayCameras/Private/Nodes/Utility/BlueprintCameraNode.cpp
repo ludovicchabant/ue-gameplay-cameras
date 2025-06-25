@@ -48,10 +48,6 @@ private:
 
 	void ApplyParameterOverrides(const FCameraVariableTable& VariableTable, const FCameraContextDataTable& ContextDataTable);
 
-	template<typename CameraParameterType>
-	void ApplyParameterOverride(
-			TValueOrError<CameraParameterType*, EPropertyBagResult> ParameterOrError);
-
 private:
 
 	TObjectPtr<UBlueprintCameraNodeEvaluator> EvaluatorBlueprint;

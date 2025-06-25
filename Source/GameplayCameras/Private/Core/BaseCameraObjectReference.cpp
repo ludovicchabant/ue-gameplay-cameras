@@ -50,21 +50,6 @@ void FBaseCameraObjectReference::SetParameterOverridden(const FGuid& PropertyID,
 	MetaData.bIsOverridden = bIsOverridden;
 }
 
-bool FBaseCameraObjectReference::IsParameterAnimated(const FGuid& PropertyID) const
-{
-	if (const FCameraObjectInterfaceParameterMetaData* MetaData = FindMetaData(PropertyID))
-	{
-		return MetaData->bIsAnimated;
-	}
-	return false;
-}
-
-void FBaseCameraObjectReference::SetParameterAnimated(const FGuid& PropertyID, bool bIsAnimated)
-{
-	FCameraObjectInterfaceParameterMetaData& MetaData = FindOrAddMetaData(PropertyID);
-	MetaData.bIsAnimated = bIsAnimated;
-}
-
 bool FBaseCameraObjectReference::NeedsRebuildParameters() const
 {
 	const UBaseCameraObject* CameraObject = GetCameraObject();

@@ -11,7 +11,6 @@
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
-#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlendStackRootCameraNode)
@@ -292,8 +291,7 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 		for (int32 Index = BlendedParameterOverrides.PrefabTrail.Num() - 1; Index >= 0; --Index)
 		{
 			const UCameraRigCameraNode* CurPrefabNode = BlendedParameterOverrides.PrefabTrail[Index];
-			FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(CurPrefabNode->CameraRigReference);
-			OverrideEvaluator.ApplyParameterOverrides(CurResult.VariableTable, false);
+			CurPrefabNode->CameraRigReference.ApplyParameterOverrides(CurResult.VariableTable, false);
 		}
 
 		// Finally, update the parameter overrides' blend, and apply it.

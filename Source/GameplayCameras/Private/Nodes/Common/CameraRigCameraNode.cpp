@@ -7,7 +7,6 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigAssetReference.h"
-#include "Helpers/CameraObjectReferenceParameterOverrideEvaluator.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -74,17 +73,13 @@ void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Par
 void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly)
 {
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
-
-	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
-	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
+	PrefabNode->CameraRigReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
 }
 
 void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly)
 {
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
-
-	FCameraObjectReferenceParameterOverrideEvaluator OverrideEvaluator(PrefabNode->CameraRigReference);
-	OverrideEvaluator.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
+	PrefabNode->CameraRigReference.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
 }
 
 }  // namespace UE::Cameras

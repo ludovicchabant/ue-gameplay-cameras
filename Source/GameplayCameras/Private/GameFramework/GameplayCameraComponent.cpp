@@ -74,8 +74,16 @@ void UGameplayCameraComponent::OnUpdateCameraEvaluationContext(bool bForceApplyP
 
 	FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
 
-	const bool bApplyDrivenParametersOnly = !bForceApplyParameterOverrides;
-	CameraReference.ApplyParameterOverrides(InitialResult, bApplyDrivenParametersOnly);
+	if (bForceApplyParameterOverrides)
+	{
+		CameraReference.ApplyParameterOverrides(InitialResult, false);
+	}
+	else
+	{
+		CameraReference.ApplyParameterOverrides(CachedParameterOverrides, InitialResult);
+	}
+
+	CachedParameterOverrides = CameraReference.GetParameters();
 }
 
 #if WITH_EDITOR
