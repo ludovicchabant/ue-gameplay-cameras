@@ -4,6 +4,8 @@
 
 #include "Math/Rotator.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRotatorCurve)
+
 FRotator FCameraRotatorCurve::GetValue(float InTime) const
 {
 	FRotator Result;

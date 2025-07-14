@@ -6,6 +6,8 @@
 #include "Math/Interpolation.h"
 #include "Math/PerlinNoise.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(EnvelopeShakeCameraNode)
+
 namespace UE::Cameras
 {
 

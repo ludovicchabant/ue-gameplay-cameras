@@ -2,6 +2,8 @@
 
 #include "Core/BuiltInCameraVariables.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(BuiltInCameraVariables)
+
 namespace UE::Cameras
 {
 

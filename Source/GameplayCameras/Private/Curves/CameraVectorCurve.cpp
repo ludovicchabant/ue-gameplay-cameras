@@ -2,6 +2,8 @@
 
 #include "Curves/CameraVectorCurve.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVectorCurve)
+
 FVector FCameraVectorCurve::GetValue(float InTime) const
 {
 	FVector Result;

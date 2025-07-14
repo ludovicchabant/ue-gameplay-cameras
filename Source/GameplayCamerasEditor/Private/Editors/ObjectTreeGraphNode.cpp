@@ -12,6 +12,8 @@
 #include "ScopedTransaction.h"
 #include "ToolMenus.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ObjectTreeGraphNode)
+
 #define LOCTEXT_NAMESPACE "ObjectTreeGraphNode"
 
 UObjectTreeGraphNode::UObjectTreeGraphNode(const FObjectInitializer& ObjInit)

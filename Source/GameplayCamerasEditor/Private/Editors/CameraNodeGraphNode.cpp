@@ -13,6 +13,8 @@
 #include "GameplayCamerasDelegates.h"
 #include "ToolMenus.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraNodeGraphNode)
+
 UCameraNodeGraphNode::UCameraNodeGraphNode(const FObjectInitializer& ObjInit)
 	: UObjectTreeGraphNode(ObjInit)
 {

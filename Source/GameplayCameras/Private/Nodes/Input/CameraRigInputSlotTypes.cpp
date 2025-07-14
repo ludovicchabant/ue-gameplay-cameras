@@ -4,6 +4,8 @@
 
 #include "Math/NumericLimits.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigInputSlotTypes)
+
 double FCameraParameterClamping::ClampValue(double Value) const
 {
 	if (bClampMin && Value < MinValue)

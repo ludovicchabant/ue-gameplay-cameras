@@ -26,6 +26,8 @@
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraObjectInterfaceParametersToolkit)
+
 #define LOCTEXT_NAMESPACE "CameraObjectInterfaceParametersToolkit"
 
 namespace UE::Cameras

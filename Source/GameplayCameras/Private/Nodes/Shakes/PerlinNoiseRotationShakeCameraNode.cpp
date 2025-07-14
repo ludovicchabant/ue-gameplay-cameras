@@ -10,6 +10,8 @@
 #include "Debug/CameraDebugRenderer.h"
 #include "Math/PerlinNoise.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(PerlinNoiseRotationShakeCameraNode)
+
 #define LOCTEXT_NAMESPACE "PerlinNoiseRotationShakeCameraNode"
 
 namespace UE::Cameras

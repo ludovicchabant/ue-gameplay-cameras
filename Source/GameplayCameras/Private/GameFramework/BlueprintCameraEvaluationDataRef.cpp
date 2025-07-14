@@ -7,6 +7,8 @@
 #include "Core/CameraVariableTable.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraEvaluationDataRef)
+
 FBlueprintCameraEvaluationDataRef FBlueprintCameraEvaluationDataRef::MakeExternalRef(FCameraNodeEvaluationResult* InResult)
 {
 	FBlueprintCameraEvaluationDataRef Ref;

@@ -4,6 +4,8 @@
 
 #include "Core/CameraNodeEvaluator.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CompositeShakeCameraNode)
+
 namespace UE::Cameras
 {
 

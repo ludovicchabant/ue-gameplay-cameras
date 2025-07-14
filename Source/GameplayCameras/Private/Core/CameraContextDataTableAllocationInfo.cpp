@@ -2,6 +2,8 @@
 
 #include "Core/CameraContextDataTableAllocationInfo.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraContextDataTableAllocationInfo)
+
 void FCameraContextDataTableAllocationInfo::Combine(const FCameraContextDataTableAllocationInfo& OtherInfo)
 {
 	TMap<FCameraContextDataID, int32> KnownNames;

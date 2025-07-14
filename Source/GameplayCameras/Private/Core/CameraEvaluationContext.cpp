@@ -9,6 +9,8 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "GameFramework/PlayerController.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraEvaluationContext)
+
 namespace UE::Cameras
 {
 

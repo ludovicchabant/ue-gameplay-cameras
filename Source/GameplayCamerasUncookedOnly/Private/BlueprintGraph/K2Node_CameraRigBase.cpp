@@ -19,6 +19,8 @@
 #include "KismetCompiler.h"
 #include "Subsystems/AssetEditorSubsystem.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(K2Node_CameraRigBase)
+
 #define LOCTEXT_NAMESPACE "K2Node_CameraRigBase"
 
 const FName UK2Node_CameraRigBase::CameraNodeEvaluationResultPinName(TEXT("CameraData"));

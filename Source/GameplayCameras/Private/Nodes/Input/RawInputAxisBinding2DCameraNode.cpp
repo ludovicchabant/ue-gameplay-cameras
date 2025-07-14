@@ -7,6 +7,8 @@
 #include "EnhancedInputComponent.h"
 #include "Nodes/Input/InputAxisBindingHelpers.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(RawInputAxisBinding2DCameraNode)
+
 namespace UE::Cameras
 {
 

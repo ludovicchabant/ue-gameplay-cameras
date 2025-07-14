@@ -5,6 +5,8 @@
 #include "Math/Interpolation.h"
 #include "Math/UnrealMath.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableSetter)
+
 namespace UE::Cameras
 {
 

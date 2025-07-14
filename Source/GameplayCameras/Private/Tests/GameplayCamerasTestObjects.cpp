@@ -2,6 +2,8 @@
 
 #include "GameplayCamerasTestObjects.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCamerasTestObjects)
+
 namespace UE::Cameras::Test
 {
 

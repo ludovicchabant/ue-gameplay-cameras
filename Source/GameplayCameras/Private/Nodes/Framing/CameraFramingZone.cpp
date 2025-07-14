@@ -2,6 +2,8 @@
 
 #include "Nodes/Framing/CameraFramingZone.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraFramingZone)
+
 void FCameraFramingZone::TypeErasedInterpolate(uint8* From, const uint8* To, float Alpha)
 {
 	FCameraFramingZone& FromZone = *reinterpret_cast<FCameraFramingZone*>(From);

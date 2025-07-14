@@ -2,6 +2,8 @@
 
 #include "Core/CameraVariableTableAllocationInfo.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableTableAllocationInfo)
+
 void FCameraVariableTableAllocationInfo::Combine(const FCameraVariableTableAllocationInfo& OtherInfo)
 {
 	TMap<FCameraVariableID, int32> KnownIDs;

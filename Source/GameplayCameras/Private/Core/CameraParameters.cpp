@@ -11,6 +11,8 @@
 #include "Math/Vector4.h"
 #include "UObject/UnrealNames.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraParameters)
+
 bool FBooleanCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
 	if (Tag.Type == NAME_BoolProperty)

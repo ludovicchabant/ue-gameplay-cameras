@@ -4,6 +4,8 @@
 
 #include "Nodes/Input/CameraRigInput2DSlot.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(InputAccumulator2DCameraNode)
+
 #define LOCTEXT_NAMESPACE "InputAccumulator2DCameraNode"
 
 namespace UE::Cameras

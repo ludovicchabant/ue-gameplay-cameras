@@ -4,6 +4,8 @@
 
 #include "GameplayCamerasDelegates.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ICustomCameraNodeParameterProvider)
+
 void FCustomCameraNodeParameterInfos::AddBlendableParameter(
 		FName ParameterName, 
 		ECameraVariableType ParameterType, 

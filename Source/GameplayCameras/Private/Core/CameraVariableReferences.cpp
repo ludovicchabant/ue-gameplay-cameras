@@ -4,6 +4,8 @@
 
 #include "Core/CameraVariableTable.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableReferences)
+
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 const ValueType* F##ValueName##CameraVariableReference::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
 {\

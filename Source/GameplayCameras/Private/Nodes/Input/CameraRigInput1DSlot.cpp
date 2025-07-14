@@ -10,6 +10,8 @@
 #include "Core/CameraVariableTable.h"
 #include "Nodes/Input/Input1DCameraNode.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigInput1DSlot)
+
 #define LOCTEXT_NAMESPACE "CameraRigInputSlot"
 
 namespace UE::Cameras

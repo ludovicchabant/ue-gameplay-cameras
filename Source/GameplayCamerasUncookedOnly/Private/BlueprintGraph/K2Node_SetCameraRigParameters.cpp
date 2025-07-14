@@ -12,6 +12,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(K2Node_SetCameraRigParameters)
+
 #define LOCTEXT_NAMESPACE "K2Node_SetCameraRigParameters"
 
 UK2Node_SetCameraRigParameters::UK2Node_SetCameraRigParameters(const FObjectInitializer& ObjectInit)

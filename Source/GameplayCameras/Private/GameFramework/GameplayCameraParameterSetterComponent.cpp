@@ -12,6 +12,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Services/CameraParameterSetterService.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraParameterSetterComponent)
+
 UGameplayCameraParameterSetterComponent::UGameplayCameraParameterSetterComponent(const FObjectInitializer& ObjInit)
 	: Super(ObjInit)
 {

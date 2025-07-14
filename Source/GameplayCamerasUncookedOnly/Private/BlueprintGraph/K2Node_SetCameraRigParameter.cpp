@@ -17,6 +17,8 @@
 #include "Styling/AppStyle.h"
 #include "Styling/SlateIconFinder.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(K2Node_SetCameraRigParameter)
+
 #define LOCTEXT_NAMESPACE "K2Node_SetCameraRigParameter"
 
 UK2Node_SetCameraRigParameter::UK2Node_SetCameraRigParameter(const FObjectInitializer& ObjectInit)
