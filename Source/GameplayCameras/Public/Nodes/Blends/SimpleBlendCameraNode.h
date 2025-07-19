@@ -100,6 +100,7 @@ protected:
 	// FBlendCameraNodeEvaluator interface.
 	GAMEPLAYCAMERAS_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	GAMEPLAYCAMERAS_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	GAMEPLAYCAMERAS_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 	GAMEPLAYCAMERAS_API virtual bool OnInitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params) override;
 
 	float GetTimeFactor() const;

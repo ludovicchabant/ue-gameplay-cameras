@@ -57,6 +57,8 @@ void FSimpleBlendCameraNodeEvaluator::OnBlendResults(const FCameraNodeBlendParam
 
 void FSimpleBlendCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
+	Super::OnSerialize(Params, Ar);
+
 	Ar << BlendFactor;
 	Ar << bIsBlendFinished;
 	Ar << bReverse;
@@ -103,6 +105,13 @@ void FSimpleFixedTimeBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 	}
 
 	FSimpleBlendCameraNodeEvaluator::OnRun(Params, OutResult);
+}
+
+void FSimpleFixedTimeBlendCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Super::OnSerialize(Params, Ar);
+
+	Ar << CurrentTime;
 }
 
 bool FSimpleFixedTimeBlendCameraNodeEvaluator::OnInitializeFromInterruption(const FCameraNodeBlendInterruptionParams& Params)
