@@ -133,7 +133,13 @@ public:
 	 * via the proxy table of the Blueprint camera director.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation")
-	void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy, bool bForceNewInstance = false);
+	GAMEPLAYCAMERAS_API void ActivateCameraRigViaProxy(UCameraRigProxyAsset* CameraRigProxy, bool bForceNewInstance = false);
+
+public:
+
+	/** Resolves the camera rig proxy using the camera director's proxy table. */
+	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(HideSelfPin=true))
+	GAMEPLAYCAMERAS_API UCameraRigAsset* ResolveCameraRigProxy(const UCameraRigProxyAsset* CameraRigProxy) const;
 
 public:
 
@@ -172,7 +178,13 @@ public:
 
 public:
 
-	void NativeInitializeCameraDirector(const UE::Cameras::FCameraDirectorInitializeParams& Params);
+	/** Initialize this camera director evaluator. */
+	void NativeInitializeCameraDirector(UE::Cameras::FCameraDirectorEvaluator* InOwningDirectorEvaluator, const UE::Cameras::FCameraDirectorInitializeParams& Params);
+
+	/** Abandon this camera director evalutor. */
+	void NativeAbandonCameraDirector();
+
+public:
 
 	/** Native wrapper for ActivateCameraDirector. */
 	void NativeActivateCameraDirector(const UE::Cameras::FCameraDirectorActivateParams& Params);
@@ -188,6 +200,9 @@ public:
 	bool NativeRemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner);
 
 private:
+
+	/** The owning camera director evaluator. */
+	UE::Cameras::FCameraDirectorEvaluator* OwningDirectorEvaluator = nullptr;
 
 	/** The current evaluation result. */
 	FCameraDirectorEvaluationResult EvaluationResult;
