@@ -88,45 +88,45 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 public:
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
-	FName AddChildEvaluationContext(UObject* ChildEvaluationContextOwner);
+	GAMEPLAYCAMERAS_API FName AddChildEvaluationContext(UObject* ChildEvaluationContextOwner);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category="Evaluation")
-	bool RemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner, FName ChildSlotName);
+	GAMEPLAYCAMERAS_API bool RemoveChildEvaluationContext(UObject* ChildEvaluationContextOwner, FName ChildSlotName);
 
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
-	bool RunChildCameraDirector(float DeltaTime, FName ChildSlotName);
+	GAMEPLAYCAMERAS_API bool RunChildCameraDirector(float DeltaTime, FName ChildSlotName);
 
 public:
 
 	/** Activates the given camera rig prefab in the base layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Activates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the base layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void DeactivatePersistentBaseCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void DeactivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 	/** Deactivates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Activation")
-	void DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
+	GAMEPLAYCAMERAS_API void DeactivatePersistentVisualCameraRig(UCameraRigAsset* CameraRigPrefab);
 
 public:
 
 	/** Specifies a camera rig to be active this frame. */
 	UFUNCTION(BlueprintCallable, Category="Camera Director|Evaluation")
-	void ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance = false);
+	GAMEPLAYCAMERAS_API void ActivateCameraRig(UCameraRigAsset* CameraRig, bool bForceNewInstance = false);
 
 	/**
 	 * Specifies a camera rig to be active this frame, via a proxy which is later resolved
@@ -149,15 +149,15 @@ public:
 	 * UGameplayCameraComponent) or an actor itself.
 	 */
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DeterminesOutputType="ActorClass"))
-	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+	GAMEPLAYCAMERAS_API AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
 
 	/** Gets the shared evaluation context data. */
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Shared Camera Data"))
-	FBlueprintCameraEvaluationDataRef GetInitialContextResult() const;
+	GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef GetInitialContextResult() const;
 
 	/** Gets the evaluation context data for a sub-set of camera rigs. */	
 	UFUNCTION(BlueprintPure, Category="Camera Director|Evaluation", meta=(DisplayName="Get Conditional Camera Data"))
-	FBlueprintCameraEvaluationDataRef GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const;
+	GAMEPLAYCAMERAS_API FBlueprintCameraEvaluationDataRef GetConditionalContextResult(ECameraEvaluationDataCondition Condition) const;
 
 public:
 
