@@ -261,7 +261,7 @@ void FBlendStackCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationPa
 	}
 }
 
-void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries)
+void FBlendStackCameraNodeEvaluator::ResolveEntries(const FCameraNodeEvaluationParams& Params, TArray<FResolvedEntry>& OutResolvedEntries)
 {
 	constexpr ECameraVariableTableFilter VariableTableFilter = ECameraVariableTableFilter::ChangedOnly;
 	constexpr ECameraContextDataTableFilter ContextDataTableFilter = ECameraContextDataTableFilter::ChangedOnly;
@@ -284,20 +284,25 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(TArray<FResolvedEntry>& OutR
 		if (!Entry.Flags.bIsFrozen)
 		{
 			// Check that we still have a valid context. If not, let's freeze the entry, since
-			// we won't be able to evaluate it anymore.
+			// we won't be able to evaluate it anymore... unless we are in a stateless evaluation,
+			// in which case we're not supposed to change the structure of the camera node 
+			// evaluator tree.
 			if (UNLIKELY(!CurContext.IsValid()))
 			{
-				FreezeEntry(Entry);
+				if (!Params.IsStatelessEvaluation())
+				{
+					FreezeEntry(Entry);
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
-				if (Entry.Flags.bLogWarnings)
-				{
-					UE_LOG(LogCameraSystem, Warning,
+					if (Entry.Flags.bLogWarnings)
+					{
+						UE_LOG(LogCameraSystem, Warning,
 							TEXT("Freezing camera rig '%s' because its evaluation context isn't valid anymore."),
 							*GetNameSafe(Entry.CameraRig));
-					Entry.Flags.bLogWarnings = false;
-				}
+						Entry.Flags.bLogWarnings = false;
+					}
 #endif  // UE_GAMEPLAY_CAMERAS_TRACE
+				}
 
 				continue;
 			}

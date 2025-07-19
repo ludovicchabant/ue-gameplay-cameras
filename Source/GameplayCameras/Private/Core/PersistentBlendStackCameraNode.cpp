@@ -212,7 +212,7 @@ void FPersistentBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluation
 
 	// Validate our entries and resolve evaluation context weak pointers.
 	TArray<FResolvedEntry> ResolvedEntries;
-	ResolveEntries(ResolvedEntries);
+	ResolveEntries(Params, ResolvedEntries);
 
 	// Run the stack!
 	InternalUpdate(ResolvedEntries, Params, OutResult);
@@ -230,7 +230,7 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (!Entry.Flags.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;

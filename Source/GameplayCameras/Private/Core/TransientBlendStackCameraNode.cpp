@@ -213,7 +213,7 @@ void FTransientBlendStackCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationP
 
 	// Validate our entries and resolve evaluation context weak pointers.
 	TArray<FResolvedEntry> ResolvedEntries;
-	ResolveEntries(ResolvedEntries);
+	ResolveEntries(Params, ResolvedEntries);
 
 	// Gather parameters to pre-blend, and evaluate blend nodes.
 	InternalPreBlendPrepare(ResolvedEntries, Params, OutResult);
@@ -245,7 +245,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (UNLIKELY(Entry.Flags.bIsFrozen))
+		if (UNLIKELY(Entry.Flags.bIsFrozen || !ResolvedEntry.Context.IsValid()))
 		{
 			continue;
 		}
@@ -326,7 +326,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.Flags.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;
@@ -362,7 +362,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 	for (FResolvedEntry& ResolvedEntry : ResolvedEntries)
 	{
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
-		if (!Entry.Flags.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
 		{
 			FCameraNodeEvaluationResult& CurResult(Entry.Result);
 			CurResult.VariableTable.Override(PreBlendVariableTable, ECameraVariableTableFilter::KnownOnly);
@@ -377,7 +377,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		FCameraRigEntry& Entry(ResolvedEntry.Entry);
 		FCameraRigEntryExtraInfo& EntryExtraInfo(EntryExtraInfos[ResolvedEntry.EntryIndex]);
 
-		if (UNLIKELY(Entry.Flags.bIsFrozen))
+		if (UNLIKELY(Entry.Flags.bIsFrozen || !ResolvedEntry.Context.IsValid()))
 		{
 			continue;
 		}
@@ -425,7 +425,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.Flags.bIsFrozen)
+		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
 		{
 			FCameraNodeEvaluationParams CurParams(Params);
 			CurParams.EvaluationContext = ResolvedEntry.Context;

@@ -186,7 +186,7 @@ protected:
 		bool bIsActiveEntry = false;
 	};
 
-	void ResolveEntries(TArray<FResolvedEntry>& OutResolvedEntries);
+	void ResolveEntries(const FCameraNodeEvaluationParams& Params, TArray<FResolvedEntry>& OutResolvedEntries);
 	void OnRunFinished(FCameraNodeEvaluationResult& OutResult);
 
 protected:
