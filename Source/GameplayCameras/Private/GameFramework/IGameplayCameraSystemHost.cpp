@@ -5,12 +5,18 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraEvaluationContextStack.h"
+#include "Core/CameraRigAsset.h"
+#include "Core/CameraRigInstanceID.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
 #include "Debug/CameraSystemDebugRegistry.h"
 #include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(IGameplayCameraSystemHost)
 
 namespace UE::Cameras
 {
@@ -52,6 +58,42 @@ TScriptInterface<IGameplayCameraSystemHost> IGameplayCameraSystemHost::GetAsScri
 	TScriptInterface<IGameplayCameraSystemHost> Result(GetAsObject());
 	checkSlow(Result.GetInterface() != nullptr);
 	return Result;
+}
+
+void IGameplayCameraSystemHost::ActivateCameraRig(UCameraRigAsset* CameraRig, TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext, ECameraRigLayer EvaluationLayer)
+{
+	using namespace UE::Cameras;
+
+	if (!CameraRig)
+	{
+		FFrame::KismetExecutionMessage(
+				*FString::Printf(TEXT("Can't activate camera rig on '%s': no camera rig given!"), *GetNameSafe(GetAsObject())),
+				ELogVerbosity::Error);
+		return;
+	}
+	
+	if (!EvaluationContext)
+	{
+		FFrame::KismetExecutionMessage(
+				*FString::Printf(
+					TEXT("Can't activate camera rig '%s' on '%s': invalid evaluation context given!"), 
+					*GetNameSafe(CameraRig), *GetNameSafe(GetAsObject())),
+				ELogVerbosity::Error);
+		return;
+	}
+
+	EnsureCameraSystemInitialized();
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		FActivateCameraRigParams Params;
+		Params.CameraRig = CameraRig;
+		Params.EvaluationContext = EvaluationContext;
+		Params.Layer = EvaluationLayer;
+
+		FRootCameraNodeEvaluator* RootNodeEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+		RootNodeEvaluator->ActivateCameraRig(Params);
+	}
 }
 
 IGameplayCameraSystemHost* IGameplayCameraSystemHost::FindActiveHost(APlayerController* PlayerController)

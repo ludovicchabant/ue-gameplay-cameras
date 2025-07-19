@@ -81,6 +81,20 @@ public:
 
 public:
 
+	/** Activates the given camera rig prefab in the base layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig prefab in the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig prefab in the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig);
+
+public:
+
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	FCameraRigInstanceID StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
 
@@ -116,6 +130,8 @@ private:
 
 	void RunViewRotationPreviewUpdate(float DeltaTime, FRotator& OutViewRotation, FRotator& OutDeltaRot);
 
+	void EnsureNullContext();
+
 	void OnContextStackChanged();
 	void CleanUpViewTargetContexts();
 
@@ -135,6 +151,8 @@ private:
 	TObjectPtr<APlayerCameraManager> OriginalCameraManager;
 
 	TArray<TSharedRef<UE::Cameras::FCameraEvaluationContext>> ViewTargetContexts;
+
+	TSharedPtr<UE::Cameras::FCameraEvaluationContext> NullContext;
 
 	FMinimalViewInfo LastFrameDesiredView;
 

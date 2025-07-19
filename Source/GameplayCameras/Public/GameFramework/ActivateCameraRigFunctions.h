@@ -17,6 +17,8 @@ enum class ECameraRigLayer : uint8;
  * These camera rigs run with a global, shared evaluation context that doesn't provide any
  * meaningful initial result. They are activated on the camera system found to be running
  * on the given player controller.
+ *
+ * Deprecated in 5.7.0
  */
 UCLASS()
 class UActivateCameraRigFunctions : public UBlueprintFunctionLibrary
@@ -26,15 +28,15 @@ class UActivateCameraRigFunctions : public UBlueprintFunctionLibrary
 public:
 
 	/** Activates the given camera rig prefab in the base layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera", meta=(WorldContext="WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category="Camera", meta=(WorldContext="WorldContextObject", DeprecatedFunction, DeprecationMessage="Use the similar functions on the GameplayCamera components or camera manager"))
 	static void ActivatePersistentBaseCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig prefab in the global layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject", DeprecatedFunction, DeprecationMessage="Use the similar functions on the GameplayCamera components or camera manager"))
 	static void ActivatePersistentGlobalCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig prefab in the visual layer. */
-	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category="Camera", meta = (WorldContext = "WorldContextObject", DeprecatedFunction, DeprecationMessage="Use the similar functions on the GameplayCamera components or camera manager"))
 	static void ActivatePersistentVisualCameraRig(UObject* WorldContextObject, APlayerController* PlayerController, UCameraRigAsset* CameraRig);
 
 private:

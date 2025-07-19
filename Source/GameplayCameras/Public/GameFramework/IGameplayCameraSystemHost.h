@@ -8,10 +8,13 @@
 
 #include "IGameplayCameraSystemHost.generated.h"
 
+class UCameraRigAsset;
 class UCanvas;
+enum class ECameraRigLayer : uint8;
 
 namespace UE::Cameras
 {
+	class FCameraEvaluationContext;
 	class FCameraSystemEvaluator;
 	struct FCameraSystemEvaluatorCreateParams;
 }
@@ -69,6 +72,9 @@ protected:
 
 	/** Updates the camera system, if it exists. */
 	GAMEPLAYCAMERAS_API void UpdateCameraSystem(float DeltaTime);
+
+	/** Activates the given camera rig in the given layer. Should not be used with Main layer. */
+	GAMEPLAYCAMERAS_API void ActivateCameraRig(UCameraRigAsset* CameraRig, TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext, ECameraRigLayer EvaluationLayer);
 
 #if WITH_EDITOR
 	/** Updates the camera system, if it exists, for an editor world preview. */

@@ -21,6 +21,8 @@
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
+#include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCamerasPlayerCameraManager)
+
 namespace UE::Cameras
 {
 
@@ -125,6 +127,34 @@ void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
 	DestroyCameraSystem();
 
 	PCOwner = nullptr;
+}
+
+void AGameplayCamerasPlayerCameraManager::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
+{
+	EnsureNullContext();
+	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Base);
+}
+
+void AGameplayCamerasPlayerCameraManager::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
+{
+	EnsureNullContext();
+	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Global);
+}
+
+void AGameplayCamerasPlayerCameraManager::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+{
+	EnsureNullContext();
+	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Visual);
+}
+
+void AGameplayCamerasPlayerCameraManager::EnsureNullContext()
+{
+	using namespace UE::Cameras;
+
+	if (!NullContext)
+	{
+		NullContext = MakeShared<FCameraEvaluationContext>();
+	}
 }
 
 FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)

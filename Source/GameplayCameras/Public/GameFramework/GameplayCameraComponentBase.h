@@ -129,6 +129,20 @@ public:
 
 public:
 
+	/** Activates the given camera rig prefab in the base layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig prefab in the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig);
+
+	/** Activates the given camera rig prefab in the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig);
+
+public:
+
 	// UActorComponent interface
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
@@ -237,8 +251,13 @@ private:
 private:
 
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
+	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
 
+	/** Evaluation context for running main-layer camera rigs. */
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
+
+	/** Evaluation context for running base/global/visual camera rigs. */
+	TSharedPtr<FCameraEvaluationContext> NullContext;
 
 	bool bIsCameraCutNextFrame = false;
 

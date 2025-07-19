@@ -56,6 +56,7 @@ void UGameplayCameraComponentBase::BeginDestroy()
 	DestroyCameraSystem();
 
 	EvaluationContext = nullptr;
+	NullContext = nullptr;
 
 	Super::BeginDestroy();
 }
@@ -69,6 +70,10 @@ void UGameplayCameraComponentBase::AddReferencedObjects(UObject* InThis, FRefere
 	if (This->EvaluationContext.IsValid())
 	{
 		This->EvaluationContext->AddReferencedObjects(Collector);
+	}
+	if (This->NullContext.IsValid())
+	{
+		This->NullContext->AddReferencedObjects(Collector);
 	}
 }
 
@@ -194,6 +199,7 @@ void UGameplayCameraComponentBase::DeactivateCameraEvaluationContext(bool bImmed
 		}
 
 		EvaluationContext = nullptr;
+		NullContext = nullptr;
 	}
 }
 
@@ -364,6 +370,16 @@ void UGameplayCameraComponentBase::TryCreateCameraEvaluationContext(APlayerContr
 			UpdateCameraEvaluationContext(true);
 		}
 	}
+
+	if (!NullContext.IsValid())
+	{
+		NullContext = MakeShared<FCameraEvaluationContext>();
+
+		FCameraEvaluationContextInitializeParams InitParams;
+		InitParams.Owner = this;
+		InitParams.PlayerController = PlayerController;
+		NullContext->Initialize(InitParams);
+	}
 }
 
 #define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT(ErrorMsg, ErrorResult)\
@@ -372,7 +388,7 @@ void UGameplayCameraComponentBase::TryCreateCameraEvaluationContext(APlayerContr
 	{\
 		FFrame::KismetExecutionMessage(\
 				*FString::Format(\
-					TEXT(#ErrorResult " on Gameplay Camera component '{0}': it isn't active."),\
+					TEXT(#ErrorMsg " on Gameplay Camera component '{0}': it isn't active."),\
 					{ *GetNameSafe(this) }),\
 				ELogVerbosity::Error);\
 		return ErrorResult;\
@@ -393,6 +409,37 @@ FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetConditionalRe
 }
 
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
+
+#define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG(ErrorMsg, RigLayer)\
+	if (NullContext.IsValid())\
+	{\
+		IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::RigLayer);\
+	}\
+	else\
+	{\
+		FFrame::KismetExecutionMessage(\
+				*FString::Format(\
+					TEXT(#ErrorMsg " on Gameplay Camera component '{0}': it isn't active."),\
+					{ *GetNameSafe(this) }),\
+				ELogVerbosity::Error);\
+	}
+
+void UGameplayCameraComponentBase::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
+{
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate base camera rig", Base);
+}
+
+void UGameplayCameraComponentBase::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
+{
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate global camera rig", Global);
+}
+
+void UGameplayCameraComponentBase::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+{
+	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate visual camera rig", Visual);
+}
+
+#undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG
 
 FRotator UGameplayCameraComponentBase::GetEvaluatedCameraRotation() const
 {
@@ -545,6 +592,7 @@ void UGameplayCameraComponentBase::CheckPendingDeactivation()
 	{
 		TeardownCameraSystemHost();
 		EvaluationContext = nullptr;
+		NullContext = nullptr;
 
 		// Only call the base class method here: we just want to finish deactivating ourselves
 		// by stopping ticking.
@@ -664,7 +712,7 @@ void UGameplayCameraComponentBase::RecreateEditorWorldCameraEvaluationContext()
 		ensure(AllContexts.Num() == 1 && AllContexts[0] == EvaluationContext);
 	}
 
-	// Teardown and rebuild the evaluation context.
+	// Teardown and rebuild the main evaluation context.
 	if (EvaluationContext)
 	{
 		if (CameraSystemEvaluator)
@@ -770,7 +818,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 	}
 	
 	const bool bCanRun = CanRunCameraSystem();
-	if (bCanRun && !(CameraSystemEvaluator && EvaluationContext))
+	if (bCanRun && !(CameraSystemEvaluator && EvaluationContext && NullContext))
 	{
 		// We want to run the camera logic in the editor but we haven't set things up for that.
 		// Let's create the preview evaluator and the evaluation context.
@@ -784,7 +832,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 
 		// OutputCameraComponent will be updated on the next tick.
 	}
-	else if (!bCanRun && (CameraSystemEvaluator || EvaluationContext))
+	else if (!bCanRun && (CameraSystemEvaluator || EvaluationContext || NullContext))
 	{
 		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
 		DeactivateCameraEvaluationContext(true);
