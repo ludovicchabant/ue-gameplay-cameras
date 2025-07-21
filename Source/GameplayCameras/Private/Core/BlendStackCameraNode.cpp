@@ -156,17 +156,30 @@ void FBlendStackCameraNodeEvaluator::FreezeEntry(FCameraRigEntry& Entry)
 {
 	if (Entry.RootEvaluator)
 	{
-		FCameraNodeEvaluatorTeardownParams TeardownParams;
-		TeardownParams.Evaluator = this->OwningEvaluator;
-		TeardownParams.EvaluationContext = Entry.EvaluationContext.Pin();
-		TeardownParams.Layer = Layer;
+		// Freeze the blend.
+		FBlendCameraNodeEvaluator* BlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
+		if (BlendEvaluator)
+		{
+			BlendEvaluator->Freeze();
+		}
 
-		Entry.RootEvaluator->Teardown(TeardownParams);
+		// Teardown and destroy the evaluation tree.
+		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
+		if (RootEvaluator)
+		{
+			FCameraNodeEvaluatorTeardownParams TeardownParams;
+			TeardownParams.Evaluator = this->OwningEvaluator;
+			TeardownParams.EvaluationContext = Entry.EvaluationContext.Pin();
+			TeardownParams.Layer = Layer;
+
+			RootEvaluator->Teardown(TeardownParams);
+
+			Entry.EvaluatorStorage.DestroyEvaluatorTree(RootEvaluator, true);
+
+			Entry.RootEvaluator->SetRootEvaluator(nullptr);
+		}
 	}
 
-	// Deallocate our node evaluators and clear any pointers we kept to them.
-	Entry.EvaluatorStorage.DestroyEvaluatorTree(true);
-	Entry.RootEvaluator = nullptr;
 	Entry.EvaluatorHierarchy.Reset();
 
 	Entry.RootNode = nullptr;

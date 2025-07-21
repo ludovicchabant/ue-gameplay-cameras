@@ -326,33 +326,27 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendExecute(TArrayView
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
+		// Running entries pre-blend the values that were put in the variable table in InternalPreBlendPrepare.
+		// Frozen entries still contribute by blending their last evaluated values.
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = ResolvedEntry.Context;
+		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
+
+		FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
+		PreBlendParams.VariableTableFilter = VariableTableFilter;
+
+		FCameraNodePreBlendResult PreBlendResult(PreBlendVariableTable);
+
+		FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator ? Entry.RootEvaluator->GetBlendEvaluator() : nullptr;
+		if (EntryBlendEvaluator)
 		{
-			FCameraNodeEvaluationParams CurParams(Params);
-			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
-
-			FCameraNodePreBlendParams PreBlendParams(CurParams, CurResult.CameraPose, CurResult.VariableTable);
-			PreBlendParams.VariableTableFilter = VariableTableFilter;
-
-			FCameraNodePreBlendResult PreBlendResult(PreBlendVariableTable);
-
-			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
-			if (EntryBlendEvaluator)
-			{
-				EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
-				EntryExtraInfo.bIsPreBlendFull = (PreBlendResult.bIsBlendFinished && PreBlendResult.bIsBlendFull);
-			}
-			else
-			{
-				PreBlendVariableTable.Override(CurResult.VariableTable, PreBlendParams.VariableTableFilter);
-				EntryExtraInfo.bIsPreBlendFull = true;
-			}
+			EntryBlendEvaluator->BlendParameters(PreBlendParams, PreBlendResult);
+			EntryExtraInfo.bIsPreBlendFull = (PreBlendResult.bIsBlendFinished && PreBlendResult.bIsBlendFull);
 		}
 		else
 		{
-			// Frozen entries still contribute to the blend using their last evaluated values.
-			PreBlendVariableTable.Override(CurResult.VariableTable, VariableTableFilter);
+			PreBlendVariableTable.Override(CurResult.VariableTable, PreBlendParams.VariableTableFilter);
+			EntryExtraInfo.bIsPreBlendFull = true;
 		}
 	}
 
@@ -425,29 +419,20 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
-		if (!Entry.Flags.bIsFrozen && ResolvedEntry.Context.IsValid())
+		FCameraNodeEvaluationParams CurParams(Params);
+		CurParams.EvaluationContext = ResolvedEntry.Context;
+		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
+		FCameraNodeBlendParams BlendParams(CurParams, CurResult);
+
+		FCameraNodeBlendResult BlendResult(OutResult);
+
+		FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator ? Entry.RootEvaluator->GetBlendEvaluator() : nullptr;
+		if (EntryBlendEvaluator)
 		{
-			FCameraNodeEvaluationParams CurParams(Params);
-			CurParams.EvaluationContext = ResolvedEntry.Context;
-			CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
-			FCameraNodeBlendParams BlendParams(CurParams, CurResult);
+			EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
 
-			FCameraNodeBlendResult BlendResult(OutResult);
-
-			FBlendCameraNodeEvaluator* EntryBlendEvaluator = Entry.RootEvaluator->GetBlendEvaluator();
-			if (EntryBlendEvaluator)
+			if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
 			{
-				EntryBlendEvaluator->BlendResults(BlendParams, BlendResult);
-
-				if (BlendResult.bIsBlendFull && BlendResult.bIsBlendFinished)
-				{
-					PopEntriesBelow = ResolvedEntry.EntryIndex;
-				}
-			}
-			else
-			{
-				OutResult.OverrideAll(CurResult);
-
 				PopEntriesBelow = ResolvedEntry.EntryIndex;
 			}
 		}
@@ -457,19 +442,14 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPostBlendExecute(TArrayVie
 
 			PopEntriesBelow = ResolvedEntry.EntryIndex;
 		}
-		// else, merged entries only contribute to the pre-blend.
 	}
 
 	// Pop out camera rigs that have been blended out.
-	if (!Params.IsStatelessEvaluation())
+	if (!Params.IsStatelessEvaluation() && PopEntriesBelow != INDEX_NONE)
 	{
-		const UBlendStackCameraNode* BlendStackNode = GetCameraNodeAs<UBlendStackCameraNode>();
-		if (BlendStackNode->BlendStackType == ECameraBlendStackType::IsolatedTransient && PopEntriesBelow != INDEX_NONE)
-		{
-			PopEntries(PopEntriesBelow);
+		PopEntries(PopEntriesBelow);
 
-			EntryExtraInfos.RemoveAt(0, PopEntriesBelow);
-		}
+		EntryExtraInfos.RemoveAt(0, PopEntriesBelow);
 	}
 }
 

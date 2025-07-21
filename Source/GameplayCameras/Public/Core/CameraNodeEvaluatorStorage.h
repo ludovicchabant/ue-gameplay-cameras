@@ -5,7 +5,6 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraNodeEvaluatorFwd.h"
 #include "Core/CameraObjectStorage.h"
-#include "CoreTypes.h"
 #include "UObject/ObjectPtr.h"
 
 class FReferenceCollector;
@@ -43,6 +42,9 @@ public:
 
 	/** Destroy any allocated evaluators. */
 	void DestroyEvaluatorTree(bool bFreeAllocations = false);
+
+	/** Destroy a sub-tree of allocated evaluators. */
+	void DestroyEvaluatorTree(FCameraNodeEvaluator* InRootEvaluator, bool bResetMemory = true);
 
 	/** Computes the currently allocated totals. */
 	void GetAllocationInfo(FCameraNodeEvaluatorAllocationInfo& OutAllocationInfo);

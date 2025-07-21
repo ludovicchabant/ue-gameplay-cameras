@@ -29,5 +29,14 @@ bool FBlendCameraNodeEvaluator::SetReversed(bool bInReverse)
 	return OnSetReversed(bInReverse);
 }
 
+void FBlendCameraNodeEvaluator::Freeze()
+{
+	OnFreeze();
+
+	// When frozen, we can't access the camera node anymore, as we may have been frozen
+	// because the data we came from has been unloaded.
+	SetPrivateCameraNode(nullptr);
+}
+
 }  // namespace UE::Cameras
 

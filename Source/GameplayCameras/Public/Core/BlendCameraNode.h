@@ -145,6 +145,12 @@ public:
 	 */
 	bool SetReversed(bool bInReverse);
 
+	/**
+	 * Freezes this blend. A frozen blend can't access its evaluation context or underlying camera node
+	 * anymore, and must operate entirely standalone.
+	 */
+	void Freeze();
+
 protected:
 
 	/** Blend the parameters produced by a camera node tree over another set of values. */
@@ -158,6 +164,9 @@ protected:
 
 	/** Reverse the direction of this blend. See comments from SetReversed. */
 	virtual bool OnSetReversed(bool bInReverse) { return false; }
+
+	/** Freezes this blend. See commands from Freeze. */
+	virtual void OnFreeze() {}
 };
 
 }  // namespace UE::Cameras

@@ -103,6 +103,11 @@ void FBlendStackRootCameraNodeEvaluator::SetBlendEvaluator(FBlendCameraNodeEvalu
 	BlendEvaluator = InBlendEvaluator;
 }
 
+void FBlendStackRootCameraNodeEvaluator::SetRootEvaluator(FCameraNodeEvaluator* InRootEvaluator)
+{
+	RootEvaluator = InRootEvaluator;
+}
+
 ECameraRigMergingEligibility FBlendStackRootCameraNodeEvaluator::CompareCameraRigForMerging(const UCameraRigAsset* CameraRig) const
 {
 	const UCameraRigAsset* NewCameraRigPrefab = FindInnermostCameraRigPrefab(CameraRig);

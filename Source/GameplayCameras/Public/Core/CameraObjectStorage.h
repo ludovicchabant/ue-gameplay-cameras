@@ -71,6 +71,11 @@ protected:
 	void RegisterInitializedObject(BaseObjectType* BaseObjectPtr);
 
 	/**
+	 * Destroys a given object.
+	 */
+	void DestroyObject(BaseObjectType* BaseObjectPtr, uint32 MemoryResetSize = 0);
+
+	/**
 	 * Destroys all objects in the storage.
 	 *
 	 * @param bFreeAllocations Whether to also free the memory buffers
@@ -202,6 +207,39 @@ template<typename BaseObjectType>
 void TCameraObjectStorage<BaseObjectType>::RegisterInitializedObject(BaseObjectType* BaseObjectPtr)
 {
 	ObjectInfos.Add({ BaseObjectPtr });
+}
+
+template<typename BaseObjectType>
+void TCameraObjectStorage<BaseObjectType>::DestroyObject(BaseObjectType* BaseObjectPtr, uint32 MemoryResetSize)
+{
+	// Check that this is an object we have allocated ourselves.
+	const int32 NumRemoved = ObjectInfos.RemoveAll([BaseObjectPtr](FObjectInfo& ObjectInfo)
+			{
+				return ObjectInfo.Ptr == BaseObjectPtr;
+			});
+	ensureMsgf(NumRemoved == 1, TEXT("Given object pointer isn't in this storage, or was found multiple times."));
+	if (NumRemoved > 0)
+	{
+		// Destroy the object.
+		BaseObjectPtr->~BaseObjectType();
+
+		// Optionally, reset the object's memory, trusting that the caller is giving us the right size.
+		// In that case, first check that the memory to reset is contained within our allocation pages.
+		if (MemoryResetSize > 0)
+		{
+			const FAllocation* FoundAllocation = Allocations.FindByPredicate(
+					[BaseObjectPtr](const FAllocation& Allocation)
+					{
+						return (
+								Allocation.Memory <= (uint8*)BaseObjectPtr && 
+								Allocation.Memory + Allocation.Used > (uint8*)BaseObjectPtr);
+					});
+			if (ensure(FoundAllocation && (uint8*)BaseObjectPtr + MemoryResetSize <= FoundAllocation->Memory + FoundAllocation->Used))
+			{
+				FMemory::Memzero((void*)BaseObjectPtr, MemoryResetSize);
+			}
+		}
+	}
 }
 
 template<typename BaseObjectType>

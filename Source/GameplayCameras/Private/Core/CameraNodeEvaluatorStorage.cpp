@@ -2,10 +2,8 @@
 
 #include "Core/CameraNodeEvaluatorStorage.h"
 
-#include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluator.h"
-#include "Core/CameraRigAsset.h"
-#include "UObject/Package.h"
+#include "Core/CameraNodeEvaluatorBuilder.h"
 
 namespace UE::Cameras
 {
@@ -33,6 +31,39 @@ FCameraNodeEvaluatorPtr FCameraNodeEvaluatorStorage::BuildEvaluatorTree(const FC
 void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(bool bFreeAllocations)
 {
 	Super::DestroyObjects(bFreeAllocations);
+}
+
+void FCameraNodeEvaluatorStorage::DestroyEvaluatorTree(FCameraNodeEvaluator* InRootEvaluator, bool bResetMemory)
+{
+	if (!InRootEvaluator)
+	{
+		return;
+	}
+
+	const FCameraObjectTypeRegistry& TypeRegistry = FCameraObjectTypeRegistry::Get();
+
+	TArray<FCameraNodeEvaluator*> Stack;
+	Stack.Add(InRootEvaluator);
+	while (Stack.Num() > 0)
+	{
+		FCameraNodeEvaluator* Evaluator = Stack.Pop(EAllowShrinking::No);
+		FCameraNodeEvaluatorChildrenView Children(Evaluator->GetChildren());
+		for (FCameraNodeEvaluator* Child : ReverseIterate(Children))
+		{
+			if (Child)
+			{
+				Stack.Add(Child);
+			}
+		}
+
+		const FCameraObjectTypeID TypeID = Evaluator->GetTypeID();
+		const FCameraObjectTypeInfo* TypeInfo = TypeRegistry.GetTypeInfo(TypeID);
+
+		if (ensure(TypeInfo))
+		{
+			Super::DestroyObject(Evaluator, bResetMemory ? TypeInfo->Sizeof : 0);
+		}
+	}
 }
 
 void FCameraNodeEvaluatorStorage::GetAllocationInfo(FCameraNodeEvaluatorAllocationInfo& OutAllocationInfo)
