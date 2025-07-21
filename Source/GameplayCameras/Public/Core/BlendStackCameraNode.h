@@ -284,27 +284,6 @@ private:
 class FBlendStackCameraDebugBlock : public FCameraDebugBlock
 {
 	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FBlendStackCameraDebugBlock)
-
-public:
-
-	FBlendStackCameraDebugBlock();
-	FBlendStackCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator);
-	
-protected:
-
-	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
-	virtual void OnSerialize(FArchive& Ar) override;
-
-private:
-
-	struct FEntryDebugInfo
-	{
-		FString CameraRigName;
-	};
-
-	TArray<FEntryDebugInfo> Entries;
-
-	friend FArchive& operator<< (FArchive&, FEntryDebugInfo&);
 };
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

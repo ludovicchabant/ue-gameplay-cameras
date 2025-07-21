@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 #include "Serialization/Archive.h"
 
@@ -51,6 +52,11 @@ public:
 	{
 		Ar << In.Value;
 		return Ar;
+	}
+
+	friend FString LexToString(FBlendStackEntryID In)
+	{
+		return LexToString(In.Value);
 	}
 
 private:
