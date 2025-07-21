@@ -278,6 +278,7 @@ private:
 
 	int32 NumEntries;
 	ECameraBlendStackType BlendStackType;
+	ECameraRigLayer BlendStackLayer;
 };
 
 class FBlendStackCameraDebugBlock : public FCameraDebugBlock

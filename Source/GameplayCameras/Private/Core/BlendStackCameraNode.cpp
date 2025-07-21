@@ -679,12 +679,19 @@ FBlendStackSummaryCameraDebugBlock::FBlendStackSummaryCameraDebugBlock()
 
 FBlendStackSummaryCameraDebugBlock::FBlendStackSummaryCameraDebugBlock(const FBlendStackCameraNodeEvaluator& InEvaluator)
 {
+	const UBlendStackCameraNode* BlendStack = InEvaluator.GetCameraNodeAs<UBlendStackCameraNode>();
+
 	NumEntries = InEvaluator.Entries.Num();
-	BlendStackType = InEvaluator.GetCameraNodeAs<UBlendStackCameraNode>()->BlendStackType;
+	BlendStackType = BlendStack->BlendStackType;
+	BlendStackLayer = BlendStack->Layer;
 }
 
 void FBlendStackSummaryCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
+	if (BlendStackLayer != ECameraRigLayer::None)
+	{
+		Renderer.AddText(TEXT("(layer %s) "), *UEnum::GetValueAsString(BlendStackLayer));
+	}
 	Renderer.AddText(TEXT("%d entries"), NumEntries);
 }
 
@@ -692,6 +699,7 @@ void FBlendStackSummaryCameraDebugBlock::OnSerialize(FArchive& Ar)
 {
 	Ar << NumEntries;
 	Ar << BlendStackType;
+	Ar << BlendStackLayer;
 }
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock);
