@@ -146,6 +146,12 @@ public:
 	/** Whether this context is active. */
 	bool IsActive() const { return bActivated; }
 
+	/**
+	 * Returns the camera system for which this context was activated, or null if this
+	 * context is currently not active.
+	 */
+	TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator() const;
+
 public:
 
 	/** Adds a child context. */
@@ -173,7 +179,7 @@ protected:
 	virtual void OnActivate(const FCameraEvaluationContextActivateParams& Params) {}
 	virtual void OnDeactivate(const FCameraEvaluationContextDeactivateParams& Params) {}
 
-	FCameraSystemEvaluator* GetCameraSystemEvaluator() const { return CameraSystemEvaluator; }
+	FCameraSystemEvaluator* GetPrivateCameraSystemEvaluator() const { return CameraSystemEvaluator; }
 
 	void AutoCreateDirectorEvaluator();
 

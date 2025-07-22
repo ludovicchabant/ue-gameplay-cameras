@@ -311,6 +311,15 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	bActivated = false;
 }
 
+TSharedPtr<FCameraSystemEvaluator> FCameraEvaluationContext::GetCameraSystemEvaluator() const
+{
+	if (CameraSystemEvaluator)
+	{
+		return CameraSystemEvaluator->AsShared();
+	}
+	return TSharedPtr<FCameraSystemEvaluator>();
+}
+
 bool FCameraEvaluationContext::AddChildContext(TSharedRef<FCameraEvaluationContext> ChildContext)
 {
 	if (DirectorEvaluator)

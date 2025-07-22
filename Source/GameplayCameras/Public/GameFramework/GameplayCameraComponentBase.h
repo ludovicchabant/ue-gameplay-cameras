@@ -180,7 +180,6 @@ protected:
 
 	// UGameplayCameraComponentBase interface.
 	virtual UCameraAsset* GetCameraAsset() PURE_VIRTUAL(UGameplayCameraComponentBase::GetCameraAsset, return nullptr;)
-	virtual bool OnValidateCameraEvaluationContextActivation() { return true; }
 	virtual void OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides) {}
 
 	void UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides);
@@ -200,10 +199,11 @@ private:
 
 	bool CanRunCameraSystem() const;
 	void EnsureCameraSystemHost();
-	void TeardownCameraSystemHost();
+
+	void CreateCameraEvaluationContext(APlayerController* PlayerController);
+	void DestroyCameraEvaluationContext();
 
 	void ActivateCameraEvaluationContext(APlayerController* PlayerController, IGameplayCameraSystemHost* Host, EGameplayCameraComponentActivationMode ActivationMode);
-	void TryCreateCameraEvaluationContext(APlayerController* PlayerController);
 	void UpdateOutputCameraComponent();
 	void DeactivateCameraEvaluationContext(bool bImmediately);
 	void CheckPendingDeactivation();
@@ -259,16 +259,24 @@ private:
 	/** Evaluation context for running base/global/visual camera rigs. */
 	TSharedPtr<FCameraEvaluationContext> NullContext;
 
+	/** The camera system in which to check for running rigs before deactivating our evaluation context. */
+	TWeakPtr<FCameraSystemEvaluator> PendingDeactivateCameraSystemEvaluator;
+
+	/** Whether to force a camera cut next frame. */
 	bool bIsCameraCutNextFrame = false;
 
-	bool bIsDeactivating = false;
+	/** Whether to check for a pending deactivation. */
+	bool bIsPendingDeactivate = false;
 
 #if WITH_EDITOR
 	
+	/** Whether this component is running in an editor world. */
 	bool bIsEditorWorld = false;
 
+	/** Whether this component has never been activated so far. */
 	bool bIsFirstActivation = true;
 
+	/** The show flag for camera system debug rendering. */
 	int32 CustomShowFlag = INDEX_NONE;
 
 #endif  // WITH_EDITOR

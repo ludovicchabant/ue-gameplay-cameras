@@ -44,7 +44,6 @@ protected:
 
 	// UGameplayCameraComponentBase interface.
 	virtual UCameraAsset* GetCameraAsset() override;
-	virtual bool OnValidateCameraEvaluationContextActivation() override;
 	virtual void OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides) override;
 
 private:

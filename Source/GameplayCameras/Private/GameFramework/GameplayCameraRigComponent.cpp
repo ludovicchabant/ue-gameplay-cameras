@@ -46,6 +46,15 @@ UCameraAsset* UGameplayCameraRigComponent::GetCameraAsset()
 	{
 		USingleCameraDirector* SingleDirector = NewObject<USingleCameraDirector>(this, TEXT("GeneratedCameraDirector"), RF_Transient);
 		SingleDirector->CameraRig = CameraRigReference.GetCameraRig();
+		if (!SingleDirector->CameraRig)
+		{
+			UE_LOG(LogCameraSystem, Warning, 
+					TEXT("No camera rig specified on Gameplay Camera component '%s.%s', using a placeholder one."),
+					*GetNameSafe(GetOwner()), *GetNameSafe(this));
+
+			UCameraRigAsset* PlaceholderCameraRig = NewObject<UCameraRigAsset>();
+			SingleDirector->CameraRig = PlaceholderCameraRig;
+		}
 
 		GeneratedCameraAsset = NewObject<UCameraAsset>(this, TEXT("GeneratedCameraAsset"), RF_Transient);
 		GeneratedCameraAsset->SetCameraDirector(SingleDirector);
@@ -54,18 +63,6 @@ UCameraAsset* UGameplayCameraRigComponent::GetCameraAsset()
 	}
 
 	return GeneratedCameraAsset;
-}
-
-bool UGameplayCameraRigComponent::OnValidateCameraEvaluationContextActivation()
-{
-	const bool bIsValid = CameraRigReference.IsValid();
-	if (!bIsValid && !IsEditorWorld())
-	{
-		FFrame::KismetExecutionMessage(
-				TEXT("Can't activate gameplay camera rig component: no camera rig asset was set!"),
-				ELogVerbosity::Error);
-	}
-	return bIsValid;
 }
 
 void UGameplayCameraRigComponent::OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
