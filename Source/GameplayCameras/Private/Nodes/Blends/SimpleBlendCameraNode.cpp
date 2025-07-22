@@ -92,7 +92,8 @@ void FSimpleFixedTimeBlendCameraNodeEvaluator::OnInitialize(const FCameraNodeEva
 	Super::OnInitialize(Params, OutResult);
 
 	const USimpleFixedTimeBlendCameraNode* BlendNode = GetCameraNodeAs<USimpleFixedTimeBlendCameraNode>();
-	TotalTime = BlendNode->BlendTime;
+	BlendTimeReader.Initialize(BlendNode->BlendTime);
+	TotalTime = BlendTimeReader.Get(OutResult.VariableTable);
 }
 
 void FSimpleFixedTimeBlendCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)

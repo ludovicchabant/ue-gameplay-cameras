@@ -253,7 +253,7 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 
 		// Update blends.
 		if (Entry.CameraShake->BlendIn && 
-				Entry.CurrentTime < Entry.CameraShake->BlendIn->BlendTime &&
+				Entry.CurrentTime < Entry.CameraShake->BlendIn->BlendTime.GetValue(OutResult.VariableTable) &&
 				ensure(Entry.BlendInEvaluator))
 		{
 			Entry.BlendInEvaluator->Run(CurParams, CurResult);
@@ -263,7 +263,7 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 			Entry.BlendInEvaluator->BlendResults(BlendParams, BlendResult);
 		}
 		else if (Entry.CameraShake->BlendOut &&
-				CurTimeLeft >= 0.f && CurTimeLeft < Entry.CameraShake->BlendOut->BlendTime &&
+				CurTimeLeft >= 0.f && CurTimeLeft < Entry.CameraShake->BlendOut->BlendTime.GetValue(OutResult.VariableTable) &&
 				ensure(Entry.BlendOutEvaluator))
 		{
 			Entry.BlendOutEvaluator->Run(CurParams, CurResult);

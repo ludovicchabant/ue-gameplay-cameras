@@ -3,7 +3,8 @@
 #pragma once
 
 #include "Core/BlendCameraNode.h"
-
+#include "Core/CameraParameters.h"
+#include "Core/CameraParameterReader.h"
 #include "SimpleBlendCameraNode.generated.h"
 
 /**
@@ -24,14 +25,18 @@ class USimpleFixedTimeBlendCameraNode : public USimpleBlendCameraNode
 	GENERATED_BODY()
 
 public:
+	/** Returns the volume of this element */
+	UE_DEPRECATED(5.7, "Now sets the default time, use SetDefaultBlendTime instead")
+	GAMEPLAYCAMERAS_API void SetBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
 
-	void SetBlendTime(float BlendTimeIn) { BlendTime = BlendTimeIn; }
+	GAMEPLAYCAMERAS_API void SetDefaultBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
 
+	GAMEPLAYCAMERAS_API float GetDefaultBlendTime() { return BlendTime.Value; }
 public:
 
 	/** Duration of the blend. */
 	UPROPERTY(EditAnywhere, Category=Blending)
-	float BlendTime = 1.f;
+	FFloatCameraParameter BlendTime = 1.f;
 };
 
 namespace UE::Cameras
@@ -83,6 +88,8 @@ protected:
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	GAMEPLAYCAMERAS_API virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+	TCameraParameterReader<float> BlendTimeReader;
 
 private:
 
