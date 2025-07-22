@@ -132,7 +132,7 @@ FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushNewEntry(const F
 
 FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::PushMergedEntry(const FBlendStackCameraPushParams& PushParams, const UCameraRigTransition* Transition)
 {
-	const UBlendCameraNode* Blend = Transition ? Transition->Blend : nullptr;
+	const UBlendCameraNode* Blend = Transition ? Transition->Blend.Get() : nullptr;
 
 	FCameraRigEntry& TopEntry = Entries.Top();
 	FCameraNodeEvaluatorBuilder Builder(TopEntry.EvaluatorStorage);
