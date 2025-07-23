@@ -5,6 +5,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Directors/SingleCameraDirector.h"
+#include "GameFramework/Actor.h"
 #include "GameplayCamerasDelegates.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraRigComponent)
