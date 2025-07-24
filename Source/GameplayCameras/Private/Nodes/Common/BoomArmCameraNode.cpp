@@ -251,7 +251,7 @@ void FBoomArmCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuil
 
 void FBoomArmCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
-	Renderer.AddText(TEXT("yaw: %.3f pitch %.3f"), BoomYawPitch.X, BoomYawPitch.Y);
+	Renderer.AddText(TEXT("yaw: %.3f pitch: %.3f"), BoomYawPitch.X, BoomYawPitch.Y);
 
 	if (bHasBoomLengthInterpolator)
 	{

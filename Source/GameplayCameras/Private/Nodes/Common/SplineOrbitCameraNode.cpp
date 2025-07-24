@@ -326,7 +326,7 @@ void FSplineOrbitCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlock
 
 void FSplineOrbitCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
-	Renderer.AddText(TEXT("yaw: %.3f pitch %.3f"), OrbitYawPitch.X, OrbitYawPitch.Y);
+	Renderer.AddText(TEXT("yaw: %.3f pitch: %.3f"), OrbitYawPitch.X, OrbitYawPitch.Y);
 	Renderer.NewLine();
 	Renderer.AddIndent();
 	{

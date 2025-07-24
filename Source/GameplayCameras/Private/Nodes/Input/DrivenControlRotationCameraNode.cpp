@@ -324,13 +324,13 @@ void FDrivenControlRotationDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPa
 {
 	if (bLastWasActiveCameraRig)
 	{
-		Renderer.AddText(TEXT("Active ; P=%.1f Y=%.1f"), InputValue.Y, InputValue.X);
+		Renderer.AddText(TEXT("[Active] yaw: %.3f pitch: %.3f"), InputValue.X, InputValue.Y);
 	}
 	else
 	{
 		Renderer.AddText(
-				TEXT("Driven ; P=%.1f Y=%.1f (Delta: P=%.1f Y=%.1f"), 
-				InputValue.Y, InputValue.X, LastDeltaControlRotation.Pitch, LastDeltaControlRotation.Yaw);
+				TEXT("[Driven] yaw: %.3f pitch: %.3f (delta yaw: %.3f pitch: %.3f)"), 
+				InputValue.X, InputValue.Y, LastDeltaControlRotation.Yaw, LastDeltaControlRotation.Pitch);
 	}
 }
 
