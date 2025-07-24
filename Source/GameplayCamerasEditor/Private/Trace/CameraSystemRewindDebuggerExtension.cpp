@@ -2,14 +2,16 @@
 
 #include "Trace/CameraSystemRewindDebuggerExtension.h"
 
-#include "Core/CameraPose.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraSystemTrace.h"
-#include "Debug/CategoryTitleDebugBlock.h"
 #include "Debug/DebugDrawService.h"
 #include "Debug/RootCameraDebugBlock.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
+#include "LevelEditor.h"
+#include "LevelEditorViewport.h"
+#include "Modules/ModuleManager.h"
+#include "SLevelViewport.h"
 #include "Trace/CameraSystemTraceProvider.h"
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
@@ -70,7 +72,7 @@ void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugg
 		if (FoundFrameData && CurrentTraceTime != LastTraceTime)
 		{
 			LastTraceTime = CurrentTraceTime;
-			VisualizedWorld = RewindDebugger->GetWorldToVisualize();
+			WeakVisualizedWorld = RewindDebugger->GetWorldToVisualize();
 
 			DebugBlockStorage.DestroyDebugBlocks();
 
@@ -91,7 +93,7 @@ void FCameraSystemRewindDebuggerExtension::Clear(IRewindDebugger* RewindDebugger
 {
 	EnsureDebugDrawDelegate(false);
 
-	VisualizedWorld = nullptr;
+	WeakVisualizedWorld = nullptr;
 
 	DebugBlockStorage.DestroyDebugBlocks(true);
 	RootDebugBlock = nullptr;
@@ -113,9 +115,23 @@ void FCameraSystemRewindDebuggerExtension::EnsureDebugDrawDelegate(bool bIsRegis
 
 void FCameraSystemRewindDebuggerExtension::DebugDraw(UCanvas* Canvas, APlayerController* PlayController)
 {
+	if (LevelEditorModule == nullptr)
+	{
+		LevelEditorModule = FModuleManager::GetModulePtr<FLevelEditorModule>("LevelEditor");
+	}
+
+	UWorld* VisualizedWorld = WeakVisualizedWorld.Get();
 	if (RootDebugBlock && VisualizedWorld)
 	{
-		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas);
+		bool bIsExternalRendering = false;
+		if (LevelEditorModule)
+		{
+			TSharedPtr<SLevelViewport> LevelViewport = LevelEditorModule->GetFirstActiveLevelViewport();
+			FLevelEditorViewportClient& LevelViewportClient = LevelViewport->GetLevelViewportClient();
+			bIsExternalRendering = !LevelViewportClient.IsAnyActorLocked();
+		}
+
+		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas, bIsExternalRendering);
 		RootDebugBlock->RootDebugDraw(CameraDebugRenderer);
 	}
 }

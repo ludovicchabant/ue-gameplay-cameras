@@ -8,10 +8,12 @@
 #include "IRewindDebugger.h"
 #include "IRewindDebuggerExtension.h"
 #include "Templates/SharedPointerFwd.h"
+#include "UObject/WeakObjectPtrFwd.h"
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 
 class APlayerController;
+class FLevelEditorModule;
 class UCanvas;
 
 namespace UE::Cameras
@@ -45,7 +47,8 @@ private:
 	FDelegateHandle DebugDrawDelegateHandle;
 	double LastTraceTime = 0.f;
 
-	UWorld* VisualizedWorld = nullptr;
+	FLevelEditorModule* LevelEditorModule = nullptr;
+	TWeakObjectPtr<UWorld> WeakVisualizedWorld;
 
 	FCameraDebugBlockStorage DebugBlockStorage;
 	FRootCameraDebugBlock* RootDebugBlock = nullptr;
