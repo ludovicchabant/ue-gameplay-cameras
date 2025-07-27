@@ -26,6 +26,13 @@ public:
 	/** Creates a new context data table debug block. */
 	GAMEPLAYCAMERAS_API FContextDataTableDebugBlock(const FCameraContextDataTable& InContextDataTable);
 
+	/** Specifies the console variable to use to toggle the printing of variable IDs. */
+	FContextDataTableDebugBlock& WithShowDataIDsCVar(const TCHAR* InShowDataIDsCVarName)
+	{
+		ShowDataIDsCVarName = InShowDataIDsCVarName;
+		return *this;
+	}
+
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
@@ -56,6 +63,8 @@ private:
 		bool bWrittenThisFrame;
 	};
 	TArray<FEntryDebugInfo> Entries;
+
+	FString ShowDataIDsCVarName;
 
 	friend FArchive& operator<< (FArchive&, FEntryDebugInfo&);
 };

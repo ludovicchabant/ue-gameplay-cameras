@@ -123,9 +123,26 @@ void FContextDataTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams&
 {
 	const FCameraDebugColors& Colors = FCameraDebugColors::Get();
 
+#if WITH_EDITORONLY_DATA
+	bool bShowDataIDs = false;
+	if (!ShowDataIDsCVarName.IsEmpty())
+	{
+		IConsoleVariable* ShowDataIDsCVar = IConsoleManager::Get().FindConsoleVariable(*ShowDataIDsCVarName, false);
+		if (ensureMsgf(ShowDataIDsCVar, TEXT("No such console variable: %s"), *ShowDataIDsCVarName))
+		{
+			bShowDataIDs = ShowDataIDsCVar->GetBool();
+		}
+	}
+#endif
+
 	for (const FEntryDebugInfo& Entry : Entries)
 	{
 #if WITH_EDITORONLY_DATA
+		if (bShowDataIDs)
+		{
+			Renderer.AddText(TEXT("{cam_passive}[%d]{cam_default} "), Entry.ID);
+		}
+
 		if (!Entry.Name.IsEmpty())
 		{
 			Renderer.AddText(TEXT("%s [%s] "), *Entry.Name, *Entry.TypeName.ToString());
@@ -164,6 +181,7 @@ void FContextDataTableDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams&
 void FContextDataTableDebugBlock::OnSerialize(FArchive& Ar)
 {
 	Ar << Entries;
+	Ar << ShowDataIDsCVarName;
 }
 
 FArchive& operator<< (FArchive& Ar, FContextDataTableDebugBlock::FEntryDebugInfo& EntryDebugInfo)

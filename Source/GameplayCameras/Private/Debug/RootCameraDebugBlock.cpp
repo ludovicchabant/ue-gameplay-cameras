@@ -8,13 +8,12 @@
 #include "Core/RootCameraNode.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugCategories.h"
-#include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraDirectorTreeDebugBlock.h"
 #include "Debug/CameraEvaluationServiceDebugBlock.h"
 #include "Debug/CameraNodeEvaluationResultDebugBlock.h"
-#include "Debug/CameraNodeEvaluatorDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
+#include "Debug/ContextDataTableDebugBlock.h"
 #include "Debug/CategoryTitleDebugBlock.h"
 #include "Debug/PlayerControllersDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
@@ -55,6 +54,12 @@ bool GGameplayCamerasDebugPoseStatsShowVariableIDs = false;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowVariableIDs(
 	TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"),
 	GGameplayCamerasDebugPoseStatsShowVariableIDs,
+	TEXT(""));
+
+bool GGameplayCamerasDebugPoseStatsShowDataIDs = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugPoseStatsShowDataIDs(
+	TEXT("GameplayCameras.Debug.PoseStats.ShowDataIDs"),
+	GGameplayCamerasDebugPoseStatsShowDataIDs,
 	TEXT(""));
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FRootCameraDebugBlock)
@@ -127,6 +132,7 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 			ResultDebugBlock.Initialize(CameraSystem.GetEvaluatedResult(), Builder);
 			ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowUnchanged"));
 			ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"));
+			ResultDebugBlock.GetContextDataTableDebugBlock()->WithShowDataIDsCVar(TEXT("GameplayCameras.Debug.PoseStats.ShowDataIDs"));
 		}
 		FPlayerControllersDebugBlock& PlayerControllersDebugBlock = Builder.BuildDebugBlock<FPlayerControllersDebugBlock>();
 		PoseStatsCategory.AddChild(&PlayerControllersDebugBlock);

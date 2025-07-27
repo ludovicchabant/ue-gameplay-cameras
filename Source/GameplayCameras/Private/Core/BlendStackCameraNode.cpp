@@ -17,6 +17,7 @@
 #include "Debug/CameraNodeEvaluationResultDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
 #include "Debug/CameraPoseLocationTrailDebugBlock.h"
+#include "Debug/ContextDataTableDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
 #include "HAL/IConsoleManager.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
@@ -57,6 +58,12 @@ bool GGameplayCamerasDebugBlendStackShowVariableIDs = false;
 static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowVariableIDs(
 	TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIDs"),
 	GGameplayCamerasDebugBlendStackShowVariableIDs,
+	TEXT(""));
+
+bool GGameplayCamerasDebugBlendStackShowDataIDs = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStackShowDataIDs(
+	TEXT("GameplayCameras.Debug.BlendStack.ShowDataIDs"),
+	GGameplayCamerasDebugBlendStackShowDataIDs,
 	TEXT(""));
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBlendStackCameraNodeEvaluator)
@@ -693,6 +700,7 @@ FBlendStackCameraDebugBlock* FBlendStackCameraNodeEvaluator::BuildDetailedDebugB
 				ResultDebugBlock.Initialize(Entry.Result, Builder);
 				ResultDebugBlock.GetCameraPoseDebugBlock()->WithShowUnchangedCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowUnchanged"));
 				ResultDebugBlock.GetVariableTableDebugBlock()->WithShowVariableIDsCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowVariableIDs"));
+				ResultDebugBlock.GetContextDataTableDebugBlock()->WithShowDataIDsCVar(TEXT("GameplayCameras.Debug.BlendStack.ShowDataIDs"));
 			}
 		}
 	}

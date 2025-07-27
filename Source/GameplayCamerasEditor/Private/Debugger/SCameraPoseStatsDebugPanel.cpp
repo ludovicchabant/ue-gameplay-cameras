@@ -30,6 +30,13 @@ void SCameraPoseStatsDebugPanel::Construct(const FArguments& InArgs)
 						LOCTEXT("ShowVariableIDs", "Show variable IDs"),
 						TEXT("GameplayCameras.Debug.PoseStats.ShowVariableIDs"))
 			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SDebugWidgetUtils::CreateConsoleVariableCheckBox(
+						LOCTEXT("ShowDataIDs", "Show data IDs"),
+						TEXT("GameplayCameras.Debug.PoseStats.ShowDataIDs"))
+			]
 	];
 }
 
