@@ -4,6 +4,7 @@
 
 #include "Core/RootCameraNode.h"
 #include "Core/BlendStackCameraRigEvent.h"
+#include "Templates/SharedPointerFwd.h"
 
 #include "DefaultRootCameraNode.generated.h"
 
@@ -43,6 +44,7 @@ public:
 namespace UE::Cameras
 {
 
+class FCameraParameterSetterService;
 class FPersistentBlendStackCameraNodeEvaluator;
 class FTransientBlendStackCameraNodeEvaluator;
 
@@ -51,13 +53,14 @@ class FTransientBlendStackCameraNodeEvaluator;
  */
 class FDefaultRootCameraNodeEvaluator : public FRootCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FDefaultRootCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FDefaultRootCameraNodeEvaluator, FRootCameraNodeEvaluator)
 
 protected:
 
 	// FCameraNodeEvaluator interface.
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
 
@@ -89,6 +92,8 @@ private:
 	FTransientBlendStackCameraNodeEvaluator* MainLayer;
 	FPersistentBlendStackCameraNodeEvaluator* GlobalLayer;
 	FPersistentBlendStackCameraNodeEvaluator* VisualLayer;
+
+	TSharedPtr<FCameraParameterSetterService> ParameterSetterService;
 };
 
 }  // namespace UE::Cameras

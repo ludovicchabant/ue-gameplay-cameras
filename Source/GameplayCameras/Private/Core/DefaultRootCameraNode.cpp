@@ -5,12 +5,15 @@
 #include "Core/BlendStackCameraNode.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraNodeEvaluatorHierarchy.h"
+#include "Core/CameraSystemEvaluator.h"
 #include "Core/PersistentBlendStackCameraNode.h"
 #include "Core/RootCameraNodeCameraRigEvent.h"
 #include "Core/TransientBlendStackCameraNode.h"
 #include "Debug/BlendStacksCameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/RootCameraDebugBlock.h"
+#include "Math/ColorList.h"
+#include "Services/CameraParameterSetterService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DefaultRootCameraNode)
 
@@ -72,6 +75,13 @@ EvaluatorType* FDefaultRootCameraNodeEvaluator::BuildBlendStackEvaluator(const F
 FCameraNodeEvaluatorChildrenView FDefaultRootCameraNodeEvaluator::OnGetChildren()
 {
 	return FCameraNodeEvaluatorChildrenView({ BaseLayer, MainLayer, GlobalLayer, VisualLayer });
+}
+
+void FDefaultRootCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	Super::OnInitialize(Params, OutResult);
+
+	ParameterSetterService = Params.Evaluator->FindEvaluationService<FCameraParameterSetterService>();
 }
 
 void FDefaultRootCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -232,6 +242,9 @@ void FDefaultRootCameraNodeEvaluator::OnBuildSingleCameraRigHierarchy(const FSin
 
 void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	ensure(Params.EvaluationParams.EvaluationContext == Params.CameraRigInfo.EvaluationContext);
+	TSharedPtr<const FCameraEvaluationContext> EvaluationContext = Params.EvaluationParams.EvaluationContext;
+
 	BaseLayer->Run(Params.EvaluationParams, OutResult);
 
 	FCameraNodeEvaluator* RootEvaluator = Params.CameraRigInfo.RootEvaluator;
@@ -239,6 +252,25 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 	// Emulate what the main blend stack does.
 
 	{
+		const FCameraNodeEvaluationResult& InitialResult(EvaluationContext->GetInitialResult());
+		OutResult.VariableTable.OverrideAll(InitialResult.VariableTable, true);
+		OutResult.ContextDataTable.OverrideAll(InitialResult.ContextDataTable);
+
+		if (Params.EvaluationParams.bIsActiveCameraRig)
+		{
+			const FCameraNodeEvaluationResult* ActiveOnlyResult = EvaluationContext->GetConditionalResult(ECameraEvaluationDataCondition::ActiveCameraRig);
+			if (ActiveOnlyResult)
+			{
+				OutResult.VariableTable.OverrideAll(ActiveOnlyResult->VariableTable, true);
+				OutResult.ContextDataTable.OverrideAll(ActiveOnlyResult->ContextDataTable);
+			}
+		}
+
+		if (ParameterSetterService)
+		{
+			ParameterSetterService->ApplyCameraVariableSetters(OutResult.VariableTable);
+		}
+
 		const FCameraNodeEvaluationResult* CameraRigResult = Params.CameraRigInfo.LastResult;
 		FCameraBlendedParameterUpdateParams InputParams(Params.EvaluationParams, CameraRigResult->CameraPose);
 		FCameraBlendedParameterUpdateResult InputResult(OutResult.VariableTable);
@@ -250,11 +282,15 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 	// No parameter blending: we are running this camera rig in isolation.
 
 	{
-		const FCameraNodeEvaluationResult& InitialResult = Params.CameraRigInfo.EvaluationContext->GetInitialResult();
+		const FCameraNodeEvaluationResult& InitialResult(EvaluationContext->GetInitialResult());
 		OutResult.CameraPose.OverrideChanged(InitialResult.CameraPose);
-		OutResult.VariableTable.OverrideAll(InitialResult.VariableTable);
+		OutResult.bIsCameraCut = (OutResult.bIsCameraCut || InitialResult.bIsCameraCut);
+		OutResult.bIsValid = true;
 
-		RootEvaluator->Run(Params.EvaluationParams, OutResult);
+		if (RootEvaluator)
+		{
+			RootEvaluator->Run(Params.EvaluationParams, OutResult);
+		}
 	}
 
 	GlobalLayer->Run(Params.EvaluationParams, OutResult);
