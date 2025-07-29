@@ -103,7 +103,10 @@ public:
 	/** Evaluates the interpolator, advancing the current value towards the target. */
 	ValueType Run(const FCameraValueInterpolationParams& Params, FCameraValueInterpolationResult& OutResult)
 	{
-		OnRun(Params, OutResult);
+		if (Params.DeltaTime != 0.f)
+		{
+			OnRun(Params, OutResult);
+		}
 		return CurrentValue;
 	}
 
