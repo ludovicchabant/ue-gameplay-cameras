@@ -13,6 +13,7 @@
 #include "Core/PersistentBlendStackCameraNode.h"
 #include "Core/TransientBlendStackCameraNode.h"
 #include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/CameraNodeEvaluationResultDebugBlock.h"
 #include "Debug/CameraPoseDebugBlock.h"
@@ -646,6 +647,7 @@ void FBlendStackCameraNodeEvaluator::OnPostBuildAsset(const FGameplayCameraAsset
 
 UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FBlendStackEntryCameraDebugBlock)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(int32, EntryIndex)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FLinearColor, EntryColor)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FBlendStackEntryID, EntryID)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FString, CameraRigName)
 	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(bool, bIsFrozen)
@@ -662,18 +664,25 @@ void FBlendStackCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockB
 	}
 }
 
-FBlendStackCameraDebugBlock* FBlendStackCameraNodeEvaluator::BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+FBlendStackCameraDebugBlock* FBlendStackCameraNodeEvaluator::BuildDetailedDebugBlock(
+		const FCameraDebugBlockBuildParams& Params, 
+		const FLinearColor& StartColor, const FLinearColor& EndColor,
+		FCameraDebugBlockBuilder& Builder)
 {
 	FBlendStackCameraDebugBlock& StackDebugBlock = Builder.BuildDebugBlock<FBlendStackCameraDebugBlock>();
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
 		const FCameraRigEntry& Entry(Entries[Index]);
 
+		const FLinearColor EntryColor = LerpLinearColorUsingHSV(
+				StartColor, EndColor, Index, Entries.Num());
+
 		// Each entry has a wrapper debug block with 2 children blocks:
 		// - block for the blend
 		// - block for the result
 		FBlendStackEntryCameraDebugBlock& EntryDebugBlock = Builder.BuildDebugBlock<FBlendStackEntryCameraDebugBlock>();
 		EntryDebugBlock.EntryIndex = Index;
+		EntryDebugBlock.EntryColor = EntryColor;
 		EntryDebugBlock.EntryID = Entry.EntryID;
 		EntryDebugBlock.CameraRigName = GetNameSafe(Entry.CameraRig);
 		EntryDebugBlock.bIsFrozen = Entry.Flags.bIsFrozen;
@@ -739,8 +748,6 @@ void FBlendStackSummaryCameraDebugBlock::OnSerialize(FArchive& Ar)
 	Ar << BlendStackLayer;
 }
 
-UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock);
-
 void FBlendStackEntryCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
 	Renderer.AddText(
@@ -751,6 +758,26 @@ void FBlendStackEntryCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPa
 		Renderer.AddText(" {cam_notice2}FROZEN{cam_default}");
 	}
 	Renderer.NewLine();
+
+	// Render children with some color/label override for the entry's result pose.
+	{
+		FScopedGlobalCameraPoseRenderingParams ScopedParams(*LexToString(EntryIndex + 1), EntryColor);
+
+		TArrayView<FCameraDebugBlock*> ChildrenBlocks(GetChildren());
+		for (FCameraDebugBlock* ChildBlock : ChildrenBlocks)
+		{
+			ChildBlock->DebugDraw(Params, Renderer);
+		}
+
+		Renderer.SkipChildrenBlocks();
+	}
+}
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStackCameraDebugBlock);
+
+void FBlendStackCameraDebugBlock::OnSerialize(FArchive& Ar)
+{
+	Ar << StartEndColors;
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

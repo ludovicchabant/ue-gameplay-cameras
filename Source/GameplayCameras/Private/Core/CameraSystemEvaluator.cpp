@@ -534,7 +534,8 @@ void FCameraSystemEvaluator::DrawEditorPreview(const FCameraSystemEditorPreviewP
 
 	if (RootDebugBlock)
 	{
-		RootDebugBlock->RootDebugDraw(Renderer);
+		FRootCameraDebugDrawParams RootParams;
+		RootDebugBlock->RootDebugDraw(RootParams, Renderer);
 	}
 	else
 	{
@@ -609,8 +610,11 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 	}
 #endif
 
+	FRootCameraDebugDrawParams RootParams;
+	RootParams.bIsCameraManagerOrViewTarget = Params.bIsCameraManagerOrViewTarget;
+	RootParams.bForceDraw = Params.bForceDraw;
 	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject, Params.bIsDebugCameraEnabled);
-	RootDebugBlock->RootDebugDraw(Renderer, Params.bForceDraw);
+	RootDebugBlock->RootDebugDraw(RootParams, Renderer);
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

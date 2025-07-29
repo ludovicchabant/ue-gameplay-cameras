@@ -147,39 +147,52 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 	AddChild(&Builder.BuildDebugBlock<FViewfinderDebugBlock>());
 }
 
-void FRootCameraDebugBlock::RootDebugDraw(FCameraDebugRenderer& Renderer, bool bForceDraw)
+void FRootCameraDebugBlock::RootDebugDraw(const FRootCameraDebugDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
-	if (!GGameplayCamerasDebugEnable)
-	{
-		return;
-	}
-
-	FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
-	const bool bDoDebugDraw = (bForceDraw || WantedDebugID.IsAny() || WantedDebugID == DebugID);
-	if (!bDoDebugDraw)
+	if (!ShouldDebugDraw(DebugID, Params.bIsCameraManagerOrViewTarget))
 	{
 		return;
 	}
 
 	// Figure out what debug categories are active.
-	FCameraDebugBlockDrawParams Params;
+	FCameraDebugBlockDrawParams DrawParams;
 
 	TArray<FStringView, TInlineAllocator<4>> ActiveCategories;
 	UE::String::ParseTokens(GGameplayCamerasDebugCategories, ',', ActiveCategories);
 	for (FStringView CategoryView : ActiveCategories)
 	{
-		Params.ActiveCategories.Add(FString(CategoryView));
+		DrawParams.ActiveCategories.Add(FString(CategoryView));
 	}
 
 	// Do the drawing!
 	Renderer.BeginDrawing();
-	FCameraDebugBlock::DebugDraw(Params, Renderer);
+	FCameraDebugBlock::DebugDraw(DrawParams, Renderer);
 	Renderer.EndDrawing();
 }
 
 void FRootCameraDebugBlock::OnSerialize(FArchive& Ar)
 {
 	Ar << DebugID;
+}
+
+bool FRootCameraDebugBlock::ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsActive)
+{
+	if (!GGameplayCamerasDebugEnable)
+	{
+		return false;
+	}
+
+	const FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
+	const int32 NumCameraSystems = FCameraSystemDebugRegistry::Get().NumRegisteredCameraSystemEvaluators();
+
+	// If the wanted debug ID is ours, we draw.
+	// If the wanted debug ID is "any", we draw.
+	// If the wanted debug ID is "auto", we draw if we are the view target or camera manager or
+	// we are in charge of the "active" camera, whatever that means.
+	const bool bDoDebugDraw = (WantedDebugID == InDebugID) 
+		|| WantedDebugID.IsAny()
+		|| (WantedDebugID.IsAuto() && (bIsActive || NumCameraSystems == 1));
+	return bDoDebugDraw;
 }
 
 }  // namespace UE::Cameras

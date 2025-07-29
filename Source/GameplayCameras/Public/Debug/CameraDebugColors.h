@@ -59,7 +59,6 @@ public:
 	/** Gets all registered color scheme names. */
 	GAMEPLAYCAMERAS_API static void GetColorSchemeNames(TArray<FString>& OutColorSchemeNames);
 
-
 public:
 
 	// Internal API.
@@ -77,6 +76,10 @@ private:
 
 	static TMap<FString, FCameraDebugColors> ColorSchemes;
 };
+
+GAMEPLAYCAMERAS_API FLinearColor LerpLinearColorUsingHSV(
+	const FLinearColor& Start, const FLinearColor& End,
+	int32 Increment, int32 TotalIncrements);
 
 }  // namespace UE::Cameras
 

@@ -3,6 +3,9 @@
 #include "Core/CameraRigCombinationRegistry.h"
 
 #include "Core/CameraRigAsset.h"
+#include "Debug/CameraDebugBlock.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigCombinationRegistry)
@@ -68,6 +71,10 @@ protected:
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
 private:
 
 	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly);
@@ -78,6 +85,13 @@ private:
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FCombinedCameraRigsCameraNodeEvaluator)
+
+UE_DECLARE_CAMERA_DEBUG_BLOCK_START(GAMEPLAYCAMERAS_API, FCombinedCameraRigCameraDebugBlock)
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(int32, CameraRigIndex);
+	UE_DECLARE_CAMERA_DEBUG_BLOCK_FIELD(FString, CameraRigName);
+UE_DECLARE_CAMERA_DEBUG_BLOCK_END()
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FCombinedCameraRigCameraDebugBlock)
 
 FCameraNodeEvaluatorChildrenView FCombinedCameraRigsCameraNodeEvaluator::OnGetChildren()
 {
@@ -128,6 +142,47 @@ void FCombinedCameraRigsCameraNodeEvaluator::ApplyParameterOverrides(FCameraVari
 		IndividualCameraRigReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
 	}
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+void FCombinedCameraRigsCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	// Wrap our children inside debug blocks that show their camera rig name.
+	for (int32 Index = 0; Index < CameraRigRootEvaluators.Num(); ++Index)
+	{
+		FCameraNodeEvaluator* CameraRigRootEvaluator(CameraRigRootEvaluators[Index]);
+		if (!CameraRigRootEvaluator)
+		{
+			continue;
+		}
+
+		FString CameraRigName;
+		if (const UCameraNode* CameraRigRootNode = CameraRigRootEvaluator->GetCameraNode())
+		{
+			if (const UCameraRigAsset* CameraRig = CameraRigRootNode->GetTypedOuter<UCameraRigAsset>())
+			{
+				CameraRigName = CameraRig->GetName();
+			}
+		}
+
+		FCombinedCameraRigCameraDebugBlock& ChildBlock = Builder.StartChildDebugBlock<FCombinedCameraRigCameraDebugBlock>();
+		ChildBlock.CameraRigIndex = Index;
+		ChildBlock.CameraRigName = CameraRigName;
+		{
+			CameraRigRootEvaluator->BuildDebugBlocks(Params, Builder);
+		}
+		Builder.EndChildDebugBlock();
+	}
+
+	Builder.SkipChildren();
+}
+
+void FCombinedCameraRigCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+	Renderer.AddText(TEXT("{cam_passive}[%d] {cam_notice}%s{cam_default}\n"), CameraRigIndex + 1, *CameraRigName);
+}
+
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 }  // namespace UE::Cameras
 

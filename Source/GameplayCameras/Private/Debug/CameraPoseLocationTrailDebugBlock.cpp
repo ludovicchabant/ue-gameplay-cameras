@@ -39,7 +39,7 @@ void FCameraPoseLocationTrailDebugBlock::DrawCameraPoseLocationTrail(FCameraDebu
 
 		if (!PrevPoint.IsZero() && FVector3d::Distance(PrevPoint, NextPoint) > UE_SMALL_NUMBER)
 		{
-			Renderer.DrawLine(PrevPoint, NextPoint, TrailColor, 1.f);
+			Renderer.DrawLine(PrevPoint, NextPoint, TrailColor, 0.3f);
 		}
 	}
 }

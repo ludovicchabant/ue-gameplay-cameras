@@ -20,6 +20,21 @@ GAMEPLAYCAMERAS_API extern int32 GGameplayCamerasDebugSystemID;
 GAMEPLAYCAMERAS_API extern FString GGameplayCamerasDebugCategories;
 
 /**
+ * Parameters for drawing a hierarchy of debug blocks.
+ */
+struct FRootCameraDebugDrawParams
+{
+	/**
+	 * Whether the debug blocks belong to a camera system running as the camera manager
+	 * of active view target.
+	 */
+	bool bIsCameraManagerOrViewTarget = false;
+
+	/** Whether to force draw the debug blocks. */
+	bool bForceDraw = false;
+};
+
+/**
  * The root debug block for the camera system.
  */
 class FRootCameraDebugBlock : public FCameraDebugBlock
@@ -32,10 +47,15 @@ public:
 	GAMEPLAYCAMERAS_API void BuildDebugBlocks(const FCameraSystemEvaluator& CameraSystem, const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
 
 	/** Initiate the debug drawing. */
-	GAMEPLAYCAMERAS_API void RootDebugDraw(FCameraDebugRenderer& Renderer, bool bForceDraw = false);
+	GAMEPLAYCAMERAS_API void RootDebugDraw(const FRootCameraDebugDrawParams& Params, FCameraDebugRenderer& Renderer);
 
 	/** Gets the debug ID of the camera system that generated this debug info. */
 	const FCameraSystemDebugID& GetDebugID() const { return DebugID; }
+
+public:
+
+	/** Checks whether the debug data with the given ID would be drawn on screen. */
+	GAMEPLAYCAMERAS_API static bool ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsActive);
 
 protected:
 

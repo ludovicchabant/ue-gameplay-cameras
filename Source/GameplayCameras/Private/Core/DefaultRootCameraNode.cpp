@@ -315,10 +315,10 @@ void FDefaultRootCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlock
 	// Create the debug block that shows the overall blend stack layers.
 	FBlendStacksCameraDebugBlock& DebugBlock = Builder.BuildDebugBlock<FBlendStacksCameraDebugBlock>();
 	{
-		DebugBlock.AddBlendStack(TEXT("Base Layer"), BaseLayer->BuildDetailedDebugBlock(Params, Builder));
-		DebugBlock.AddBlendStack(TEXT("Main Layer"), MainLayer->BuildDetailedDebugBlock(Params, Builder));
-		DebugBlock.AddBlendStack(TEXT("Global Layer"), GlobalLayer->BuildDetailedDebugBlock(Params, Builder));
-		DebugBlock.AddBlendStack(TEXT("Visual Layer"), VisualLayer->BuildDetailedDebugBlock(Params, Builder));
+		DebugBlock.AddBlendStack(TEXT("Base Layer"), BaseLayer->BuildDetailedDebugBlock(Params, FColorList::Grey, FColorList::LightGrey, Builder));
+		DebugBlock.AddBlendStack(TEXT("Main Layer"), MainLayer->BuildDetailedDebugBlock(Params, FColorList::LightBlue, FColorList::SlateBlue, Builder));
+		DebugBlock.AddBlendStack(TEXT("Global Layer"), GlobalLayer->BuildDetailedDebugBlock(Params, FColorList::Orange, FColorList::OrangeRed, Builder));
+		DebugBlock.AddBlendStack(TEXT("Visual Layer"), VisualLayer->BuildDetailedDebugBlock(Params, FColorList::Pink, FColorList::NeonPink, Builder));
 	}
 
 	Builder.GetRootDebugBlock().AddChild(&DebugBlock);

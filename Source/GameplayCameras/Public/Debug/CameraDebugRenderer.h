@@ -128,9 +128,13 @@ public:
 	/** Draws a 3D coordinate system. */
 	GAMEPLAYCAMERAS_API void DrawCoordinateSystem(const FTransform3d& Transform, float AxesLength = 0.f);
 	/** Draws text at a projected 3D position. */
-	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr);
+	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr, float TextScale = 1.f);
+	/** Draws text at a projected 3D position. */
+	GAMEPLAYCAMERAS_API void DrawTextView(const FVector3d& WorldPosition, FStringView Text, const FLinearColor& TextColor, UFont* TextFont = nullptr, float TextScale = 1.f);
 	/** Draws text at a projected 3D position, with an added screen-space offset. */
-	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr);
+	GAMEPLAYCAMERAS_API void DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont = nullptr, float TextScale = 1.f);
+	/** Draws text at a projected 3D position, with an added screen-space offset. */
+	GAMEPLAYCAMERAS_API void DrawTextView(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, FStringView Text, const FLinearColor& TextColor, UFont* TextFont = nullptr, float TextScale = 1.f);
 
 public:
 

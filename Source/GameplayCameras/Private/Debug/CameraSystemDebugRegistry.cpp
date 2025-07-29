@@ -50,6 +50,11 @@ void FCameraSystemDebugRegistry::GetRegisteredCameraSystemEvaluators(FRegistered
 	}
 }
 
+int32 FCameraSystemDebugRegistry::NumRegisteredCameraSystemEvaluators() const
+{
+	return Entries.Num();
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

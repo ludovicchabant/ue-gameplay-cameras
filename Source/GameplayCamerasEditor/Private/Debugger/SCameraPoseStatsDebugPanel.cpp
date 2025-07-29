@@ -4,7 +4,6 @@
 
 #include "Debugger/SDebugWidgetUtils.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/Input/SCheckBox.h"
 
 #define LOCTEXT_NAMESPACE "SCameraPoseStatsDebugPanel"
 

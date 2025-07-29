@@ -6,13 +6,18 @@
 #include "Debug/CameraDebugCategories.h"
 #include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "Debug/CameraNodeEvaluatorDebugBlock.h"
-#include "Math/ColorList.h"
+#include "HAL/IConsoleManager.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
 namespace UE::Cameras
 {
+
+FString GGameplayCamerasDebugBlendStacksFilter;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugBlendStacksFilter(
+	TEXT("GameplayCameras.Debug.BlendStacks.Filter"),
+	GGameplayCamerasDebugBlendStacksFilter,
+	TEXT(""));
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FBlendStacksCameraDebugBlock)
 
@@ -42,21 +47,29 @@ void FBlendStacksCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams
 
 	TArrayView<FCameraDebugBlock*> BlendStackBlocks(GetChildren());
 
-	const int32 MaxIndex = FMath::Max(BlendStackBlocks.Num(), BlendStackNames.Num());
+	const int32 MaxNum = FMath::Max(BlendStackBlocks.Num(), BlendStackNames.Num());
 
-	for (int32 Index = 0; Index < MaxIndex; ++Index)
+	for (int32 Index = 0; Index < MaxNum; ++Index)
 	{
-		Renderer.AddText(BlendStackNames.IsValidIndex(Index) ? BlendStackNames[Index] : TEXT("<unnamed blend stack>"));
+		const FString CurrentName = BlendStackNames.IsValidIndex(Index) ? BlendStackNames[Index] : TEXT("<unnamed blend stack>");
+
+		Renderer.AddText(CurrentName);
 		Renderer.NewLine();
 
-		if (BlendStackBlocks.IsValidIndex(Index))
+		const bool bDoDebugDraw = (
+				GGameplayCamerasDebugBlendStacksFilter.IsEmpty() ||
+				CurrentName.Contains(GGameplayCamerasDebugBlendStacksFilter));
+		if (bDoDebugDraw)
 		{
-			FCameraDebugBlock* BlendStackBlock = BlendStackBlocks[Index];
-			BlendStackBlock->DebugDraw(Params, Renderer);
-		}
-		else
-		{
-			Renderer.AddText(TEXT("<missing blend stack>"));
+			if (BlendStackBlocks.IsValidIndex(Index))
+			{
+				FCameraDebugBlock* BlendStackBlock = BlendStackBlocks[Index];
+				BlendStackBlock->DebugDraw(Params, Renderer);
+			}
+			else
+			{
+				Renderer.AddText(TEXT("<missing blend stack>"));
+			}
 		}
 	}
 

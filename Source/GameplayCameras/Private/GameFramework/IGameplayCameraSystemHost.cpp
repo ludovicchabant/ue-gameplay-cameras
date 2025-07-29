@@ -221,15 +221,10 @@ void IGameplayCameraSystemHost::DebugDraw(UCanvas* Canvas, APlayerController* Pl
 				(!bThisIsCameraManager && !bThisIsViewTarget) ||
 				!ActualPlayerController || !ActualPlayerController->Player);
 
-		// Force draw this host's camera system if the wanted debug ID is "auto" and we are the
-		// view target or camera manager.
-		FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
-		bool bForceDraw = WantedDebugID.IsAuto() && (bThisIsCameraManager || bThisIsViewTarget);
-
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
 		DebugUpdateParams.CanvasObject = Canvas;
 		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
-		DebugUpdateParams.bForceDraw = bForceDraw;
+		DebugUpdateParams.bIsCameraManagerOrViewTarget = (bThisIsCameraManager || bThisIsViewTarget);
 		CameraSystemEvaluator->DebugUpdate(DebugUpdateParams);
 	}
 }

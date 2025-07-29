@@ -622,24 +622,68 @@ void FCameraDebugRenderer::DrawCoordinateSystem(const FTransform3d& Transform, f
 	DrawCoordinateSystem(Transform.GetLocation(), Transform.GetRotation().Rotator(), AxesLength);
 }
 
-void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont)
+void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FString& Text, const FLinearColor& TextColor, UFont* TextFont, float TextScale)
 {
-	DrawText(WorldPosition, FVector2d::ZeroVector, Text, TextColor, TextFont);
+	DrawText(WorldPosition, FVector2d::ZeroVector, Text, TextColor, TextFont, TextScale);
 }
 
-void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont)
+void FCameraDebugRenderer::DrawTextView(const FVector3d& WorldPosition, FStringView Text, const FLinearColor& TextColor, UFont* TextFont, float TextScale)
+{
+	DrawTextView(WorldPosition, FVector2d::ZeroVector, Text, TextColor, TextFont, TextScale);
+}
+
+void FCameraDebugRenderer::DrawText(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, const FString& Text, const FLinearColor& TextColor, UFont* TextFont, float TextScale)
 {
 	if (Canvas && SceneView)
 	{
 		UFont* ActualTextFont = TextFont ? TextFont : GEngine->GetSmallFont();
 
-		const FVector3d ScreenPosition = SceneView->Project(WorldPosition);
+		FVector2d PixelOffset(FVector2d::ZeroVector);
+		if (ScreenOffset.X != 0.0 || ScreenOffset.Y != 0.0)
+		{
+			const double ScreenWidth = SceneView->UnscaledViewRect.Width();
+			const double ScreenHeight = SceneView->UnscaledViewRect.Height();
+			PixelOffset = FVector2d(ScreenOffset.X / ScreenWidth, ScreenOffset.Y / ScreenHeight);
+		}
+
+		FVector2d PixelPosition;
+		SceneView->WorldToPixel(WorldPosition, PixelPosition);
+
+		FCanvasTextItem TextItem(
+				FVector2D(PixelPosition.X + PixelOffset.X, PixelPosition.Y + PixelOffset.Y),
+				FText::FromString(Text),
+				ActualTextFont,
+				TextColor);
+		TextItem.BlendMode = SE_BLEND_Translucent;
+		TextItem.Scale = FVector2D(TextScale, TextScale);
+		Canvas->DrawItem(TextItem);	
+	}
+}
+
+void FCameraDebugRenderer::DrawTextView(const FVector3d& WorldPosition, const FVector2d& ScreenOffset, FStringView Text, const FLinearColor& TextColor, UFont* TextFont, float TextScale)
+{
+	if (Canvas && SceneView)
+	{
+		UFont* ActualTextFont = TextFont ? TextFont : GEngine->GetSmallFont();
+
+		FVector2d PixelOffset(FVector2d::ZeroVector);
+		if (ScreenOffset.X != 0.0 || ScreenOffset.Y != 0.0)
+		{
+			const double ScreenWidth = SceneView->UnscaledViewRect.Width();
+			const double ScreenHeight = SceneView->UnscaledViewRect.Height();
+			PixelOffset = FVector2d(ScreenOffset.X / ScreenWidth, ScreenOffset.Y / ScreenHeight);
+		}
+
+		FVector2d PixelPosition;
+		SceneView->WorldToPixel(WorldPosition, PixelPosition);
+
 		FCanvasTextStringViewItem TextItem(
-				FVector2D(ScreenPosition.X + ScreenOffset.Y, ScreenPosition.Y + ScreenOffset.Y),
+				FVector2D(PixelPosition.X + PixelOffset.X, PixelPosition.Y + PixelOffset.Y),
 				Text,
 				ActualTextFont,
 				TextColor);
 		TextItem.BlendMode = SE_BLEND_Translucent;
+		TextItem.Scale = FVector2D(TextScale, TextScale);
 		Canvas->DrawItem(TextItem);	
 	}
 }

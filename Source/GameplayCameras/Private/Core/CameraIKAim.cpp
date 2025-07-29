@@ -494,12 +494,13 @@ void FCameraIKAimDebugInfo::DebugDraw(const FCameraDebugBlockDrawParams& Params,
 	}
 	Renderer.AddText(TEXT("{cam_default} in %d iterations\n"), Iterations.Num());
 
-	UFont* TinyFont = GEngine->GetTinyFont();
-	Renderer.DrawSphere(DesiredTarget, 1.f, 8, FLinearColor::Yellow, 1.f);
+	UFont* SmallFont = GEngine->GetSmallFont();
+	Renderer.DrawPoint(DesiredTarget, 2.f, FLinearColor::Yellow, 2.f);
 
 	Renderer.AddIndent();
 	{
-		int32 IterationIndex = 1;
+		int32 IterationIndex = 0;
+		const FVector2d TextOffset(-20, -20);
 		for (const FCameraIKAimIterationDebugInfo& IterationDebugInfo : Iterations)
 		{
 			const bool bDirectionIsNormalized = true;
@@ -508,19 +509,23 @@ void FCameraIKAimDebugInfo::DebugDraw(const FCameraDebugBlockDrawParams& Params,
 					IterationDebugInfo.CameraPoseLocation, 
 					IterationDebugInfo.CameraPoseRotation.RotateVector(TargetDir), bDirectionIsNormalized);
 
+			const FLinearColor IterationColor = LerpLinearColorUsingHSV(
+					FLinearColor::Yellow, FLinearColor::Red, IterationIndex, Iterations.Num());
+
 			Renderer.DrawLine(
 					IterationDebugInfo.CameraPoseLocation,
 					DirectionRay.PointAt(1000.0),
-					FLinearColor::Yellow);
-			Renderer.DrawText(
+					IterationColor);
+			Renderer.DrawTextView(
 					IterationDebugInfo.CameraPoseLocation,
-					FString::Format(TEXT("Iteration {0}"), { IterationIndex }),
-					FLinearColor::Yellow,
-					TinyFont);
+					TextOffset,
+					FString::Format(TEXT("Iteration {0}"), { IterationIndex + 1 }),
+					IterationColor,
+					SmallFont);
 
 			Renderer.AddText(
 					TEXT("%d : error angle %.2fdeg, error distance %.1fcm, "),
-					IterationIndex,
+					IterationIndex + 1,
 					IterationDebugInfo.ErrorAngle, IterationDebugInfo.ErrorDistance);
 
 			++IterationIndex;

@@ -292,12 +292,15 @@ void FOrientationInitializationDebugBlock::OnDebugDraw(const FCameraDebugBlockDr
 	{
 		AimDebugInfo.DebugDraw(Params, Renderer);
 
-		Renderer.DrawSphere(LastEvaluatedTarget, 1.f, 8, FLinearColor::Green, 1.f);
+		const FVector2d TextOffset(20, -10);
+		Renderer.DrawPoint(LastEvaluatedTarget, 10.f, FLinearColor::Green, 0.f);
+		Renderer.DrawTextView(LastEvaluatedTarget, TextOffset, TEXT("Preserved Target"), FLinearColor::Green, nullptr);
 	}
 }
 
 void FOrientationInitializationDebugBlock::OnSerialize(FArchive& Ar)
 {
+	Ar << LastEvaluatedTarget;
 	Ar << AimDebugInfo;
 }
 

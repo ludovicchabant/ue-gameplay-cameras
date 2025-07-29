@@ -4,7 +4,6 @@
 
 #include "Debugger/SDebugWidgetUtils.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "SCameraNodeTreeDebugPanel"
@@ -29,6 +28,13 @@ void SCameraNodeTreeDebugPanel::Construct(const FArguments& InArgs)
 			[
 				SDebugWidgetUtils::CreateConsoleVariableTextBox(
 						TEXT("GameplayCameras.Debug.NodeTree.Filter"))
+			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SDebugWidgetUtils::CreateConsoleVariableCheckBox(
+						LOCTEXT("ShowDampingLocalSpace", "Show damping local spaces"),
+						TEXT("GameplayCameras.Debug.Damping.ShowLocalSpace"))
 			]
 	];
 }

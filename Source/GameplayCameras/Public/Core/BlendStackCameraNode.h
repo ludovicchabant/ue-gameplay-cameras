@@ -114,7 +114,10 @@ public:
 	bool HasAnyRunningCameraRig(TSharedPtr<const FCameraEvaluationContext> InContext) const;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
-	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder);
+	FBlendStackCameraDebugBlock* BuildDetailedDebugBlock(
+			const FCameraDebugBlockBuildParams& Params,
+			const FLinearColor& StartColor, const FLinearColor& EndColor,
+			FCameraDebugBlockBuilder& Builder);
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 public:
@@ -284,6 +287,15 @@ private:
 class FBlendStackCameraDebugBlock : public FCameraDebugBlock
 {
 	UE_DECLARE_CAMERA_DEBUG_BLOCK(GAMEPLAYCAMERAS_API, FBlendStackCameraDebugBlock)
+
+protected:
+
+	virtual void OnSerialize(FArchive& Ar) override;
+
+private:
+
+	using FBlendStackStartEndColors = TTuple<FLinearColor, FLinearColor>;
+	FBlendStackStartEndColors StartEndColors;
 };
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

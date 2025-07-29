@@ -55,14 +55,14 @@ void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugg
 	if (FrameProvider.GetFrameFromTime(ETraceFrameType::TraceFrameType_Game, CurrentTraceTime, Frame))
 	{
 		const FCameraSystemTraceFrameData* FoundFrameData = nullptr;
-		const FCameraSystemDebugID WantedDebugID(GGameplayCamerasDebugSystemID);
+		const bool bIsActiveCamera = false; // TODO
 
 		const FCameraSystemTraceTimeline* CameraSystemTimeline = CameraSystemProvider->GetTimeline();
 		CameraSystemTimeline->EnumerateEvents(
 				Frame.StartTime, Frame.EndTime, 
-				[&FoundFrameData, WantedDebugID](double InStartTime, double InEndTime, uint32 InDepth, const FCameraSystemTraceFrameData& FrameData)  
+				[&FoundFrameData, bIsActiveCamera](double InStartTime, double InEndTime, uint32 InDepth, const FCameraSystemTraceFrameData& FrameData)  
 				{
-					if (WantedDebugID.IsAny() || WantedDebugID.GetValue() == FrameData.CameraSystemID)
+					if (FRootCameraDebugBlock::ShouldDebugDraw(FrameData.CameraSystemID, bIsActiveCamera))
 					{
 						FoundFrameData = &FrameData;
 					}
@@ -131,8 +131,9 @@ void FCameraSystemRewindDebuggerExtension::DebugDraw(UCanvas* Canvas, APlayerCon
 			bIsExternalRendering = !LevelViewportClient.IsAnyActorLocked();
 		}
 
+		FRootCameraDebugDrawParams Params;
 		FCameraDebugRenderer CameraDebugRenderer(VisualizedWorld, Canvas, bIsExternalRendering);
-		RootDebugBlock->RootDebugDraw(CameraDebugRenderer);
+		RootDebugBlock->RootDebugDraw(Params, CameraDebugRenderer);
 	}
 }
 

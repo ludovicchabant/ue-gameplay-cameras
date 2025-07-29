@@ -159,6 +159,21 @@ void FCameraDebugColors::RegisterBuiltinColorSchemes()
 	Set(TEXT("SolarizedDark"));
 }
 
+FLinearColor LerpLinearColorUsingHSV(
+	const FLinearColor& Start, const FLinearColor& End,
+	int32 Increment, int32 TotalIncrements)
+{
+	if (TotalIncrements == 1)
+	{
+		return End;
+	}
+	else
+	{
+		const float Alpha = (float)Increment / (float)(TotalIncrements - 1);
+		return FLinearColor::LerpUsingHSV(Start, End, Alpha);
+	}
+}
+
 }  // namespace UE::Cameras
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

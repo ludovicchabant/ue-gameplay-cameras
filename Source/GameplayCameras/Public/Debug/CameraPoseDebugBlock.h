@@ -11,6 +11,22 @@ namespace UE::Cameras
 {
 
 /**
+ * Sets the global options for external rendering of a camera pose.
+ */
+struct FScopedGlobalCameraPoseRenderingParams
+{
+	GAMEPLAYCAMERAS_API FScopedGlobalCameraPoseRenderingParams(const FString& Label);
+	GAMEPLAYCAMERAS_API FScopedGlobalCameraPoseRenderingParams(const FLinearColor& LineColor);
+	GAMEPLAYCAMERAS_API FScopedGlobalCameraPoseRenderingParams(const FString& Label, const FLinearColor& LineColor);
+	GAMEPLAYCAMERAS_API ~FScopedGlobalCameraPoseRenderingParams();
+
+private:
+
+	FString PreviousLabel;
+	FLinearColor PreviousLineColor;
+};
+
+/**
  * A debug block that displays information about a camera pose.
  */
 class FCameraPoseDebugBlock : public FCameraDebugBlock
@@ -38,20 +54,6 @@ public:
 		return *this;
 	}
 
-	/** Sets the external rendering color. */
-	FCameraPoseDebugBlock& SetExternalRenderingLineColor(const FLinearColor& LineColor)
-	{
-		CameraPoseLineColor = LineColor;
-		return *this;
-	}
-
-	/** Sets the external rendering size. */
-	FCameraPoseDebugBlock& SetExternalRenderingSize(float CameraSize)
-	{
-		CameraPoseSize = CameraSize;
-		return *this;
-	}
-
 	/** 
 	 * Specifies the console variable to use to toggle between only showing camera pose
 	 * properties that were written to, or showing all camera pose properties.
@@ -69,12 +71,15 @@ protected:
 
 private:
 
+	static FLinearColor GlobalCameraPoseLineColor;
+	static FString GlobalCameraPoseLabel;
+
 	FCameraPose CameraPose;
 	FString ShowUnchangedCVarName;
-	FLinearColor CameraPoseLineColor;
-	float CameraPoseSize = -1.f;
 	bool bDrawText = true;
 	bool bDrawInExternalRendering = true;
+
+	friend struct FScopedGlobalCameraPoseRenderingParams;
 };
 
 }  // namespace UE::Cameras

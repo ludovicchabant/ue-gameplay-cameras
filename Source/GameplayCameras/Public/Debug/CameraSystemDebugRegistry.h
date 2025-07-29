@@ -88,6 +88,8 @@ public:
 	using FRegisteredCameraSystems = TArray<TSharedPtr<FCameraSystemEvaluator>>;
 	GAMEPLAYCAMERAS_API void GetRegisteredCameraSystemEvaluators(FRegisteredCameraSystems& OutEvaluators) const;
 
+	GAMEPLAYCAMERAS_API int32 NumRegisteredCameraSystemEvaluators() const;
+
 private:
 
 	struct FEntry

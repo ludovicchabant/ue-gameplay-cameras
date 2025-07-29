@@ -6,6 +6,7 @@
 #include "Debug/CameraDebugColors.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "Debug/DebugTextRenderer.h"
+#include "Engine/Engine.h"
 #include "HAL/IConsoleManager.h"
 #include "Math/ColorList.h"
 
@@ -13,6 +14,12 @@
 
 namespace UE::Cameras
 {
+
+float GGameplayCamerasDebugCameraPoseLabelWorldOffset = 20.f;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugCameraPoseLabelWorldOffset(
+	TEXT("GameplayCameras.Debug.CameraPose.LabelWorldOffset"),
+	GGameplayCamerasDebugCameraPoseLabelWorldOffset,
+	TEXT(""));
 
 namespace Private
 {
@@ -28,14 +35,40 @@ void DebugDrawCameraPoseField(FCameraDebugRenderer& Renderer, const TCHAR* Field
 
 UE_DEFINE_CAMERA_DEBUG_BLOCK(FCameraPoseDebugBlock)
 
+FLinearColor FCameraPoseDebugBlock::GlobalCameraPoseLineColor(FColorList::SlateBlue);
+FString FCameraPoseDebugBlock::GlobalCameraPoseLabel;
+
+FScopedGlobalCameraPoseRenderingParams::FScopedGlobalCameraPoseRenderingParams(const FString& Label)
+	: FScopedGlobalCameraPoseRenderingParams(Label, FCameraPoseDebugBlock::GlobalCameraPoseLineColor)
+{
+}
+
+FScopedGlobalCameraPoseRenderingParams::FScopedGlobalCameraPoseRenderingParams(const FLinearColor& LineColor)
+	: FScopedGlobalCameraPoseRenderingParams(FCameraPoseDebugBlock::GlobalCameraPoseLabel, LineColor)
+{
+}
+
+FScopedGlobalCameraPoseRenderingParams::FScopedGlobalCameraPoseRenderingParams(const FString& Label, const FLinearColor& LineColor)
+{
+	PreviousLabel = FCameraPoseDebugBlock::GlobalCameraPoseLabel;
+	PreviousLineColor = FCameraPoseDebugBlock::GlobalCameraPoseLineColor;
+
+	FCameraPoseDebugBlock::GlobalCameraPoseLabel = Label;
+	FCameraPoseDebugBlock::GlobalCameraPoseLineColor = LineColor;
+}
+
+FScopedGlobalCameraPoseRenderingParams::~FScopedGlobalCameraPoseRenderingParams()
+{
+	FCameraPoseDebugBlock::GlobalCameraPoseLabel = PreviousLabel;
+	FCameraPoseDebugBlock::GlobalCameraPoseLineColor = PreviousLineColor;
+}
+
 FCameraPoseDebugBlock::FCameraPoseDebugBlock()
-	: CameraPoseLineColor(FColorList::SlateBlue)
 {
 }
 
 FCameraPoseDebugBlock::FCameraPoseDebugBlock(const FCameraPose& InCameraPose)
 	: CameraPose(InCameraPose)
-	, CameraPoseLineColor(FColorList::SlateBlue)
 {
 }
 
@@ -68,14 +101,25 @@ void FCameraPoseDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Param
 		UE_CAMERA_POSE_FOR_ALL_PROPERTIES()
 #undef UE_CAMERA_POSE_FOR_PROPERTY
 
-			Renderer.SetTextColor(Colors.Default);
+		Renderer.SetTextColor(Colors.Default);
 		Renderer.AddText(TEXT("Effective FOV  : %f\n"), CameraPose.GetEffectiveFieldOfView());
 		Renderer.AddText(TEXT("Effective Aspect Ratio  : %f\n"), CameraPose.GetSensorAspectRatio());
 	}
 
 	if (bDrawInExternalRendering && Renderer.IsExternalRendering())
 	{
-		Renderer.DrawCameraPose(CameraPose, CameraPoseLineColor, CameraPoseSize);
+		Renderer.DrawCameraPose(CameraPose, GlobalCameraPoseLineColor);
+
+		if (!GlobalCameraPoseLabel.IsEmpty())
+		{
+			const FVector3d TextWorldOffset(0, 0, GGameplayCamerasDebugCameraPoseLabelWorldOffset);
+			UFont* LargeFont = GEngine->GetLargeFont();
+			Renderer.DrawText(
+					CameraPose.GetLocation() + TextWorldOffset,
+					GlobalCameraPoseLabel,
+					GlobalCameraPoseLineColor,
+					LargeFont);
+		}
 	}
 }
 
@@ -83,6 +127,8 @@ void FCameraPoseDebugBlock::OnSerialize(FArchive& Ar)
 {
 	FCameraPose::SerializeWithFlags(Ar, CameraPose);
 	Ar << ShowUnchangedCVarName;
+	Ar << bDrawText;
+	Ar << bDrawInExternalRendering;
 }
 
 }  // namespace UE::Cameras

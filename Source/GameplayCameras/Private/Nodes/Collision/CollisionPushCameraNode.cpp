@@ -563,9 +563,11 @@ void FCollisionPushCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		Renderer.SetTextColor(Colors.Default);
 	}
 
-	if (bGotSafePosition)
+	if (Renderer.IsExternalRendering() && bGotSafePosition)
 	{
-		Renderer.DrawText(SafePosition, TEXT("Safe Position"), FLinearColor::Gray, GEngine->GetTinyFont());
+		const FVector2d TextOffset(-20, -20);
+		Renderer.DrawPoint(SafePosition, 2.f, FLinearColor::Gray, 2.f);
+		Renderer.DrawTextView(SafePosition, TextOffset, TEXT("Safe Position"), FLinearColor::Gray, GEngine->GetTinyFont());
 	}
 }
 

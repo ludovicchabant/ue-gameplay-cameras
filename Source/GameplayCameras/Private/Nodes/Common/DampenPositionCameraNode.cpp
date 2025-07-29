@@ -9,6 +9,7 @@
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "GameplayCameras.h"
+#include "HAL/IConsoleManager.h"
 #include "Math/CriticalDamper.h"
 #include "Templates/Tuple.h"
 
@@ -16,6 +17,12 @@
 
 namespace UE::Cameras
 {
+
+bool GGameplayCamerasDebugDampingShowLocalSpace = false;
+static FAutoConsoleVariableRef CVarGameplayCamerasDebugDampingShowLocalSpace(
+	TEXT("GameplayCameras.Debug.Damping.ShowLocalSpace"),
+	GGameplayCamerasDebugDampingShowLocalSpace,
+	TEXT(""));
 
 class FDampenPositionCameraNodeEvaluator : public FCameraNodeEvaluator
 {
@@ -261,21 +268,27 @@ void FDampenPositionCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPar
 			LateralX0, LateralDampingFactor,
 			VerticalX0, VerticalDampingFactor);
 
-	const double DampingAxesLength = 100.f;
-	Renderer.DrawLine(
-			UndampedPosition, 
-			UndampedPosition + DampingRotation.RotateVector(FVector3d::ForwardVector * DampingAxesLength),
-			FLinearColor::Red);
-	Renderer.DrawLine(
-			UndampedPosition, 
-			UndampedPosition + DampingRotation.RotateVector(FVector3d::RightVector * DampingAxesLength),
-			FLinearColor::Green);
-	Renderer.DrawLine(
-			UndampedPosition, 
-			UndampedPosition + DampingRotation.RotateVector(FVector3d::UpVector * DampingAxesLength),
-			FLinearColor::Blue);
+	if (Renderer.IsExternalRendering())
+	{
+		if (GGameplayCamerasDebugDampingShowLocalSpace)
+		{
+			const double DampingAxesLength = 100.f;
+			Renderer.DrawLine(
+					UndampedPosition, 
+					UndampedPosition + DampingRotation.RotateVector(FVector3d::ForwardVector * DampingAxesLength),
+					FLinearColor::Red);
+			Renderer.DrawLine(
+					UndampedPosition, 
+					UndampedPosition + DampingRotation.RotateVector(FVector3d::RightVector * DampingAxesLength),
+					FLinearColor::Green);
+			Renderer.DrawLine(
+					UndampedPosition, 
+					UndampedPosition + DampingRotation.RotateVector(FVector3d::UpVector * DampingAxesLength),
+					FLinearColor::Blue);
+		}
 
-	Renderer.DrawLine(UndampedPosition, DampedPosition, FLinearColor::Yellow);
+		Renderer.DrawLine(UndampedPosition, DampedPosition, FLinearColor::Yellow);
+	}
 }
 
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

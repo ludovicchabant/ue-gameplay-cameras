@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Debug/CameraDebugBlock.h"
-#include "Math/Transform.h"
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 
@@ -23,40 +22,12 @@ class FCameraDirectorTreeDebugBlock : public FCameraDebugBlock
 
 public:
 
-	FCameraDirectorTreeDebugBlock();
-
 	void Initialize(const FCameraEvaluationContextStack& ContextStack, FCameraDebugBlockBuilder& Builder);
 	void Initialize(TArrayView<const TSharedPtr<FCameraEvaluationContext>> Contexts, FCameraDebugBlockBuilder& Builder);
 
 protected:
 
 	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
-	virtual void OnSerialize(FArchive& Ar) override;
-
-private:
-
-	struct FDirectorDebugInfo;
-
-	void InitializeEntry(TSharedPtr<FCameraEvaluationContext> Context, FDirectorDebugInfo& EntryDebugInfo, FCameraDebugBlockBuilder& Builder);
-
-private:
-
-	struct FDirectorDebugInfo
-	{
-		FName ContextClassName;
-		FName OwnerClassName;
-		FString OwnerName;
-		FString CameraAssetName;
-		FName CameraDirectorClassName;
-		int32 NumChildrenContexts = 0;
-		FTransform3d InitialContextTransform = FTransform3d::Identity;
-		bool bIsValid = false;
-	};
-
-	TArray<FDirectorDebugInfo> CameraDirectors;
-	bool bIsTreeRoot = true;
-
-	friend FArchive& operator<< (FArchive&, FDirectorDebugInfo&);
 };
 
 }  // namespace UE::Cameras

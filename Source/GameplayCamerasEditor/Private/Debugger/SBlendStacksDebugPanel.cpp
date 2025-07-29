@@ -3,9 +3,8 @@
 #include "Debugger/SBlendStacksDebugPanel.h"
 
 #include "Debugger/SDebugWidgetUtils.h"
-#include "Widgets/Input/SCheckBox.h"
-#include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/Text/STextBlock.h"
 
 #define LOCTEXT_NAMESPACE "SBlendStacksDebugPanel"
 
@@ -17,6 +16,19 @@ void SBlendStacksDebugPanel::Construct(const FArguments& InArgs)
 	ChildSlot
 	[
 		SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SNew(STextBlock)
+					.Margin(4.f)
+					.Text(LOCTEXT("FilterBlendStackNames", "Filter blend stack names:"))
+			]
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				SDebugWidgetUtils::CreateConsoleVariableTextBox(
+						TEXT("GameplayCameras.Debug.BlendStacks.Filter"))
+			]
 		+ SVerticalBox::Slot()
 			.AutoHeight()
 			[
