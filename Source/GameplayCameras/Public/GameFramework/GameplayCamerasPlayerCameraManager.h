@@ -5,7 +5,6 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Core/CameraEvaluationContext.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
-#include "Nodes/Blends/SimpleBlendCameraNode.h"
 
 #include "GameplayCamerasPlayerCameraManager.generated.h"
 
@@ -157,25 +156,5 @@ private:
 	FMinimalViewInfo LastFrameDesiredView;
 
 	bool bIsSettingNewViewTarget = false;
-};
-
-/**
- * A blend node that implements the blend algorithms of the FViewTargetTransitionParams.
- */
-UCLASS(MinimalAPI, Hidden)
-class UViewTargetTransitionParamsBlendCameraNode : public USimpleBlendCameraNode
-{
-	GENERATED_BODY()
-
-public:
-
-	/** The transition params to use. */
-	UPROPERTY()
-	FViewTargetTransitionParams TransitionParams;
-
-protected:
-
-	// UCameraNode interface.
-	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 };
 
