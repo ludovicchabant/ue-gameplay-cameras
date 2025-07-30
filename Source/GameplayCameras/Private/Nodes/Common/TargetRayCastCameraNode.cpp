@@ -104,7 +104,7 @@ void FTargetRayCastCameraNodeEvaluator::RunLineTrace(UWorld* World, APlayerContr
 	static FName LineTraceTag(TEXT("TargetRayCast"));
 	static FName LineTraceOwnerTag(TEXT("TargetRayCastCameraNode"));
 
-	APawn* Pawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+	APawn* Pawn = PlayerController ? PlayerController->GetPawn().Get() : nullptr;
 
 	FCameraPose& CameraPose = OutResult.CameraPose;
 	const FVector3d RayStart = CameraPose.GetLocation();
