@@ -37,10 +37,13 @@ public:
 public:
 
 	/** The camera asset to run. */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera, meta=(SequencerHideProperty=true))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera, meta=(InterpNotify="NotifyChangeCameraReference", SequencerHideProperty=true))
 	FCameraAssetReference CameraReference;
 
 protected:
+
+	UFUNCTION()
+	void NotifyChangeCameraReference();
 
 	// UGameplayCameraComponentBase interface.
 	virtual UCameraAsset* GetCameraAsset() override;
