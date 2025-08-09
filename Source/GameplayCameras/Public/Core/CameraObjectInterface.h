@@ -112,7 +112,7 @@ public:
 	 * both camera rigs will evaluate with the same blended value.
 	 */
 	UPROPERTY()
-	bool bIsPreBlended = true;
+	bool bIsPreBlended = false;
 
 	// Built on save/cook.
 
