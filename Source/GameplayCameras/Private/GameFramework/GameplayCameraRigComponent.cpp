@@ -60,10 +60,30 @@ UCameraAsset* UGameplayCameraRigComponent::GetCameraAsset()
 		GeneratedCameraAsset = NewObject<UCameraAsset>(this, TEXT("GeneratedCameraAsset"), RF_Transient);
 		GeneratedCameraAsset->SetCameraDirector(SingleDirector);
 
-		GeneratedCameraAsset->BuildCamera();
+		ensure(!bIsBuildingGeneratedCameraAsset);
+		{
+			TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
+			GeneratedCameraAsset->BuildCamera();
+		}
+		OnCameraRigAssetBuiltImpl();
 	}
 
 	return GeneratedCameraAsset;
+}
+
+void UGameplayCameraRigComponent::OnCameraRigAssetBuiltImpl()
+{
+	CameraRigReference.RebuildParametersIfNeeded();
+	if (HasCameraEvaluationContext())
+	{
+#if WITH_EDITOR
+		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
+		const FCameraObjectAllocationInfo& AllocationInfo = CameraRigAsset->AllocationInfo;
+		ReinitializeCameraEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
+#endif  // WITH_EDITOR
+
+		UpdateCameraEvaluationContext(true);
+	}
 }
 
 void UGameplayCameraRigComponent::OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
@@ -102,13 +122,7 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuilt(const UCameraRigAsset* I
 		TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
 		GeneratedCameraAsset->BuildCamera();
 	}
-	CameraRigReference.RebuildParametersIfNeeded();
-	if (HasCameraEvaluationContext())
-	{
-		const FCameraObjectAllocationInfo& AllocationInfo = InCameraRigAsset->AllocationInfo;
-		ReinitializeCameraEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
-		UpdateCameraEvaluationContext(true);
-	}
+	OnCameraRigAssetBuiltImpl();
 }
 
 void UGameplayCameraRigComponent::PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent)

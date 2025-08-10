@@ -47,6 +47,8 @@ protected:
 
 private:
 
+	void OnCameraRigAssetBuiltImpl();
+
 #if WITH_EDITOR
 	void OnCameraRigAssetBuilt(const UCameraRigAsset* InCameraRigAsset);
 #endif
@@ -61,8 +63,6 @@ private:
 	UPROPERTY(Transient)
 	FInstancedPropertyBag CachedParameterOverrides;
 
-#if WITH_EDITOR
 	bool bIsBuildingGeneratedCameraAsset = false;
-#endif
 };
 
