@@ -5,8 +5,7 @@
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 
 #include "Core/CameraAsset.h"
-#include "Core/CameraObjectInterfaceParameterDefinition.h"
-#include "Core/CameraParameters.h"
+#include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "EventHandlers/MovieSceneDataEventContainer.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "GameFramework/Actor.h"
@@ -22,7 +21,7 @@
 
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 #include "Misc/SequencerObjectBindingHelper.h"
-#endif
+#endif  // >=5.7.0
 
 #define LOCTEXT_NAMESPACE "GameplayCameraComponentTrackEditor"
 
@@ -118,15 +117,19 @@ void GetKeyablePropertyPaths(TSharedPtr<ISequencer> Sequencer, const UGameplayCa
 		return;
 	}
 
+#if UE_VERSION_OLDER_THAN(5,7,0)
+	// Before 5.7.0, Sequencer can animate instanced structs directly but not property bags, so we need to add the "Value" field to
+	// dive inside the property bag's instanced struct.
 	const UStruct* PropertyBagStruct = FInstancedPropertyBag::StaticStruct();
 	PropertyPath.AddProperty(FPropertyInfo(PropertyBagStruct->FindPropertyByName(TEXT("Value"))));
+#endif  // pre-5.7.0
 
 	const UClass* ComponentClass = CameraComponentBase->GetClass();
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 	FSequencerObjectBindingHelper::GetKeyablePropertyPaths(ComponentClass, CameraParametersMemory, CameraParametersStruct, PropertyPath, Sequencer.ToSharedRef(), KeyablePropertyPaths);
 #else
 	GetKeyablePropertyPathsImpl(Sequencer, ComponentClass, CameraParametersStruct, CameraParametersMemory, PropertyPath, KeyablePropertyPaths);
-#endif
+#endif  // 5.7 and above
 }
 
 class FCameraParameterTrackSetupHandler : public UE::MovieScene::TIntrusiveEventHandler<UE::MovieScene::ISequenceDataEventHandler>
@@ -219,8 +222,13 @@ void FGameplayCameraComponentTrackEditor::OnExtendObjectBindingTrackMenu(FMenuBu
 
 		MenuBuilder.BeginSection(TEXT("CameraParameters"), LOCTEXT("AddCameraParametersMenuSection", "Camera Parameters"));
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
+		// Start at level 2 to skip adding menus for CameraReference > Parameters
+		BuildAddParameterTrackMenuItems(ObjectBindings[0], MenuBuilder, KeyablePropertyPaths, 2);
+#else
 		// Start at level 3 to skip adding menus for CameraReference > Parameters > Value
 		BuildAddParameterTrackMenuItems(ObjectBindings[0], MenuBuilder, KeyablePropertyPaths, 3);
+#endif  // >= 5.7.0
 
 		MenuBuilder.EndSection();
 	}

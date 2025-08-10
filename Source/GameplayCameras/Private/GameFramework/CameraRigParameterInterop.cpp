@@ -82,9 +82,6 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execGetCameraParameter)
 		}
 		else
 		{
-			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
-			const UPropertyBag* PropertyBag = DefaultParameters.GetPropertyBagStruct();
-
 			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 			{
 				const FCameraVariableTable& VariableTable = CameraData.GetResult()->VariableTable;
@@ -163,9 +160,6 @@ DEFINE_FUNCTION(UCameraRigParameterInterop::execSetCameraParameter)
 		}
 		else
 		{
-			const FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
-			const UPropertyBag* PropertyBag = DefaultParameters.GetPropertyBagStruct();
-
 			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 			{
 				FCameraVariableTable& VariableTable = CameraData.GetResult()->VariableTable;

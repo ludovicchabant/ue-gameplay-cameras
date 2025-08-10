@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "StructUtils/PropertyBag.h"
+#include "StructUtils/OverridablePropertyBag.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraAssetReference.generated.h"
@@ -59,13 +59,13 @@ public:
 	}
 
 	/** Gets the parameters for this camera, some of which containing overrides. */
-	const FInstancedPropertyBag& GetParameters() const
+	const FInstancedOverridablePropertyBag& GetParameters() const
 	{
 		return Parameters;
 	}
 
 	/** Gets the parameters for this camera, some of which containing overrides. */
-	FInstancedPropertyBag& GetParameters()
+	FInstancedOverridablePropertyBag& GetParameters()
 	{
 		return Parameters;
 	}
@@ -73,27 +73,35 @@ public:
 	/** Gets the IDs of the parameters with override values. */
 	TConstArrayView<FGuid> GetOverriddenParameterGuids() const
 	{
-		return ParameterOverrideGuids;
+		return Parameters.GetOverridenPropertyIDs();
 	}
 
-	/** Applies the parameter override values to the given evaluation result. */
-	void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const;
+public:
 
 	/** Applies the parameter override values to the given evaluation result. */
-	void ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const;
+	GAMEPLAYCAMERAS_API void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const;
+
+	/** Applies the parameter override values to the given evaluation result. */
+	GAMEPLAYCAMERAS_API void ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const;
+
+public:
+
+	/** Returns whether the override parameters structure needs to be rebuilt. */
+	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
+	/** Rebuilds the override parameters structure, if needed. */
+	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
+	/** Rebuilds the override parameters structure. */
+	GAMEPLAYCAMERAS_API void RebuildParameters();
 
 public:
 
 	// Internal API.
 
 	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
+	void PostSerialize(const FArchive& Ar);
 
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden);
-
-	GAMEPLAYCAMERAS_API bool NeedsRebuildParameters() const;
-	GAMEPLAYCAMERAS_API bool RebuildParametersIfNeeded();
-	GAMEPLAYCAMERAS_API void RebuildParameters();
 
 private:
 
@@ -102,12 +110,14 @@ private:
 	TObjectPtr<UCameraAsset> CameraAsset;
 
 	/** The camera asset's parameters. */
-	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout=true, InterpBagProperties=true, DisplayName="Camera Parameters"))
-	FInstancedPropertyBag Parameters;
+	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout, InterpBagProperties))
+	FInstancedOverridablePropertyBag Parameters;
 
-	/** The list of camera rig parameters with override values. */
-	UPROPERTY(EditAnywhere, Category="")
-	TArray<FGuid> ParameterOverrideGuids;
+
+	// Deprecated
+
+	UPROPERTY()
+	TArray<FGuid> ParameterOverrideGuids_DEPRECATED;
 
 	friend class UE::Cameras::FCameraAssetReferenceDetailsCustomization;
 };
@@ -117,7 +127,8 @@ struct TStructOpsTypeTraits<FCameraAssetReference> : public TStructOpsTypeTraits
 {
 	enum
 	{
-		WithStructuredSerializeFromMismatchedTag = true
+		WithStructuredSerializeFromMismatchedTag = true,
+		WithPostSerialize = true
 	};
 };
 

@@ -96,7 +96,7 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 	}
 
 	const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig();
-	const FInstancedPropertyBag& ParameterValues = CameraRigReference.GetParameters();
+	const FInstancedOverridablePropertyBag& ParameterValues = CameraRigReference.GetParameters();
 	const uint8* ParameterValuesPtr = ParameterValues.GetValue().GetMemory();
 
 	for (const FCameraObjectInterfaceParameterDefinition& ParameterDefinition : CameraRig->GetParameterDefinitions())
@@ -106,7 +106,7 @@ void UGameplayCameraParameterSetterComponent::StartParameterSetters()
 			continue;
 		}
 
-		if (!CameraRigReference.IsParameterOverridden(ParameterDefinition.ParameterGuid))
+		if (!ParameterValues.IsPropertyOverriden(ParameterDefinition.ParameterGuid))
 		{
 			continue;
 		}

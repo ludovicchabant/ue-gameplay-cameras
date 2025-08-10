@@ -137,22 +137,19 @@ void FCameraAssetBuilder::BuildCameraImpl()
 
 	// Build the final list of parameter definitions.
 	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
-	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
 	for (const TPair<const UCameraRigAsset*, TArray<FCameraObjectInterfaceParameterDefinition>>& Pair : DefinitionsByCameraRig)
 	{
 		const TArray<FCameraObjectInterfaceParameterDefinition>& DefinitionsForCameraRig(Pair.Value);
 		for (const FCameraObjectInterfaceParameterDefinition& Definition : DefinitionsForCameraRig)
 		{
 			ParameterDefinitions.Add(Definition);
-			ParameterOwners.Add(Pair.Key);
 		}
 	}
 
-	if (ParameterDefinitions != CameraAsset->ParameterDefinitions || ParameterOwners != CameraAsset->ParameterOwners)
+	if (ParameterDefinitions != CameraAsset->ParameterDefinitions)
 	{
 		CameraAsset->Modify();
 		CameraAsset->ParameterDefinitions = ParameterDefinitions;
-		CameraAsset->ParameterOwners = ParameterOwners;
 	}
 
 	// Rebuild the default parameters property bag.

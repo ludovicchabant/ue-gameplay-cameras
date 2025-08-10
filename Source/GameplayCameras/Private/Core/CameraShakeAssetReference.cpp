@@ -43,10 +43,8 @@ void FCameraShakeAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCamer
 	
 	if (CameraShake)
 	{
-		TSet<FGuid> OverridenParameterGuids;
-		GetOverriddenParameterGuids(OverridenParameterGuids);
 		FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
-		Helper.ApplyParameterOverrides(CameraShake, CameraShake->GetParameterDefinitions(), Parameters, OverridenParameterGuids, bDrivenOnly);
+		Helper.ApplyParameterOverrides(CameraShake, CameraShake->GetParameterDefinitions(), Parameters, bDrivenOnly);
 	}
 }
 

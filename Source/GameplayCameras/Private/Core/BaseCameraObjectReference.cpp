@@ -3,8 +3,7 @@
 #include "Core/BaseCameraObjectReference.h"
 
 #include "Core/BaseCameraObject.h"
-#include "Core/CameraNodeEvaluator.h"
-#include "Core/CameraParameters.h"
+#include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCameraObjectReference)
@@ -37,17 +36,12 @@ FCameraObjectInterfaceParameterMetaData& FBaseCameraObjectReference::FindOrAddMe
 
 bool FBaseCameraObjectReference::IsParameterOverridden(const FGuid& PropertyID) const
 {
-	if (const FCameraObjectInterfaceParameterMetaData* MetaData = FindMetaData(PropertyID))
-	{
-		return MetaData->bIsOverridden;
-	}
-	return false;
+	return Parameters.IsPropertyOverriden(PropertyID);
 }
 
 void FBaseCameraObjectReference::SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden)
 {
-	FCameraObjectInterfaceParameterMetaData& MetaData = FindOrAddMetaData(PropertyID);
-	MetaData.bIsOverridden = bIsOverridden;
+	Parameters.SetPropertyOverriden(PropertyID, bIsOverridden);
 }
 
 bool FBaseCameraObjectReference::NeedsRebuildParameters() const
@@ -88,9 +82,7 @@ void FBaseCameraObjectReference::RebuildParameters()
 
 	if (CameraObject)
 	{
-		TArray<FGuid> ParameterOverrideGuids;
-		GetOverriddenParameterGuids(ParameterOverrideGuids);
-		Parameters.MigrateToNewBagInstanceWithOverrides(CameraObject->GetDefaultParameters(), ParameterOverrideGuids);
+		Parameters.MigrateToNewBagInstanceWithOverrides(CameraObject->GetDefaultParameters());
 
 		if (const UPropertyBag* ParametersType = Parameters.GetPropertyBagStruct())
 		{
@@ -268,5 +260,19 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 			}
 		}
 	}
+}
+
+void FBaseCameraObjectReference::PostSerialize(const FArchive& Ar)
+{
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	for (FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
+	{
+		if (MetaData.bIsOverridden_DEPRECATED)
+		{
+			Parameters.SetPropertyOverriden(MetaData.ParameterGuid, true);
+			MetaData.bIsOverridden_DEPRECATED = false;
+		}
+	}
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 

@@ -50,6 +50,7 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Modules/ModuleManager.h"
 #include "ObjectTools.h"
+#include "PropertyBagDetails.h"
 #include "PropertyEditorModule.h"
 #include "Sequencer/CameraFramingZoneTrackEditor.h"
 #include "Sequencer/GameplayCameraComponentTrackEditor.h"
@@ -469,6 +470,11 @@ private:
 		FRichCurveDetailsCustomization::Register(PropertyEditorModule);
 
 		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
+				"InstancedOverridablePropertyBag",
+				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
+					&FPropertyBagDetails::MakeInstance));
+
+		PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 				"CameraAssetReference",
 				FOnGetPropertyTypeCustomizationInstance::CreateStatic(
 					&FCameraAssetReferenceDetailsCustomization::MakeInstance));
@@ -499,7 +505,9 @@ private:
 			FCameraVariableReferenceDetailsCustomization::Unregister(*PropertyEditorModule);
 			FRichCurveDetailsCustomization::Unregister(*PropertyEditorModule);
 
-			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAsset");
+			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("InstancedOverridablePropertyBag");
+
+			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraAssetReference");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraRigAssetReference");
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraShakeAssetReference");
 

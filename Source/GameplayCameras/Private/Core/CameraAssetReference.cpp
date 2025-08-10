@@ -22,9 +22,8 @@ void FCameraAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEval
 	using namespace UE::Cameras;
 	if (CameraAsset)
 	{
-		TSet<FGuid> OverridenParameterGuids(GetOverriddenParameterGuids());
 		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutResult.VariableTable, &OutResult.ContextDataTable);
-		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), Parameters, OverridenParameterGuids, bDrivenOnly);
+		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), Parameters, bDrivenOnly);
 	}
 }
 
@@ -40,19 +39,12 @@ void FCameraAssetReference::ApplyParameterOverrides(const FInstancedPropertyBag&
 
 bool FCameraAssetReference::IsParameterOverridden(const FGuid PropertyID) const
 {
-	return ParameterOverrideGuids.Contains(PropertyID);
+	return Parameters.IsPropertyOverriden(PropertyID);
 }
 
 void FCameraAssetReference::SetParameterOverridden(const FGuid PropertyID, bool bIsOverridden)
 {
-	if (bIsOverridden)
-	{
-		ParameterOverrideGuids.AddUnique(PropertyID);
-	}
-	else
-	{
-		ParameterOverrideGuids.Remove(PropertyID);
-	}
+	Parameters.SetPropertyOverriden(PropertyID, bIsOverridden);
 }
 
 bool FCameraAssetReference::NeedsRebuildParameters() const
@@ -89,19 +81,7 @@ void FCameraAssetReference::RebuildParameters()
 {
 	if (CameraAsset)
 	{
-		Parameters.MigrateToNewBagInstanceWithOverrides(CameraAsset->GetDefaultParameters(), ParameterOverrideGuids);
-		
-		// Remove overrides for parameters that don't exist anymore.
-		if (const UPropertyBag* ParametersType = Parameters.GetPropertyBagStruct())
-		{
-			for (TArray<FGuid>::TIterator It = ParameterOverrideGuids.CreateIterator(); It; ++It)
-			{
-				if (!ParametersType->FindPropertyDescByID(*It))
-				{
-					It.RemoveCurrentSwap();
-				}
-			}
-		}
+		Parameters.MigrateToNewBagInstanceWithOverrides(CameraAsset->GetDefaultParameters());
 	}
 	else
 	{
@@ -119,5 +99,16 @@ bool FCameraAssetReference::SerializeFromMismatchedTag(FPropertyTag const& Tag, 
 		return true;
 	}
 	return false;
+}
+
+void FCameraAssetReference::PostSerialize(const FArchive& Ar)
+{
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	for (const FGuid& Guid : ParameterOverrideGuids_DEPRECATED)
+	{
+		Parameters.SetPropertyOverriden(Guid, true);
+	}
+	ParameterOverrideGuids_DEPRECATED.Reset();
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 

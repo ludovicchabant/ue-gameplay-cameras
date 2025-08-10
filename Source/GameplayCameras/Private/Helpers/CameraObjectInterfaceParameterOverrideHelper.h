@@ -2,11 +2,16 @@
 
 #pragma once
 
-#include "StructUtils/PropertyBag.h"
+#include "Containers/ArrayView.h"
+#include "Misc/Guid.h"
 
 class UBaseCameraObject;
 class UCameraAsset;
+class UObject;
 struct FCameraObjectInterfaceParameterDefinition;
+struct FInstancedOverridablePropertyBag;
+struct FInstancedPropertyBag;
+struct FPropertyBagPropertyDesc;
 
 namespace UE::Cameras
 {
@@ -47,15 +52,14 @@ public:
 	void ApplyParameterOverrides(
 			const UObject* CameraObject,
 			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-			const FInstancedPropertyBag& ParameterOverrides,
-			const TSet<FGuid>& OverridenParameterGuids,
+			const FInstancedOverridablePropertyBag& ParameterOverrides,
 			bool bDrivenOnly);
 
 	/** Sets overriden values of interface parameters in the given variable and context data tables. */
 	void ApplyParameterOverrides(
 			const UObject* CameraObject,
 			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-			const FInstancedPropertyBag& ParameterOverrides,
+			const FInstancedOverridablePropertyBag& ParameterOverrides,
 			const FInstancedPropertyBag& CachedParameterOverrides);
 
 private:
@@ -63,7 +67,7 @@ private:
 	void ApplyParameterOverride(
 			const UObject* CameraObject,
 			const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-			const FInstancedPropertyBag& PropertyBag,
+			const FInstancedOverridablePropertyBag& PropertyBag,
 			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 			bool bDrivenOnly);
 

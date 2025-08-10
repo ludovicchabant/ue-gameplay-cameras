@@ -8,7 +8,7 @@
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableTable.h"
 #include "Misc/EngineVersionComparison.h"
-#include "StructUtils/PropertyBag.h"
+#include "StructUtils/OverridablePropertyBag.h"
 
 namespace UE::Cameras
 {
@@ -46,7 +46,7 @@ void ApplyBlendableParameterOverride(
 void ApplyBlendableParameterOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-		const FInstancedPropertyBag& PropertyBag,
+		const FInstancedOverridablePropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraVariableTable& VariableTable,
 		bool bDrivenOnly)
@@ -192,7 +192,7 @@ void ApplyDataParameterElementOverride(
 void ApplyDataParameterSingleOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-		const FInstancedPropertyBag& PropertyBag,
+		const FInstancedOverridablePropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraContextDataTable& ContextDataTable)
 {
@@ -275,7 +275,7 @@ void ApplyDataParameterSingleOverride(
 void ApplyDataParameterArrayOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-		const FInstancedPropertyBag& PropertyBag,
+		const FInstancedOverridablePropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraContextDataTable& ContextDataTable)
 {
@@ -362,7 +362,7 @@ void ApplyDataParameterArrayOverride(
 void ApplyDataParameterOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-		const FInstancedPropertyBag& PropertyBag,
+		const FInstancedOverridablePropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraContextDataTable& ContextDataTable)
 {
@@ -401,8 +401,7 @@ FCameraObjectInterfaceParameterOverrideHelper::FCameraObjectInterfaceParameterOv
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 		const UObject* CameraObject,
 		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-		const FInstancedPropertyBag& ParameterOverrides,
-		const TSet<FGuid>& OverridenParameterGuids,
+		const FInstancedOverridablePropertyBag& ParameterOverrides,
 		bool bDrivenOnly)
 {
 	using namespace Internal;
@@ -420,7 +419,7 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 			continue;
 		}
 
-		if (!OverridenParameterGuids.Contains(Definition.ParameterGuid))
+		if (!ParameterOverrides.IsPropertyOverriden(Definition.ParameterGuid))
 		{
 			continue;
 		}
@@ -438,7 +437,7 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 		const UObject* CameraObject,
 		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-		const FInstancedPropertyBag& ParameterOverrides,
+		const FInstancedOverridablePropertyBag& ParameterOverrides,
 		const FInstancedPropertyBag& CachedParameterOverrides)
 {
 	using namespace Internal;
@@ -467,6 +466,11 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 		{
 			continue;
 		}
+		
+		if (!ParameterOverrides.IsPropertyOverriden(Definition.ParameterGuid))
+		{
+			continue;
+		}
 
 		const FPropertyBagPropertyDesc* PropertyDesc = ParameterOverridesStruct->FindPropertyDescByID(Definition.ParameterGuid);
 		if (!ensure(PropertyDesc))
@@ -486,7 +490,7 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
-		const FInstancedPropertyBag& PropertyBag,
+		const FInstancedOverridablePropertyBag& PropertyBag,
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		bool bDrivenOnly)
 {

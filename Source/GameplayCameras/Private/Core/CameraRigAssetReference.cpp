@@ -59,10 +59,8 @@ void FCameraRigAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraV
 
 	if (CameraRig)
 	{
-		TSet<FGuid> OverridenParameterGuids;
-		GetOverriddenParameterGuids(OverridenParameterGuids);
 		FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
-		Helper.ApplyParameterOverrides(CameraRig, CameraRig->GetParameterDefinitions(), Parameters, OverridenParameterGuids, bDrivenOnly);
+		Helper.ApplyParameterOverrides(CameraRig, CameraRig->GetParameterDefinitions(), Parameters, bDrivenOnly);
 	}
 }
 
@@ -98,7 +96,7 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 		LegacyParameterProperties.Add(LegacyParameterProperty);\
 		FCameraObjectInterfaceParameterMetaData MetaData;\
 		MetaData.ParameterGuid = ParameterOverride.InterfaceParameterGuid;\
-		MetaData.bIsOverridden = true;\
+		MetaData.bIsOverridden_DEPRECATED = true;\
 		LegacyParameterMetaData.Add(MetaData);\
 		bHasAnyLegacyOverride = true;\
 	}
@@ -107,7 +105,7 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 
 	if (bHasAnyLegacyOverride)
 	{
-		Parameters = FInstancedPropertyBag();
+		Parameters = FInstancedOverridablePropertyBag();
 		Parameters.AddProperties(LegacyParameterProperties);
 
 		ParameterMetaData = LegacyParameterMetaData;
@@ -132,11 +130,13 @@ void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 		{
 			FCameraObjectInterfaceParameterMetaData MetaData;
 			MetaData.ParameterGuid = Guid;
-			MetaData.bIsOverridden = true;
+			MetaData.bIsOverridden_DEPRECATED = true;
 			ParameterMetaData.Add(MetaData);
 		}
 
 		ParameterOverrideGuids_DEPRECATED.Reset();
 	}
+
+	FBaseCameraObjectReference::PostSerialize(Ar);
 }
 

@@ -191,10 +191,6 @@ private:
 	UPROPERTY()
 	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
 
-	/** Owner rigs for each parameter definition. */
-	UPROPERTY()
-	TArray<TObjectPtr<const UCameraRigAsset>> ParameterOwners;
-
 	/** Allocation info for the camera asset. */
 	UPROPERTY()
 	FCameraAssetAllocationInfo AllocationInfo;

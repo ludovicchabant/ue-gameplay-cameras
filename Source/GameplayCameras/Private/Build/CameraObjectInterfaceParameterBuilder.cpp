@@ -5,8 +5,8 @@
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
-#include "Core/CameraParameters.h"
-#include "Core/CameraVariableReferences.h"
+#include "Core/CameraParameters.h"  // IWYU pragma: keep
+#include "Core/CameraVariableReferences.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"

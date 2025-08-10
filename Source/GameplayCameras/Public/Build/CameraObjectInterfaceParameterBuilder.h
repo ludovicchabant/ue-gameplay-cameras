@@ -3,13 +3,14 @@
 #pragma once
 
 #include "Containers/Array.h"
-#include "StructUtils/PropertyBag.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
 
 class UBaseCameraObject;
 class UCameraObjectInterfaceDataParameter;
 struct FCameraObjectInterfaceParameterDefinition;
+struct FInstancedPropertyBag;
+struct FPropertyBagPropertyDesc;
 
 namespace UE::Cameras
 {

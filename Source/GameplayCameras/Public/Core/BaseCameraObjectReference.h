@@ -4,7 +4,7 @@
 
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraVariableTableFwd.h"
-#include "StructUtils/PropertyBag.h"
+#include "StructUtils/OverridablePropertyBag.h"
 
 #include "BaseCameraObjectReference.generated.h"
 
@@ -36,9 +36,11 @@ struct FCameraObjectInterfaceParameterMetaData
 	UPROPERTY()
 	FCameraContextDataID OverrideDataID;
 
-	/** Whether this parameter has an override value. */
+	
+	// Deprecated
+
 	UPROPERTY()
-	bool bIsOverridden = false;
+	bool bIsOverridden_DEPRECATED = false;
 };
 
 USTRUCT(BlueprintType)
@@ -51,15 +53,21 @@ public:
 	virtual ~FBaseCameraObjectReference() {}
 
 	/** Gets the parameters for this camera rig, some of which containing overrides. */
-	const FInstancedPropertyBag& GetParameters() const
+	const FInstancedOverridablePropertyBag& GetParameters() const
 	{
 		return Parameters;
 	}
 
 	/** Gets the parameters for this camera rig, some of which containing overrides. */
-	FInstancedPropertyBag& GetParameters()
+	FInstancedOverridablePropertyBag& GetParameters()
 	{
 		return Parameters;
+	}
+
+	/** Gets the IDs of the parameters with override values. */
+	TConstArrayView<FGuid> GetOverriddenParameterGuids() const
+	{
+		return Parameters.GetOverridenPropertyIDs();
 	}
 
 public:
@@ -78,11 +86,13 @@ public:
 
 	// Internal API.
 
-	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
-	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
+	void PostSerialize(const FArchive& Ar);
 
 	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos);
 	
+	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
+	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
+
 	template<typename ContainerType>
 	void GetOverriddenParameterGuids(ContainerType& OutOverriddenIDs) const;
 
@@ -94,8 +104,8 @@ private:
 protected:
 
 	/** The camera rig's parameters. */
-	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout))
-	FInstancedPropertyBag Parameters;
+	UPROPERTY(EditAnywhere, Category="", meta=(FixedLayout, InterpBagProperties))
+	FInstancedOverridablePropertyBag Parameters;
 
 	/** Metadata for the parameters. */
 	UPROPERTY()
@@ -105,12 +115,15 @@ protected:
 template<typename ContainerType>
 void FBaseCameraObjectReference::GetOverriddenParameterGuids(ContainerType& OutOverriddenIDs) const
 {
-	for (const FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
-	{
-		if (MetaData.bIsOverridden)
-		{
-			OutOverriddenIDs.Add(MetaData.ParameterGuid);
-		}
-	}
+	Parameters.GetOverridenPropertyIDs(OutOverriddenIDs);
 }
+
+template<>
+struct TStructOpsTypeTraits<FBaseCameraObjectReference> : public TStructOpsTypeTraitsBase2<FBaseCameraObjectReference>
+{
+	enum
+	{
+		WithPostSerialize = true
+	};
+};
 

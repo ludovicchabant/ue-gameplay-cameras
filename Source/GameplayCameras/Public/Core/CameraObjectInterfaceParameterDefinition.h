@@ -4,13 +4,8 @@
 
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraVariableTableFwd.h"
-#include "Misc/TVariant.h"
 
 #include "CameraObjectInterfaceParameterDefinition.generated.h"
-
-class UBaseCameraObject;
-struct FInstancedPropertyBag;
-struct FPropertyBagPropertyDesc;
 
 /**
  * The type of a camera rig parameter.
