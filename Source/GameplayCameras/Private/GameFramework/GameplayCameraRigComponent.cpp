@@ -2,6 +2,8 @@
 
 #include "GameFramework/GameplayCameraRigComponent.h"
 
+#include "Build/CameraAssetBuilder.h"
+#include "Build/CameraBuildLog.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Directors/SingleCameraDirector.h"
@@ -62,18 +64,37 @@ UCameraAsset* UGameplayCameraRigComponent::GetCameraAsset()
 		GeneratedCameraAsset->SetCameraDirector(SingleDirector);
 
 		ensure(!bIsBuildingGeneratedCameraAsset);
-		{
-			TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
-			GeneratedCameraAsset->BuildCamera();
-		}
+		BuildGeneratedCamera();
 		OnCameraRigAssetBuiltImpl();
 	}
 
 	return GeneratedCameraAsset;
 }
 
+void UGameplayCameraRigComponent::BuildGeneratedCamera()
+{
+	using namespace UE::Cameras;
+
+	if (GeneratedCameraAsset)
+	{
+		TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
+
+		// Build only the camera asset, not the referenced camera rigs... there's only one camera rig
+		// in this camera (ours) and it was just built, that's why we're in this callback in the
+		// first place.
+		const bool bBuildReferencedAssets = false;
+
+		FCameraBuildLog BuildLog;
+		BuildLog.SetForwardMessagesToLogging(true);
+		FCameraAssetBuilder Builder(BuildLog);
+		Builder.BuildCamera(GeneratedCameraAsset, bBuildReferencedAssets);
+	}
+}
+
 void UGameplayCameraRigComponent::OnCameraRigAssetBuiltImpl()
 {
+	using namespace UE::Cameras;
+
 	CameraRigReference.RebuildParametersIfNeeded();
 	if (HasCameraEvaluationContext())
 	{
@@ -138,11 +159,8 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuilt(const UCameraRigAsset* I
 
 	// If our camera rig asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
-	if (GeneratedCameraAsset)
-	{
-		TGuardValue<bool> ReentrancyGuard(bIsBuildingGeneratedCameraAsset, true);
-		GeneratedCameraAsset->BuildCamera();
-	}
+	BuildGeneratedCamera();
+	
 	OnCameraRigAssetBuiltImpl();
 }
 

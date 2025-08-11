@@ -20,11 +20,6 @@ FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog)
 
 void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 {
-	BuildCameraRig(InCameraRig, FCustomBuildStep::CreateLambda([](UCameraRigAsset*, FCameraBuildLog&) {}));
-}
-
-void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig, FCustomBuildStep InCustomBuildStep)
-{
 	if (!ensure(InCameraRig))
 	{
 		return;
@@ -35,8 +30,6 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig, FCusto
 	BuildLog.SetLoggingPrefix(CameraRig->GetPathName() + TEXT(": "));
 	{
 		BuildCameraRigImpl();
-
-		InCustomBuildStep.ExecuteIfBound(CameraRig, BuildLog);
 
 		CameraRig->EventHandlers.Notify(&ICameraRigAssetEventHandler::OnCameraRigBuilt, CameraRig);
 	}

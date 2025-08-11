@@ -22,12 +22,7 @@ FCameraAssetBuilder::FCameraAssetBuilder(FCameraBuildLog& InBuildLog)
 {
 }
 
-void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset)
-{
-	BuildCamera(InCameraAsset, FCustomBuildStep::CreateLambda([](UCameraAsset*, FCameraBuildLog&) {}));
-}
-	
-void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildStep InCustomBuildStep)
+void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset, bool bBuildReferencedAssets)
 {
 	if (!ensure(InCameraAsset))
 	{
@@ -37,9 +32,7 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildS
 	CameraAsset = InCameraAsset;
 	BuildLog.SetLoggingPrefix(InCameraAsset->GetPathName() + TEXT(": "));
 	{
-		BuildCameraImpl();
-
-		InCustomBuildStep.ExecuteIfBound(CameraAsset, BuildLog);
+		BuildCameraImpl(bBuildReferencedAssets);
 	}
 	BuildLog.SetLoggingPrefix(FString());
 	UpdateBuildStatus();
@@ -47,7 +40,7 @@ void FCameraAssetBuilder::BuildCamera(UCameraAsset* InCameraAsset, FCustomBuildS
 	FGameplayCamerasDelegates::OnCameraAssetBuilt().Broadcast(CameraAsset);
 }
 
-void FCameraAssetBuilder::BuildCameraImpl()
+void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 {
 	TSet<UCameraRigAsset*> AllCameraRigs;
 	TSet<UCameraRigProxyAsset*> AllCameraRigProxies;
@@ -86,11 +79,14 @@ void FCameraAssetBuilder::BuildCameraImpl()
 		}
 	}
 
-	// Build each of the camera rigs.
-	for (UCameraRigAsset* CameraRig : AllCameraRigs)
+	if (bBuildReferencedAssets)
 	{
-		FCameraRigAssetBuilder CameraRigBuilder(BuildLog);
-		CameraRigBuilder.BuildCameraRig(CameraRig);
+		// Build each of the camera rigs.
+		for (UCameraRigAsset* CameraRig : AllCameraRigs)
+		{
+			FCameraRigAssetBuilder CameraRigBuilder(BuildLog);
+			CameraRigBuilder.BuildCameraRig(CameraRig);
+		}
 	}
 
 	// Get the list of all the camera rigs' interface parameters.

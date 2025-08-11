@@ -25,16 +25,11 @@ class FCameraRigAssetBuilder
 {
 public:
 
-	DECLARE_DELEGATE_TwoParams(FCustomBuildStep, UCameraRigAsset*, FCameraBuildLog&);
-
 	/** Creates a new camera rig builder. */
 	UE_API FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog);
 
 	/** Builds the given camera rig. */
 	UE_API void BuildCameraRig(UCameraRigAsset* InCameraRig);
-
-	/** Builds the given camera rig. */
-	UE_API void BuildCameraRig(UCameraRigAsset* InCameraRig, FCustomBuildStep InCustomBuildStep);
 
 private:
 

@@ -50,6 +50,7 @@ protected:
 
 private:
 
+	void BuildGeneratedCamera();
 	void OnCameraRigAssetBuiltImpl();
 
 #if WITH_EDITOR
