@@ -65,6 +65,7 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(SceneFringeIntensity);
 		UE_SET_PP(ChromaticAberrationStartOffset);
 		UE_SET_PP(BloomIntensity);
+		UE_SET_PP(BloomGaussianIntensity);
 		UE_SET_PP(BloomThreshold);
 		UE_SET_PP(Bloom1Tint);
 		UE_SET_PP(BloomSizeScale);
@@ -81,6 +82,7 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(Bloom6Size);
 		UE_SET_PP(BloomDirtMaskIntensity);
 		UE_SET_PP(BloomDirtMaskTint);
+		UE_SET_PP(BloomConvolutionIntensity);
 		UE_SET_PP(BloomConvolutionScatterDispersion);
 		UE_SET_PP(BloomConvolutionSize);
 		UE_SET_PP(BloomConvolutionCenterUV);
@@ -347,6 +349,7 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 		UE_LERP_PP(SceneFringeIntensity);
 		UE_LERP_PP(ChromaticAberrationStartOffset);
 		UE_LERP_PP(BloomIntensity);
+		UE_LERP_PP(BloomGaussianIntensity);
 		UE_LERP_PP(BloomThreshold);
 		UE_LERP_PP(Bloom1Tint);
 		UE_LERP_PP(BloomSizeScale);
@@ -363,6 +366,7 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 		UE_LERP_PP(Bloom6Size);
 		UE_LERP_PP(BloomDirtMaskIntensity);
 		UE_LERP_PP(BloomDirtMaskTint);
+		UE_LERP_PP(BloomConvolutionIntensity);
 		UE_LERP_PP(BloomConvolutionScatterDispersion);
 		UE_LERP_PP(BloomConvolutionSize);
 		UE_LERP_PP(BloomConvolutionCenterUV);

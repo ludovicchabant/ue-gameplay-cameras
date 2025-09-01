@@ -27,11 +27,11 @@ class USimpleFixedTimeBlendCameraNode : public USimpleBlendCameraNode
 public:
 	/** Returns the volume of this element */
 	UE_DEPRECATED(5.7, "Now sets the default time, use SetDefaultBlendTime instead")
-	GAMEPLAYCAMERAS_API void SetBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
+	void SetBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
 
-	GAMEPLAYCAMERAS_API void SetDefaultBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
+	void SetDefaultBlendTime(float BlendTimeIn) { BlendTime.Value = BlendTimeIn; }
 
-	GAMEPLAYCAMERAS_API float GetDefaultBlendTime() { return BlendTime.Value; }
+	float GetDefaultBlendTime() { return BlendTime.Value; }
 public:
 
 	/** Duration of the blend. */

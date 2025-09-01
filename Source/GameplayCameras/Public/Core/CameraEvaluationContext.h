@@ -178,6 +178,7 @@ protected:
 
 	virtual void OnActivate(const FCameraEvaluationContextActivateParams& Params) {}
 	virtual void OnDeactivate(const FCameraEvaluationContextDeactivateParams& Params) {}
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) {}
 
 	FCameraSystemEvaluator* GetPrivateCameraSystemEvaluator() const { return CameraSystemEvaluator; }
 

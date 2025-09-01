@@ -131,6 +131,8 @@ void FCameraEvaluationContext::AddReferencedObjects(FReferenceCollector& Collect
 {
 	Collector.AddReferencedObject(CameraAsset);
 
+	OnAddReferencedObjects(Collector);
+
 	if (DirectorEvaluator)
 	{
 		DirectorEvaluator->AddReferencedObjects(Collector);

@@ -68,7 +68,7 @@ void FCurvePropertyEditorTreeItem::CreateCurveModels(TArray<TUniquePtr<FCurveMod
 	{
 		TUniquePtr<FRichCurveEditorModelRaw> NewCurve = MakeUnique<FRichCurveEditorModelRaw>(Info.Curve, Info.WeakOwner.Get());
 		NewCurve->SetShortDisplayName(Info.DisplayName);
-		NewCurve->SetColor(Info.Color, false);
+		NewCurve->SetColor(Info.Color);
 		OutCurveModels.Add(MoveTemp(NewCurve));
 	}
 }
