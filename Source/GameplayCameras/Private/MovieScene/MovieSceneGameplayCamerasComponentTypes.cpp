@@ -10,6 +10,7 @@
 #include "MovieSceneTracksComponentTypes.h"
 #include "Systems/MovieScenePiecewiseDoubleBlenderSystem.h"
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 
 namespace UE::MovieScene
 {
@@ -21,6 +22,8 @@ namespace UE::MovieScene
 		OutUnpackedValues.Add(UE_MOVIESCENE_UNPACKED_MEMBER(FMovieSceneDoubleChannel, 3, InZone, Bottom));
 	}
 }
+
+#endif  // UE >= 5.7.0
 
 namespace UE::Cameras
 {

@@ -92,7 +92,9 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(SceneFringeIntensity);
 		UE_DRAW_PP(ChromaticAberrationStartOffset);
 		UE_DRAW_PP(BloomIntensity);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 		UE_DRAW_PP(BloomGaussianIntensity);
+#endif
 		UE_DRAW_PP(BloomThreshold);
 		UE_DRAW_PP(Bloom1Tint);
 		UE_DRAW_PP(BloomSizeScale);
@@ -109,7 +111,9 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(Bloom6Size);
 		UE_DRAW_PP(BloomDirtMaskIntensity);
 		UE_DRAW_PP(BloomDirtMaskTint);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
 		UE_DRAW_PP(BloomConvolutionIntensity);
+#endif
 		UE_DRAW_PP(BloomConvolutionScatterDispersion);
 		UE_DRAW_PP(BloomConvolutionSize);
 		UE_DRAW_PP(BloomConvolutionCenterUV);
