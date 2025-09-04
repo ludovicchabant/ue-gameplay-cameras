@@ -329,18 +329,17 @@ void AGameplayCamerasPlayerCameraManager::OnContextStackChanged()
 	{
 		TGuardValue<bool> ReentrancyGuard(bIsSettingNewViewTarget, true);
 
+		AActor* NewViewTarget = nullptr;
 		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
-		TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
-		UObject* ActiveContextOwner = ActiveContext->GetOwner();
-		if (ActiveContextOwner)
+		if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
 		{
-			ViewTarget.SetNewTarget(ActiveContextOwner->GetTypedOuter<AActor>());
+			UObject* ActiveContextOwner = ActiveContext->GetOwner();
+			if (ActiveContextOwner)
+			{
+				NewViewTarget = ActiveContextOwner->GetTypedOuter<AActor>();
+			}
 		}
-		else
-		{
-			ViewTarget.SetNewTarget(nullptr);
-		}
-
+		ViewTarget.SetNewTarget(NewViewTarget);
 		ViewTarget.CheckViewTarget(PCOwner);
 		BlendParams = FViewTargetTransitionParams();
 	}
