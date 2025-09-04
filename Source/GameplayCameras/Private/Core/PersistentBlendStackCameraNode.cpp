@@ -362,8 +362,8 @@ const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindEnterT
 	// Find a transition that works for blending the given camera rig in.
 	return FCameraRigTransitionFinder::FindTransition(
 			Params.CameraRig->EnterTransitions,
-			nullptr, nullptr, false,
-			Params.CameraRig, nullptr);
+			nullptr, nullptr, nullptr, false,
+			Params.EvaluationContext, Params.CameraRig, nullptr);
 }
 
 const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTransition(const FCameraRigEntry& Entry, const UCameraRigTransition* TransitionOverride) const
@@ -377,8 +377,8 @@ const UCameraRigTransition* FPersistentBlendStackCameraNodeEvaluator::FindExitTr
 	// Find a transition that works for blending the given camera rig out.
 	return FCameraRigTransitionFinder::FindTransition(
 			Entry.CameraRig->ExitTransitions,
-			Entry.CameraRig, nullptr, Entry.Flags.bIsFrozen,
-			nullptr, nullptr);
+			Entry.EvaluationContext.Pin(), Entry.CameraRig, nullptr, Entry.Flags.bIsFrozen,
+			nullptr, nullptr, nullptr);
 }
 
 #if WITH_EDITOR

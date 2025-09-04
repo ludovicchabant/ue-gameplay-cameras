@@ -9,14 +9,18 @@
 namespace UE::Cameras
 {
 
-const UCameraRigTransition* FCameraRigTransitionFinder::FindTransition(
+	const UCameraRigTransition* FCameraRigTransitionFinder::FindTransition(
 		TArrayView<const TObjectPtr<UCameraRigTransition>> Transitions, 
+		TSharedPtr<const FCameraEvaluationContext> FromEvaluationContext,
 		const UCameraRigAsset* FromCameraRig, const UCameraAsset* FromCameraAsset, bool bFromFrozen,
+		TSharedPtr<const FCameraEvaluationContext> ToEvaluationContext,
 		const UCameraRigAsset* ToCameraRig, const UCameraAsset* ToCameraAsset)
 {
 	FCameraRigTransitionConditionMatchParams MatchParams;
+	MatchParams.FromEvaluationContext = FromEvaluationContext;
 	MatchParams.FromCameraRig = FromCameraRig;
 	MatchParams.FromCameraAsset = FromCameraAsset;
+	MatchParams.ToEvaluationContext = ToEvaluationContext;
 	MatchParams.ToCameraRig = ToCameraRig;
 	MatchParams.ToCameraAsset = ToCameraAsset;
 

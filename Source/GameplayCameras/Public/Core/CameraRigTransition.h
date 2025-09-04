@@ -5,6 +5,7 @@
 #include "Containers/Array.h"
 #include "Core/ObjectTreeGraphObject.h"
 #include "CoreTypes.h"
+#include "Templates/SharedPointerFwd.h"
 #include "UObject/ObjectPtr.h"
 
 #include "CameraRigTransition.generated.h"
@@ -18,6 +19,7 @@ class UCameraRigAsset;
 namespace UE::Cameras
 {
 	struct FCameraObjectBuildContext;
+	class FCameraEvaluationContext;
 }
 
 /**
@@ -25,11 +27,15 @@ namespace UE::Cameras
  */
 struct FCameraRigTransitionConditionMatchParams
 {
+	/** The evaluation context of the previous camera rig. */
+	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> FromEvaluationContext;
 	/** The previous camera rig. */
 	const UCameraRigAsset* FromCameraRig = nullptr;
 	/** The previous camera asset. */
 	const UCameraAsset* FromCameraAsset = nullptr;
 
+	/** The evaluation context of the next camera rig. */
+	TSharedPtr<const UE::Cameras::FCameraEvaluationContext> ToEvaluationContext;
 	/** The next camera rig. */
 	const UCameraRigAsset* ToCameraRig = nullptr;
 	/** The next camera asset. */

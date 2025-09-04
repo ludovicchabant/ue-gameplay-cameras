@@ -521,8 +521,8 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 				{
 					TransitionToUse = FCameraRigTransitionFinder::FindTransition(
 							FromCameraRig->ExitTransitions,
-							FromCameraRig, FromCameraAsset, bFromFrozen,
-							ToCameraRig, ToCameraAsset);
+							FromContext, FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToContext, ToCameraRig, ToCameraAsset);
 					if (TransitionToUse)
 					{
 						return TransitionToUse;
@@ -539,8 +539,8 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 				{
 					TransitionToUse = FCameraRigTransitionFinder::FindTransition(
 							FromCameraAsset->GetExitTransitions(),
-							FromCameraRig, FromCameraAsset, bFromFrozen,
-							ToCameraRig, ToCameraAsset);
+							FromContext, FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToContext, ToCameraRig, ToCameraAsset);
 					if (TransitionToUse)
 					{
 						return TransitionToUse;
@@ -559,8 +559,8 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 				{
 					TransitionToUse = FCameraRigTransitionFinder::FindTransition(
 							ToCameraRig->EnterTransitions,
-							FromCameraRig, FromCameraAsset, bFromFrozen,
-							ToCameraRig, ToCameraAsset);
+							FromContext, FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToContext, ToCameraRig, ToCameraAsset);
 					if (TransitionToUse)
 					{
 						return TransitionToUse;
@@ -577,8 +577,8 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 				{
 					TransitionToUse = FCameraRigTransitionFinder::FindTransition(
 							ToCameraAsset->GetEnterTransitions(),
-							FromCameraRig, FromCameraAsset, bFromFrozen,
-							ToCameraRig, ToCameraAsset);
+							FromContext, FromCameraRig, FromCameraAsset, bFromFrozen,
+							ToContext, ToCameraRig, ToCameraAsset);
 					if (TransitionToUse)
 					{
 						return TransitionToUse;
