@@ -16,21 +16,11 @@
 
 #define LOCTEXT_NAMESPACE "K2Node_SetCameraRigParameters"
 
-UK2Node_SetCameraRigParameters::UK2Node_SetCameraRigParameters(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
-{
-}
-
-void UK2Node_SetCameraRigParameters::Initialize(const FAssetData& UnloadedCameraRig)
-{
-	CameraRig = Cast<UCameraRigAsset>(UnloadedCameraRig.GetAsset());
-}
-
 void UK2Node_SetCameraRigParameters::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
 
-	CreateParameterPins();
+	CreateParameterPins(EGPD_Input);
 }
 
 void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) 
@@ -49,31 +39,6 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 		(*OldCameraRigPin)->DefaultValue.Reset();
 	}
 
-	// The camera rig might not be loaded yet when we are rebuilt on startup.
-	if (CameraRig)
-	{
-		PreloadObject(CameraRig);
-		for (UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
-		{
-			PreloadObject(BlendableParameter);
-			if (BlendableParameter)
-			{
-				PreloadObject(const_cast<UScriptStruct*>(BlendableParameter->BlendableStructType.Get()));
-			}
-		}
-		for (UCameraObjectInterfaceDataParameter* DataParameter : CameraRig->Interface.DataParameters)
-		{
-			PreloadObject(DataParameter);
-			if (DataParameter)
-			{
-				PreloadObject(const_cast<UObject*>(DataParameter->DataTypeObject.Get()));
-			}
-		}
-	}
-
-	// Create all default pins, including the parameter pins.
-	AllocateDefaultPins();
-
 	// Upgrade old result pin name to new pin name.
 	const FName OldResultPinName = TEXT("CameraEvaluationResult");
 	UEdGraphPin** OldResultPin = OldPins.FindByPredicate([&OldResultPinName](UEdGraphPin* OldPin)
@@ -87,7 +52,7 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 		NewResultPin->MovePersistentDataFromOldPin(**OldResultPin);
 	}
 
-	RestoreSplitPins(OldPins);
+	Super::ReallocatePinsDuringReconstruction(OldPins);
 }
 
 FText UK2Node_SetCameraRigParameters::GetNodeTitle(ENodeTitleType::Type TitleType) const
@@ -297,89 +262,6 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 	}
 
 	BreakAllNodeLinks();
-}
-
-void UK2Node_SetCameraRigParameters::CreateParameterPins()
-{
-	BlendableParameterPinNames.Reset();
-	DataParameterPinNames.Reset();
-
-	if (!CameraRig)
-	{
-		return;
-	}
-
-	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraRig->Interface.BlendableParameters)
-	{
-		if (!ensure(BlendableParameter))
-		{
-			continue;
-		}
-
-		if (!BlendableParameter->PrivateVariableID)
-		{
-			// Camera rig isn't fully built.
-			continue;
-		}
-		
-		FEdGraphPinType PinType = MakeBlendableParameterPinType(BlendableParameter);
-		if (PinType.PinCategory.IsNone())
-		{
-			// Unsupported type for Blueprints.
-			continue;
-		}
-
-		UEdGraphPin* NewPin = CreatePin(EGPD_Input, PinType, FName(BlendableParameter->InterfaceParameterName));
-		BlendableParameterPinNames.Add(NewPin->PinName);
-	}
-
-	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraRig->Interface.DataParameters)
-	{
-		if (!ensure(DataParameter))
-		{
-			continue;
-		}
-		
-		if (!DataParameter->PrivateDataID.IsValid())
-		{
-			// Camera rig isn't fully built.
-			continue;
-		}
-
-		FEdGraphPinType PinType = MakeDataParameterPinType(DataParameter);
-		if (PinType.PinCategory.IsNone())
-		{
-			// Unsupported type for Blueprints.
-			continue;
-		}
-
-		UEdGraphPin* NewPin = CreatePin(EGPD_Input, PinType, FName(DataParameter->InterfaceParameterName));
-		DataParameterPinNames.Add(NewPin->PinName);
-	}
-}
-
-void UK2Node_SetCameraRigParameters::FindBlendableParameterPins(TArray<UEdGraphPin*>& OutPins) const
-{
-	for (const FName& PinName : BlendableParameterPinNames)
-	{
-		UEdGraphPin* Pin = FindPin(PinName);
-		if (ensure(Pin))
-		{
-			OutPins.Add(Pin);
-		}
-	}
-}
-
-void UK2Node_SetCameraRigParameters::FindDataParameterPins(TArray<UEdGraphPin*>& OutPins) const
-{
-	for (const FName& PinName : DataParameterPinNames)
-	{
-		UEdGraphPin* Pin = FindPin(PinName);
-		if (ensure(Pin))
-		{
-			OutPins.Add(Pin);
-		}
-	}
 }
 
 #undef LOCTEXT_NAMESPACE

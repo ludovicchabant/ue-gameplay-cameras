@@ -4,17 +4,16 @@
 
 #include "K2Node_MultiCameraRigParametersBase.h"
 
-#include "K2Node_SetCameraRigParameters.generated.h"
+#include "K2Node_GetCameraRigParameters.generated.h"
 
 class UCameraRigAsset;
 
 /**
- * Blueprint node that, given a camera rig, lets the user set the values of all exposed parameters
- * on that camera rig. Any camera rig running with the specific evaluation data will use those
- * values.
+ * Blueprint node that, given a camera rig, lets the user get the values of all exposed parameters
+ * on that camera rig.
  */
 UCLASS(MinimalAPI)
-class UK2Node_SetCameraRigParameters : public UK2Node_MultiCameraRigParametersBase
+class UK2Node_GetCameraRigParameters : public UK2Node_MultiCameraRigParametersBase
 {
 	GENERATED_BODY()
 
@@ -24,10 +23,9 @@ public:
 	virtual void AllocateDefaultPins() override;
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual FText GetTooltipText() const override;
+	//virtual bool ShouldDrawCompact() const override { return true; }
+	virtual bool IsNodePure() const override { return true; }
 	virtual void ExpandNode(class FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
-
-	// UK2Node interface.
-	virtual void ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins) override;
 
 protected:
 
