@@ -53,7 +53,7 @@ using FCameraRigPackages = TArray<const UPackage*, TInlineAllocator<4>>;
  * A camera rig asset, which runs a hierarchy of camera nodes to drive 
  * the behavior of a camera.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, BlueprintType)
 class UCameraRigAsset
 	: public UBaseCameraObject
 	, public IGameplayTagAssetInterface

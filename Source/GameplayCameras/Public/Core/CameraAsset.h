@@ -65,7 +65,7 @@ struct FCameraAssetAllocationInfo
 /**
  * A complete camera asset.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, BlueprintType)
 class UCameraAsset 
 	: public UObject
 	, public IHasCameraBuildStatus

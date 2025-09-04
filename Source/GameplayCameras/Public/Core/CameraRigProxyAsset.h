@@ -14,7 +14,7 @@
  * but without hard-referencing a particular camera rig. This way, that camera director can
  * be used by multiple cameras with their own camera rigs.
  */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, BlueprintType)
 class UCameraRigProxyAsset : public UObject
 {
 	GENERATED_BODY()

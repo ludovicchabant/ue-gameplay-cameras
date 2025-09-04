@@ -19,7 +19,7 @@ namespace UE::Cameras
 	class FCameraShakeAssetBuilder;
 }
 
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, BlueprintType)
 class UCameraShakeAsset
 	: public UBaseCameraObject
 	, public IHasCameraBuildStatus
