@@ -165,7 +165,19 @@ void UCameraRigCameraNode::PostEditChangeProperty(struct FPropertyChangedEvent& 
 	}
 }
 
-#endif
+EObjectTreeGraphObjectSupportFlags UCameraRigCameraNode::GetSupportFlags(FName InGraphName) const
+{
+	return (Super::GetSupportFlags(InGraphName) | EObjectTreeGraphObjectSupportFlags::CustomTitle);
+}
+
+void UCameraRigCameraNode::GetGraphNodeName(FName InGraphName, FText& OutName) const
+{
+	const UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig();
+	const FText CameraRigName = CameraRig ? FText::FromString(CameraRig->GetName()) : LOCTEXT("None", "None");
+	OutName = FText::Format(LOCTEXT("GraphNodeNameFormat", "Camera Rig ({0})"), CameraRigName);
+}
+
+#endif  // WITH_EDITOR
 
 #undef LOCTEXT_NAMESPACE
 

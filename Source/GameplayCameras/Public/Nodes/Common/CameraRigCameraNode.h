@@ -34,6 +34,12 @@ protected:
 	// ICustomCameraNodeParameterProvider interface.
 	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
 
+	// IObjectTreeGraphObject interface.
+#if WITH_EDITOR
+	virtual EObjectTreeGraphObjectSupportFlags GetSupportFlags(FName InGraphName) const override;
+	virtual void GetGraphNodeName(FName InGraphName, FText& OutName) const override;
+#endif  // WITH_EDITOR
+
 	// UObject interface.
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
