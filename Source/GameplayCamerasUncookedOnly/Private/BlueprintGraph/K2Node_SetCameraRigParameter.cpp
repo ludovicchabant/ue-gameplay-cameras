@@ -109,9 +109,10 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 	{
 		CompilerContext.MovePinLinksToIntermediate(*CameraParameterValuePin, *CallSetParameterValuePin);
 	}
-	else if (UK2Node_CallFunction* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, CameraParameterValuePin))
+	else if (UK2Node* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, CameraParameterValuePin))
 	{
-		MakeLiteral->GetReturnValuePin()->MakeLinkTo(CallSetParameterValuePin);
+		UEdGraphPin* ReturnValuePin = MakeLiteral->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
+		ReturnValuePin->MakeLinkTo(CallSetParameterValuePin);
 	}
 	else
 	{

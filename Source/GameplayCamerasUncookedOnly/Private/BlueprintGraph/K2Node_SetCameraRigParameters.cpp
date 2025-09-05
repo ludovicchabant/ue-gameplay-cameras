@@ -156,9 +156,10 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 		{
 			CompilerContext.MovePinLinksToIntermediate(*RigParameterPin, *CallSetParameterValuePin);
 		}
-		else if (UK2Node_CallFunction* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, RigParameterPin))
+		else if (UK2Node* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, RigParameterPin))
 		{
-			MakeLiteral->GetReturnValuePin()->MakeLinkTo(CallSetParameterValuePin);
+			UEdGraphPin* ReturnValuePin = MakeLiteral->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
+			ReturnValuePin->MakeLinkTo(CallSetParameterValuePin);
 		}
 		else
 		{
@@ -231,9 +232,10 @@ void UK2Node_SetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 		{
 			CompilerContext.MovePinLinksToIntermediate(*RigParameterPin, *CallSetParameterValuePin);
 		}
-		else if (UK2Node_CallFunction* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, RigParameterPin))
+		else if (UK2Node* MakeLiteral = MakeLiteralValueForPin(CompilerContext, SourceGraph, this, RigParameterPin))
 		{
-			MakeLiteral->GetReturnValuePin()->MakeLinkTo(CallSetParameterValuePin);
+			UEdGraphPin* ReturnValuePin = MakeLiteral->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue);
+			ReturnValuePin->MakeLinkTo(CallSetParameterValuePin);
 		}
 		else
 		{
