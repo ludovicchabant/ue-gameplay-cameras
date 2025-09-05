@@ -29,6 +29,7 @@ public:
 
 protected:
 
+	void EnsureCameraRigAssetLoaded();
 	void CreateParameterPins(EEdGraphPinDirection PinDirection);
 	void FindBlendableParameterPins(TArray<UEdGraphPin*>& OutPins) const;
 	void FindDataParameterPins(TArray<UEdGraphPin*>& OutPins) const;

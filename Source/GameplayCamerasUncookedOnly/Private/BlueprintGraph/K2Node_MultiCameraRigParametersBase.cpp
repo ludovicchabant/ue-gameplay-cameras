@@ -30,6 +30,16 @@ void UK2Node_MultiCameraRigParametersBase::ReallocatePinsDuringReconstruction(TA
 {
 	// The camera rig might not be loaded yet when we are rebuilt on startup, so make sure
 	// this is all good otherwise we won't be able to get all our pins back.
+	EnsureCameraRigAssetLoaded();
+
+	// Now do as usual: create all default pins (including the parameter pins) and 
+	// restore split pins.
+	AllocateDefaultPins();
+	RestoreSplitPins(OldPins);
+}
+
+void UK2Node_MultiCameraRigParametersBase::EnsureCameraRigAssetLoaded()
+{
 	if (CameraRig)
 	{
 		PreloadObject(CameraRig);
@@ -50,11 +60,6 @@ void UK2Node_MultiCameraRigParametersBase::ReallocatePinsDuringReconstruction(TA
 			}
 		}
 	}
-
-	// Now do as usual: create all default pins (including the parameter pins) and 
-	// restore split pins.
-	AllocateDefaultPins();
-	RestoreSplitPins(OldPins);
 }
 
 void UK2Node_MultiCameraRigParametersBase::CreateParameterPins(EEdGraphPinDirection PinDirection)

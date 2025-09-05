@@ -79,19 +79,6 @@ void UK2Node_GetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 		return;
 	}
 
-	// Additional setup is needed for some types.
-	UEnum* ExtraEnumTypePinObject = nullptr;
-	bool bMakeExtraInstanceStructSetup = false;
-	if (DataCameraParameterType == ECameraContextDataType::Enum)
-	{
-		const UEnum* EnumType = CastChecked<const UEnum>(DataCameraParameterTypeObject);
-		ExtraEnumTypePinObject = const_cast<UEnum*>(EnumType);
-	}
-	else if (DataCameraParameterType == ECameraContextDataType::Struct)
-	{
-		bMakeExtraInstanceStructSetup = true;
-	}
-
 	UEdGraphPin* const CameraNodeEvaluationResultPin = GetCameraNodeEvaluationResultPin();
 	UEdGraphPin* const CameraParameterValuePin = FindPinChecked(CameraParameterName);
 

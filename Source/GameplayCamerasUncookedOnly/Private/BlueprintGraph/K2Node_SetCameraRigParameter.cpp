@@ -79,19 +79,6 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 		return;
 	}
 
-	// Additional setup is needed for some types.
-	UEnum* ExtraEnumTypePinObject = nullptr;
-	bool bMakeExtraInstanceStructSetup = false;
-	if (DataCameraParameterType == ECameraContextDataType::Enum)
-	{
-		const UEnum* EnumType = CastChecked<const UEnum>(DataCameraParameterTypeObject);
-		ExtraEnumTypePinObject = const_cast<UEnum*>(EnumType);
-	}
-	else if (DataCameraParameterType == ECameraContextDataType::Struct)
-	{
-		bMakeExtraInstanceStructSetup = true;
-	}
-
 	UEdGraphPin* const CameraNodeEvaluationResultPin = GetCameraNodeEvaluationResultPin();
 	UEdGraphPin* const CameraParameterValuePin = FindPinChecked(CameraParameterName);
 
@@ -135,13 +122,6 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 					"(try connecting a MakeStruct, EnumLiteral, or appropriate node)."),
 				FText::FromString(CameraParameterName));
 		CompilerContext.MessageLog.Error(*MissingParameterConnectionMsg.ToString(), this);
-	}
-
-	// Set extra type pin for enums.
-	if (ExtraEnumTypePinObject)
-	{
-		UEdGraphPin* CallSetParameterEnumTypePin = CallSetParameter->FindPinChecked(TEXT("EnumType"));
-		CallSetParameterEnumTypePin->DefaultObject = ExtraEnumTypePinObject;
 	}
 
 	// Setup the execution flow.

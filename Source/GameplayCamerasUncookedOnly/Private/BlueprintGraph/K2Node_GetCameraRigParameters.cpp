@@ -152,7 +152,7 @@ void UK2Node_GetCameraRigParameters::ExpandNode(FKismetCompilerContext& Compiler
 		CallGetParameterNamePin->DefaultValue = DataParameter->InterfaceParameterName;
 
 		// Set or connect the parameter value argument.
-		UEdGraphPin* CallGetParameterValuePin = CallGetParameter->FindPinChecked(TEXT("NewValue"));
+		UEdGraphPin* CallGetParameterValuePin = CallGetParameter->FindPinChecked(TEXT("ReturnValue"));
 		CallGetParameterValuePin->PinType = RigParameterPin->PinType;
 		if (RigParameterPin->LinkedTo.Num() > 0)
 		{

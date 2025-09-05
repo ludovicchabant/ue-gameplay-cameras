@@ -39,6 +39,11 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 		(*OldCameraRigPin)->DefaultValue.Reset();
 	}
 
+	// Do like the base class does, but fixup old-style pins before restoring split pins.
+	EnsureCameraRigAssetLoaded();
+
+	AllocateDefaultPins();
+
 	// Upgrade old result pin name to new pin name.
 	const FName OldResultPinName = TEXT("CameraEvaluationResult");
 	UEdGraphPin** OldResultPin = OldPins.FindByPredicate([&OldResultPinName](UEdGraphPin* OldPin)
@@ -52,7 +57,7 @@ void UK2Node_SetCameraRigParameters::ReallocatePinsDuringReconstruction(TArray<U
 		NewResultPin->MovePersistentDataFromOldPin(**OldResultPin);
 	}
 
-	Super::ReallocatePinsDuringReconstruction(OldPins);
+	RestoreSplitPins(OldPins);
 }
 
 FText UK2Node_SetCameraRigParameters::GetNodeTitle(ENodeTitleType::Type TitleType) const
