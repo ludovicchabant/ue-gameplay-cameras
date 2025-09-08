@@ -41,7 +41,7 @@ protected:
 			PreviewIndex = (CameraRigs.IsEmpty() ? INDEX_NONE : 0);
 		}
 
-		if (PreviewIndex != INDEX_NONE)
+		if (PreviewIndex != INDEX_NONE && CameraRigs[PreviewIndex] != nullptr)
 		{
 			OutResult.Add(GetEvaluationContext(), CameraRigs[PreviewIndex]);
 		}
