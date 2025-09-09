@@ -6,6 +6,7 @@
 #include "Logging/TokenizedMessage.h"
 #include "Misc/CString.h"
 #include "Misc/UObjectToken.h"
+#include "UObject/Object.h"
 
 namespace UE::Cameras
 {

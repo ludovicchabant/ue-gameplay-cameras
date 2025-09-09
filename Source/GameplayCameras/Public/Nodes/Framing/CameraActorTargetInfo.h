@@ -4,6 +4,7 @@
 
 #include "CoreTypes.h"
 #include "Core/CameraContextDataTableFwd.h"
+#include "Math/BoxSphereBounds.h"
 
 #include "CameraActorTargetInfo.generated.h"
 

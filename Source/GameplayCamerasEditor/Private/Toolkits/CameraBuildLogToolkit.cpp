@@ -8,6 +8,7 @@
 #include "MessageLogModule.h"
 #include "Misc/UObjectToken.h"
 #include "Modules/ModuleManager.h"
+#include "UObject/Object.h"
 
 namespace UE::Cameras
 {
