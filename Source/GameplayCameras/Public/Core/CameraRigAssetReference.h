@@ -325,7 +325,7 @@ private:
 };
 
 template<>
-struct TStructOpsTypeTraits<FCameraRigAssetReference> : public TStructOpsTypeTraitsBase2<FBaseCameraObjectReference>
+struct TStructOpsTypeTraits<FCameraRigAssetReference> : public TStructOpsTypeTraits<FBaseCameraObjectReference>
 {
 	enum
 	{

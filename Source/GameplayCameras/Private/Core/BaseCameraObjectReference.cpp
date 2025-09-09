@@ -264,15 +264,18 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 
 void FBaseCameraObjectReference::PostSerialize(const FArchive& Ar)
 {
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	for (FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
+	if (Ar.IsLoading())
 	{
-		if (MetaData.bIsOverridden_DEPRECATED)
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		for (FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
 		{
-			Parameters.SetPropertyOverriden(MetaData.ParameterGuid, true);
-			MetaData.bIsOverridden_DEPRECATED = false;
+			if (MetaData.bIsOverridden_DEPRECATED)
+			{
+				Parameters.SetPropertyOverriden(MetaData.ParameterGuid, true);
+				MetaData.bIsOverridden_DEPRECATED = false;
+			}
 		}
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 

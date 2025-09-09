@@ -103,12 +103,15 @@ bool FCameraAssetReference::SerializeFromMismatchedTag(FPropertyTag const& Tag, 
 
 void FCameraAssetReference::PostSerialize(const FArchive& Ar)
 {
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	for (const FGuid& Guid : ParameterOverrideGuids_DEPRECATED)
+	if (Ar.IsLoading())
 	{
-		Parameters.SetPropertyOverriden(Guid, true);
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		for (const FGuid& Guid : ParameterOverrideGuids_DEPRECATED)
+		{
+			Parameters.SetPropertyOverriden(Guid, true);
+		}
+		ParameterOverrideGuids_DEPRECATED.Reset();
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
-	ParameterOverrideGuids_DEPRECATED.Reset();
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 

@@ -88,3 +88,8 @@ private:
 	friend class UE::Cameras::FCameraShakeAssetReferenceDetailsCustomization;
 };
 
+template<>
+struct TStructOpsTypeTraits<FCameraShakeAssetReference> : public TStructOpsTypeTraits<FBaseCameraObjectReference>
+{
+};
+

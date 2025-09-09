@@ -4,6 +4,25 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OverridablePropertyBag)
 
+namespace FOverridablePropertyBagCustomVersion
+{
+	enum Type
+	{
+		BeforeCustomVersionWasAdded = 0,
+		FixSerializer = 1,
+
+		VersionPlusOne,
+		LatestVersion = VersionPlusOne - 1
+	};
+
+	const FGuid GUID(0x5426C227, 0x4B3145B2, 0x9B9BED1F, 0x327FB126);
+}
+
+FCustomVersionRegistration GOverridablePropertyBagCustomVersion(
+		FOverridablePropertyBagCustomVersion::GUID,
+		FOverridablePropertyBagCustomVersion::LatestVersion,
+		TEXT("OverridablePropertyBagCustomVersion"));
+
 bool FInstancedOverridablePropertyBag::IsPropertyOverriden(const FGuid& InPropertyID) const
 {
 	return OverridenPropertyIDs.Contains(InPropertyID);
@@ -45,9 +64,29 @@ bool FInstancedOverridablePropertyBag::SerializeFromMismatchedTag(FPropertyTag c
 	{
 		// Read the structured data as an FInstancedPropertyBag. Our list of overriden property IDs
 		// will stay empty.
-		Serialize(Slot.GetUnderlyingArchive());
+		FInstancedPropertyBag::Serialize(Slot.GetUnderlyingArchive());
 		return true;
 	}
 	return false;
+}
+
+bool FInstancedOverridablePropertyBag::Serialize(FArchive& Ar)
+{
+	Ar.UsingCustomVersion(FOverridablePropertyBagCustomVersion::GUID);
+
+	if (Ar.IsLoading() && Ar.CustomVer(FOverridablePropertyBagCustomVersion::GUID) < FOverridablePropertyBagCustomVersion::FixSerializer)
+	{
+		// There was a short time during which developer data was saved with only default tagged
+		// serialization. This causes data corruption so we avoid that with this use-case here.
+		static const FInstancedOverridablePropertyBag ThisDefaults;
+
+		const UScriptStruct* ThisStruct = FInstancedOverridablePropertyBag::StaticStruct();
+		ThisStruct->SerializeTaggedProperties(Ar, (uint8*)this, ThisStruct, (const uint8*)&ThisDefaults);
+		return true;
+	}
+
+	FInstancedPropertyBag::Serialize(Ar);
+	Ar << OverridenPropertyIDs;
+	return true;
 }
 

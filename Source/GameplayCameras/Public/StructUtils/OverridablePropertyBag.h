@@ -53,6 +53,7 @@ public:
 	// Internal API.
 
 	bool SerializeFromMismatchedTag(FPropertyTag const& Tag, FStructuredArchive::FSlot Slot);
+	bool Serialize(FArchive& Ar);
 
 private:
 
@@ -73,11 +74,12 @@ void FInstancedOverridablePropertyBag::GetOverridenPropertyIDs(ContainerType& Ou
 }
 
 template<>
-struct TStructOpsTypeTraits<FInstancedOverridablePropertyBag> : public TStructOpsTypeTraitsBase2<FInstancedOverridablePropertyBag>
+struct TStructOpsTypeTraits<FInstancedOverridablePropertyBag> : public TStructOpsTypeTraits<FInstancedPropertyBag>
 {
 	enum
 	{
-		WithStructuredSerializeFromMismatchedTag = true
+		WithStructuredSerializeFromMismatchedTag = true,
+		WithSerializer = true
 	};
 };
 

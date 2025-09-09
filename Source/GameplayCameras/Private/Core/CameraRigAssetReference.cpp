@@ -78,63 +78,66 @@ bool FCameraRigAssetReference::SerializeFromMismatchedTag(struct FPropertyTag co
 
 void FCameraRigAssetReference::PostSerialize(const FArchive& Ar)
 {
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-
-	// Make a property bag with the legacy overrides, and then set the values in it.
-	bool bHasAnyLegacyOverride = false;
-	TArray<FPropertyBagPropertyDesc> LegacyParameterProperties;
-	TArray<FCameraObjectInterfaceParameterMetaData> LegacyParameterMetaData;
-
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-	for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
-	{\
-		FName PropertyName(ParameterOverride.InterfaceParameterName);\
-		EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;\
-		const UObject* PropertyTypeObject = F##ValueName##CameraParameter::StaticStruct();\
-		FPropertyBagPropertyDesc LegacyParameterProperty(PropertyName, PropertyType, PropertyTypeObject);\
-		LegacyParameterProperty.ID = ParameterOverride.InterfaceParameterGuid;\
-		LegacyParameterProperties.Add(LegacyParameterProperty);\
-		FCameraObjectInterfaceParameterMetaData MetaData;\
-		MetaData.ParameterGuid = ParameterOverride.InterfaceParameterGuid;\
-		MetaData.bIsOverridden_DEPRECATED = true;\
-		LegacyParameterMetaData.Add(MetaData);\
-		bHasAnyLegacyOverride = true;\
-	}
-	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-
-	if (bHasAnyLegacyOverride)
+	if (Ar.IsLoading())
 	{
-		Parameters = FInstancedOverridablePropertyBag();
-		Parameters.AddProperties(LegacyParameterProperties);
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
-		ParameterMetaData = LegacyParameterMetaData;
+		// Make a property bag with the legacy overrides, and then set the values in it.
+		bool bHasAnyLegacyOverride = false;
+		TArray<FPropertyBagPropertyDesc> LegacyParameterProperties;
+		TArray<FCameraObjectInterfaceParameterMetaData> LegacyParameterMetaData;
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
 		{\
 			FName PropertyName(ParameterOverride.InterfaceParameterName);\
-			Parameters.SetValueStruct<F##ValueName##CameraParameter>(PropertyName, ParameterOverride.Value);\
+			EPropertyBagPropertyType PropertyType = EPropertyBagPropertyType::Struct;\
+			const UObject* PropertyTypeObject = F##ValueName##CameraParameter::StaticStruct();\
+			FPropertyBagPropertyDesc LegacyParameterProperty(PropertyName, PropertyType, PropertyTypeObject);\
+			LegacyParameterProperty.ID = ParameterOverride.InterfaceParameterGuid;\
+			LegacyParameterProperties.Add(LegacyParameterProperty);\
+			FCameraObjectInterfaceParameterMetaData MetaData;\
+			MetaData.ParameterGuid = ParameterOverride.InterfaceParameterGuid;\
+			MetaData.bIsOverridden_DEPRECATED = true;\
+			LegacyParameterMetaData.Add(MetaData);\
+			bHasAnyLegacyOverride = true;\
 		}
 		UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
-		ParameterOverrides_DEPRECATED = FCameraRigParameterOverrides();
-	}
-
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-
-	if (!ParameterOverrideGuids_DEPRECATED.IsEmpty())
-	{
-		for (const FGuid& Guid : ParameterOverrideGuids_DEPRECATED)
+		if (bHasAnyLegacyOverride)
 		{
-			FCameraObjectInterfaceParameterMetaData MetaData;
-			MetaData.ParameterGuid = Guid;
-			MetaData.bIsOverridden_DEPRECATED = true;
-			ParameterMetaData.Add(MetaData);
+			Parameters = FInstancedOverridablePropertyBag();
+			Parameters.AddProperties(LegacyParameterProperties);
+
+			ParameterMetaData = LegacyParameterMetaData;
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+			for (F##ValueName##CameraRigParameterOverride& ParameterOverride : ParameterOverrides_DEPRECATED.ValueName##Overrides)\
+			{\
+				FName PropertyName(ParameterOverride.InterfaceParameterName);\
+				Parameters.SetValueStruct<F##ValueName##CameraParameter>(PropertyName, ParameterOverride.Value);\
+			}
+			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+			ParameterOverrides_DEPRECATED = FCameraRigParameterOverrides();
 		}
 
-		ParameterOverrideGuids_DEPRECATED.Reset();
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+		if (!ParameterOverrideGuids_DEPRECATED.IsEmpty())
+		{
+			for (const FGuid& Guid : ParameterOverrideGuids_DEPRECATED)
+			{
+				FCameraObjectInterfaceParameterMetaData MetaData;
+				MetaData.ParameterGuid = Guid;
+				MetaData.bIsOverridden_DEPRECATED = true;
+				ParameterMetaData.Add(MetaData);
+			}
+
+			ParameterOverrideGuids_DEPRECATED.Reset();
+		}
 	}
 
 	FBaseCameraObjectReference::PostSerialize(Ar);
