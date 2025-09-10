@@ -10,6 +10,24 @@
 namespace UE::Cameras
 {
 
+bool FCameraRigActivationDeactivationRequest::ResolveCameraRigProxyIfNeeded(const FCameraDirectorEvaluator* InDirectorEvaluator)
+{
+	return ResolveCameraRigProxyIfNeeded(InDirectorEvaluator->GetCameraDirector());
+}
+
+bool FCameraRigActivationDeactivationRequest::ResolveCameraRigProxyIfNeeded(const UCameraDirector* InDirector)
+{
+	if (CameraRig == nullptr && CameraRigProxy != nullptr && ensure(InDirector))
+	{
+		const FCameraRigProxyRedirectTable& ProxyTable = InDirector->CameraRigProxyRedirectTable;
+
+		FCameraRigProxyResolveParams ResolveParams;
+		ResolveParams.CameraRigProxy = CameraRigProxy;
+		CameraRig = ProxyTable.ResolveProxy(ResolveParams);
+	}
+	return CameraRig != nullptr;
+}
+
 void FCameraDirectorEvaluatorStorage::DestroyEvaluator()
 {
 	Evaluator.Reset();
@@ -33,16 +51,16 @@ void FCameraDirectorEvaluator::Initialize(const FCameraDirectorInitializeParams&
 	OnInitialize(Params);
 }
 
-void FCameraDirectorEvaluator::Activate(const FCameraDirectorActivateParams& Params)
+void FCameraDirectorEvaluator::Activate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	Evaluator = Params.Evaluator;
 
-	OnActivate(Params);
+	OnActivate(Params, OutResult);
 }
 
-void FCameraDirectorEvaluator::Deactivate(const FCameraDirectorDeactivateParams& Params)
+void FCameraDirectorEvaluator::Deactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
-	OnDeactivate(Params);
+	OnDeactivate(Params, OutResult);
 
 	Evaluator = nullptr;
 }

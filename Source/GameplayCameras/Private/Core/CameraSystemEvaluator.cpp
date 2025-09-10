@@ -304,17 +304,8 @@ void FCameraSystemEvaluator::UpdateCameraDirector(float DeltaTime, FCameraDirect
 
 	for (FCameraRigActivationDeactivationRequest& Request : DirectorResult.Requests)
 	{
-		if (!ensure(Request.EvaluationContext))
-		{
-			continue;
-		}
-
-		// Resolve camera rig proxies if needed.
-		if (Request.CameraRig == nullptr && Request.CameraRigProxy)
-		{
-			Request.CameraRig = CameraDirectorEvaluator->FindCameraRigByProxy(Request.CameraRigProxy);
-		}
-		if (!ensure(Request.CameraRig))
+		Request.ResolveCameraRigProxyIfNeeded(CameraDirectorEvaluator);
+		if (!Request.IsValid())
 		{
 			continue;
 		}

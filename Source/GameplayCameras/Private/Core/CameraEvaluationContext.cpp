@@ -7,6 +7,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraDirectorEvaluator.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Core/RootCameraNode.h"
 #include "GameFramework/PlayerController.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraEvaluationContext)
@@ -280,15 +281,19 @@ void FCameraEvaluationContext::Activate(const FCameraEvaluationContextActivatePa
 
 	AutoCreateDirectorEvaluator();
 
+	CameraSystemEvaluator = Params.Evaluator;
+	bActivated = true;
+
 	if (DirectorEvaluator)
 	{
 		FCameraDirectorActivateParams DirectorParams;
 		DirectorParams.Evaluator = Params.Evaluator;
-		DirectorEvaluator->Activate(DirectorParams);
-	}
+		FCameraDirectorEvaluationResult DirectorResult;
+		DirectorEvaluator->Activate(DirectorParams, DirectorResult);
 
-	CameraSystemEvaluator = Params.Evaluator;
-	bActivated = true;
+		// Execute initial requests from the director.
+		ExecuteSetupAndTeardownRequests(DirectorResult);
+	}
 }
 
 void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactivateParams& Params)
@@ -301,7 +306,11 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 	if (DirectorEvaluator)
 	{
 		FCameraDirectorDeactivateParams DirectorParams;
-		DirectorEvaluator->Deactivate(DirectorParams);
+		FCameraDirectorEvaluationResult DirectorResult;
+		DirectorEvaluator->Deactivate(DirectorParams, DirectorResult);
+
+		// Execute last requests from the director.
+		ExecuteSetupAndTeardownRequests(DirectorResult);
 	}
 
 	// Don't destroy the camera director evaluator, it could still be useful. We only destroy it
@@ -311,6 +320,38 @@ void FCameraEvaluationContext::Deactivate(const FCameraEvaluationContextDeactiva
 
 	CameraSystemEvaluator = nullptr;
 	bActivated = false;
+}
+
+void FCameraEvaluationContext::ExecuteSetupAndTeardownRequests(FCameraDirectorEvaluationResult& DirectorResult)
+{
+	if (!ensure(CameraSystemEvaluator))
+	{
+		return;
+	}
+
+	FRootCameraNodeEvaluator* RootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+
+	for (FCameraRigActivationDeactivationRequest& Request : DirectorResult.Requests)
+	{
+		if (Request.Layer == ECameraRigLayer::Main)
+		{
+			// Executing main-layer requests would require being able to handle dynamically combined camera rigs,
+			// which is possible but requries refactoring that away from FCameraSystemEvaluator, so leave that
+			// for later, especially since it's arguably wrong to try to activate main rigs in Activate/Deactivate.
+			UObject* RequestedCameraObject = Request.CameraRig ? (UObject*)Request.CameraRig : (UObject*)Request.CameraRigProxy;
+			UE_LOG(LogCameraSystem, Error, 
+					TEXT("Main layer camera rigs can only be activated/deactivated during the director's normal update. "
+						"Ignoring request to activate/deactivate '{0}'."),
+					*GetNameSafe(RequestedCameraObject));
+			continue;
+		}
+
+		Request.ResolveCameraRigProxyIfNeeded(DirectorEvaluator);
+		if (Request.IsValid())
+		{
+			RootEvaluator->ExecuteCameraDirectorRequest(Request);
+		}
+	}
 }
 
 TSharedPtr<FCameraSystemEvaluator> FCameraEvaluationContext::GetCameraSystemEvaluator() const

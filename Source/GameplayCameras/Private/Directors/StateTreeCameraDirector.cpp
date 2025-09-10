@@ -31,8 +31,8 @@ public:
 protected:
 
 	// FCameraDirectorEvaluator interface.
-	virtual void OnActivate(const FCameraDirectorActivateParams& Params) override;
-	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) override;
+	virtual void OnActivate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
+	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
 	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
 
@@ -49,7 +49,7 @@ private:
 
 UE_DEFINE_CAMERA_DIRECTOR_EVALUATOR(FStateTreeCameraDirectorEvaluator)
 
-void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivateParams& Params)
+void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	const UStateTreeCameraDirector* StateTreeDirector = GetCameraDirectorAs<UStateTreeCameraDirector>();
 	const FStateTreeReference& StateTreeReference = StateTreeDirector->StateTreeReference;
@@ -96,7 +96,7 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	StateTreeContext.Start(&StateTreeReference.GetParameters());
 }
 
-void FStateTreeCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params)
+void FStateTreeCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	const UStateTreeCameraDirector* StateTreeDirector = GetCameraDirectorAs<UStateTreeCameraDirector>();
 	const FStateTreeReference& StateTreeReference = StateTreeDirector->StateTreeReference;

@@ -249,8 +249,10 @@ void FPersistentBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolv
 				CurResult.PostProcessSettings.OverrideAll(OutResult.PostProcessSettings);
 
 				// Override it with whatever the evaluation context has set on its result.
+				// NOTE: don't override the camera pose, because additive/persistent blend stacks are designed to be
+				//       used for "modifier rigs". As such they shouldn't reset the camera pose to wherever their 
+				//       context is located. They should only modify it.
 				const FCameraNodeEvaluationResult& ContextResult(Entry.ContextResult);
-				CurResult.CameraPose.OverrideChanged(ContextResult.CameraPose);
 				CurResult.VariableTable.OverrideAll(ContextResult.VariableTable, true);
 				CurResult.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 

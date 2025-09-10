@@ -25,6 +25,7 @@ namespace UE::Cameras
 {
 
 class FCameraSystemEvaluator;
+struct FCameraDirectorEvaluationResult;
 
 /**
  * Parameter struct for initializing an evaluation context.
@@ -188,6 +189,10 @@ protected:
 	void AutoCreateEditorPreviewDirectorEvaluator(const FCameraEvaluationContextActivateParams& Params);
 #endif  // WITH_EDITOR
 
+private:
+
+	void ExecuteSetupAndTeardownRequests(FCameraDirectorEvaluationResult& DirectorResult);
+
 protected:
 
 	/** The owner of this context, if any. */
@@ -228,7 +233,10 @@ private:
 	using FConditionalResults = TMap<ECameraEvaluationDataCondition, FCameraNodeEvaluationResult>;
 	FConditionalResults ConditionalResults;
 
+	/** Whether this context was initialized. */
 	bool bInitialized = false;
+
+	/** Whether this context is active. */
 	bool bActivated = false;
 };
 

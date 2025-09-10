@@ -104,6 +104,16 @@ public:
 		: EvaluationContext(InContext)
 		, CameraRigProxy(InCameraRigProxy)
 	{}
+
+	bool IsValid() const
+	{
+		return EvaluationContext != nullptr && CameraRig != nullptr;
+	}
+
+public:
+
+	bool ResolveCameraRigProxyIfNeeded(const FCameraDirectorEvaluator* InDirectorEvaluator);
+	bool ResolveCameraRigProxyIfNeeded(const UCameraDirector* InDirector);
 };
 
 /**
@@ -218,10 +228,10 @@ public:
 	GAMEPLAYCAMERAS_API void Initialize(const FCameraDirectorInitializeParams& Params);
 
 	/** Activates the camera director evaluator. */
-	GAMEPLAYCAMERAS_API void Activate(const FCameraDirectorActivateParams& Params);
+	GAMEPLAYCAMERAS_API void Activate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult);
 
 	/** Deactivates the camera director evaluator. */
-	GAMEPLAYCAMERAS_API void Deactivate(const FCameraDirectorDeactivateParams& Params);
+	GAMEPLAYCAMERAS_API void Deactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult);
 
 	/** Gets the camera director. */
 	const UCameraDirector* GetCameraDirector() const { return PrivateCameraDirector; }
@@ -300,10 +310,10 @@ protected:
 	virtual void OnInitialize(const FCameraDirectorInitializeParams& Params) {}
 
 	/** Activates the camera director evaluator. May be called multiple times, in pair with OnDeactivate. */
-	virtual void OnActivate(const FCameraDirectorActivateParams& Params) {}
+	virtual void OnActivate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult) {}
 
 	/** Deactivates the camera director evaluator. May be called multiple times, in pair with OnActivate. */
-	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) {}
+	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult) {}
 
 	/** Runs the camera director to determine what camera rig(s) should be active this frame. */
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) {}

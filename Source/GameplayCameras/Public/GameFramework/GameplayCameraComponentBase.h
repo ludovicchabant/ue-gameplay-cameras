@@ -253,11 +253,8 @@ private:
 	using FGameplayCameraComponentEvaluationContext = UE::Cameras::FGameplayCameraComponentEvaluationContext;
 	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
 
-	/** Evaluation context for running main-layer camera rigs. */
+	/** Evaluation context. */
 	TSharedPtr<FGameplayCameraComponentEvaluationContext> EvaluationContext;
-
-	/** Evaluation context for running base/global/visual camera rigs. */
-	TSharedPtr<FCameraEvaluationContext> NullContext;
 
 	/** The camera system in which to check for running rigs before deactivating our evaluation context. */
 	TWeakPtr<FCameraSystemEvaluator> PendingDeactivateCameraSystemEvaluator;

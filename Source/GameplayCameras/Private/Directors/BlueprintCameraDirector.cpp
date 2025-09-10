@@ -37,8 +37,8 @@ public:
 protected:
 
 	virtual void OnInitialize(const FCameraDirectorInitializeParams& Params) override;
-	virtual void OnActivate(const FCameraDirectorActivateParams& Params) override;
-	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params) override;
+	virtual void OnActivate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
+	virtual void OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraDirectorEvaluationParams& Params, FCameraDirectorEvaluationResult& OutResult) override;
 	virtual void OnAddChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) override;
 	virtual void OnRemoveChildEvaluationContext(const FChildContextManulationParams& Params, FChildContextManulationResult& Result) override;
@@ -87,13 +87,16 @@ void FBlueprintCameraDirectorEvaluator::OnInitialize(const FCameraDirectorInitia
 	}
 }
 
-void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivateParams& Params)
+void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	OwningEvaluator = Params.Evaluator;
 
 	if (EvaluatorBlueprint)
 	{
 		EvaluatorBlueprint->NativeActivateCameraDirector(Params);
+
+		const FCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		OutResult = BlueprintResult;
 	}
 	else
 	{
@@ -101,7 +104,7 @@ void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	}
 }
 
-void FBlueprintCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params)
+void FBlueprintCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
 {
 	// We need to check a few more things here in case we're being deactivated while the owner object is getting GC'ed.
 	UObject* ContextOwner = GetEvaluationContext()->GetOwner();
@@ -109,6 +112,9 @@ void FBlueprintCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeacti
 	if (bIsValid)
 	{
 		EvaluatorBlueprint->NativeDeactivateCameraDirector(Params);
+
+		const FCameraDirectorEvaluationResult& BlueprintResult = EvaluatorBlueprint->GetEvaluationResult();
+		OutResult = BlueprintResult;
 	}
 
 	OwningEvaluator = nullptr;

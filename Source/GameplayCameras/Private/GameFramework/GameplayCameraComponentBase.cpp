@@ -72,10 +72,6 @@ void UGameplayCameraComponentBase::AddReferencedObjects(UObject* InThis, FRefere
 	{
 		This->EvaluationContext->AddReferencedObjects(Collector);
 	}
-	if (This->NullContext.IsValid())
-	{
-		This->NullContext->AddReferencedObjects(Collector);
-	}
 }
 
 TSharedPtr<const UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponentBase::GetEvaluationContext() const
@@ -387,23 +383,12 @@ void UGameplayCameraComponentBase::CreateCameraEvaluationContext(APlayerControll
 		UpdateCameraEvaluationContext(true);
 	}
 
-	if (!NullContext.IsValid())
-	{
-		NullContext = MakeShared<FCameraEvaluationContext>();
-
-		FCameraEvaluationContextInitializeParams InitParams;
-		InitParams.Owner = this;
-		InitParams.PlayerController = PlayerController;
-		NullContext->Initialize(InitParams);
-	}
-
-	ensure(EvaluationContext.IsValid() && NullContext.IsValid());
+	ensure(EvaluationContext.IsValid());
 }
 
 void UGameplayCameraComponentBase::DestroyCameraEvaluationContext()
 {
 	EvaluationContext = nullptr;
-	NullContext = nullptr;
 }
 
 #define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT(ErrorMsg, ErrorResult)\
@@ -435,9 +420,9 @@ FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetConditionalRe
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
 
 #define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG(ErrorMsg, RigLayer)\
-	if (NullContext.IsValid())\
+	if (EvaluationContext.IsValid())\
 	{\
-		IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::RigLayer);\
+		IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, EvaluationContext, ECameraRigLayer::RigLayer);\
 	}\
 	else\
 	{\
@@ -845,7 +830,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 	}
 	
 	const bool bCanRun = CanRunCameraSystem();
-	if (bCanRun && !(CameraSystemEvaluator && EvaluationContext && NullContext))
+	if (bCanRun && !(CameraSystemEvaluator && EvaluationContext))
 	{
 		// We want to run the camera logic in the editor but we haven't set things up for that.
 		// Let's create the preview evaluator and the evaluation context.
@@ -859,7 +844,7 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 
 		// OutputCameraComponent will be updated on the next tick.
 	}
-	else if (!bCanRun && (CameraSystemEvaluator || EvaluationContext || NullContext))
+	else if (!bCanRun && (CameraSystemEvaluator || EvaluationContext))
 	{
 		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
 		DeactivateCameraEvaluationContext(true);
