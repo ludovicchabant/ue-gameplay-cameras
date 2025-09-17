@@ -152,22 +152,26 @@ public:
 	const uint8* GetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
-			const UObject* ExpectedDataTypeObject) const;
+			const UObject* ExpectedDataTypeObject,
+			bool bOnlyIfWritten = true) const;
 
 	const uint8* TryGetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
-			const UObject* ExpectedDataTypeObject) const;
+			const UObject* ExpectedDataTypeObject,
+			bool bOnlyIfWritten = true) const;
 
 	const FEntryScriptArray* TryGetArrayData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
-			const UObject* ExpectedDataTypeObject) const;
+			const UObject* ExpectedDataTypeObject,
+			bool bOnlyIfWritten = true) const;
 
 	const uint8* TryGetRawDataPtr(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
-			const UObject* ExpectedDataTypeObject) const;
+			const UObject* ExpectedDataTypeObject,
+			bool bOnlyIfWritten = true) const;
 
 	void SetData(
 			FCameraContextDataID DataID,
@@ -422,7 +426,8 @@ const StorageType* FCameraContextDataTable::GetDataImpl(FCameraContextDataID InI
 	if (Entry && 
 			Entry->Type == DataType && 
 			Entry->ContainerType == ECameraContextDataContainerType::None && 
-			Entry->TypeObject == DataTypeObject)
+			Entry->TypeObject == DataTypeObject &&
+			EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
 	{
 		const uint8* RawData = Memory + Entry->Offset;
 		return reinterpret_cast<const StorageType*>(RawData);
@@ -454,7 +459,8 @@ TConstArrayView<StorageType> FCameraContextDataTable::GetArrayDataImpl(FCameraCo
 	if (Entry && 
 			Entry->Type == DataType && 
 			Entry->ContainerType == ECameraContextDataContainerType::Array && 
-			Entry->TypeObject == DataTypeObject)
+			Entry->TypeObject == DataTypeObject &&
+			EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
 	{
 		FEntryScriptArray* Array = (FEntryScriptArray*)(Memory + Entry->Offset);
 		const StorageType* ArrayData = reinterpret_cast<const StorageType*>(Array->GetData());

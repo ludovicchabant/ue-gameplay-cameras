@@ -284,9 +284,10 @@ bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 const uint8* FCameraVariableTable::GetValue(
 		FCameraVariableID VariableID,
 		ECameraVariableType ExpectedVariableType,
-		const UScriptStruct* ExpectedBlendableStructType) const
+		const UScriptStruct* ExpectedBlendableStructType,
+		bool bOnlyIfWritten) const
 {
-	const uint8* Value = TryGetValue(VariableID, ExpectedVariableType, ExpectedBlendableStructType);
+	const uint8* Value = TryGetValue(VariableID, ExpectedVariableType, ExpectedBlendableStructType, bOnlyIfWritten);
 	ensureMsgf(Value, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue());
 	return Value;
 }
@@ -294,13 +295,17 @@ const uint8* FCameraVariableTable::GetValue(
 const uint8* FCameraVariableTable::TryGetValue(
 		FCameraVariableID VariableID,
 		ECameraVariableType ExpectedVariableType,
-		const UScriptStruct* ExpectedBlendableStructType) const
+		const UScriptStruct* ExpectedBlendableStructType,
+		bool bOnlyIfWritten) const
 {
 	const FEntry* Entry = FindEntry(VariableID);
 	if (Entry)
 	{
 		ensure(Entry->Type == ExpectedVariableType && Entry->StructType == ExpectedBlendableStructType);
-		return Memory + Entry->Offset;
+		if (!bOnlyIfWritten || EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
+		{
+			return Memory + Entry->Offset;
+		}
 	}
 
 	return nullptr;
@@ -309,13 +314,17 @@ const uint8* FCameraVariableTable::TryGetValue(
 uint8* FCameraVariableTable::TryGetMutableValue(
 		FCameraVariableID VariableID,
 		ECameraVariableType ExpectedVariableType,
-		const UScriptStruct* ExpectedBlendableStructType)
+		const UScriptStruct* ExpectedBlendableStructType,
+		bool bOnlyIfWritten)
 {
 	FEntry* Entry = FindEntry(VariableID);
 	if (Entry)
 	{
 		ensure(Entry->Type == ExpectedVariableType && Entry->StructType == ExpectedBlendableStructType);
-		return Memory + Entry->Offset;
+		if (!bOnlyIfWritten || EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
+		{
+			return Memory + Entry->Offset;
+		}
 	}
 
 	return nullptr;
@@ -531,9 +540,13 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 				// We already have the other table's variable in our table. Let's check
 				// that the types match, and then copy the memory.
 #if WITH_EDITORONLY_DATA
-				checkf(ThisEntry->DebugName == OtherEntry.DebugName,
-						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
-						ThisEntry->ID.GetValue(), *ThisEntry->DebugName, *OtherEntry.DebugName);
+				if (ThisEntry->DebugName != OtherEntry.DebugName && !WarnedEntries.Contains(ThisEntry->ID))
+				{
+					UE_LOG(LogCameraSystem, Warning,
+							TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
+							ThisEntry->ID.GetValue(), *ThisEntry->DebugName, *OtherEntry.DebugName);
+					WarnedEntries.Add(ThisEntry->ID);
+				}
 #endif
 
 #if WITH_EDITORONLY_DATA

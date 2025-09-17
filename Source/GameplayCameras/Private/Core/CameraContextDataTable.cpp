@@ -619,9 +619,10 @@ FCameraContextDataTable::FEntry* FCameraContextDataTable::FindEntry(FCameraConte
 const uint8* FCameraContextDataTable::GetData(
 		FCameraContextDataID DataID,
 		ECameraContextDataType ExpectedDataType,
-		const UObject* ExpectedDataTypeObject) const
+		const UObject* ExpectedDataTypeObject,
+		bool bOnlyIfWritten) const
 {
-	const uint8* Data = TryGetData(DataID, ExpectedDataType, ExpectedDataTypeObject);
+	const uint8* Data = TryGetData(DataID, ExpectedDataType, ExpectedDataTypeObject, bOnlyIfWritten);
 	ensureMsgf(
 			Data, 
 			TEXT("Can't get camera context data (ID '%d') because it doesn't exist in the table, or isn't of the expected data type."), 
@@ -632,14 +633,16 @@ const uint8* FCameraContextDataTable::GetData(
 const uint8* FCameraContextDataTable::TryGetData(
 		FCameraContextDataID DataID,
 		ECameraContextDataType ExpectedDataType,
-		const UObject* ExpectedDataTypeObject) const
+		const UObject* ExpectedDataTypeObject,
+		bool bOnlyIfWritten) const
 {
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
 		if (Entry->Type == ExpectedDataType && 
 				Entry->ContainerType == ECameraContextDataContainerType::None && 
-				Entry->TypeObject == ExpectedDataTypeObject)
+				Entry->TypeObject == ExpectedDataTypeObject &&
+				(!bOnlyIfWritten || EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written)))
 		{
 			return Memory + Entry->Offset;
 		}
@@ -651,14 +654,16 @@ const uint8* FCameraContextDataTable::TryGetData(
 const FCameraContextDataTable::FEntryScriptArray* FCameraContextDataTable::TryGetArrayData(
 		FCameraContextDataID DataID,
 		ECameraContextDataType ExpectedDataType,
-		const UObject* ExpectedDataTypeObject) const
+		const UObject* ExpectedDataTypeObject,
+		bool bOnlyIfWritten) const
 {
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
 		if (Entry->Type == ExpectedDataType && 
 				Entry->ContainerType == ECameraContextDataContainerType::Array && 
-				Entry->TypeObject == ExpectedDataTypeObject)
+				Entry->TypeObject == ExpectedDataTypeObject &&
+				(!bOnlyIfWritten || EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written)))
 		{
 			return (FEntryScriptArray*)(Memory + Entry->Offset);
 		}
@@ -670,12 +675,15 @@ const FCameraContextDataTable::FEntryScriptArray* FCameraContextDataTable::TryGe
 const uint8* FCameraContextDataTable::TryGetRawDataPtr(
 		FCameraContextDataID DataID,
 		ECameraContextDataType ExpectedDataType,
-		const UObject* ExpectedDataTypeObject) const
+		const UObject* ExpectedDataTypeObject,
+		bool bOnlyIfWritten) const
 {
 	const FEntry* Entry = FindEntry(DataID);
 	if (Entry)
 	{
-		if (Entry->Type == ExpectedDataType && Entry->TypeObject == ExpectedDataTypeObject)
+		if (Entry->Type == ExpectedDataType && 
+				Entry->TypeObject == ExpectedDataTypeObject &&
+				(!bOnlyIfWritten || EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written)))
 		{
 			return Memory + Entry->Offset;
 		}

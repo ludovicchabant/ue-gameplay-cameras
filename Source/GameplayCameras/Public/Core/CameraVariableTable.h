@@ -155,17 +155,20 @@ public:
 	UE_API const uint8* GetValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
-			const UScriptStruct* ExpectedBlendableStructType) const;
+			const UScriptStruct* ExpectedBlendableStructType,
+			bool bOnlyIfWritten = true) const;
 
 	UE_API const uint8* TryGetValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
-			const UScriptStruct* ExpectedBlendableStructType) const;
+			const UScriptStruct* ExpectedBlendableStructType,
+			bool bOnlyIfWritten = true) const;
 
 	UE_API uint8* TryGetMutableValue(
 			FCameraVariableID VariableID,
 			ECameraVariableType ExpectedVariableType,
-			const UScriptStruct* ExpectedBlendableStructType);
+			const UScriptStruct* ExpectedBlendableStructType,
+			bool bOnlyIfWritten = true);
 
 	UE_API void SetValue(
 			FCameraVariableID VariableID, 
@@ -248,6 +251,10 @@ private:
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
 	uint32 Used = 0;
+
+#if WITH_EDITORONLY_DATA
+	TSet<FCameraVariableID> WarnedEntries;
+#endif
 
 	static UE_API TArray<FBlendableStructInfo> CachedBlendableStructs;
 	static UE_API bool bCachedBlendableStructs;
