@@ -46,7 +46,7 @@ public:
 	 * UGameplayCameraComponent) or an actor itself.
 	 */
 	UFUNCTION(BlueprintPure, Category="Evaluation", meta=(DeterminesOutputType="ActorClass"))
-	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass) const;
+	AActor* FindEvaluationContextOwnerActor(TSubclassOf<AActor> ActorClass = nullptr) const;
 
 	/** A utility function to get the current camera pose from this node's camera data. */
 	UFUNCTION(BlueprintPure, Category="Evaluation")
@@ -95,6 +95,10 @@ protected:
 	/** Whether this is the first frame of this camera node's lifetime. */
 	UPROPERTY(BlueprintReadOnly, Category="Evaluation")
 	bool bIsFirstFrame = false;
+
+	/** Whether this camera node is running inside the active camera rig in this layer. */
+	UPROPERTY(BlueprintReadOnly, Category="Evaluation")
+	bool bIsActiveCameraRig = false;
 
 	/** The owner object of this camera node's evaluation context. */
 	UPROPERTY(BlueprintReadOnly, Category="Evaluation")

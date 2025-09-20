@@ -198,6 +198,7 @@ void UBlueprintCameraNodeEvaluator::NativeRunCameraNode(const FCameraNodeEvaluat
 	SetupExecution(Params.EvaluationContext, OutResult);
 	{
 		bIsFirstFrame = Params.bIsFirstFrame;
+		bIsActiveCameraRig = Params.bIsActiveCameraRig;
 
 		TickCameraNode(Params.DeltaTime);
 	}
@@ -238,7 +239,7 @@ AActor* UBlueprintCameraNodeEvaluator::FindEvaluationContextOwnerActor(TSubclass
 			OwnerActor = ContextOwnerAsActor;
 		}
 
-		if (OwnerActor && OwnerActor->IsA(ActorClass))
+		if (OwnerActor && (!ActorClass || OwnerActor->IsA(ActorClass)))
 		{
 			return OwnerActor;
 		}
