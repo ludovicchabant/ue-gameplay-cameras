@@ -61,13 +61,19 @@ public:
 	UPROPERTY(EditAnywhere, Category=Camera)
 	bool bAutoReset = false;
 
+	/**
+	 * Whether this variable should be pre-blended.
+	 *
+	 * Pre-blending means that if two blending camera rigs share this variable, 
+	 * each of their values will be blended in a first evaluation pass, and then
+	 * both camera rigs will evaluate with the same blended value.
+	 */
+	UPROPERTY(EditAnywhere, Category=Camera)
+	bool bIsPreBlended = false;
+
 	/** Whether this variable is private and shouldn't be propagated with evaluation results. */
 	UPROPERTY()
 	bool bIsPrivate = false;
-
-	/** Whether this variable is an input variable that gets blended before node evaluators are run. */
-	UPROPERTY()
-	bool bIsInput = false;
 
 private:
 
