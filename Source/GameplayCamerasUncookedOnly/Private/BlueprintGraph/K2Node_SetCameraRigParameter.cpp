@@ -86,7 +86,7 @@ void UK2Node_SetCameraRigParameter::ExpandNode(FKismetCompilerContext& CompilerC
 	UK2Node_CallFunction* CallSetParameter = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(this, SourceGraph);
 	CallSetParameter->FunctionReference.SetExternalMember(TEXT("SetCameraParameter"), UCameraRigParameterInterop::StaticClass());
 	CallSetParameter->AllocateDefaultPins();
-	CompilerContext.MessageLog.NotifyIntermediateObjectCreation(CallSetParameter, SourceGraph);
+	CompilerContext.MessageLog.NotifyIntermediateObjectCreation(CallSetParameter, this);
 	UEdGraphPin* FirstExecPin = CallSetParameter->GetExecPin();
 
 	// Connect the camera evaluation result argument.

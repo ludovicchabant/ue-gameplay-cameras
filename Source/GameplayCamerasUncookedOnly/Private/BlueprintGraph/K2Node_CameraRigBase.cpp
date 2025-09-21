@@ -250,7 +250,7 @@ UK2Node_CallFunction* UK2Node_CameraRigBase::CreateMakeLiteralNode(FKismetCompil
 	UK2Node_CallFunction* MakeLiteralNode = CompilerContext.SpawnIntermediateNode<UK2Node_CallFunction>(SourceNode, SourceGraph);
 	MakeLiteralNode->FunctionReference.SetExternalMember(FunctionName, FunctionLibraryClass);
 	MakeLiteralNode->AllocateDefaultPins();
-	CompilerContext.MessageLog.NotifyIntermediateObjectCreation(MakeLiteralNode, SourceGraph);
+	CompilerContext.MessageLog.NotifyIntermediateObjectCreation(MakeLiteralNode, SourceNode);
 
 	UEdGraphPin* LiteralValuePin = MakeLiteralNode->FindPinChecked(TEXT("Value"));
 	LiteralValuePin->DefaultValue = SourceValuePin->DefaultValue;
@@ -311,7 +311,7 @@ UK2Node* UK2Node_CameraRigBase::MakeLiteralValueForPin(FKismetCompilerContext& C
 			UK2Node_EnumLiteral* EnumLiteralNode = CompilerContext.SpawnIntermediateNode<UK2Node_EnumLiteral>(SourceNode, SourceGraph);
 			EnumLiteralNode->Enum = EnumType;
 			EnumLiteralNode->AllocateDefaultPins();
-			CompilerContext.MessageLog.NotifyIntermediateObjectCreation(EnumLiteralNode, SourceGraph);
+			CompilerContext.MessageLog.NotifyIntermediateObjectCreation(EnumLiteralNode, SourceNode);
 
 			UEdGraphPin* EnumLiteralValuePin = EnumLiteralNode->FindPinChecked(UK2Node_EnumLiteral::GetEnumInputPinName());
 			EnumLiteralValuePin->DefaultValue = SourceValuePin->DefaultValue;
