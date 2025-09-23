@@ -60,6 +60,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Evaluation")
 	void SetDefaultOwningCameraRigParameters(FBlueprintCameraEvaluationDataRef TargetCameraData) const;
 
+	/* Gets the owning camera rig for this node. */
+	UFUNCTION(BlueprintPure, Category="Evaluation")
+	UCameraRigAsset* GetCameraRig() const;
+
 	/** Gets the player controller that the node is running for, if any. */
 	UFUNCTION(BlueprintPure, Category="Evaluation")
 	APlayerController* GetPlayerController() const;

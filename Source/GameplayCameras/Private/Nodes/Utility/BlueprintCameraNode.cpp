@@ -275,6 +275,11 @@ void UBlueprintCameraNodeEvaluator::SetDefaultOwningCameraRigParameters(FBluepri
 	}
 }
 
+UCameraRigAsset* UBlueprintCameraNodeEvaluator::GetCameraRig() const
+{
+	return BlueprintNode->GetTypedOuter<UCameraRigAsset>();
+}
+
 APlayerController* UBlueprintCameraNodeEvaluator::GetPlayerController() const
 {
 	if (CurrentContext)
