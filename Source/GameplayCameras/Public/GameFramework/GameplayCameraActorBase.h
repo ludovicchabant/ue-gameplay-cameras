@@ -29,7 +29,7 @@ public:
 public:
 
 	// AActor interface.
-	virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
+	GAMEPLAYCAMERAS_API virtual void CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult) override;
 
 protected:
 

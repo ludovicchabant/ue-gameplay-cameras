@@ -18,7 +18,7 @@ class AGameplayCameraActor : public AGameplayCameraActorBase
 
 public:
 
-	AGameplayCameraActor(const FObjectInitializer& ObjectInit);
+	GAMEPLAYCAMERAS_API AGameplayCameraActor(const FObjectInitializer& ObjectInit);
 
 public:
 
@@ -29,12 +29,12 @@ public:
 public:
 
 	// AActor interface.
-	virtual USceneComponent* GetDefaultAttachComponent() const override;
+	GAMEPLAYCAMERAS_API virtual USceneComponent* GetDefaultAttachComponent() const override;
 
 protected:
 
 	// AGameplayCameraActorBase interface.
-	virtual UGameplayCameraComponentBase* GetCameraComponentBase() const override;
+	GAMEPLAYCAMERAS_API virtual UGameplayCameraComponentBase* GetCameraComponentBase() const override;
 
 private:
 

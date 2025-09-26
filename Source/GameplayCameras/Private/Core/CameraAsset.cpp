@@ -7,6 +7,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigProxyAsset.h"
+#include "Misc/EngineVersionComparison.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectRedirector.h"
 #include "UObject/ObjectSaveContext.h"
@@ -175,7 +176,11 @@ void UCameraAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 #if WITH_EDITOR
 
 	const bool bIsUserObject = !HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,7,0)
+	const bool bIsEditorAutoSave = ObjectSaveContext.IsFromAutoSave();
+#else
 	const bool bIsEditorAutoSave = ((ObjectSaveContext.GetSaveFlags() & SAVE_FromAutosave) != 0);
+#endif  // UE >= 5.7.0
 	if (bIsUserObject && !bIsEditorAutoSave)
 	{
 		// Build when saving/cooking.
