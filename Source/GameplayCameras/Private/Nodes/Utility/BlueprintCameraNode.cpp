@@ -128,9 +128,7 @@ void FBlueprintCameraNodeEvaluator::ApplyParameterOverrides(const FCameraVariabl
 						BlendableParameter.OverrideVariableID,
 						BlendableParameter.ParameterType,
 						BlendableParameter.BlendableStructType);
-				if (ensureMsgf(ValuePtr, 
-							TEXT("Can't find variable table entry for parameter '%s'. Did you build camera rig '%s'?"),
-							*BlendableParameter.ParameterName.ToString(), *GetNameSafe(BlueprintNode->GetOutermost())))
+				if (ValuePtr)
 				{
 					Property->SetValue_InContainer(EvaluatorBlueprint, ValuePtr);
 				}
@@ -150,9 +148,7 @@ void FBlueprintCameraNodeEvaluator::ApplyParameterOverrides(const FCameraVariabl
 						DataParameter.OverrideDataID,
 						DataParameter.ParameterType,
 						DataParameter.ParameterTypeObject);
-				if (ensureMsgf(DataPtr, 
-							TEXT("Can't find variable table entry for parameter '%s'. Did you build camera rig '%s'?"),
-							*DataParameter.ParameterName.ToString(), *GetNameSafe(BlueprintNode->GetOutermost())))
+				if (DataPtr)
 				{
 					Property->SetValue_InContainer(EvaluatorBlueprint, DataPtr);
 				}
