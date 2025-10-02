@@ -4,6 +4,7 @@
 
 #include "Camera/PlayerCameraManager.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraShakeInstanceID.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
 
 #include "GameplayCamerasPlayerCameraManager.generated.h"
@@ -107,6 +108,24 @@ public:
 	/** Stops a camera modifier rig on previously started on the global or visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
+
+public:
+
+	/** Starts a new camera shake. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraShakeInstanceID StartCameraShakeAsset(
+			const UCameraShakeAsset* CameraShake,
+			float ShakeScale = 1.f,
+			ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal,
+			FRotator UserPlaySpaceRotation = FRotator::ZeroRotator);
+
+	/** Checks if a camera shake is running. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const;
+
+	/** Stops a running camera shake. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
 
 public:
 

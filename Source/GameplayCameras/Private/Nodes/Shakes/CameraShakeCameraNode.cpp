@@ -105,6 +105,7 @@ void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 		FCameraNodeShakeParams ShakeParams(Params);
 		FCameraNodeShakeResult ShakeResult(OutResult);
 		CameraShakeRootEvaluator->ShakeResult(ShakeParams, ShakeResult);
+		ShakeResult.ApplyDelta(ShakeParams);
 	}
 	// If evaluating the shake later in the visual layer, keep requesting that the shake service
 	// maintains this shake alive. We already put the shake's parameters inside the variable table so

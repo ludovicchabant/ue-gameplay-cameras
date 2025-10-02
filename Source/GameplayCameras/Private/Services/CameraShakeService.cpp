@@ -11,6 +11,8 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Core/ShakeCameraNode.h"
+#include "Nodes/Blends/InterruptedBlendCameraNode.h"
+#include "Nodes/Blends/ReverseBlendCameraNode.h"
 #include "UObject/ObjectMacros.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraShakeService)
@@ -24,7 +26,9 @@ class FCameraShakeServiceCameraNodeEvaluator : public FCameraNodeEvaluator
 
 public:
 
-	void StartCameraShake(const FStartCameraShakeParams& Params);
+	FCameraShakeInstanceID StartCameraShake(const FStartCameraShakeParams& Params);
+	bool IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const;
+	bool StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately);
 	void RequestCameraShakeThisFrame(const FStartCameraShakeParams& Params);
 
 protected:
@@ -45,27 +49,39 @@ private:
 		const UCameraShakeAsset* CameraShake,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext);
 
+	bool InitializeEntryBlendOut(FShakeEntry& Entry);
+
 	void PopEntry(int32 EntryIndex);
 
 private:
 
+	enum class EBlendStatus
+	{
+		None,
+		BlendIn,
+		BlendOut
+	};
+
 	struct FShakeEntry
 	{
+		FCameraShakeInstanceID EntryID;
 		TWeakPtr<const FCameraEvaluationContext> EvaluationContext;
 		TObjectPtr<const UCameraShakeAsset> CameraShake;
 		FCameraNodeEvaluatorStorage EvaluatorStorage;
-		FBlendCameraNodeEvaluator* BlendInEvaluator = nullptr;
-		FBlendCameraNodeEvaluator* BlendOutEvaluator = nullptr;
+		FBlendCameraNodeEvaluator* BlendEvaluator = nullptr;
 		FShakeCameraNodeEvaluator* RootEvaluator = nullptr;
 		FCameraNodeEvaluatorHierarchy EvaluatorHierarchy;
 		FCameraNodeEvaluationResult Result;
 		float CurrentTime = 0.f;
 		float ShakeScale = 1.f;
+		EBlendStatus BlendStatus = EBlendStatus::None;
 		ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal;
-		FMatrix UserPlaySpaceMatrix;
+		FMatrix UserPlaySpaceMatrix = FMatrix::Identity;
 		uint8 NumRequests = 0;
 		bool bPersistentRequest = false;
 		bool bIsFirstFrame = false;
+		bool bIsBlendFull = false;
+		bool bIsBlendFinished = false;
 	};
 
 	FCameraSystemEvaluator* OwningEvaluator = nullptr;
@@ -73,6 +89,8 @@ private:
 	const FCameraVariableTable* BlendedParameters = nullptr;;
 
 	TArray<FShakeEntry> Entries;
+
+	uint32 NextEntryID = 0;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FCameraShakeServiceCameraNodeEvaluator)
@@ -87,11 +105,11 @@ FCameraNodeEvaluatorChildrenView FCameraShakeServiceCameraNodeEvaluator::OnGetCh
 	return ChildrenView;
 }
 
-void FCameraShakeServiceCameraNodeEvaluator::StartCameraShake(const FStartCameraShakeParams& Params)
+FCameraShakeInstanceID FCameraShakeServiceCameraNodeEvaluator::StartCameraShake(const FStartCameraShakeParams& Params)
 {
 	if (!Params.CameraShake)
 	{
-		return;
+		return FCameraShakeInstanceID();
 	}
 
 	// If this shake wants to only have a single instance active at a time, look for a running
@@ -111,7 +129,7 @@ void FCameraShakeServiceCameraNodeEvaluator::StartCameraShake(const FStartCamera
 		{
 			FCameraNodeShakeRestartParams RestartParams;
 			ExistingEntry->RootEvaluator->RestartShake(RestartParams);
-			return;
+			return ExistingEntry->EntryID;
 		}
 	}
 
@@ -119,7 +137,44 @@ void FCameraShakeServiceCameraNodeEvaluator::StartCameraShake(const FStartCamera
 	if (NewEntry)
 	{
 		NewEntry->bPersistentRequest = true;
+		return NewEntry->EntryID;
 	}
+	return FCameraShakeInstanceID();
+}
+
+bool FCameraShakeServiceCameraNodeEvaluator::IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const
+{
+	return Entries.ContainsByPredicate(
+			[InInstanceID](const FShakeEntry& Entry)
+			{
+				return Entry.EntryID == InInstanceID;
+			});
+}
+
+bool FCameraShakeServiceCameraNodeEvaluator::StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately)
+{
+	const int32 EntryIndex = Entries.IndexOfByPredicate(
+			[InInstanceID](const FShakeEntry& Entry)
+			{
+				return Entry.EntryID == InInstanceID;
+			});
+	if (EntryIndex != INDEX_NONE)
+	{
+		if (bImmediately)
+		{
+			PopEntry(EntryIndex);
+		}
+		else
+		{
+			const bool bHasBlendOut = InitializeEntryBlendOut(Entries[EntryIndex]);
+			if (!bHasBlendOut)
+			{
+				PopEntry(EntryIndex);
+			}
+		}
+		return true;
+	}
+	return false;
 }
 
 void FCameraShakeServiceCameraNodeEvaluator::RequestCameraShakeThisFrame(const FStartCameraShakeParams& Params)
@@ -164,7 +219,11 @@ FCameraShakeServiceCameraNodeEvaluator::FShakeEntry* FCameraShakeServiceCameraNo
 
 	NewEntry.ShakeScale = Params.ShakeScale;
 	NewEntry.PlaySpace = Params.PlaySpace;
-	NewEntry.UserPlaySpaceMatrix = Params.UserPlaySpaceMatrix;
+	NewEntry.UserPlaySpaceMatrix = FMatrix::Identity;
+	if (Params.PlaySpace == ECameraShakePlaySpace::UserDefined)
+	{
+		NewEntry.UserPlaySpaceMatrix = FRotationMatrix(Params.UserPlaySpaceRotation);
+	}
 
 	const int32 AddedIndex = Entries.Add(MoveTemp(NewEntry));
 	return &Entries[AddedIndex];
@@ -222,8 +281,14 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 
 		// Update timing.
 		Entry.CurrentTime += Params.DeltaTime;
+
+		// Run the blend.
+		if (Entry.BlendEvaluator)
+		{
+			Entry.BlendEvaluator->Run(CurParams, CurResult);
+		}
 		
-		// Run the shake!
+		// Run the shake and apply it.
 		float CurTimeLeft = 0.f;
 		if (Entry.RootEvaluator)
 		{
@@ -238,6 +303,8 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 
 			Entry.RootEvaluator->ShakeResult(ShakeParams, ShakeResult);
 
+			ShakeResult.ApplyDelta(ShakeParams);
+
 			CurTimeLeft = ShakeResult.ShakeTimeLeft;
 		}
 
@@ -245,36 +312,56 @@ void FCameraShakeServiceCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPa
 		Entry.NumRequests = 0;
 
 		// If it says it's finished, schedule it for removal.
+		// (note that negative time left means the shake should play indefinitely)
 		if (CurTimeLeft == 0)
 		{
 			EntriesToRemove.Add(Index);
 			continue;
 		}
 
-		// Update blends.
-		if (Entry.CameraShake->BlendIn && 
-				Entry.CurrentTime < Entry.CameraShake->BlendIn->BlendTime.GetValue(OutResult.VariableTable) &&
-				ensure(Entry.BlendInEvaluator))
+		// Check if we need to start blending out.
+		if (Entry.BlendStatus != EBlendStatus::BlendOut &&
+				Entry.CameraShake->BlendOut &&
+				CurTimeLeft >= 0.f && 
+				CurTimeLeft < Entry.CameraShake->BlendOut->BlendTime.GetValue(CurResult.VariableTable))
 		{
-			Entry.BlendInEvaluator->Run(CurParams, CurResult);
-
-			FCameraNodeBlendParams BlendParams(Params, Entry.Result);
-			FCameraNodeBlendResult BlendResult(OutResult);
-			Entry.BlendInEvaluator->BlendResults(BlendParams, BlendResult);
+			const bool bHasBlendOut = InitializeEntryBlendOut(Entry);
+			if (!bHasBlendOut)
+			{
+				EntriesToRemove.Add(Index);
+				continue;
+			}
 		}
-		else if (Entry.CameraShake->BlendOut &&
-				CurTimeLeft >= 0.f && CurTimeLeft < Entry.CameraShake->BlendOut->BlendTime.GetValue(OutResult.VariableTable) &&
-				ensure(Entry.BlendOutEvaluator))
-		{
-			Entry.BlendOutEvaluator->Run(CurParams, CurResult);
 
-			FCameraNodeBlendParams BlendParams(Params, Entry.Result);
+		// Apply blending.
+		if (Entry.BlendEvaluator)
+		{
+			FCameraNodeBlendParams BlendParams(Params, CurResult);
 			FCameraNodeBlendResult BlendResult(OutResult);
-			Entry.BlendOutEvaluator->BlendResults(BlendParams, BlendResult);
+			Entry.BlendEvaluator->BlendResults(BlendParams, BlendResult);
+
+			Entry.bIsBlendFull = BlendResult.bIsBlendFull;
+			Entry.bIsBlendFinished = BlendResult.bIsBlendFinished;
 		}
 		else
 		{
 			OutResult.OverrideAll(CurResult);
+		}
+
+		// Update blend status.
+		if (Entry.BlendStatus == EBlendStatus::BlendIn)
+		{
+			if (Entry.bIsBlendFull && Entry.bIsBlendFinished)
+			{
+				Entry.BlendStatus = EBlendStatus::None;
+			}
+		}
+		else if (Entry.BlendStatus == EBlendStatus::BlendOut)
+		{
+			if (Entry.bIsBlendFull && Entry.bIsBlendFinished)
+			{
+				EntriesToRemove.Add(Index);
+			}
 		}
 	}
 
@@ -296,23 +383,13 @@ void FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	BuildParams.AllocationInfo = &CameraShake->AllocationInfo.EvaluatorInfo;
 	FCameraNodeEvaluator* RootEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BuildParams);
 
-	// Generate the blend-in and blend-out evaluators.
+	// Generate the blend-in evaluator.
 	FBlendCameraNodeEvaluator* BlendInEvaluator = nullptr;
 	if (CameraShake->BlendIn)
 	{
 		FCameraNodeEvaluatorTreeBuildParams BlendBuildParams;
 		BlendBuildParams.RootCameraNode = CameraShake->BlendIn;
 		BlendInEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BlendBuildParams)->CastThis<FBlendCameraNodeEvaluator>();
-	}
-	FBlendCameraNodeEvaluator* BlendOutEvaluator = nullptr;
-	if (CameraShake->BlendOut)
-	{
-		FCameraNodeEvaluatorTreeBuildParams BlendBuildParams;
-		BlendBuildParams.RootCameraNode = CameraShake->BlendOut;
-		BlendOutEvaluator = NewEntry.EvaluatorStorage.BuildEvaluatorTree(BlendBuildParams)->CastThis<FBlendCameraNodeEvaluator>();
-
-		const bool bReversed = BlendOutEvaluator->SetReversed(true);
-		ensure(bReversed);  // TODO: if the blend can't play in reverse, wrap it in a reverse blend evaluator.
 	}
 
 	// Allocate variable table and context data table.
@@ -325,6 +402,14 @@ void FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	NewEntry.Result.ContextDataTable.OverrideAll(ContextResult.ContextDataTable);
 
 	// Initialize the node evaluators.
+	if (BlendInEvaluator)
+	{
+		FCameraNodeEvaluatorInitializeParams BlendInInitParams;
+		BlendInInitParams.Evaluator = OwningEvaluator;
+		BlendInInitParams.EvaluationContext = EvaluationContext;
+		BlendInInitParams.Layer = ECameraRigLayer::Visual;
+		BlendInEvaluator->Initialize(BlendInInitParams, NewEntry.Result);
+	}
 	if (RootEvaluator)
 	{
 		FCameraNodeEvaluatorInitializeParams InitParams(&NewEntry.EvaluatorHierarchy);
@@ -335,14 +420,76 @@ void FCameraShakeServiceCameraNodeEvaluator::InitializeEntry(
 	}
 
 	// Wrap up!
+	NewEntry.EntryID = FCameraShakeInstanceID(NextEntryID++);
 	NewEntry.EvaluationContext = EvaluationContext;
 	NewEntry.CameraShake = CameraShake;
-	NewEntry.BlendInEvaluator = BlendInEvaluator;
-	NewEntry.BlendOutEvaluator = BlendOutEvaluator;
+	NewEntry.BlendEvaluator = BlendInEvaluator;
+	NewEntry.BlendStatus = (BlendInEvaluator != nullptr ? EBlendStatus::BlendIn : EBlendStatus::None);
+	NewEntry.bIsBlendFull = (BlendInEvaluator == nullptr);
+	NewEntry.bIsBlendFinished = (BlendInEvaluator == nullptr);
 	NewEntry.bIsFirstFrame = true;
 	if (RootEvaluator)
 	{
 		NewEntry.RootEvaluator = RootEvaluator->CastThisChecked<FShakeCameraNodeEvaluator>();
+	}
+}
+
+bool FCameraShakeServiceCameraNodeEvaluator::InitializeEntryBlendOut(FShakeEntry& Entry)
+{
+	if (const USimpleFixedTimeBlendCameraNode* BlendOut = Entry.CameraShake->BlendOut)
+	{
+		// Swap the blend-in evaluator on this entry with a blend-out one.
+		if (Entry.BlendStatus != EBlendStatus::BlendOut)
+		{
+			FCameraNodeEvaluatorBuilder BlendOutBuilder(Entry.EvaluatorStorage);
+			FCameraNodeEvaluatorBuildParams BlendOutBuildParams(BlendOutBuilder);
+			FBlendCameraNodeEvaluator* BlendOutEvaluator = BlendOutBuildParams.BuildEvaluatorAs<FBlendCameraNodeEvaluator>(BlendOut);
+
+			FCameraNodeEvaluatorInitializeParams BlendOutInitParams;
+			BlendOutInitParams.Evaluator = OwningEvaluator;
+			BlendOutInitParams.EvaluationContext = Entry.EvaluationContext.Pin();
+			BlendOutInitParams.Layer = ECameraRigLayer::Visual;
+			BlendOutEvaluator->Initialize(BlendOutInitParams, Entry.Result);
+
+			// Reverse this blend so it plays as a blend-out. Also, see if we are going to 
+			// interrupt an ongoing blend-in... if so, give a chance for the blend-out to
+			// start at an "equivalent spot".
+			if (!BlendOutEvaluator->SetReversed(true))
+			{
+				BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FReverseBlendCameraNodeEvaluator>(BlendOutEvaluator);
+			}
+			if (Entry.BlendStatus == EBlendStatus::BlendIn && ensure(Entry.BlendEvaluator))
+			{
+				FBlendCameraNodeEvaluator* OngoingBlend = Entry.BlendEvaluator;
+
+				FCameraNodeBlendInterruptionParams InterruptionParams;
+				InterruptionParams.InterruptedBlend = OngoingBlend;
+				if (!BlendOutEvaluator->InitializeFromInterruption(InterruptionParams))
+				{
+					BlendOutEvaluator = Entry.EvaluatorStorage.BuildEvaluator<FInterruptedBlendCameraNodeEvaluator>(BlendOutEvaluator, OngoingBlend);
+				}
+			}
+			// Note: neither the reverse or interrupted blends need initialization, but
+			// technically we're missing calling it on them.
+			Entry.BlendEvaluator = BlendOutEvaluator;
+
+			Entry.BlendStatus = EBlendStatus::BlendOut;
+			Entry.bIsBlendFinished = false;
+			Entry.bIsBlendFull = false;
+		}
+		// else: we were already blending out, so let this continue.
+
+		return true;
+	}
+	else
+	{
+		// No blend out, just stop.
+		Entry.BlendEvaluator = nullptr;
+		Entry.BlendStatus = EBlendStatus::BlendOut;
+		Entry.bIsBlendFull = true;
+		Entry.bIsBlendFinished = true;
+
+		return false;
 	}
 }
 
@@ -372,14 +519,34 @@ void FCameraShakeService::OnTeardown(const FCameraEvaluationServiceTeardownParam
 	Evaluator = nullptr;
 }
 
-void FCameraShakeService::StartCameraShake(const FStartCameraShakeParams& Params)
+FCameraShakeInstanceID FCameraShakeService::StartCameraShake(const FStartCameraShakeParams& Params)
 {
 	EnsureShakeContextCreated();
 
 	if (ensure(ShakeEvaluator))
 	{
-		ShakeEvaluator->StartCameraShake(Params);
+		return ShakeEvaluator->StartCameraShake(Params);
 	}
+
+	return FCameraShakeInstanceID();
+}
+
+bool FCameraShakeService::IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const
+{
+	if (ShakeEvaluator)
+	{
+		return ShakeEvaluator->IsCameraShakePlaying(InInstanceID);
+	}
+	return false;
+}
+
+bool FCameraShakeService::StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately)
+{
+	if (ShakeEvaluator)
+	{
+		return ShakeEvaluator->StopCameraShake(InInstanceID, bImmediately);
+	}
+	return false;
 }
 
 void FCameraShakeService::RequestCameraShakeThisFrame(const FStartCameraShakeParams& Params)

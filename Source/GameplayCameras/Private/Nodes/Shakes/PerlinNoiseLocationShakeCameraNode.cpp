@@ -112,9 +112,7 @@ void FPerlinNoiseLocationShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvalua
 
 void FPerlinNoiseLocationShakeCameraNodeEvaluator::OnShakeResult(const FCameraNodeShakeParams& Params, FCameraNodeShakeResult& OutResult)
 {
-	FVector3d Location = OutResult.ShakenResult.CameraPose.GetLocation();
-	Location += NoiseValue;
-	OutResult.ShakenResult.CameraPose.SetLocation(Location);
+	OutResult.ShakeDelta.Location += NoiseValue;
 	OutResult.ShakeTimeLeft = -1.f;
 }
 

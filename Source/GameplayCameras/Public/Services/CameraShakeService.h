@@ -5,6 +5,7 @@
 #include "Camera/CameraTypes.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraEvaluationService.h"
+#include "Core/CameraShakeInstanceID.h"
 
 #include "CameraShakeService.generated.h"
 
@@ -29,7 +30,7 @@ struct FStartCameraShakeParams
 	/** The play space to modify the result by */
 	ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal;
 	/** The custom space to use for the shake. Only used when PlaySpace is UserDefined. */
-	FMatrix UserPlaySpaceMatrix;
+	FRotator UserPlaySpaceRotation;
 };
 
 /**
@@ -42,7 +43,13 @@ class FCameraShakeService : public FCameraEvaluationService
 public:
 
 	/** Starts a new camera shake. */
-	GAMEPLAYCAMERAS_API void StartCameraShake(const FStartCameraShakeParams& Params);
+	GAMEPLAYCAMERAS_API FCameraShakeInstanceID StartCameraShake(const FStartCameraShakeParams& Params);
+
+	/** Checks if a camera shake is running. */
+	GAMEPLAYCAMERAS_API bool IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const;
+
+	/** Stops a running camera shake. */
+	GAMEPLAYCAMERAS_API bool StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
 
 	/**
 	 * Requests that a given camera shake runs. Multiple requests for the same
@@ -63,10 +70,16 @@ private:
 
 private:
 
+	/** The system running this service. */
 	FCameraSystemEvaluator* Evaluator = nullptr;
 
+	/** The evaluation context used for running the shakes. */
 	TSharedPtr<FCameraEvaluationContext> ShakeContext;
+
+	/** The camera rig used to create the shake container. */
 	TObjectPtr<UCameraRigAsset> ShakeContainerRig = nullptr;
+
+	/** The shake container evaluator. */
 	FCameraShakeServiceCameraNodeEvaluator* ShakeEvaluator = nullptr;
 };
 

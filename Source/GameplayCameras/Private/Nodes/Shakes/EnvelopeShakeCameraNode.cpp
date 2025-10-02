@@ -105,14 +105,30 @@ void FEnvelopeShakeCameraNodeEvaluator::OnShakeResult(const FCameraNodeShakePara
 		Alpha = SmoothStep((TotalTime - CurrentTime) / EaseOutTime);
 	}
 
-	OutResult.ShakeTimeLeft = (TotalTime - CurrentTime);
+	const float EnvelopeTimeLeft = (TotalTime - CurrentTime);
 	{
 		FCameraNodeShakeParams ChildParams(Params);
 		ChildParams.ShakeScale *= Alpha;
 
-		ShakeEvaluator->ShakeResult(ChildParams, OutResult);
+		FCameraNodeShakeResult ChildResult(OutResult.ShakenResult);
+
+		ShakeEvaluator->ShakeResult(ChildParams, ChildResult);
+
+		OutResult.ShakeDelta.Combine(ChildResult.ShakeDelta, ChildParams.ShakeScale);
+		OutResult.ShakeTimeLeft = ChildResult.ShakeTimeLeft;
 	}
-	OutResult.ShakeTimeLeft = FMath::Clamp(OutResult.ShakeTimeLeft, 0, TotalTime - CurrentTime);
+
+	if (OutResult.ShakeTimeLeft >= 0.f)
+	{
+		// The underlying shake has a finite duration, so we end when it ends, or when we
+		// reach our total time, whichever happens first.
+		OutResult.ShakeTimeLeft = FMath::Clamp(OutResult.ShakeTimeLeft, 0, EnvelopeTimeLeft);
+	}
+	else
+	{
+		// The underlying shake is infinite, so we drive the duration.
+		OutResult.ShakeTimeLeft = EnvelopeTimeLeft;
+	}
 }
 
 void FEnvelopeShakeCameraNodeEvaluator::OnRestartShake(const FCameraNodeShakeRestartParams& Params)

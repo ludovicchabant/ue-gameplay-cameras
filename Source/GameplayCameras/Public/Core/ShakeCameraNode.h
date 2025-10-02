@@ -36,7 +36,27 @@ struct FCameraNodeShakeParams
 	/** The play space to modify the result by */
 	ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal;
 	/** The custom space to use for the shake. Only used when PlaySpace is UserDefined. */
-	FMatrix UserPlaySpaceMatrix;
+	FMatrix UserPlaySpaceMatrix = FMatrix::Identity;
+};
+
+/**
+ * A structure that describes a group of offset values representing a shake.
+ */
+struct FCameraNodeShakeDelta
+{
+	/** Position shake, which will be scaled and applied as a delta in the desired space. */
+	FVector3d Location = FVector3d::ZeroVector;
+
+	/** Rotation shake, which will be scaled and applied as a delta in the desired space. */
+	FRotator3d Rotation = FRotator3d::ZeroRotator;
+
+	/** Field of view shake, which will be scaled and applied as a delta. */
+	float FieldOfView = 0.f;
+
+public:
+
+	/** Combines this shake delta with another, optionally scaled, shake delta. */
+	void Combine(const FCameraNodeShakeDelta& Other, float OtherScale = 1.f);
 };
 
 /**
@@ -51,8 +71,23 @@ struct FCameraNodeShakeResult
 	/** The result that should be shaken. */
 	FCameraNodeEvaluationResult& ShakenResult;
 
+	/** 
+	 * Delta values that should be applied to the shaken result.
+	 *
+	 * These are simpler to set and combine inside camera shake nodes, since they will be applied
+	 * with the correct scale and in the correct space at the end. By comparison, writing to the
+	 * ShakenResult field directly requires taking into account all the parameters first (see 
+	 * FCameraNodeShakeParams).
+	 */
+	FCameraNodeShakeDelta ShakeDelta;
+
 	/** The time left in this shake, if applicable. Negative values indicate an infinite shake. */
 	float ShakeTimeLeft = 0.f;
+
+public:
+
+	/** Apply the delta values to the shaken result. */
+	void ApplyDelta(const FCameraNodeShakeParams& Params);
 };
 
 /**

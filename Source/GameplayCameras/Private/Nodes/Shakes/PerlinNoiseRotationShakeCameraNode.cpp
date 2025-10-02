@@ -111,9 +111,7 @@ void FPerlinNoiseRotationShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvalua
 
 void FPerlinNoiseRotationShakeCameraNodeEvaluator::OnShakeResult(const FCameraNodeShakeParams& Params, FCameraNodeShakeResult& OutResult)
 {
-	FRotator3d Rotation = OutResult.ShakenResult.CameraPose.GetRotation();
-	Rotation += NoiseValue;
-	OutResult.ShakenResult.CameraPose.SetRotation(Rotation);
+	OutResult.ShakeDelta.Rotation += NoiseValue;
 	OutResult.ShakeTimeLeft = -1.f;
 }
 
