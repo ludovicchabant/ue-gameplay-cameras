@@ -155,8 +155,6 @@ private:
 
 	TSharedPtr<UE::Cameras::FCameraEvaluationContext> NullContext;
 
-	FMinimalViewInfo LastFrameDesiredView;
-
 	bool bIsSettingNewViewTarget = false;
 };
 

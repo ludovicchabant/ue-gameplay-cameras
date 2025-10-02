@@ -294,12 +294,54 @@ void AGameplayCamerasPlayerCameraManager::DoUpdateCamera(float DeltaTime)
 {
 	using namespace UE::Cameras;
 
-	Super::DoUpdateCamera(DeltaTime);
+	// Don't up-call Super::DoUpdateCamera because:
+	//
+	// 1) it runs the view targets' CalcCamera or GetCameraView, which we already do inside our camera system,
+	//    and we don't want them to double-update.
+	// 2) it does a bunch of stuff regarding the pending view target that we don't care about.
+	// 3) it applies the camera modifiers twice (once for the view target, once for the pending view target)
+	//    which means that things like shakes can look like they're twice as "intense" during blends, and also
+	//    means that modifiers get applied at the wrong level.
+	//
+	// So as a result, until we refactor the base camera manager class, we have to re-do some of the logic we
+	// want to keep, such as color scale interpolation and screen/audio fading.
+	//
+
+	if (bEnableColorScaleInterp)
+	{
+		float BlendPct = FMath::Clamp((GetWorld()->TimeSeconds - ColorScaleInterpStartTime) / ColorScaleInterpDuration, 0.f, 1.0f);
+		ColorScale = FMath::Lerp(OriginalColorScale, DesiredColorScale, BlendPct);
+		if (BlendPct == 1.0f)
+		{
+			bEnableColorScaleInterp = false;
+		}
+	}
+
+	if (bEnableFading)
+	{
+		if (bAutoAnimateFade)
+		{
+			FadeTimeRemaining = FMath::Max(FadeTimeRemaining - DeltaTime, 0.0f);
+			if (FadeTime > 0.0f)
+			{
+				FadeAmount = FadeAlpha.X + ((1.f - FadeTimeRemaining / FadeTime) * (FadeAlpha.Y - FadeAlpha.X));
+			}
+
+			if ((bHoldFadeWhenFinished == false) && (FadeTimeRemaining <= 0.f))
+			{
+				// done
+				StopCameraFade();
+			}
+		}
+
+		if (bFadeAudio)
+		{
+			ApplyAudioFade();
+		}
+	}
 
 	if (CameraSystemEvaluator.IsValid())
 	{
-		FillCameraCache(LastFrameDesiredView);
-
 		FCameraSystemEvaluationParams UpdateParams;
 		UpdateParams.DeltaTime = DeltaTime;
 		CameraSystemEvaluator->Update(UpdateParams);
@@ -307,11 +349,13 @@ void AGameplayCamerasPlayerCameraManager::DoUpdateCamera(float DeltaTime)
 		FMinimalViewInfo DesiredView;
 		CameraSystemEvaluator->GetEvaluatedCameraView(DesiredView);
 
+		ApplyCameraModifiers(DeltaTime, DesiredView);
+
 		FillCameraCache(DesiredView);
 
-		LastFrameDesiredView = DesiredView;
-
 		CleanUpViewTargetContexts();
+
+		SetActorLocationAndRotation(DesiredView.Location, DesiredView.Rotation, false);
 	}
 }
 
