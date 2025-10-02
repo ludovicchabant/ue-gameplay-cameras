@@ -104,7 +104,10 @@ void AGameplayCamerasPlayerCameraManager::EnsureNullContext()
 
 	if (!NullContext)
 	{
-		NullContext = MakeShared<FCameraEvaluationContext>();
+		FCameraEvaluationContextInitializeParams InitParams;
+		InitParams.Owner = this;
+		InitParams.PlayerController = GetOwningPlayerController();
+		NullContext = MakeShared<FCameraEvaluationContext>(InitParams);
 	}
 }
 
@@ -114,8 +117,10 @@ FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartGlobalCameraModif
 
 	if (CameraSystemEvaluator)
 	{
+		EnsureNullContext();
+
 		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Global, OrderKey);
+		return CameraModifierService->StartCameraModifierRig(CameraRig, NullContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
 	}
 
 	return FCameraRigInstanceID();
@@ -127,8 +132,10 @@ FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartVisualCameraModif
 
 	if (CameraSystemEvaluator)
 	{
+		EnsureNullContext();
+
 		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, ECameraRigLayer::Visual, OrderKey);
+		return CameraModifierService->StartCameraModifierRig(CameraRig, NullContext.ToSharedRef(), ECameraRigLayer::Visual, OrderKey);
 	}
 
 	return FCameraRigInstanceID();

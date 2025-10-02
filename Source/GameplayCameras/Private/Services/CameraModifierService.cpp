@@ -28,12 +28,17 @@ void FCameraModifierService::OnTeardown(const FCameraEvaluationServiceTeardownPa
 
 FCameraRigInstanceID FCameraModifierService::StartCameraModifierRig(const UCameraRigAsset* CameraRig, ECameraRigLayer Layer, int32 OrderKey)
 {
+	EnsureModifierContextCreated();
+
+	return StartCameraModifierRig(CameraRig, ModifierContext.ToSharedRef(), Layer, OrderKey);
+}
+
+FCameraRigInstanceID FCameraModifierService::StartCameraModifierRig(const UCameraRigAsset* CameraRig, TSharedRef<FCameraEvaluationContext> EvaluationContext, ECameraRigLayer Layer, int32 OrderKey)
+{
 	if (ensure(Evaluator))
 	{
-		EnsureModifierContextCreated();
-
 		FActivateCameraRigParams ActivateParams;
-		ActivateParams.EvaluationContext = ModifierContext;
+		ActivateParams.EvaluationContext = EvaluationContext;
 		ActivateParams.CameraRig = CameraRig;
 		ActivateParams.Layer = Layer;
 		ActivateParams.OrderKey = FirstBlendStackOrderKey + OrderKey;

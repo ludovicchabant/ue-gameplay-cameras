@@ -96,12 +96,15 @@ public:
 
 public:
 
+	/** Starts a camera modifier rig on the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	FCameraRigInstanceID StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
 
+	/** Starts a camera modifier rig on the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	FCameraRigInstanceID StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
 
+	/** Stops a camera modifier rig on previously started on the global or visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
 

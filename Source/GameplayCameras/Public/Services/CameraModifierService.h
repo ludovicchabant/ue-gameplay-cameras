@@ -28,6 +28,9 @@ public:
 	/** Starts a new instance of the given camera rig, using a "null" context. */
 	GAMEPLAYCAMERAS_API FCameraRigInstanceID StartCameraModifierRig(const UCameraRigAsset* CameraRig, ECameraRigLayer Layer, int32 OrderKey = 0);
 
+	/** Starts a new instance of the given camera rig, using the given context. */
+	GAMEPLAYCAMERAS_API FCameraRigInstanceID StartCameraModifierRig(const UCameraRigAsset* CameraRig, TSharedRef<FCameraEvaluationContext> EvaluationContext, ECameraRigLayer Layer, int32 OrderKey = 0);
+
 	/** Stops a running instance of a camera rig. */
 	GAMEPLAYCAMERAS_API void StopCameraModifierRig(FCameraRigInstanceID CameraRigID, bool bImmediately = false);
 
