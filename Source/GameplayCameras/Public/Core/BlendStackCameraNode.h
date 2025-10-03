@@ -167,6 +167,8 @@ protected:
 	void AddPackageListeners(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager, FCameraRigEntry& Entry);
+
+	void BuildCameraRigIfNeeded(const UCameraRigAsset* InCameraRig);
 #endif
 
 protected:
@@ -253,6 +255,7 @@ protected:
 
 #if WITH_EDITOR
 	TMap<TWeakObjectPtr<const UPackage>, int32> AllListenedPackages;
+	TSet<TWeakObjectPtr<const UCameraRigAsset>> BuiltCameraRigs;
 #endif  // WITH_EDITOR
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

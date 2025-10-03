@@ -2,6 +2,8 @@
 
 #include "Core/BlendStackCameraNode.h"
 
+#include "Build/CameraRigAssetBuilder.h"
+#include "Build/CameraBuildLog.h"
 #include "Core/BlendStackCameraRigEvent.h"
 #include "Core/BlendStackRootCameraNode.h"
 #include "Core/CameraAsset.h"
@@ -20,6 +22,8 @@
 #include "Debug/CameraPoseLocationTrailDebugBlock.h"
 #include "Debug/ContextDataTableDebugBlock.h"
 #include "Debug/VariableTableDebugBlock.h"
+#include "Engine/World.h"
+#include "GameplayCamerasSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "IGameplayCamerasLiveEditManager.h"
@@ -534,6 +538,31 @@ void FBlendStackCameraNodeEvaluator::RemoveListenedPackages(TSharedPtr<IGameplay
 	}
 
 	Entry.ListenedPackages.Reset();
+}
+
+void FBlendStackCameraNodeEvaluator::BuildCameraRigIfNeeded(const UCameraRigAsset* InCameraRig)
+{
+	if (!OwningEvaluator || !OwningEvaluator->GetOwner())
+	{
+		return;
+	}
+
+	if (BuiltCameraRigs.Contains(InCameraRig))
+	{
+		return;
+	}
+
+	UWorld* World = OwningEvaluator->GetOwner()->GetWorld();
+	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+	if (Settings->bAutoBuildInPIE && World && World->WorldType == EWorldType::PIE)
+	{
+		// Auto-build the camera rig the first time we see it.
+		FCameraBuildLog BuildLog;
+		FCameraRigAssetBuilder Builder(BuildLog);
+		Builder.BuildCameraRig(const_cast<UCameraRigAsset*>(InCameraRig));
+	}
+
+	BuiltCameraRigs.Add(InCameraRig);
 }
 
 #endif  // WITH_EDITOR

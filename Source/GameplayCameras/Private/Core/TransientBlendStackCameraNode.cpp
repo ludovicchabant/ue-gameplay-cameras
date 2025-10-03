@@ -23,6 +23,10 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FTransientBlendStackCameraNodeEvaluator)
 
 FBlendStackEntryID FTransientBlendStackCameraNodeEvaluator::Push(const FBlendStackCameraPushParams& Params)
 {
+#if WITH_EDITOR
+	BuildCameraRigIfNeeded(Params.CameraRig);
+#endif  // WITH_EDITOR
+
 	bool bSearchedForTransition = false;
 	const UCameraRigTransition* Transition = nullptr;
 
