@@ -29,5 +29,13 @@ public:
 	/** Whether to align the camera rotation to the pawn's orientation. */
 	UPROPERTY(EditAnywhere, Category=Common)
 	FBooleanCameraParameter AttachToRotation = false;
+
+	/** An optional socket to attach to on the actor. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category=Common)
+	FName SocketName;
+
+	/** An optional bone to attach to on the actor. */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category=Common)
+	FName BoneName;
 };
 
