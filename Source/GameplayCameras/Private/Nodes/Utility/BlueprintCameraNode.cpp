@@ -521,15 +521,17 @@ void UBlueprintCameraNode::RebuildOverrides()
 			DataPropertyType = ECameraContextDataType::Enum;
 			DataPropertyTypeObject = EnumProperty->GetEnum();
 		}
-		else if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-		{
-			bIsDataProperty = true;
-			DataPropertyType = ECameraContextDataType::Object;
-		}
 		else if (FClassProperty* ClassProperty = CastField<FClassProperty>(Property))
 		{
 			bIsDataProperty = true;
 			DataPropertyType = ECameraContextDataType::Class;
+			DataPropertyTypeObject = ClassProperty->MetaClass;
+		}
+		else if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+		{
+			bIsDataProperty = true;
+			DataPropertyType = ECameraContextDataType::Object;
+			DataPropertyTypeObject = ObjectProperty->PropertyClass;
 		}
 
 		if (bIsBlendableProperty)
