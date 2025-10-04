@@ -464,7 +464,8 @@ FLinearColor UCameraNodeGraphSchema::GetPinTypeColor(const FEdGraphPinType& PinT
 	}
 	if (PinType.PinCategory == PC_CameraContextData)
 	{
-		return PinColors.GetStructPinColor();
+		const FName DataTypeName = PinType.PinSubCategory;
+		return PinColors.GetContextDataPinColor(DataTypeName);
 	}
 
 	return UObjectTreeGraphSchema::GetPinTypeColor(PinType);

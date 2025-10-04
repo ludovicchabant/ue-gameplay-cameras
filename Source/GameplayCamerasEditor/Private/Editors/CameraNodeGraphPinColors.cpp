@@ -2,6 +2,7 @@
 
 #include "Editors/CameraNodeGraphPinColors.h"
 
+#include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/CameraVariableTableFwd.h"
@@ -64,7 +65,12 @@ void FCameraNodeGraphPinColors::Initialize()
 	PinColors.Add(FTransform3dCameraVariableReference::StaticStruct()->GetFName(), Settings->TransformPinTypeColor);
 
 	DefaultPinColor = Settings->DefaultPinTypeColor;
+	NamePinColor = Settings->NamePinTypeColor;
+	StringPinColor = Settings->StringPinTypeColor;
+	EnumPinColor = Settings->Int64PinTypeColor;
 	StructPinColor = Settings->StructPinTypeColor;
+	ObjectPinColor = Settings->ObjectPinTypeColor;
+	ClassPinColor = Settings->ClassPinTypeColor;
 }
 
 FLinearColor FCameraNodeGraphPinColors::GetPinColor(const FName& TypeName) const
@@ -72,9 +78,27 @@ FLinearColor FCameraNodeGraphPinColors::GetPinColor(const FName& TypeName) const
 	return PinColors.FindRef(TypeName, DefaultPinColor);
 }
 
-FLinearColor FCameraNodeGraphPinColors::GetStructPinColor() const
+FLinearColor FCameraNodeGraphPinColors::GetContextDataPinColor(const FName& DataTypeName) const
 {
-	return StructPinColor;
+	const UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
+	const ECameraContextDataType DataType = (ECameraContextDataType)DataTypeEnum->GetValueByName(DataTypeName);
+	switch (DataType)
+	{
+		case ECameraContextDataType::Name:
+			return NamePinColor;
+		case ECameraContextDataType::String:
+			return StringPinColor;
+		case ECameraContextDataType::Enum:
+			return EnumPinColor;
+		case ECameraContextDataType::Struct:
+			return StructPinColor;
+		case ECameraContextDataType::Object:
+			return ObjectPinColor;
+		case ECameraContextDataType::Class:
+			return ClassPinColor;
+		default:
+			return DefaultPinColor;
+	}
 }
 
 }  // namespace UE::Cameras

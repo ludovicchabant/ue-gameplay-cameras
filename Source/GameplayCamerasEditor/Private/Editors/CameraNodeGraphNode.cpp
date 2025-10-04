@@ -125,15 +125,15 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 				PinType.PinSubCategoryObject = StructProperty->Struct;
 				PinToolTip = StructProperty->Struct->GetDisplayNameText().ToString();
 			}
+			else if (FClassProperty* ClassProperty = CastField<FClassProperty>(DataProperty))
+			{
+				PinType.PinSubCategory = UEnum::GetValueAsName(ECameraContextDataType::Class);
+				PinType.PinSubCategoryObject = ClassProperty->MetaClass;
+			}
 			else if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(DataProperty))
 			{
 				PinType.PinSubCategory = UEnum::GetValueAsName(ECameraContextDataType::Object);
 				PinType.PinSubCategoryObject = ObjectProperty->PropertyClass;
-			}
-			else if (FClassProperty* ClassProperty = CastField<FClassProperty>(DataProperty))
-			{
-				PinType.PinSubCategory = UEnum::GetValueAsName(ECameraContextDataType::Class);
-				PinType.PinSubCategoryObject = ClassProperty->PropertyClass;
 			}
 			else
 			{
