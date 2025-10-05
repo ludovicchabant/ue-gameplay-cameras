@@ -5,6 +5,7 @@
 #include "Components/SceneComponent.h"
 #include "Core/CameraAssetReference.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraShakeInstanceID.h"
 #include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
 #include "UObject/ObjectMacros.h"
@@ -16,6 +17,7 @@ class FPrimitiveDrawInterface;
 class FSceneView;
 class FViewport;
 class UCameraAsset;
+class UCameraShakeAsset;
 class UCanvas;
 class UCineCameraComponent;
 struct FCameraContextDataTableAllocationInfo;
@@ -140,6 +142,38 @@ public:
 	/** Activates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig);
+
+public:
+
+	/** Starts a camera modifier rig on the global layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraRigInstanceID StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	/** Starts a camera modifier rig on the visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraRigInstanceID StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey = 0);
+
+	/** Stops a camera modifier rig on previously started on the global or visual layer. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
+
+public:
+
+	/** Starts a new camera shake. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraShakeInstanceID StartCameraShakeAsset(
+			const UCameraShakeAsset* CameraShake,
+			float ShakeScale = 1.f,
+			ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal,
+			FRotator UserPlaySpaceRotation = FRotator::ZeroRotator);
+
+	/** Checks if a camera shake is running. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const;
+
+	/** Stops a running camera shake. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
 
 public:
 

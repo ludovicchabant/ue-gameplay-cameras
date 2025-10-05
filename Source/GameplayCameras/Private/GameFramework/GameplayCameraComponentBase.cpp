@@ -20,6 +20,8 @@
 #include "Misc/AssertionMacros.h"
 #include "Misc/EngineVersionComparison.h"
 #include "SceneView.h"
+#include "Services/CameraModifierService.h"
+#include "Services/CameraShakeService.h"
 #include "ShowFlags.h"
 
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
@@ -429,6 +431,86 @@ void UGameplayCameraComponentBase::ActivatePersistentVisualCameraRig(UCameraRigA
 }
 
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG
+
+FCameraRigInstanceID UGameplayCameraComponentBase::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+FCameraRigInstanceID UGameplayCameraComponentBase::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Visual, OrderKey);
+	}
+
+	return FCameraRigInstanceID();
+}
+
+void UGameplayCameraComponentBase::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		return CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
+	}
+}
+
+FCameraShakeInstanceID UGameplayCameraComponentBase::StartCameraShakeAsset(const UCameraShakeAsset* CameraShake, float ShakeScale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRotation)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		FStartCameraShakeParams Params;
+		Params.CameraShake = CameraShake;
+		Params.ShakeScale = ShakeScale;
+		Params.PlaySpace = PlaySpace;
+		Params.UserPlaySpaceRotation = UserPlaySpaceRotation;
+
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->StartCameraShake(Params);
+	}
+
+	return FCameraShakeInstanceID();
+}
+
+bool UGameplayCameraComponentBase::IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->IsCameraShakePlaying(InInstanceID);
+	}
+	return false;
+}
+
+bool UGameplayCameraComponentBase::StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (CameraSystemEvaluator)
+	{
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->StopCameraShake(InInstanceID, bImmediately);
+	}
+	return false;
+}
 
 FRotator UGameplayCameraComponentBase::GetEvaluatedCameraRotation() const
 {
