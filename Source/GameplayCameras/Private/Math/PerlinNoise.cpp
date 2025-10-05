@@ -2,6 +2,7 @@
 
 #include "Math/PerlinNoise.h"
 
+#include "HAL/IConsoleManager.h"
 #include "Math/Interpolation.h"
 #include "Math/UnrealMathUtility.h"
 #include "Serialization/Archive.h"
@@ -10,6 +11,18 @@
 
 namespace UE::Cameras
 {
+
+bool GCubicPerlinNoise = true;
+static FAutoConsoleVariableRef CVarCubicPerlinNoise(
+	TEXT("GameplayCameras.CubicPerlinNoise"),
+	GCubicPerlinNoise,
+	TEXT("(Default: true) Enables cubic splines for perlin noise generator."));
+
+float GCubicPerlinNoiseTension = 0.1f;
+static FAutoConsoleVariableRef CVarCubicPerlinNoiseTension(
+	TEXT("GameplayCameras.CubicPerlinNoiseTension"),
+	GCubicPerlinNoiseTension,
+	TEXT("(Default: 0.5) Sets the tension for the cubic splines of the perlin noise generator."));
 
 FPerlinNoise::FPerlinNoise()
 {
@@ -38,11 +51,18 @@ void FPerlinNoise::Initialize(float InFrequency)
 	{
 		FSinglePerlinNoise& Octave(Octaves[Index]);
 		Octave.Frequency = OctaveFrequency;
+		Octave.SecondPrev = FMath::FRandRange(-1.f, 1.f);
 		Octave.Prev = FMath::FRandRange(-1.f, 1.f);
 		Octave.Next = FMath::FRandRange(-1.f, 1.f);
+		Octave.SecondNext = FMath::FRandRange(-1.f, 1.f);
 
 		OctaveFrequency *= Lacunarity;
 	}
+}
+
+FVector2f FPerlinNoise::ComputeTangent(float InPrev, float InNext, float Interval, float Tension)
+{
+	return (1.f - Tension) * (FVector2f(Interval, InNext) - FVector2f(-Interval, InPrev)) / (2.f * Interval);
 }
 
 void FPerlinNoise::SetFrequency(float InFrequency)
@@ -92,8 +112,10 @@ void FPerlinNoise::SetNumOctaves(uint8 InNumOctaves)
 			FSinglePerlinNoise& Octave(Octaves[Index]);
 			Octave.Frequency = OctaveFrequency;
 			Octave.CurTime = 0.f;
+			Octave.SecondPrev = FMath::FRandRange(-1.f, 1.f);
 			Octave.Prev = FMath::FRandRange(-1.f, 1.f);
 			Octave.Next = FMath::FRandRange(-1.f, 1.f);
+			Octave.SecondNext = FMath::FRandRange(-1.f, 1.f);
 
 			OctaveFrequency *= Lacunarity;
 		}
@@ -107,6 +129,8 @@ float FPerlinNoise::GenerateValue(float DeltaTime)
 	float Value = 0.f;
 	float OctaveAmplitude = Amplitude;
 
+	const float Tension = FMath::Clamp(GCubicPerlinNoiseTension, 0.f, 1.f);
+
 	for (int32 Index = 0; Index < NumOctaves; ++Index)
 	{
 		FSinglePerlinNoise& Octave(Octaves[Index]);
@@ -118,18 +142,37 @@ float FPerlinNoise::GenerateValue(float DeltaTime)
 
 		// If we are going over the end of the current interval, generate
 		// some new value for the next interval.
+		// NOTE: for large delta-times we might skip over intervals, but here we behave as if
+		//       only going to the next interval.
 		if ((int32)NextNumIntervals > (int32)PrevNumIntervals)
 		{
+			Octave.SecondPrev = Octave.Prev;
 			Octave.Prev = Octave.Next;
-			Octave.Next = FMath::FRandRange(-1.f, 1.f);
+			Octave.Next = Octave.SecondNext;
+			Octave.SecondNext = FMath::FRandRange(-1.f, 1.f);
 		}
 
 		Octave.CurTime += DeltaTime;
 
 		const float IntervalFactor = (NextNumIntervals - FMath::TruncToFloat(NextNumIntervals));
-		const float InterpFactor = SmootherStep(IntervalFactor);
+		if (GCubicPerlinNoise)
+		{
+			// ComputeTangent returns the right-hand tangent (i.e. the tangent oriented towards the "future"),
+			// so we need to turn it around for the next point -- both tangents need to be turned "inwards" here.
+			const FVector2f PrevTangent = ComputeTangent(Octave.SecondPrev, Octave.Next, Interval, Tension);
+			const FVector2f NextTangent = -ComputeTangent(Octave.Prev, Octave.SecondNext, Interval, Tension);
 
-		Value += OctaveAmplitude * FMath::Lerp(Octave.Prev, Octave.Next, InterpFactor);
+			const FVector2f InterpPoint = FMath::CubicInterp(
+					FVector2f(0.f, Octave.Prev), PrevTangent,
+					FVector2f(Interval, Octave.Next), -NextTangent,
+					IntervalFactor);
+			Value += OctaveAmplitude * InterpPoint.Y;
+		}
+		else
+		{
+			const float InterpFactor = SmoothStep(IntervalFactor);
+			Value += OctaveAmplitude * FMath::Lerp(Octave.Prev, Octave.Next, InterpFactor);
+		}
 
 		OctaveAmplitude *= OctaveGain;
 	}
@@ -145,13 +188,10 @@ void FPerlinNoise::Serialize(FArchive& Ar)
 
 	Ar << NumOctaves;
 
-	for (int32 Index = 0; Index < MAX_OCTAVES; ++Index)
+	for (int32 Index = 0; Index < NumOctaves; ++Index)
 	{
 		FSinglePerlinNoise& Octave(Octaves[Index]);
-		Ar << Octave.Frequency;
-		Ar << Octave.CurTime;
-		Ar << Octave.Prev;
-		Ar << Octave.Next;
+		Ar.Serialize(static_cast<void*>(&Octave), sizeof(FSinglePerlinNoise));
 	}
 }
 

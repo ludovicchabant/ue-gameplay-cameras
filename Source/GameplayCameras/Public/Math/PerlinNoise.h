@@ -75,6 +75,8 @@ public:
 private:
 
 	UE_API void Initialize(float InFrequency);
+	
+	static FVector2f ComputeTangent(float InPrev, float InNext, float Interval, float Tension);
 
 private:
 
@@ -84,8 +86,10 @@ private:
 	{
 		float Frequency = 1.f;
 		float CurTime = 0.f;
+		float SecondPrev = 0.f;
 		float Prev = 0.f;
 		float Next = 0.f;
+		float SecondNext = 0.f;
 	};
 
 	float Amplitude = 1.f;
