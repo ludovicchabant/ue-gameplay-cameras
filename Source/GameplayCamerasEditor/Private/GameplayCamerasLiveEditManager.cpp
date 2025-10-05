@@ -2,11 +2,22 @@
 
 #include "GameplayCamerasLiveEditManager.h"
 
+#include "Build/CameraAssetBuilder.h"
+#include "Build/CameraRigAssetBuilder.h"
+#include "Build/CameraShakeAssetBuilder.h"
+#include "Core/CameraAsset.h"
+#include "Core/CameraRigAsset.h"
+#include "Core/CameraShakeAsset.h"
+#include "Editor.h"
+#include "GameplayCamerasSettings.h"
+#include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasLiveEditListener.h"
 #include "GameplayCamerasEditorSettings.h"
-#include "Misc/CoreDelegates.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
+#include "UObject/UObjectIterator.h"
+
+#define LOCTEXT_NAMESPACE "GameplayCamerasLiveEditManager"
 
 namespace UE::Cameras
 {
@@ -55,10 +66,12 @@ void RemoveListenerImpl(
 FGameplayCamerasLiveEditManager::FGameplayCamerasLiveEditManager()
 {
 	FCoreUObjectDelegates::GetPostGarbageCollect().AddRaw(this, &FGameplayCamerasLiveEditManager::OnPostGarbageCollection);
+	FEditorDelegates::BeginPIE.AddRaw(this, &FGameplayCamerasLiveEditManager::OnBeginPIE);
 }
 
 FGameplayCamerasLiveEditManager::~FGameplayCamerasLiveEditManager()
 {
+	FEditorDelegates::BeginPIE.RemoveAll(this);
 	FCoreUObjectDelegates::GetPostGarbageCollect().RemoveAll(this);
 }
 
@@ -152,5 +165,126 @@ void FGameplayCamerasLiveEditManager::RemoveGarbage()
 	}
 }
 
+namespace Internal
+{
+
+template<typename CameraObjectType>
+struct TCameraObjectBuilderTraits;
+
+template<>
+struct TCameraObjectBuilderTraits<UCameraAsset>
+{
+	static void Build(UCameraAsset* InObject, FCameraBuildLog& InBuildLog)
+	{
+		const bool bBuildReferencedAssets = false; // We are going to build rigs first.
+		FCameraAssetBuilder Builder(InBuildLog);
+		Builder.BuildCamera(InObject, bBuildReferencedAssets); 
+	}
+};
+
+template<>
+struct TCameraObjectBuilderTraits<UCameraRigAsset>
+{
+	static void Build(UCameraRigAsset* InObject, FCameraBuildLog& InBuildLog)
+	{
+		FCameraRigAssetBuilder Builder(InBuildLog);
+		Builder.BuildCameraRig(InObject);
+	}
+};
+
+template<>
+struct TCameraObjectBuilderTraits<UCameraShakeAsset>
+{
+	static void Build(UCameraShakeAsset* InObject, FCameraBuildLog& InBuildLog)
+	{
+		FCameraShakeAssetBuilder Builder(InBuildLog);
+		Builder.BuildCameraShake(InObject); 
+	}
+};
+
+template<typename CameraObjectType>
+struct TCameraObjectBuilderUtil
+{
+	static int32 Gather(TArray<CameraObjectType*>& OutCameraObjectsToBuild)
+	{
+		int32 TotalCameraObjects = 0;
+		for (TObjectIterator<CameraObjectType> It; It; ++It)
+		{
+			CameraObjectType* Obj(*It);
+			++TotalCameraObjects;
+
+			const ECameraBuildStatus BuildStatus = Obj->GetBuildStatus();
+			if (BuildStatus == ECameraBuildStatus::Clean || BuildStatus == ECameraBuildStatus::CleanWithWarnings)
+			{
+				continue;
+			}
+
+			OutCameraObjectsToBuild.Add(Obj);
+		}
+		return TotalCameraObjects;
+	}
+
+	static void Build(TArrayView<CameraObjectType*> InCameraObjectsToBuild)
+	{
+		FCameraBuildLog BuildLog;
+		BuildLog.SetForwardMessagesToLogging(true);
+
+		for (CameraObjectType* CameraObject : InCameraObjectsToBuild)
+		{
+			BuildLog.ResetMessages();
+			BuildLog.SetLoggingPrefix(CameraObject->GetName());
+
+			TCameraObjectBuilderTraits<CameraObjectType>::Build(CameraObject, BuildLog);
+		}
+	}
+};
+
+}  // namespace Internal
+
+void FGameplayCamerasLiveEditManager::OnBeginPIE(const bool bSimulate)
+{
+	using namespace Internal;
+
+	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
+	if (!Settings->bAutoBuildInPIE)
+	{
+		return;
+	}
+
+	TArray<UCameraRigAsset*> CameraRigsToBuild;
+	const int32 NumCameraRigs = TCameraObjectBuilderUtil<UCameraRigAsset>::Gather(CameraRigsToBuild);
+
+	TArray<UCameraShakeAsset*> CameraShakesToBuild;
+	const int32 NumCameraShakes = TCameraObjectBuilderUtil<UCameraShakeAsset>::Gather(CameraShakesToBuild);
+
+	TArray<UCameraAsset*> CamerasToBuild;
+	const int32 NumCameras = TCameraObjectBuilderUtil<UCameraAsset>::Gather(CamerasToBuild);
+
+	const int32 NumCameraObjects = (NumCameras + NumCameraRigs + NumCameraShakes);
+	const int32 NumCameraObjectsToBuild = (CamerasToBuild.Num() + CameraRigsToBuild.Num() + CameraShakesToBuild.Num());
+	if (NumCameraObjectsToBuild > 0)
+	{
+		const double BuildStartTime = FPlatformTime::Seconds();
+
+		TCameraObjectBuilderUtil<UCameraRigAsset>::Build(CameraRigsToBuild);
+		TCameraObjectBuilderUtil<UCameraShakeAsset>::Build(CameraShakesToBuild);
+		TCameraObjectBuilderUtil<UCameraAsset>::Build(CamerasToBuild);
+
+		const double BuildEndTime = FPlatformTime::Seconds();
+		UE_LOG(LogCameraSystemEditor, Log, 
+				TEXT("Built %d/%d camera objects in %d ms"),
+				NumCameraObjectsToBuild, NumCameraObjects,
+				(int32)((BuildEndTime - BuildStartTime) * 1000));
+	}
+	else
+	{
+		UE_LOG(LogCameraSystemEditor, Log, 
+				TEXT("No camera objects needed building (inspected %d objects)"),
+				NumCameraObjects);
+	}
+}
+
 }  // namespace UE::Cameras
+
+#undef LOCTEXT_NAMESPACE
 

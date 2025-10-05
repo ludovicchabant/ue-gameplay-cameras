@@ -167,8 +167,6 @@ protected:
 	void AddPackageListeners(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(FCameraRigEntry& Entry);
 	void RemoveListenedPackages(TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager, FCameraRigEntry& Entry);
-
-	void BuildCameraRigIfNeeded(const UCameraRigAsset* InCameraRig);
 #endif
 
 protected:

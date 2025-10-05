@@ -19,10 +19,6 @@ UE_DEFINE_CAMERA_NODE_EVALUATOR(FPersistentBlendStackCameraNodeEvaluator)
 
 FBlendStackEntryID FPersistentBlendStackCameraNodeEvaluator::Insert(const FBlendStackCameraInsertParams& Params)
 {
-#if WITH_EDITOR
-	BuildCameraRigIfNeeded(Params.CameraRig);
-#endif  // WITH_EDITOR
-
 	// See if we already have this camera rig and evaluation context in the stack.
 	if (!Params.bForceInsert)
 	{

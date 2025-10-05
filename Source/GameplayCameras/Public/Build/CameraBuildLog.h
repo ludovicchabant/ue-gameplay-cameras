@@ -56,6 +56,9 @@ public:
 	/** Gets the list of received messages so far. */
 	TArrayView<const FCameraBuildLogMessage> GetMessages() const { return Messages; }
 
+	/** Clears all messages. */
+	UE_API void ResetMessages();
+
 	/** Returns whether any warning has been logged. */
 	bool HasWarnings() const { return bHasWarnings; }
 	/** Returns whether any error has been logged. */

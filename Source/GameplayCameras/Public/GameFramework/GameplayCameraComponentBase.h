@@ -270,9 +270,6 @@ private:
 	/** Whether this component is running in an editor world. */
 	bool bIsEditorWorld = false;
 
-	/** Whether this component has never been activated so far. */
-	bool bIsFirstActivation = true;
-
 	/** The show flag for camera system debug rendering. */
 	int32 CustomShowFlag = INDEX_NONE;
 

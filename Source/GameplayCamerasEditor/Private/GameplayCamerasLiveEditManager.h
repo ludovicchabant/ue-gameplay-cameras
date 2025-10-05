@@ -34,6 +34,7 @@ public:
 private:
 
 	void OnPostGarbageCollection();
+	void OnBeginPIE(const bool bSimulate);
 
 	void RemoveGarbage();
 

@@ -2,8 +2,6 @@
 
 #include "GameFramework/GameplayCameraComponentBase.h"
 
-#include "Build/CameraAssetBuilder.h"
-#include "Build/CameraBuildLog.h"
 #include "CineCameraComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContextStack.h"
@@ -15,7 +13,6 @@
 #include "Engine/Canvas.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
-#include "GameplayCamerasSettings.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
 #include "Kismet/GameplayStatics.h"
@@ -337,23 +334,6 @@ void UGameplayCameraComponentBase::CreateCameraEvaluationContext(APlayerControll
 	{
 		UCameraAsset* CameraAsset = GetCameraAsset();
 
-#if WITH_EDITOR
-		if (CameraAsset && bIsFirstActivation)
-		{
-			UWorld* World = GetWorld();
-			const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-			if (Settings->bAutoBuildInPIE && World && World->WorldType == EWorldType::PIE)
-			{
-				// Auto-build the camera asset on begin play to make sure we've got the latest user edits.
-				FCameraBuildLog BuildLog;
-				FCameraAssetBuilder Builder(BuildLog);
-				Builder.BuildCamera(CameraAsset);
-			}
-
-			bIsFirstActivation = false;
-		}
-#endif
-		
 		// If we have no camera asset specified, make a placeholder one and log a warning.
 		if (!CameraAsset)
 		{

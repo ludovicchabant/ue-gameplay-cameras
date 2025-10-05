@@ -540,31 +540,6 @@ void FBlendStackCameraNodeEvaluator::RemoveListenedPackages(TSharedPtr<IGameplay
 	Entry.ListenedPackages.Reset();
 }
 
-void FBlendStackCameraNodeEvaluator::BuildCameraRigIfNeeded(const UCameraRigAsset* InCameraRig)
-{
-	if (!OwningEvaluator || !OwningEvaluator->GetOwner())
-	{
-		return;
-	}
-
-	if (BuiltCameraRigs.Contains(InCameraRig))
-	{
-		return;
-	}
-
-	UWorld* World = OwningEvaluator->GetOwner()->GetWorld();
-	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
-	if (Settings->bAutoBuildInPIE && World && World->WorldType == EWorldType::PIE)
-	{
-		// Auto-build the camera rig the first time we see it.
-		FCameraBuildLog BuildLog;
-		FCameraRigAssetBuilder Builder(BuildLog);
-		Builder.BuildCameraRig(const_cast<UCameraRigAsset*>(InCameraRig));
-	}
-
-	BuiltCameraRigs.Add(InCameraRig);
-}
-
 #endif  // WITH_EDITOR
 
 void FBlendStackCameraNodeEvaluator::BroadcastCameraRigEvent(EBlendStackCameraRigEventType EventType, const FCameraRigEntry& Entry, const UCameraRigTransition* Transition) const

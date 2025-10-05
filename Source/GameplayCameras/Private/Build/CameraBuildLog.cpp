@@ -92,5 +92,12 @@ void FCameraBuildLog::AddMessage(EMessageSeverity::Type InSeverity, const UObjec
 	}
 }
 
+void FCameraBuildLog::ResetMessages()
+{
+	Messages.Reset();
+	bHasWarnings = false;
+	bHasErrors = false;
+}
+
 }  // namespace UE::Cameras
 
