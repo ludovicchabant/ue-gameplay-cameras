@@ -152,7 +152,7 @@ protected:
 		const UCameraRigAsset* CameraRig,
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext,
 		UBlendStackRootCameraNode* EntryRootNode,
-		bool bSetActiveResult);
+		bool bIsActiveEntry);
 
 	int32 IndexOfEntry(const FBlendStackEntryID EntryID) const;
 
