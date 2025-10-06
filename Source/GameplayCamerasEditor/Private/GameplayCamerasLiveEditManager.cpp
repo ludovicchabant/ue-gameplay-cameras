@@ -163,6 +163,13 @@ void FGameplayCamerasLiveEditManager::RemoveGarbage()
 			It.RemoveCurrent();
 		}
 	}
+	for (auto It = NodeListenerMap.CreateIterator(); It; ++It)
+	{
+		if (!It.Key().IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
 }
 
 namespace Internal
