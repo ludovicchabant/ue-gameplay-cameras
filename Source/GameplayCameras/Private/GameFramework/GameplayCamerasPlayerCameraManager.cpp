@@ -81,22 +81,164 @@ void AGameplayCamerasPlayerCameraManager::ReleasePlayerController()
 	PCOwner = nullptr;
 }
 
-void AGameplayCamerasPlayerCameraManager::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
+void AGameplayCamerasPlayerCameraManager::ActivateGameplayCamera(UGameplayCameraComponentBase* GameplayCamera, EGameplayCameraComponentActivationMode ActivationMode)
 {
-	EnsureNullContext();
-	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Base);
+	using namespace UE::Cameras;
+
+	if (!GameplayCamera)
+	{
+		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate a null Gameplay Camera!"));
+		return;
+	}
+
+	if (GameplayCamera->bRunStandaloneCameraSystem)
+	{
+		UE_LOG(LogCameraSystem, Error, 
+				TEXT("Can't activate Gameplay Camera '%s.%s': it is set to run in 'standalone' mode. Please disable 'Run Standalone Camera System' on it."),
+				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
+		return;
+	}
+
+	// See if there's a context for this component on the context stack.
+	FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+	TSharedPtr<FCameraEvaluationContext> GameplayCameraContext = ContextStack.FindContextByOwner(GameplayCamera);
+	const bool bFoundExistingContext = GameplayCameraContext.IsValid();
+	if (!GameplayCameraContext)
+	{
+		// Make sure the component is active, so that it has an evaluation context.
+		APlayerController* PlayerController = GetOwningPlayerController();
+		GameplayCamera->ActivateCameraForPlayerController(PlayerController, false);
+		GameplayCameraContext = GameplayCamera->GetEvaluationContext();
+	}
+	if (!GameplayCameraContext.IsValid())
+	{
+		UE_LOG(LogCameraSystem, Error, 
+				TEXT("Can't activate Gameplay Camera '%s.%s': can't create an evaluation context!"),
+				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
+		return;
+	}
+	if (GameplayCameraContext->IsActive())
+	{
+		UE_LOG(LogCameraSystem, Error, 
+				TEXT("Can't activate Gameplay Camera '%s.%s': its evaluation context is already active!"),
+				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
+		return;
+	}
+
+	switch (ActivationMode)
+	{
+		case EGameplayCameraComponentActivationMode::Push:
+			{
+				// If the context already existed in the stack, this will move it to the top without re-activating it.
+				// Otherwise, it will activate it and push it on the top.
+				ContextStack.PushContext(GameplayCameraContext.ToSharedRef());
+			}
+			break;
+		case EGameplayCameraComponentActivationMode::InsertOrPush:
+			{
+				// If there's an active context, insert the new one inside it. If our context already existed,
+				// we'll need to deactivate it first.
+				// If there's no active context, simply push or move our context to the top.
+				if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
+				{
+					if (bFoundExistingContext)
+					{
+						ContextStack.RemoveContext(GameplayCameraContext.ToSharedRef());
+					}
+
+					const bool bSuccess = ActiveContext->AddChildContext(GameplayCameraContext.ToSharedRef());
+					if (!bSuccess)
+					{
+						UE_LOG(LogCameraSystem, Error,
+								TEXT("Couldn't insert camera director for '{0}.{1}' inside camera director for '{2}.{3}'. "
+									 "Activation failed."),
+								*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
+					}
+				}
+				else
+				{
+					ContextStack.PushContext(GameplayCameraContext.ToSharedRef());
+				}
+			}
+			break;
+		default:
+			ensureMsgf(false, TEXT("Unknown activation mode: %s"), *UEnum::GetValueAsString(ActivationMode));
+			break;
+	}
 }
 
-void AGameplayCamerasPlayerCameraManager::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
+void AGameplayCamerasPlayerCameraManager::DeactivateGameplayCamera(UGameplayCameraComponentBase* GameplayCamera, bool bDeactivateAllCameraRigs)
 {
-	EnsureNullContext();
-	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Global);
+	using namespace UE::Cameras;
+
+	FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
+	TSharedPtr<FCameraEvaluationContext> ExistingContext = ContextStack.FindContextByOwner(GameplayCamera);
+	if (ExistingContext)
+	{
+		if (bDeactivateAllCameraRigs)
+		{
+			FRootCameraNodeEvaluator* RootEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+			RootEvaluator->DeactivateAllCameraRigs(ExistingContext, true);
+		}
+
+		ContextStack.RemoveContext(ExistingContext.ToSharedRef());
+	}
 }
 
-void AGameplayCamerasPlayerCameraManager::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
 {
 	EnsureNullContext();
-	IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Visual);
+	return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Base);
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
+{
+	EnsureNullContext();
+	return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Global);
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+{
+	EnsureNullContext();
+	return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, NullContext, ECameraRigLayer::Visual);
+}
+
+void AGameplayCamerasPlayerCameraManager::DeactivateCameraRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	EnsureNullContext();
+	IGameplayCameraSystemHost::DeactivateCameraRig(InstanceID, bImmediately);
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	EnsureNullContext();
+	return IGameplayCameraSystemHost::StartCameraModifierRig(CameraRig, NullContext, ECameraRigLayer::Global, OrderKey);
+}
+
+FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
+{
+	EnsureNullContext();
+	return IGameplayCameraSystemHost::StartCameraModifierRig(CameraRig, NullContext, ECameraRigLayer::Visual, OrderKey);
+}
+
+void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	IGameplayCameraSystemHost::StopCameraModifierRig(InstanceID, bImmediately);
+}
+
+FCameraShakeInstanceID AGameplayCamerasPlayerCameraManager::StartCameraShakeAsset(const UCameraShakeAsset* CameraShake, float ShakeScale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRotation)
+{
+	return IGameplayCameraSystemHost::StartCameraShake(CameraShake, ShakeScale, PlaySpace, UserPlaySpaceRotation);
+}
+
+bool AGameplayCamerasPlayerCameraManager::IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const
+{
+	return IGameplayCameraSystemHost::IsCameraShakePlaying(InInstanceID);
+}
+
+bool AGameplayCamerasPlayerCameraManager::StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately)
+{
+	return IGameplayCameraSystemHost::StopCameraShake(InInstanceID, bImmediately);
 }
 
 void AGameplayCamerasPlayerCameraManager::EnsureNullContext()
@@ -110,90 +252,6 @@ void AGameplayCamerasPlayerCameraManager::EnsureNullContext()
 		InitParams.PlayerController = GetOwningPlayerController();
 		NullContext = MakeShared<FCameraEvaluationContext>(InitParams);
 	}
-}
-
-FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		EnsureNullContext();
-
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, NullContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
-	}
-
-	return FCameraRigInstanceID();
-}
-
-FCameraRigInstanceID AGameplayCamerasPlayerCameraManager::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		EnsureNullContext();
-
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, NullContext.ToSharedRef(), ECameraRigLayer::Visual, OrderKey);
-	}
-
-	return FCameraRigInstanceID();
-}
-
-void AGameplayCamerasPlayerCameraManager::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
-	}
-}
-
-FCameraShakeInstanceID AGameplayCamerasPlayerCameraManager::StartCameraShakeAsset(const UCameraShakeAsset* CameraShake, float ShakeScale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRotation)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		FStartCameraShakeParams Params;
-		Params.CameraShake = CameraShake;
-		Params.ShakeScale = ShakeScale;
-		Params.PlaySpace = PlaySpace;
-		Params.UserPlaySpaceRotation = UserPlaySpaceRotation;
-
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->StartCameraShake(Params);
-	}
-
-	return FCameraShakeInstanceID();
-}
-
-bool AGameplayCamerasPlayerCameraManager::IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->IsCameraShakePlaying(InInstanceID);
-	}
-	return false;
-}
-
-bool AGameplayCamerasPlayerCameraManager::StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->StopCameraShake(InInstanceID, bImmediately);
-	}
-	return false;
 }
 
 void AGameplayCamerasPlayerCameraManager::InitializeFor(APlayerController* PlayerController)
@@ -257,30 +315,21 @@ void AGameplayCamerasPlayerCameraManager::SetViewTarget(AActor* NewViewTarget, F
 
 	// See if we can find the view target in the context stack. If so, reactivate it instead of potentially
 	// making a new context for the same thing.
-	bool bFoundContext = false;
-	TArray<TSharedPtr<FCameraEvaluationContext>> CurrentContexts;
-	ContextStack.GetAllContexts(CurrentContexts);
-	for (TSharedPtr<FCameraEvaluationContext> CurrentContext : CurrentContexts)
+	TSharedPtr<FCameraEvaluationContext> ExistingContext = ContextStack.FindContextByPredicate(
+			[NewViewTarget](TSharedRef<FCameraEvaluationContext> Item)
+			{
+				UObject* Owner = Item->GetOwner();
+				return Owner && (Owner == NewViewTarget || Owner->GetTypedOuter<AActor>() == NewViewTarget);
+			});
+	if (ExistingContext)
 	{
-		UObject* CurrentContextOwner = CurrentContext ? CurrentContext->GetOwner() : nullptr;
-		if (CurrentContextOwner && 
-				(CurrentContext->GetOwner() == NewViewTarget || 
-				 CurrentContextOwner->GetTypedOuter<AActor>() == NewViewTarget))
-		{
-			// This will move the context to the top if it's already in the stack (which it is, we
-			// found it there).
-			ContextStack.PushContext(CurrentContext.ToSharedRef());
-			bFoundContext = true;
-		}
+		// This will move the context to the top if it's already in the stack (which it is, we found it there).
+		ContextStack.PushContext(ExistingContext.ToSharedRef());
 	}
-
-	if (!bFoundContext)
+	else
 	{
-		if (UGameplayCameraComponentBase* GameplayCameraComponent = NewViewTarget->FindComponentByClass<UGameplayCameraComponentBase>())
-		{
-			GameplayCameraComponent->ActivateCameraForPlayerController(PCOwner);
-		}
-		else if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
+		// Create a new context for this view target.
+		if (UCameraComponent* CameraComponent = NewViewTarget->FindComponentByClass<UCameraComponent>())
 		{
 			TSharedRef<FActorCameraEvaluationContext> NewContext = MakeShared<FActorCameraEvaluationContext>(CameraComponent);
 			CameraSystemEvaluator->PushEvaluationContext(NewContext);

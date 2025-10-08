@@ -83,7 +83,7 @@ void UGameplayCameraComponent::NotifyChangeCameraReference()
 {
 	using namespace UE::Cameras;
 
-	if (HasCameraEvaluationContext())
+	if (HasEvaluationContext())
 	{
 		// Sequencer animated some of our parameters... look for those whose value changed, compared to our
 		// cached parameter bag, and re-apply them to the evaluation context.
@@ -109,11 +109,11 @@ void UGameplayCameraComponent::OnCameraAssetBuilt(const UCameraAsset* InCameraAs
 	// If our camera asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
 	CameraReference.RebuildParametersIfNeeded();
-	if (HasCameraEvaluationContext())
+	if (HasEvaluationContext())
 	{
 		const FCameraAssetAllocationInfo& AllocationInfo = InCameraAsset->GetAllocationInfo();
-		ReinitializeCameraEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
-		UpdateCameraEvaluationContext(true);
+		ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
+		UpdateEvaluationContext(true);
 	}
 }
 
@@ -126,17 +126,17 @@ void UGameplayCameraComponent::PostEditChangeProperty( struct FPropertyChangedEv
 	const FName MemberPropertyName = PropertyChangedEvent.GetMemberPropertyName();
 	if (MemberPropertyName == GET_MEMBER_NAME_CHECKED(UGameplayCameraComponent, CameraReference))
 	{
-		if (HasCameraEvaluationContext())
+		if (HasEvaluationContext())
 		{
 			if (PropertyChangedEvent.GetPropertyName() == TEXT("CameraAsset"))
 			{
 				// The camera asset has changed! Recreate the context.
-				RecreateEditorWorldCameraEvaluationContext();
+				RecreateEditorWorldEvaluationContext();
 			}
 			else
 			{
 				// Otherwise, maybe one of the parameter overrides has changed. Re-apply them.
-				UpdateCameraEvaluationContext(true);
+				UpdateEvaluationContext(true);
 			}
 		}
 	}

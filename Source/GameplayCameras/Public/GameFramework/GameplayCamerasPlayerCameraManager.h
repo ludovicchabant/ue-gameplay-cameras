@@ -11,6 +11,7 @@
 
 #define UE_API GAMEPLAYCAMERAS_API
 
+class UGameplayCameraComponentBase;
 struct FCameraRigInstanceID;
 
 namespace UE::Cameras
@@ -21,6 +22,18 @@ class FCameraSystemEvaluator;
 class FViewTargetContextReferencerService;
 
 }  // namespace UE::Cameras
+
+/**
+ * Defines how to activate a gameplay camera component.
+ */
+UENUM()
+enum class EGameplayCameraComponentActivationMode : uint8
+{
+	/** Push the camera director over any existing ones. */
+	Push,
+	/** Inserts the camera director as a child of the active one, or push it if there is no active one. */
+	InsertOrPush
+};
 
 /**
  * Defines how the GameplayCamerasPlayerCameraManager should handle the player's view rotation.
@@ -83,17 +96,31 @@ public:
 
 public:
 
+	/** Activates the given component inside the manager's camera system. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ActivateGameplayCamera(UGameplayCameraComponentBase* GameplayCamera, EGameplayCameraComponentActivationMode ActivationMode = EGameplayCameraComponentActivationMode::Push);
+
+	/** Deactivates a previously activated component. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void DeactivateGameplayCamera(UGameplayCameraComponentBase* GameplayCamera, bool bDeactivateAllCameraRigs = false);
+
+public:
+
 	/** Activates the given camera rig prefab in the base layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
-	void ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig);
+	FCameraRigInstanceID ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig prefab in the global layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
-	void ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig);
+	FCameraRigInstanceID ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig);
 
 	/** Activates the given camera rig prefab in the visual layer. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
-	void ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig);
+	FCameraRigInstanceID ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig);
+
+	/** Deactivates a previously activated base, global, or visual camera rig. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void DeactivateCameraRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
 
 public:
 

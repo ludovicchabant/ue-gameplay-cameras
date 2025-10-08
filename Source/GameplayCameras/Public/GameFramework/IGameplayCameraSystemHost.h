@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "Camera/CameraTypes.h"
+#include "Core/CameraRigInstanceID.h"
+#include "Core/CameraShakeInstanceID.h"
 #include "GameplayCameras.h"
 #include "Templates/SharedPointerFwd.h"
 #include "UObject/Interface.h"
@@ -9,6 +12,7 @@
 #include "IGameplayCameraSystemHost.generated.h"
 
 class UCameraRigAsset;
+class UCameraShakeAsset;
 class UCanvas;
 enum class ECameraRigLayer : uint8;
 
@@ -38,6 +42,7 @@ class IGameplayCameraSystemHost
 public:
 
 	using FCameraSystemEvaluator = UE::Cameras::FCameraSystemEvaluator;
+	using FCameraEvaluationContext = UE::Cameras::FCameraEvaluationContext;
 
 	/** Gets the camera system evaluator. */
 	GAMEPLAYCAMERAS_API TSharedPtr<FCameraSystemEvaluator> GetCameraSystemEvaluator();
@@ -73,13 +78,44 @@ protected:
 	/** Updates the camera system, if it exists. */
 	GAMEPLAYCAMERAS_API void UpdateCameraSystem(float DeltaTime);
 
-	/** Activates the given camera rig in the given layer. Should not be used with Main layer. */
-	GAMEPLAYCAMERAS_API void ActivateCameraRig(UCameraRigAsset* CameraRig, TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext, ECameraRigLayer EvaluationLayer);
-
 #if WITH_EDITOR
 	/** Updates the camera system, if it exists, for an editor world preview. */
 	GAMEPLAYCAMERAS_API void UpdateCameraSystemForEditorPreview(float DeltaTime);
 #endif  // WITH_EDITOR
+
+protected:
+
+	/** Activates the given camera rig in the given layer. Should not be used with Main layer. */
+	GAMEPLAYCAMERAS_API FCameraRigInstanceID ActivateCameraRig(
+			const UCameraRigAsset* CameraRig,
+			TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+			ECameraRigLayer EvaluationLayer);
+
+	/** Deactivates a previously activated camera rig. */
+	GAMEPLAYCAMERAS_API void DeactivateCameraRig(FCameraRigInstanceID InInstanceID, bool bImmediately = false);
+
+	/** Starts a camera modifier rig on the given layer. */
+	GAMEPLAYCAMERAS_API FCameraRigInstanceID StartCameraModifierRig(
+			const UCameraRigAsset* CameraRig,
+			TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+			ECameraRigLayer EvaluationLayer,
+			int32 OrderKey = 0);
+
+	/** Stops a camera modifier rig on previously started on the global or visual layer. */
+	GAMEPLAYCAMERAS_API void StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately = false);
+
+	/** Starts a new camera shake. */
+	GAMEPLAYCAMERAS_API FCameraShakeInstanceID StartCameraShake(
+			const UCameraShakeAsset* CameraShake,
+			float ShakeScale = 1.f,
+			ECameraShakePlaySpace PlaySpace = ECameraShakePlaySpace::CameraLocal,
+			FRotator UserPlaySpaceRotation = FRotator::ZeroRotator);
+
+	/** Checks if a camera shake is running. */
+	GAMEPLAYCAMERAS_API bool IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const;
+
+	/** Stops a running camera shake. */
+	GAMEPLAYCAMERAS_API bool StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
 
 protected:
 

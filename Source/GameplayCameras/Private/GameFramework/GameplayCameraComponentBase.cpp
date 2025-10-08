@@ -20,8 +20,6 @@
 #include "Misc/AssertionMacros.h"
 #include "Misc/EngineVersionComparison.h"
 #include "SceneView.h"
-#include "Services/CameraModifierService.h"
-#include "Services/CameraShakeService.h"
 #include "ShowFlags.h"
 
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
@@ -55,8 +53,8 @@ UGameplayCameraComponentBase::UGameplayCameraComponentBase(const FObjectInitiali
 
 void UGameplayCameraComponentBase::BeginDestroy()
 {
-	DestroyCameraSystem();
-	DestroyCameraEvaluationContext();
+	DestroyCameraSystemHost();
+	DestroyEvaluationContext();
 
 	Super::BeginDestroy();
 }
@@ -83,15 +81,13 @@ TSharedPtr<UE::Cameras::FCameraEvaluationContext> UGameplayCameraComponentBase::
 	return EvaluationContext;
 }
 
-void UGameplayCameraComponentBase::ActivateCameraForPlayerIndex(
-		int32 PlayerIndex, bool bSetAsViewTarget, EGameplayCameraComponentActivationMode ActivationMode)
+void UGameplayCameraComponentBase::ActivateCameraForPlayerIndex(int32 PlayerIndex, bool bSetAsViewTarget)
 {
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
-	ActivateCameraForPlayerController(PlayerController, bSetAsViewTarget, ActivationMode);
+	ActivateCameraForPlayerController(PlayerController, bSetAsViewTarget);
 }
 
-void UGameplayCameraComponentBase::ActivateCameraForPlayerController(
-		APlayerController* PlayerController, bool bSetAsViewTarget, EGameplayCameraComponentActivationMode ActivationMode)
+void UGameplayCameraComponentBase::ActivateCameraForPlayerController(APlayerController* PlayerController, bool bSetAsViewTarget)
 {
 	using namespace UE::Cameras;
 
@@ -99,118 +95,24 @@ void UGameplayCameraComponentBase::ActivateCameraForPlayerController(
 	// our private camera system.
 	Super::Activate(false);
 
-	// Deactivate any existing evaluation context immediately first, since we might be re-activating with
-	// a different player controller, a different insertion point in the director tree, etc.
-	DeactivateCameraEvaluationContext(true);
+	EnsureEvaluationContext(PlayerController);
+	EnsureCameraSystemHostIfNeeded();
 
-	// See if we are going to run the camera system on our own, or if we can activate our camera inside
-	// the player camera manager.
-	IGameplayCameraSystemHost* PlayerControllerHost = nullptr;
-	if (bSetAsViewTarget && PlayerController)
+	if (bSetAsViewTarget)
 	{
-		PlayerControllerHost = Cast<IGameplayCameraSystemHost>(PlayerController->PlayerCameraManager);
-	}
-	if (!PlayerControllerHost && ActivationMode != EGameplayCameraComponentActivationMode::Push)
-	{
-		FFrame::KismetExecutionMessage(
-				*FString::Format(
-					TEXT("Gameplay Camera component '{0}.{1}' cannot activate with mode '{2}' because no camera system "
-						 "was found on the given player controller, or no player controller was specified."),
-					{ *GetNameSafe(GetOwner()), *GetNameSafe(this), *UEnum::GetValueAsString(ActivationMode) }),
-				ELogVerbosity::Warning);
-	}
-
-	if (PlayerControllerHost)
-	{
-		DestroyCameraSystem();
-		ActivateCameraEvaluationContext(PlayerController, PlayerControllerHost, ActivationMode);
-	}
-	else
-	{
-		EnsureCameraSystemHost();
-		ActivateCameraEvaluationContext(PlayerController, this, EGameplayCameraComponentActivationMode::Push);
-
-		if (bSetAsViewTarget && PlayerController)
+		if (PlayerController)
 		{
 			AActor* OwnerActor = GetOwner();
 			PlayerController->SetViewTarget(OwnerActor);
 		}
-	}
-}
-
-bool UGameplayCameraComponentBase::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
-{
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
-	{
-		CameraSystemEvaluator->GetEvaluatedCameraView(OutResult);
-		return true;
-	}
-	return false;
-}
-
-void UGameplayCameraComponentBase::DeactivateCamera(bool bImmediately)
-{
-	DeactivateCameraEvaluationContext(bImmediately);
-}
-
-void UGameplayCameraComponentBase::DeactivateCameraEvaluationContext(bool bImmediately)
-{
-	using namespace UE::Cameras;
-
-	if (!bImmediately && HasCameraSystem())
-	{
-		FFrame::KismetExecutionMessage(
+		else
+		{
+			FFrame::KismetExecutionMessage(
 				*FString::Format(
-					TEXT("Can't deactivate Gameplay Camera component '{0}.{1}' with bImmediately set to false: "
-						 "this component is running its own camera system and cannot therefore blend out from itself."),
+					TEXT("Gameplay Camera component '{0}.{1}' cannot set itself as view target because no player controller was provided."),
 					{ *GetNameSafe(GetOwner()), *GetNameSafe(this) }),
-				ELogVerbosity::Warning);
-		bImmediately = true;
-	}
-
-	if (EvaluationContext && EvaluationContext->IsActive())
-	{
-		UE_LOG(LogCameraSystem, Log, TEXT("Deactivating gameplay camera '%s'."), *GetNameSafe(this));
-
-		TSharedPtr<FCameraSystemEvaluator> HostEvaluator = EvaluationContext->GetCameraSystemEvaluator();
-		ensure(HostEvaluator);
-
-		if (TSharedPtr<FCameraEvaluationContext> ParentContext = EvaluationContext->GetParentContext())
-		{
-			ParentContext->RemoveChildContext(EvaluationContext.ToSharedRef());
+				ELogVerbosity::Error);
 		}
-		else
-		{
-			HostEvaluator->RemoveEvaluationContext(EvaluationContext.ToSharedRef());
-		}
-
-		if (bImmediately)
-		{
-			// We are deactivating immediately (i.e. without letting our camera rigs blend out), so make 
-			// sure everything is frozen or disabled before we delete our evaluation context.
-			FRootCameraNodeEvaluator* RootNodeEvaluator = HostEvaluator->GetRootNodeEvaluator();
-			RootNodeEvaluator->DeactivateAllCameraRigs(EvaluationContext, true);
-		}
-		else
-		{
-			// Don't deactivate the component right away: we still need to update our evaluation context 
-			// while any running camera rigs blend out.
-			PendingDeactivateCameraSystemEvaluator = HostEvaluator;
-			bIsPendingDeactivate = true;
-		}
-	}
-
-	if (bImmediately)
-	{
-		if (OutputCameraComponent)
-		{
-			OutputCameraComponent->SetRelativeTransform(FTransform());
-		}
-
-		DestroyCameraSystem();
-		DestroyCameraEvaluationContext();
 	}
 }
 
@@ -231,11 +133,22 @@ bool UGameplayCameraComponentBase::CanRunCameraSystem() const
 #endif  // WITH_EDITOR
 }
 
-void UGameplayCameraComponentBase::EnsureCameraSystemHost()
+bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 {
 	using namespace UE::Cameras;
 
-	if (!HasCameraSystem() && CanRunCameraSystem())
+	if (!bRunStandaloneCameraSystem)
+	{
+		return false;
+	}
+
+	if (!CanRunCameraSystem())
+	{
+		return false;
+	}
+
+	// Create a hosted camera system, and then create and active the evalution context.
+	if (!HasCameraSystem())
 	{
 		AActor* OwnerActor = GetOwner();
 		UE_LOG(LogCameraSystem, Log, 
@@ -252,85 +165,66 @@ void UGameplayCameraComponentBase::EnsureCameraSystemHost()
 #endif  // WITH_EDITOR
 		InitializeCameraSystem(Params);
 	}
-}
 
-void UGameplayCameraComponentBase::ActivateCameraEvaluationContext(APlayerController* PlayerController, IGameplayCameraSystemHost* Host, EGameplayCameraComponentActivationMode ActivationMode)
-{
-	using namespace UE::Cameras;
-
-	if (!ensure(Host))
+	if (!ensureMsgf(
+				EvaluationContext.IsValid(),
+				TEXT("Can't activate Gameplay Camera component '{0}.{1}': failed to create evaluation context!"),
+				*GetNameSafe(GetOwner()), *GetNameSafe(this)))
 	{
-		return;
+		return false;
 	}
 
-	if (!CanRunCameraSystem())
+	if (!ensureMsgf(
+				!EvaluationContext->IsActive(),
+				TEXT("Can't activate Gameplay Camera component '{0}.{1}': it is already active!"),
+				*GetNameSafe(GetOwner()), *GetNameSafe(this)))
 	{
-		return;
-	}
-
-	CreateCameraEvaluationContext(PlayerController);
-
-	if (EvaluationContext->IsActive())
-	{
-		FFrame::KismetExecutionMessage(
-				*FString::Format(
-					TEXT("Can't activate Gameplay Camera component '{0}.{1}': it is already active!"),
-					{ *GetNameSafe(GetOwner()), *GetNameSafe(this) }),
-				ELogVerbosity::Error);
-		return;
+		return false;
 	}
 
 	UE_LOG(LogCameraSystem, Log, 
-			TEXT("Activating gameplay camera '%s' with mode '%s'."),
-			*GetNameSafe(this), 
-			*UEnum::GetValueAsString(ActivationMode));
+			TEXT("Activating gameplay camera '%s.%s' with its hosted camera system."),
+			*GetNameSafe(GetOwner()), *GetNameSafe(this));
 
-	TSharedPtr<FCameraSystemEvaluator> HostEvaluator = Host->GetCameraSystemEvaluator();
-	FCameraEvaluationContextStack& ContextStack = HostEvaluator->GetEvaluationContextStack();
+	TSharedPtr<FCameraSystemEvaluator> HostedEvaluator = GetCameraSystemEvaluator();
+	check(HostedEvaluator.IsValid());
+	FCameraEvaluationContextStack& ContextStack = HostedEvaluator->GetEvaluationContextStack();
+	ContextStack.PushContext(EvaluationContext.ToSharedRef());
 
-	switch (ActivationMode)
-	{
-		case EGameplayCameraComponentActivationMode::Push:
-			ContextStack.PushContext(EvaluationContext.ToSharedRef());
-			break;
-		case EGameplayCameraComponentActivationMode::PushAndInsert:
-			{
-				TSharedPtr<FCameraEvaluationContext> PreviousActiveContext = ContextStack.GetActiveContext();
-				ContextStack.PushContext(EvaluationContext.ToSharedRef());
-				if (PreviousActiveContext)
-				{
-					ContextStack.RemoveContext(PreviousActiveContext.ToSharedRef());
-					EvaluationContext->AddChildContext(PreviousActiveContext.ToSharedRef());
-				}
-			}
-			break;
-		case EGameplayCameraComponentActivationMode::InsertOrPush:
-			{
-				if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
-				{
-					ActiveContext->AddChildContext(EvaluationContext.ToSharedRef());
-				}
-				else
-				{
-					ContextStack.PushContext(EvaluationContext.ToSharedRef());
-				}
-			}
-			break;
-		default:
-			ensure(false);
-			break;
-	}
-
-	// Cancel any ongoing deactivation.
-	PendingDeactivateCameraSystemEvaluator = nullptr;
-	bIsPendingDeactivate = false;
+	return true;
 }
 
-void UGameplayCameraComponentBase::CreateCameraEvaluationContext(APlayerController* PlayerController)
+void UGameplayCameraComponentBase::DestroyCameraSystemHost()
+{
+	// Reset the output camera component and destroy the hosted camera system.
+	if (OutputCameraComponent)
+	{
+		OutputCameraComponent->SetRelativeTransform(FTransform());
+	}
+
+	DestroyCameraSystem();
+}
+
+void UGameplayCameraComponentBase::EnsureEvaluationContext(APlayerController* PlayerController)
 {
 	using namespace UE::Cameras;
 
-	ensure(CanRunCameraSystem());
+	if (EvaluationContext.IsValid() && EvaluationContext->GetPlayerController() != PlayerController)
+	{
+		FFrame::KismetExecutionMessage(
+				*FString::Format(
+					TEXT("Trying to create an evaluation context for Player Controller '{0}' on Gameplay Camera component '{1}.{2}' "
+						 "but it was already created for Player Controller '{1}'. The evaluation context will be re-created."),
+					{ 
+						*GetNameSafe(PlayerController), 
+						*GetNameSafe(GetOwner()),
+						*GetNameSafe(this),
+						*GetNameSafe(EvaluationContext->GetPlayerController())
+					}),
+				ELogVerbosity::Warning);
+
+		DestroyEvaluationContext();
+	}
 
 	if (!EvaluationContext.IsValid())
 	{
@@ -350,7 +244,7 @@ void UGameplayCameraComponentBase::CreateCameraEvaluationContext(APlayerControll
 
 			UCameraAsset* PlaceholderCameraAsset = NewObject<UCameraAsset>();
 			PlaceholderCameraAsset->SetCameraDirector(PlaceholderCameraDirector);
-			
+
 			CameraAsset = PlaceholderCameraAsset;
 		}
 
@@ -362,155 +256,176 @@ void UGameplayCameraComponentBase::CreateCameraEvaluationContext(APlayerControll
 		InitParams.PlayerController = PlayerController;
 		EvaluationContext->Initialize(InitParams);
 
-		UpdateCameraEvaluationContext(true);
+		const bool bForceApplyParameterOverrides = true;
+		UpdateEvaluationContext(bForceApplyParameterOverrides);
 	}
 
 	ensure(EvaluationContext.IsValid());
 }
 
-void UGameplayCameraComponentBase::DestroyCameraEvaluationContext()
+void UGameplayCameraComponentBase::DestroyEvaluationContext()
 {
 	EvaluationContext = nullptr;
 }
 
-#define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT(ErrorMsg, ErrorResult)\
-	using namespace UE::Cameras;\
-	if (!EvaluationContext)\
-	{\
-		FFrame::KismetExecutionMessage(\
-				*FString::Format(\
-					TEXT(#ErrorMsg " on Gameplay Camera component '{0}.{1}': it isn't active."),\
-					{ *GetNameSafe(GetOwner()), *GetNameSafe(this) }),\
-				ELogVerbosity::Error);\
-		return ErrorResult;\
-	}
+#define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE(ErrorMsg)\
+	FFrame::KismetExecutionMessage(\
+			*FString::Format(\
+				TEXT(#ErrorMsg " on Gameplay Camera component '{0}.{1}': it isn't active."),\
+				{ *GetNameSafe(GetOwner()), *GetNameSafe(this) }),\
+			ELogVerbosity::Error);\
 
 FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetInitialResult() const
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get shared camera data", FBlueprintCameraEvaluationDataRef());
-
-	return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetInitialResult());
+	if (EvaluationContext)
+	{
+		return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetInitialResult());
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't get shared camera data");
+		return FBlueprintCameraEvaluationDataRef();
+	}
 }
 
 FBlueprintCameraEvaluationDataRef UGameplayCameraComponentBase::GetConditionalResult(ECameraEvaluationDataCondition Condition) const
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT("Can't get conditional camera data", FBlueprintCameraEvaluationDataRef());
-
-	return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetOrAddConditionalResult(Condition));
-}
-
-#undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
-
-#define UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG(ErrorMsg, RigLayer)\
-	if (EvaluationContext.IsValid())\
-	{\
-		IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, EvaluationContext, ECameraRigLayer::RigLayer);\
-	}\
-	else\
-	{\
-		FFrame::KismetExecutionMessage(\
-				*FString::Format(\
-					TEXT(#ErrorMsg " on Gameplay Camera component '{0}.{1}': it isn't active."),\
-					{ *GetNameSafe(GetOwner()), *GetNameSafe(this) }),\
-				ELogVerbosity::Error);\
+	if (EvaluationContext)
+	{
+		return FBlueprintCameraEvaluationDataRef::MakeExternalRef(&EvaluationContext->GetOrAddConditionalResult(Condition));
 	}
-
-void UGameplayCameraComponentBase::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
-{
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate base camera rig", Base);
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't get conditional camera data");
+		return  FBlueprintCameraEvaluationDataRef();
+	}
 }
 
-void UGameplayCameraComponentBase::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
+FCameraRigInstanceID UGameplayCameraComponentBase::ActivatePersistentBaseCameraRig(UCameraRigAsset* CameraRig)
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate global camera rig", Global);
+	if (HasCameraSystem() && ensure(EvaluationContext))
+	{
+		return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, EvaluationContext, ECameraRigLayer::Base);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't activate base camera rig");
+		return FCameraRigInstanceID();
+	}
 }
 
-void UGameplayCameraComponentBase::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+FCameraRigInstanceID UGameplayCameraComponentBase::ActivatePersistentGlobalCameraRig(UCameraRigAsset* CameraRig)
 {
-	UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG("Can't activate visual camera rig", Visual);
+	if (HasCameraSystem() && ensure(EvaluationContext))
+	{
+		return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, EvaluationContext, ECameraRigLayer::Global);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't activate global camera rig");
+		return FCameraRigInstanceID();
+	}
 }
 
-#undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ACTIVATE_NON_MAIN_RIG
+FCameraRigInstanceID UGameplayCameraComponentBase::ActivatePersistentVisualCameraRig(UCameraRigAsset* CameraRig)
+{
+	if (HasCameraSystem() && ensure(EvaluationContext))
+	{
+		return IGameplayCameraSystemHost::ActivateCameraRig(CameraRig, EvaluationContext, ECameraRigLayer::Visual);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't activate visual camera rig");
+		return FCameraRigInstanceID();
+	}
+}
+
+void UGameplayCameraComponentBase::DeactivateCameraRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	if (HasCameraSystem())
+	{
+		IGameplayCameraSystemHost::DeactivateCameraRig(InstanceID, bImmediately);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't deactivate camera rig");
+	}
+}
 
 FCameraRigInstanceID UGameplayCameraComponentBase::StartGlobalCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem() && ensure(EvaluationContext))
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
+		return IGameplayCameraSystemHost::StartCameraModifierRig(CameraRig, EvaluationContext, ECameraRigLayer::Global, OrderKey);
 	}
-
-	return FCameraRigInstanceID();
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't start global camera modifier rig");
+		return FCameraRigInstanceID();
+	}
 }
 
 FCameraRigInstanceID UGameplayCameraComponentBase::StartVisualCameraModifierRig(const UCameraRigAsset* CameraRig, int32 OrderKey)
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem() && ensure(EvaluationContext))
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Visual, OrderKey);
+		return IGameplayCameraSystemHost::StartCameraModifierRig(CameraRig, EvaluationContext, ECameraRigLayer::Visual, OrderKey);
 	}
-
-	return FCameraRigInstanceID();
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't start visual camera modifier rig");
+		return FCameraRigInstanceID();
+	}
 }
 
 void UGameplayCameraComponentBase::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem())
 	{
-		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
-		return CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
+		IGameplayCameraSystemHost::StopCameraModifierRig(InstanceID, bImmediately);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't stop camera modifier rig");
 	}
 }
 
 FCameraShakeInstanceID UGameplayCameraComponentBase::StartCameraShakeAsset(const UCameraShakeAsset* CameraShake, float ShakeScale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRotation)
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem())
 	{
-		FStartCameraShakeParams Params;
-		Params.CameraShake = CameraShake;
-		Params.ShakeScale = ShakeScale;
-		Params.PlaySpace = PlaySpace;
-		Params.UserPlaySpaceRotation = UserPlaySpaceRotation;
-
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->StartCameraShake(Params);
+		return IGameplayCameraSystemHost::StartCameraShake(CameraShake, ShakeScale, PlaySpace, UserPlaySpaceRotation);
 	}
-
-	return FCameraShakeInstanceID();
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't start camera shake");
+		return FCameraShakeInstanceID();
+	}
 }
 
 bool UGameplayCameraComponentBase::IsCameraShakeAssetPlaying(FCameraShakeInstanceID InInstanceID) const
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem())
 	{
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->IsCameraShakePlaying(InInstanceID);
+		return IGameplayCameraSystemHost::IsCameraShakePlaying(InInstanceID);
 	}
 	return false;
 }
 
 bool UGameplayCameraComponentBase::StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately)
 {
-	using namespace UE::Cameras;
-
-	if (CameraSystemEvaluator)
+	if (HasCameraSystem())
 	{
-		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
-		return CameraShakeService->StopCameraShake(InInstanceID, bImmediately);
+		return IGameplayCameraSystemHost::StopCameraShake(InInstanceID, bImmediately);
 	}
-	return false;
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't stop camera shake");
+		return false;
+	}
 }
+
+#undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
 
 FRotator UGameplayCameraComponentBase::GetEvaluatedCameraRotation() const
 {
@@ -562,14 +477,15 @@ void UGameplayCameraComponentBase::BeginPlay()
 		}
 		else
 		{
-			ActivateCameraForPlayerController(nullptr, false, EGameplayCameraComponentActivationMode::Push);
+			ActivateCameraForPlayerController(nullptr, false);
 		}
 	}
 }
 
 void UGameplayCameraComponentBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	DeactivateCameraEvaluationContext(true);
+	DestroyCameraSystemHost();
+	DestroyEvaluationContext();
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -584,16 +500,15 @@ void UGameplayCameraComponentBase::Activate(bool bReset)
 
 	if (bDoActivate)
 	{
-		DeactivateCameraEvaluationContext(true);
-
-		EnsureCameraSystemHost();
-		ActivateCameraEvaluationContext(nullptr, this, EGameplayCameraComponentActivationMode::Push);
+		EnsureEvaluationContext(nullptr);
+		EnsureCameraSystemHostIfNeeded();
 	}
 }
 
 void UGameplayCameraComponentBase::Deactivate()
 {
-	DeactivateCameraEvaluationContext(true);
+	DestroyCameraSystemHost();
+	DestroyEvaluationContext();
 
 	Super::Deactivate();
 }
@@ -611,10 +526,7 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 
 #endif  // WITH_EDITOR
 
-	if (EvaluationContext)
-	{
-		UpdateCameraEvaluationContext(false);
-	}
+	UpdateEvaluationContext(false);
 
 #if WITH_EDITOR
 
@@ -622,7 +534,7 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 	{
 		UpdateCameraSystemForEditorPreview(DeltaTime);
 	}
-	else
+	else if (bRunStandaloneCameraSystem)
 	{
 		UpdateCameraSystem(DeltaTime);
 		UpdateControlRotationIfNeeded();
@@ -630,81 +542,51 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 
 #else
 
-	UpdateCameraSystem(DeltaTime);
-	UpdateControlRotationIfNeeded();
+	if (bRunStandaloneCameraSystem)
+	{
+		UpdateCameraSystem(DeltaTime);
+		UpdateControlRotationIfNeeded();
+	}
 
 #endif  // WITH_EDITOR
 
 	UpdateOutputCameraComponent();
-
-	CheckPendingDeactivation();
 }
 
-void UGameplayCameraComponentBase::CheckPendingDeactivation()
+void UGameplayCameraComponentBase::UpdateEvaluationContext(bool bForceApplyParameterOverrides)
 {
 	using namespace UE::Cameras;
 
-	if (!bIsPendingDeactivate)
+	if (EvaluationContext)
 	{
-		return;
-	}
+		FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
 
-	// If we were deactivating, we wait until we don't have any running camera rig anymore,
-	// at which point we can tear down all our evaluation apparatus.
-	bool bDoneDeactivating = true;
+		const FTransform& OwnerTransform = GetComponentTransform();
+		InitialResult.CameraPose.SetTransform(OwnerTransform, true);
+		InitialResult.bIsCameraCut = false;
+		InitialResult.bIsValid = true;
 
-	TSharedPtr<FCameraSystemEvaluator> CameraSystemToCheck = PendingDeactivateCameraSystemEvaluator.Pin();
-	if (EvaluationContext && CameraSystemToCheck)
-	{
-		FRootCameraNodeEvaluator* RootNodeEvaluator = CameraSystemToCheck->GetRootNodeEvaluator();
-		bDoneDeactivating = (RootNodeEvaluator->HasAnyRunningCameraRig(EvaluationContext) == false);
-	}
+		if (bIsCameraCutNextFrame)
+		{
+			InitialResult.bIsCameraCut = true;
+			bIsCameraCutNextFrame = false;
+		}
 
-	if (bDoneDeactivating)
-	{
-		DestroyCameraSystem();
-		DestroyCameraEvaluationContext();
-
-		// Only call the base class method here: we just want to finish deactivating ourselves
-		// by stopping ticking.
-		Super::Deactivate();
-
-		PendingDeactivateCameraSystemEvaluator = nullptr;
-		bIsPendingDeactivate = false;
-	}
-}
-
-void UGameplayCameraComponentBase::UpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
-{
-	using namespace UE::Cameras;
-
-	FCameraNodeEvaluationResult& InitialResult = EvaluationContext->GetInitialResult();
-
-	const FTransform& OwnerTransform = GetComponentTransform();
-	InitialResult.CameraPose.SetTransform(OwnerTransform, true);
-	InitialResult.bIsCameraCut = false;
-	InitialResult.bIsValid = true;
-
-	if (bIsCameraCutNextFrame)
-	{
-		InitialResult.bIsCameraCut = true;
-		bIsCameraCutNextFrame = false;
-	}
-
-	OnUpdateCameraEvaluationContext(bForceApplyParameterOverrides);
+		OnUpdateCameraEvaluationContext(bForceApplyParameterOverrides);
 
 #if WITH_EDITOR
 
-	EvaluationContext->UpdateForEditorPreview();
+		EvaluationContext->UpdateForEditorPreview();
 
 #endif  // WITH_EDITOR
+	}
 }
 
 void UGameplayCameraComponentBase::UpdateControlRotationIfNeeded()
 {
 	using namespace UE::Cameras;
 
-	if (!HasCameraSystem() || !HasCameraEvaluationContext() || !bSetControlRotationWhenViewTarget)
+	if (!HasCameraSystem() || !HasEvaluationContext() || !bSetControlRotationWhenViewTarget)
 	{
 		return;
 	}
@@ -743,7 +625,7 @@ bool UGameplayCameraComponentBase::IsEditorWorld() const
 
 #if WITH_EDITOR
 
-void UGameplayCameraComponentBase::ReinitializeCameraEvaluationContext(
+void UGameplayCameraComponentBase::ReinitializeEvaluationContext(
 			const FCameraVariableTableAllocationInfo& VariableTableAllocationInfo,
 			const FCameraContextDataTableAllocationInfo& ContextDataTableAllocationInfo)
 {
@@ -765,7 +647,7 @@ void UGameplayCameraComponentBase::ReinitializeCameraEvaluationContext(
 	}
 }
 
-void UGameplayCameraComponentBase::RecreateEditorWorldCameraEvaluationContext()
+void UGameplayCameraComponentBase::RecreateEditorWorldEvaluationContext()
 {
 	using namespace UE::Cameras;
 
@@ -797,7 +679,7 @@ void UGameplayCameraComponentBase::RecreateEditorWorldCameraEvaluationContext()
 		}
 		EvaluationContext = nullptr;
 
-		CreateCameraEvaluationContext(nullptr);
+		EnsureEvaluationContext(nullptr);
 		if (CameraSystemEvaluator)
 		{
 			CameraSystemEvaluator->PushEvaluationContext(EvaluationContext.ToSharedRef());
@@ -877,7 +759,7 @@ void UGameplayCameraComponentBase::OnUpdateTransform(EUpdateTransformFlags Updat
 
 	if (bIsEditorWorld && EvaluationContext)
 	{
-		UpdateCameraEvaluationContext(false);
+		UpdateEvaluationContext(false);
 	}
 
 #endif  // WITH_EDITOR
@@ -899,10 +781,10 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 	{
 		// We want to run the camera logic in the editor but we haven't set things up for that.
 		// Let's create the preview evaluator and the evaluation context.
-		EnsureCameraSystemHost();
+		EnsureEvaluationContext(nullptr);
+		EnsureCameraSystemHostIfNeeded();
 
-		ActivateCameraEvaluationContext(nullptr, this, EGameplayCameraComponentActivationMode::Push);
-		if (EvaluationContext)
+		if (ensure(EvaluationContext))
 		{
 			EvaluationContext->SetEditorPreviewCameraRigIndex(EditorPreviewCameraRigIndex);
 		}
@@ -912,14 +794,8 @@ void UGameplayCameraComponentBase::AutoManageEditorPreviewEvaluator()
 	else if (!bCanRun && (CameraSystemEvaluator || EvaluationContext))
 	{
 		// We don't want to run the camera logic in the editor anymore. Let's tear things down.
-		DeactivateCameraEvaluationContext(true);
-		DestroyCameraSystem();
-		EvaluationContext = nullptr;
-
-		if (OutputCameraComponent)
-		{
-			OutputCameraComponent->SetRelativeTransform(FTransform());
-		}
+		DestroyCameraSystemHost();
+		DestroyEvaluationContext();
 	}
 }
 

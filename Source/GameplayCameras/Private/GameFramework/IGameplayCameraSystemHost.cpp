@@ -15,6 +15,8 @@
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Services/CameraModifierService.h"
+#include "Services/CameraShakeService.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(IGameplayCameraSystemHost)
 
@@ -60,7 +62,10 @@ TScriptInterface<IGameplayCameraSystemHost> IGameplayCameraSystemHost::GetAsScri
 	return Result;
 }
 
-void IGameplayCameraSystemHost::ActivateCameraRig(UCameraRigAsset* CameraRig, TSharedPtr<UE::Cameras::FCameraEvaluationContext> EvaluationContext, ECameraRigLayer EvaluationLayer)
+FCameraRigInstanceID IGameplayCameraSystemHost::ActivateCameraRig(
+		const UCameraRigAsset* CameraRig, 
+		TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+		ECameraRigLayer EvaluationLayer)
 {
 	using namespace UE::Cameras;
 
@@ -69,7 +74,7 @@ void IGameplayCameraSystemHost::ActivateCameraRig(UCameraRigAsset* CameraRig, TS
 		FFrame::KismetExecutionMessage(
 				*FString::Printf(TEXT("Can't activate camera rig on '%s': no camera rig given!"), *GetNameSafe(GetAsObject())),
 				ELogVerbosity::Error);
-		return;
+		return FCameraRigInstanceID();
 	}
 	
 	if (!EvaluationContext)
@@ -79,10 +84,8 @@ void IGameplayCameraSystemHost::ActivateCameraRig(UCameraRigAsset* CameraRig, TS
 					TEXT("Can't activate camera rig '%s' on '%s': invalid evaluation context given!"), 
 					*GetNameSafe(CameraRig), *GetNameSafe(GetAsObject())),
 				ELogVerbosity::Error);
-		return;
+		return FCameraRigInstanceID();
 	}
-
-	EnsureCameraSystemInitialized();
 
 	if (ensure(CameraSystemEvaluator))
 	{
@@ -92,8 +95,99 @@ void IGameplayCameraSystemHost::ActivateCameraRig(UCameraRigAsset* CameraRig, TS
 		Params.Layer = EvaluationLayer;
 
 		FRootCameraNodeEvaluator* RootNodeEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
-		RootNodeEvaluator->ActivateCameraRig(Params);
+		return RootNodeEvaluator->ActivateCameraRig(Params);
 	}
+
+	return FCameraRigInstanceID();
+}
+
+void IGameplayCameraSystemHost::DeactivateCameraRig(FCameraRigInstanceID InInstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (InInstanceID.IsValid())
+	{
+		FDeactivateCameraRigParams Params;
+		Params.InstanceID = InInstanceID;
+		Params.bDeactiveImmediately = bImmediately;
+
+		FRootCameraNodeEvaluator* RootNodeEvaluator = CameraSystemEvaluator->GetRootNodeEvaluator();
+		RootNodeEvaluator->DeactivateCameraRig(Params);
+	}
+}
+
+FCameraRigInstanceID IGameplayCameraSystemHost::StartCameraModifierRig(
+		const UCameraRigAsset* CameraRig,
+		TSharedPtr<FCameraEvaluationContext> EvaluationContext,
+		ECameraRigLayer EvaluationLayer,
+		int32 OrderKey)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		if (ensure(CameraModifierService))
+		{
+			return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
+		}
+	}
+
+	return FCameraRigInstanceID();
+}
+
+void IGameplayCameraSystemHost::StopCameraModifierRig(FCameraRigInstanceID InstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
+		CameraModifierService->StopCameraModifierRig(InstanceID, bImmediately);
+	}
+}
+
+FCameraShakeInstanceID IGameplayCameraSystemHost::StartCameraShake(const UCameraShakeAsset* CameraShake, float ShakeScale, ECameraShakePlaySpace PlaySpace, FRotator UserPlaySpaceRotation)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		FStartCameraShakeParams Params;
+		Params.CameraShake = CameraShake;
+		Params.ShakeScale = ShakeScale;
+		Params.PlaySpace = PlaySpace;
+		Params.UserPlaySpaceRotation = UserPlaySpaceRotation;
+
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->StartCameraShake(Params);
+	}
+
+	return FCameraShakeInstanceID();
+}
+
+bool IGameplayCameraSystemHost::IsCameraShakePlaying(FCameraShakeInstanceID InInstanceID) const
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->IsCameraShakePlaying(InInstanceID);
+	}
+	return false;
+}
+
+bool IGameplayCameraSystemHost::StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
+		return CameraShakeService->StopCameraShake(InInstanceID, bImmediately);
+	}
+	return false;
 }
 
 IGameplayCameraSystemHost* IGameplayCameraSystemHost::FindActiveHost(APlayerController* PlayerController)

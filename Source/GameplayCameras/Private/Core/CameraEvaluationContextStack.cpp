@@ -177,6 +177,21 @@ void FCameraEvaluationContextStack::GetAllContexts(TArray<TSharedPtr<FCameraEval
 	}
 }
 
+TSharedPtr<FCameraEvaluationContext> FCameraEvaluationContextStack::FindContextByOwner(const UObject* InOwner) const
+{
+	for (const FContextEntry& Entry : Entries)
+	{
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			if (Context->GetOwner() == InOwner)
+			{
+				return Context;
+			}
+		}
+	}
+	return TSharedPtr<FCameraEvaluationContext>();
+}
+
 void FCameraEvaluationContextStack::Reset()
 {
 	for (FContextEntry& Entry : Entries)

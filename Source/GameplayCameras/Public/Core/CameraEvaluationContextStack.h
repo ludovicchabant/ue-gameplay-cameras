@@ -4,6 +4,7 @@
 
 #include "Containers/Array.h"
 #include "GameplayCameras.h"
+#include "Templates/Invoke.h"
 #include "UObject/WeakObjectPtr.h"
 
 class UCameraAsset;
@@ -61,6 +62,17 @@ public:
 	/** Gets all the contexts in the stack, from bottom to top. */
 	void GetAllContexts(TArray<TSharedPtr<FCameraEvaluationContext>>& OutContexts) const;
 
+	/** Finds a context owned by the given object, if any. */
+	TSharedPtr<FCameraEvaluationContext> FindContextByOwner(const UObject* InOwner) const;
+
+	/**
+	 * Finds a context that fulfills the given predicate.
+	 *
+	 * The predicate function must have the signature: (TSharedRef<FCameraEvaluationContext>) -> bool
+	 */
+	template<typename Predicate>
+	TSharedPtr<FCameraEvaluationContext> FindContextByPredicate(Predicate Pred) const;
+
 	/** Empties the stack of all contexts. */
 	void Reset();
 
@@ -94,6 +106,22 @@ private:
 	friend class FCameraDirectorTreeDebugBlock;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 };
+
+template<typename Predicate>
+TSharedPtr<FCameraEvaluationContext> FCameraEvaluationContextStack::FindContextByPredicate(Predicate Pred) const
+{
+	for (const FContextEntry& Entry : Entries)
+	{
+		if (TSharedPtr<FCameraEvaluationContext> Context = Entry.WeakContext.Pin())
+		{
+			if (::Invoke(Pred, Context.ToSharedRef()))
+			{
+				return Context;
+			}
+		}
+	}
+	return TSharedPtr<FCameraEvaluationContext>();
+}
 
 }  // namespace UE::Cameras
 
