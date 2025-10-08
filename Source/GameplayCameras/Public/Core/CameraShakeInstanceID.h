@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 
 #include "CameraShakeInstanceID.generated.h"
 
@@ -55,5 +56,27 @@ private:
 
 	UPROPERTY()
 	uint32 Value;
+};
+
+/**
+ * Blueprint function library for camera shake instance IDs.
+ */
+UCLASS()
+class UCameraShakeInstanceFunctionLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+
+	/**
+	 * Returns whether a camera shake instance ID is valid. 
+	 *
+	 * Note that this doesn't check if the associated camera shake is still running.
+	 */
+	UFUNCTION(BlueprintPure, Category="Camera Shake", meta=(DisplayName="Is Valid Camera Shake Instance ID"))
+	static bool IsValid(const FCameraShakeInstanceID CameraShakeInstanceID)
+	{
+		return CameraShakeInstanceID.IsValid();
+	}
 };
 
