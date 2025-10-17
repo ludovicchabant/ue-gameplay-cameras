@@ -29,7 +29,7 @@ public:
 
 	UK2Node_SingleCameraRigParameterBase(const FObjectInitializer& ObjectInit);
 
-	void Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName);
+	void Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName, bool bIsTemplateNode);
 	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraVariableType InCameraVariableType, const UScriptStruct* InBlendableStructType);
 	void Initialize(UCameraRigAsset* InCameraRig, const FString& InCameraParameterName, ECameraContextDataType InCameraContextDataType, ECameraContextDataContainerType InCameraContextDataContainerType, const UObject* InCameraContextDataTypeObject);
 

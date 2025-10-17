@@ -24,20 +24,23 @@ UK2Node_SingleCameraRigParameterBase::UK2Node_SingleCameraRigParameterBase(const
 {
 }
 
-void UK2Node_SingleCameraRigParameterBase::Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName)
+void UK2Node_SingleCameraRigParameterBase::Initialize(const FAssetData& UnloadedCameraRig, const FString& InCameraParameterName, bool bIsTemplateNode)
 {
-	UCameraRigAsset* LoadedCameraRig = Cast<UCameraRigAsset>(UnloadedCameraRig.GetAsset());
-	if (ensure(LoadedCameraRig))
+	if (!bIsTemplateNode)
 	{
-		if (const UCameraObjectInterfaceBlendableParameter* BlendableParameter = LoadedCameraRig->Interface.FindBlendableParameterByName(InCameraParameterName))
+		UCameraRigAsset* LoadedCameraRig = Cast<UCameraRigAsset>(UnloadedCameraRig.GetAsset());
+		if (ensure(LoadedCameraRig))
 		{
-			Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
+			if (const UCameraObjectInterfaceBlendableParameter* BlendableParameter = LoadedCameraRig->Interface.FindBlendableParameterByName(InCameraParameterName))
+			{
+				Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
+			}
+			else if (const UCameraObjectInterfaceDataParameter* DataParameter = LoadedCameraRig->Interface.FindDataParameterByName(InCameraParameterName))
+			{
+				Initialize(LoadedCameraRig, InCameraParameterName, DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
+			}
+			// else, no parameter of that name found...
 		}
-		else if (const UCameraObjectInterfaceDataParameter* DataParameter = LoadedCameraRig->Interface.FindDataParameterByName(InCameraParameterName))
-		{
-			Initialize(LoadedCameraRig, InCameraParameterName, DataParameter->DataType, DataParameter->DataContainerType, DataParameter->DataTypeObject);
-		}
-		// else, no parameter of that name found...
 	}
 }
 

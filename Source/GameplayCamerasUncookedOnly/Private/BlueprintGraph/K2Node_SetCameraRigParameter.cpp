@@ -57,7 +57,7 @@ void UK2Node_SetCameraRigParameter::GetMenuActions(FBlueprintActionDatabaseRegis
 				[ParameterName, CameraRigAssetData](UEdGraphNode* NewNode, bool bIsTemplateNode)
 				{
 					UK2Node_SetCameraRigParameter* NewSetter = CastChecked<UK2Node_SetCameraRigParameter>(NewNode);
-					NewSetter->Initialize(CameraRigAssetData, ParameterName.ToString());
+					NewSetter->Initialize(CameraRigAssetData, ParameterName.ToString(), bIsTemplateNode);
 				});
 
 		ActionRegistrar.AddBlueprintAction(CameraRigAssetData, NodeSpawner);

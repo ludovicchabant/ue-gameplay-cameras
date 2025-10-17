@@ -21,9 +21,12 @@ UK2Node_MultiCameraRigParametersBase::UK2Node_MultiCameraRigParametersBase(const
 {
 }
 
-void UK2Node_MultiCameraRigParametersBase::Initialize(const FAssetData& UnloadedCameraRig)
+void UK2Node_MultiCameraRigParametersBase::Initialize(const FAssetData& UnloadedCameraRig, bool bIsTemplateNode)
 {
-	CameraRig = Cast<UCameraRigAsset>(UnloadedCameraRig.GetAsset());
+	if (!bIsTemplateNode)
+	{
+		CameraRig = Cast<UCameraRigAsset>(UnloadedCameraRig.GetAsset());
+	}
 }
 
 void UK2Node_MultiCameraRigParametersBase::ReallocatePinsDuringReconstruction(TArray<UEdGraphPin*>& OldPins)

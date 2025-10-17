@@ -20,7 +20,7 @@ public:
 
 	UK2Node_MultiCameraRigParametersBase(const FObjectInitializer& ObjectInit);
 
-	void Initialize(const FAssetData& UnloadedCameraRig);
+	void Initialize(const FAssetData& UnloadedCameraRig, bool bIsTemplateNode);
 
 public:
 
