@@ -129,7 +129,7 @@ FCameraRigInstanceID IGameplayCameraSystemHost::StartCameraModifierRig(
 		TSharedPtr<FCameraModifierService> CameraModifierService = CameraSystemEvaluator->FindEvaluationService<FCameraModifierService>();
 		if (ensure(CameraModifierService))
 		{
-			return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), ECameraRigLayer::Global, OrderKey);
+			return CameraModifierService->StartCameraModifierRig(CameraRig, EvaluationContext.ToSharedRef(), EvaluationLayer, OrderKey);
 		}
 	}
 
