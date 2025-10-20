@@ -490,6 +490,16 @@ void UGameplayCameraComponentBase::EndPlay(const EEndPlayReason::Type EndPlayRea
 	Super::EndPlay(EndPlayReason);
 }
 
+void UGameplayCameraComponentBase::OnComponentDestroyed(bool bDestroyingHierarchy)
+{
+	if (OutputCameraComponent)
+	{
+		OutputCameraComponent->DestroyComponent();
+	}
+
+	Super::OnComponentDestroyed(bDestroyingHierarchy);
+}
+
 void UGameplayCameraComponentBase::Activate(bool bReset)
 {
 	// When auto-activing, this method gets called during OnRegister, before we have started playing.
