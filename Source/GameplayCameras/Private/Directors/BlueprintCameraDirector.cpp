@@ -17,6 +17,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ControllerGameplayCameraEvaluationComponent.h"
 #include "GameplayCameras.h"
+#include "GameplayCamerasSettings.h"
 #include "Helpers/OutgoingReferenceFinder.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BlueprintCameraDirector)
@@ -531,6 +532,7 @@ void UBlueprintCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 
 	TArray<UClass*> RefClasses { UCameraRigAsset::StaticClass(), UCameraRigProxyAsset::StaticClass() };
 	FOutgoingReferenceFinder ReferenceFinder(EvaluatorBlueprint, RefClasses);
+	ReferenceFinder.SetMaxDistance(GetDefault<UGameplayCamerasSettings>()->MaxUsageSearchDistance);
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 	ReferenceFinder.GetReferencesOfClass<UCameraRigProxyAsset>(UsageInfo.CameraRigProxies);

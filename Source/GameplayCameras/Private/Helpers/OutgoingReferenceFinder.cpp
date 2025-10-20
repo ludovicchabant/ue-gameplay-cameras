@@ -36,19 +36,27 @@ void FOutgoingReferenceFinder::Initialize(UObject* InRootObject)
 	ArShouldSkipBulkData = true;
 }
 
+void FOutgoingReferenceFinder::SetMaxDistance(int32 InMaxDistance)
+{
+	MaxDistance = FMath::Clamp(InMaxDistance, 0, 5);
+}
+
 void FOutgoingReferenceFinder::CollectReferences()
 {
 	ObjectsToVisit.Reset();
 	VisitedObjects.Reset();
 
-	ObjectsToVisit.Add(RootObject);
+	ObjectsToVisit.Add({ RootObject, PackageScope, 0 });
 	while (ObjectsToVisit.Num() > 0)
 	{
-		UObject* CurObj = ObjectsToVisit.Pop(EAllowShrinking::No);
-		if (!VisitedObjects.Contains(CurObj))
+		FObjectToVisit CurObj = ObjectsToVisit.Pop(EAllowShrinking::No);
+		if (!VisitedObjects.Contains(CurObj.Obj))
 		{
-			VisitedObjects.Add(CurObj);
-			CurObj->Serialize(*this);
+			VisitedObjects.Add(CurObj.Obj);
+
+			SerializeState = { CurObj.Package, CurObj.Distance };
+			CurObj.Obj->Serialize(*this);
+			SerializeState = FSerializeState();
 		}
 	}
 }
@@ -78,9 +86,18 @@ FArchive& FOutgoingReferenceFinder::operator<<(UObject*& ObjRef)
 			ReferencesOfClass.Add(ObjRef);
 		}
 
-		if (ObjRef->IsIn(PackageScope) && !VisitedObjects.Contains(ObjRef))
+		if (!VisitedObjects.Contains(ObjRef))
 		{
-			ObjectsToVisit.Add(ObjRef);
+			UPackage* ObjRefPackage = ObjRef->GetOutermost();
+			// Note that this distance is maybe not the "correct" one. That is: there may be another path to ObjRef that 
+			// has a lower distance. But that's OK. Either we queue a visit of ObjRef right now, and we'll ignore the
+			// duplicate with the shorter distance, or the current distance is over the threshold and we skip visiting
+			// it now, but we'll visit it when we encounter it again with a distance under the threshold.
+			const int32 ObjRefDistance = SerializeState.CurrentDistance + (ObjRefPackage == SerializeState.CurrentPackage ? 0 : 1);
+			if (ObjRefDistance <= MaxDistance)
+			{
+				ObjectsToVisit.Add({ ObjRef, ObjRefPackage, ObjRefDistance });
+			}
 		}
 	}
 	return *this;

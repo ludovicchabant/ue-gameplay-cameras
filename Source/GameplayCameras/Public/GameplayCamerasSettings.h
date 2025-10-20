@@ -46,6 +46,14 @@ public:
 
 public:
 
+	/**
+	 * How many packages away to look for references to camera rigs and rig proxies from a camera director.
+	 */
+	UPROPERTY(EditAnywhere, Config, Category="Camera Director", meta=(ClampMin=1, ClampMax=5))
+	int32 MaxUsageSearchDistance = 2;
+
+public:
+
 	/** The default angle tolerance to accept an aiming operation. */
 	UPROPERTY(EditAnywhere, Config, Category="IK Aiming")
 	double DefaultIKAimingAngleTolerance = 0.1;  // 0.1 degrees

@@ -27,6 +27,18 @@ public:
 	/** Creates a new instance of the reference finder. */
 	UE_API FOutgoingReferenceFinder(UObject* InRootObject, TArrayView<UClass*> InReferencedObjectClasses);
 
+	/**
+	 * Sets the maximum distance (in number of packages) to search for references.
+	 * Zero means only search the root object package.
+	 * One means search directly referenced packages.
+	 * Higher distances exponentially grow the number of objects to search, so the maximum
+	 * value settable is 5.
+	 */
+	UE_API void SetMaxDistance(int32 InMaxDistance);
+
+	/** Gets the maximum distance (in number of packages) to search for references. */
+	int32 GetMaxDistance() const { return MaxDistance; }
+
 	/** Runs the reference finding. */
 	UE_API void CollectReferences();
 
@@ -50,13 +62,28 @@ private:
 
 private:
 
+	struct FObjectToVisit
+	{
+		UObject* Obj = nullptr;
+		UPackage* Package = nullptr;
+		int32 Distance = 0;
+	};
+
+	struct FSerializeState
+	{
+		UPackage* CurrentPackage = nullptr;
+		int32 CurrentDistance = 0;
+	};
+
 	UObject* RootObject;
 	UPackage* PackageScope;
+	int32 MaxDistance = 1;
 
 	TSet<UClass*> TargetObjectClasses;
 
-	TArray<UObject*> ObjectsToVisit;
+	TArray<FObjectToVisit> ObjectsToVisit;
 	TSet<UObject*> VisitedObjects;
+	FSerializeState SerializeState;
 
 	TMap<UClass*, TSet<UObject*>> ReferencedObjects;
 };
