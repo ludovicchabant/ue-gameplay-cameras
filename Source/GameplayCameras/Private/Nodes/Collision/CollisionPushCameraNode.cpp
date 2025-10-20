@@ -4,10 +4,7 @@
 
 #include "CollisionQueryParams.h"
 #include "Core/CameraEvaluationContext.h"
-#include "Core/CameraParameterReader.h"
 #include "Core/CameraSystemEvaluator.h"
-#include "Core/CameraValueInterpolator.h"
-#include "Core/CameraVariableReferenceReader.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugColors.h"
@@ -26,59 +23,6 @@
 
 namespace UE::Cameras
 {
-
-class FCollisionPushCameraNodeEvaluator : public FCameraNodeEvaluator
-{
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FCollisionPushCameraNodeEvaluator)
-
-protected:
-
-	// FCameraNodeEvaluator interface.
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
-private:
-
-	TOptional<FVector3d> GetFinalSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
-	TOptional<FVector3d> GetSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
-
-	void RunCollisionTrace(UWorld* World, APlayerController* PlayerController, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
-	void HandleAsyncCollisionTraceResult(UWorld* World, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
-	void HandleCollisionTraceResult(UWorld* World, TArrayView<const FHitResult> HitResults, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
-	void HandleDisabledCollision(const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
-	void UpdatePushFactor(bool bFoundHit, float CurrentPushFactor, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
-
-private:
-
-	TCameraVariableReferenceReader<bool> EnableCollisionReader;
-	TCameraVariableReferenceReader<FVector3d> CustomSafePositionReader;
-
-	TCameraParameterReader<float> CollisionSphereRadiusReader;
-	TCameraParameterReader<FVector3d> SafePositionOffsetReader;
-
-	TUniquePtr<FCameraDoubleValueInterpolator> PushInterpolator;
-	TUniquePtr<FCameraDoubleValueInterpolator> PullInterpolator;
-
-	FTraceHandle CollisionTraceHandle;
-
-	float LastPushFactor = 0.f;
-	float LastDampedPushFactor = 0.f;
-
-	enum class ECameraCollisionDirection { Pushing, Pulling };
-	ECameraCollisionDirection LastDirection = ECameraCollisionDirection::Pushing;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	bool bDebugCollisionEnabled = false;
-	bool bDebugFoundHit = false;
-	bool bDebugGotSafePosition = false;
-	bool bDebugGotSafePositionOffset = false;
-	FString DebugHitObjectName;
-	FVector3d DebugSafePosition;
-#endif
-};
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FCollisionPushCameraNodeEvaluator)
 
@@ -286,9 +230,6 @@ TOptional<FVector3d> FCollisionPushCameraNodeEvaluator::GetSafePosition(const FC
 
 void FCollisionPushCameraNodeEvaluator::RunCollisionTrace(UWorld* World, APlayerController* PlayerController, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	static FName CollisionTraceTag(TEXT("CameraCollision"));
-	static FName CollisionTraceOwnerTag(TEXT("CollisionPushCameraNode"));
-
 	const UCollisionPushCameraNode* CollisionPushNode = GetCameraNodeAs<UCollisionPushCameraNode>();
 	ECollisionChannel CollisionChannel = CollisionPushNode->CollisionChannel;
 
@@ -304,36 +245,57 @@ void FCollisionPushCameraNodeEvaluator::RunCollisionTrace(UWorld* World, APlayer
 		return;
 	}
 
-	FCollisionShape SweepShape = FCollisionShape::MakeSphere(CollisionSphereRadius);
+	FCollisionTraceParams TraceParams;
+	TraceParams.World = World;
+	TraceParams.Pawn = PlayerController->GetPawn();
+	TraceParams.SafePosition = SafePosition;
+	TraceParams.TraceStart = TraceStart;
+	TraceParams.TraceEnd = TraceEnd;
+	TraceParams.CollisionSphereRadius = CollisionSphereRadius;
+	TraceParams.CollisionChannel = CollisionChannel;
+	TraceParams.bRequestedAsyncCollision = CollisionPushNode->bRunAsyncCollision;
+
+	FCollisionTraceResult TraceResult;
+
+	RunCollisionTrace(Params, TraceParams, OutResult, TraceResult);
+
+	CollisionTraceHandle = TraceResult.AsyncTraceHandle;
+	if (!TraceResult.HitResults.IsEmpty())
+	{
+		HandleCollisionTraceResult(World, TraceResult.HitResults, SafePosition, Params, OutResult);
+	}
+}
+
+void FCollisionPushCameraNodeEvaluator::RunCollisionTrace(const FCameraNodeEvaluationParams& Params, const FCollisionTraceParams& TraceParams, FCameraNodeEvaluationResult& OutResult, FCollisionTraceResult& OutTraceResult)
+{
+	static FName CollisionTraceTag(TEXT("CameraCollision"));
+	static FName CollisionTraceOwnerTag(TEXT("CollisionPushCameraNode"));
+
+	FCollisionShape SweepShape = FCollisionShape::MakeSphere(TraceParams.CollisionSphereRadius);
 	// Ignore the player pawn by default.
-	APawn* Pawn = PlayerController->GetPawn();
-	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(StartCollisionSweep), false, Pawn);
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(StartCollisionSweep), false, TraceParams.Pawn);
 	QueryParams.TraceTag = CollisionTraceTag;
 	QueryParams.OwnerTag = CollisionTraceOwnerTag;
 
-	if (CollisionPushNode->bRunAsyncCollision)
+	if (TraceParams.bRequestedAsyncCollision)
 	{
-		CollisionTraceHandle = World->AsyncSweepByChannel(
+		OutTraceResult.AsyncTraceHandle = TraceParams.World->AsyncSweepByChannel(
 			EAsyncTraceType::Single,
-			TraceStart, TraceEnd, FQuat::Identity,
-			CollisionChannel,
+			TraceParams.TraceStart, TraceParams.TraceEnd, FQuat::Identity,
+			TraceParams.CollisionChannel,
 			SweepShape,
 			QueryParams,
 			FCollisionResponseParams::DefaultResponseParam);
 	}
 	else
 	{
-		TArray<FHitResult> HitResults;
-		World->SweepMultiByChannel(
-			HitResults,
-			TraceStart, TraceEnd, FQuat::Identity,
-			CollisionChannel,
+		TraceParams.World->SweepMultiByChannel(
+			OutTraceResult.HitResults,
+			TraceParams.TraceStart, TraceParams.TraceEnd, FQuat::Identity,
+			TraceParams.CollisionChannel,
 			SweepShape,
 			QueryParams,
 			FCollisionResponseParams::DefaultResponseParam);
-
-		// Handle results right away.
-		HandleCollisionTraceResult(World, HitResults, SafePosition, Params, OutResult);
 	}
 }
 

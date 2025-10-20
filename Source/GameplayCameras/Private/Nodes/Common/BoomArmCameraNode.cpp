@@ -4,7 +4,6 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraOperation.h"
-#include "Core/CameraParameterReader.h"
 #include "Core/CameraRigJoints.h"
 #include "Core/CameraValueInterpolator.h"
 #include "Debug/CameraDebugBlock.h"
@@ -18,44 +17,6 @@
 
 namespace UE::Cameras
 {
-
-class FBoomArmCameraNodeEvaluator : public FCameraNodeEvaluator
-{
-	UE_DECLARE_CAMERA_NODE_EVALUATOR(GAMEPLAYCAMERAS_API, FBoomArmCameraNodeEvaluator)
-
-protected:
-
-	// FCameraNodeEvaluator interface.
-	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-
-private:
-
-	APlayerController* GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const;
-
-private:
-
-	TCameraParameterReader<FVector3d> BoomOffsetReader;
-	FInput2DCameraNodeEvaluator* InputSlotEvaluator = nullptr;
-	
-	TUniquePtr<TCameraValueInterpolator<double>> BoomLengthInterpolator;
-	TCameraParameterReader<double> MaxForwardInterpolationFactorReader;
-	TCameraParameterReader<double> MaxBackwardInterpolationFactorReader;
-	FVector3d LastPivotLocation;
-	double CumulativePull;
-
-#if UE_GAMEPLAY_CAMERAS_DEBUG
-	FVector2d DebugYawPitch;
-	bool bDebugDidClampPull;
-#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
-};
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FBoomArmCameraNodeEvaluator)
 
@@ -96,7 +57,7 @@ FCameraNodeEvaluatorChildrenView FBoomArmCameraNodeEvaluator::OnGetChildren()
 	return FCameraNodeEvaluatorChildrenView({ InputSlotEvaluator });
 }
 
-void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+FRotator FBoomArmCameraNodeEvaluator::ComputeBoomRotation(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FRotator3d BoomRotation = FRotator3d::ZeroRotator;
 	if (InputSlotEvaluator)
@@ -105,13 +66,17 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 		const FVector2d YawPitch = InputSlotEvaluator->GetInputValue();
 		BoomRotation = FRotator3d(YawPitch.Y, YawPitch.X, 0);
 	}
-	else if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
+	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 	{
 		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
 		BoomRotation = ControlRotation;
 	}
+	return BoomRotation;
+}
 
-	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
+void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	const FRotator3d BoomRotation = ComputeBoomRotation(Params, OutResult);
 
 	// Here we want to logically apply transform in this order:
 	//
@@ -217,7 +182,7 @@ void FBoomArmCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParam
 		// some operations by affecting that pawn rotation ourselves.
 		if (FYawPitchCameraOperation* Op = Operation.CastOperation<FYawPitchCameraOperation>())
 		{
-			if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
+			if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 			{
 				FRotator3d ControlRotation = PlayerController->GetControlRotation();
 				ControlRotation.Yaw = Op->Yaw.Apply(ControlRotation.Yaw);
@@ -226,15 +191,6 @@ void FBoomArmCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParam
 			}
 		}
 	}
-}
-
-APlayerController* FBoomArmCameraNodeEvaluator::GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const
-{
-	if (EvaluationContext)
-	{
-		return EvaluationContext->GetPlayerController();
-	}
-	return nullptr;
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

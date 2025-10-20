@@ -4,13 +4,16 @@
 
 #include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
+#include "Core/CameraParameterReader.h"
+#include "Core/CameraValueInterpolator.h"
 #include "Core/CameraVariableReferences.h"
-#include "Nodes/CameraNodeTypes.h"
+#include "Core/CameraVariableReferenceReader.h"
 #include "Engine/EngineTypes.h"
+#include "WorldCollision.h"
 
 #include "CollisionPushCameraNode.generated.h"
 
-class UCameraValueInterpolator;
+#define UE_API GAMEPLAYCAMERAS_API
 
 /**
  * Specifies how to compute the default safe position for the collision camera node
@@ -56,6 +59,99 @@ enum class ECollisionSafePositionOffsetSpace : uint8
 	/** The space of the player's controlled pawn. */
 	Pawn
 };
+
+namespace UE::Cameras
+{
+
+/**
+ * The collision push node evaluator class.
+ */
+class FCollisionPushCameraNodeEvaluator : public FCameraNodeEvaluator
+{
+	UE_DECLARE_CAMERA_NODE_EVALUATOR(UE_API, FCollisionPushCameraNodeEvaluator)
+
+protected:
+
+	// FCameraNodeEvaluator interface.
+	UE_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	UE_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	UE_API virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+protected:
+
+	struct FCollisionTraceParams
+	{
+		UWorld* World = nullptr;
+		APawn* Pawn = nullptr;
+		FVector3d SafePosition = FVector3d::ZeroVector;
+		FVector3d TraceStart = FVector3d::ZeroVector;
+		FVector3d TraceEnd = FVector3d::ZeroVector;
+		float CollisionSphereRadius = 1.f;
+		ECollisionChannel CollisionChannel = ECollisionChannel::ECC_Camera;
+		bool bRequestedAsyncCollision = false;
+	};
+
+	struct FCollisionTraceResult
+	{
+		TArray<FHitResult> HitResults;
+		FTraceHandle AsyncTraceHandle;
+	};
+
+	/**
+	 * Run the collision trace using the given parameters.
+	 *
+	 * @param Params  The parameters for the current node evaluation
+	 * @param TraceParams  The parameters for the collision trace
+	 * @param OutResult   The result for the current node evaluation
+	 * @param OutTraceResult  The result with either the handle to the asynchronous trace, if bRequestedAsyncCollision 
+	 *						  was true and it was possible to honor it, or the list of hit results to be processed 
+	 *						  synchronously
+	 */
+	UE_API virtual void RunCollisionTrace(const FCameraNodeEvaluationParams& Params, const FCollisionTraceParams& TraceParams, FCameraNodeEvaluationResult& OutResult, FCollisionTraceResult& OutTraceResult);
+
+private:
+
+	TOptional<FVector3d> GetFinalSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
+	TOptional<FVector3d> GetSafePosition(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
+
+	void RunCollisionTrace(UWorld* World, APlayerController* PlayerController, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void HandleAsyncCollisionTraceResult(UWorld* World, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void HandleCollisionTraceResult(UWorld* World, TArrayView<const FHitResult> HitResults, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void HandleDisabledCollision(const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+	void UpdatePushFactor(bool bFoundHit, float CurrentPushFactor, const FVector3d& SafePosition, const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
+
+private:
+
+	TCameraVariableReferenceReader<bool> EnableCollisionReader;
+	TCameraVariableReferenceReader<FVector3d> CustomSafePositionReader;
+
+	TCameraParameterReader<float> CollisionSphereRadiusReader;
+	TCameraParameterReader<FVector3d> SafePositionOffsetReader;
+
+	TUniquePtr<FCameraDoubleValueInterpolator> PushInterpolator;
+	TUniquePtr<FCameraDoubleValueInterpolator> PullInterpolator;
+
+	FTraceHandle CollisionTraceHandle;
+
+	float LastPushFactor = 0.f;
+	float LastDampedPushFactor = 0.f;
+
+	enum class ECameraCollisionDirection { Pushing, Pulling };
+	ECameraCollisionDirection LastDirection = ECameraCollisionDirection::Pushing;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	bool bDebugCollisionEnabled = false;
+	bool bDebugFoundHit = false;
+	bool bDebugGotSafePosition = false;
+	bool bDebugGotSafePositionOffset = false;
+	FString DebugHitObjectName;
+	FVector3d DebugSafePosition;
+#endif
+};
+
+} // namespace UE::Cameras
 
 /**
  * A node that pushes the camera towards a "safe position" when it is colliding with 
@@ -121,11 +217,13 @@ public:
 
 public:
 
-	UCollisionPushCameraNode(const FObjectInitializer& ObjectInit);
+	UE_API UCollisionPushCameraNode(const FObjectInitializer& ObjectInit);
 
 protected:
 
 	// UCameraNode interface.
-	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
+	UE_API virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 };
+
+#undef UE_API
 
