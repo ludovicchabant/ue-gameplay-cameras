@@ -214,7 +214,7 @@ void UGameplayCameraComponentBase::EnsureEvaluationContext(APlayerController* Pl
 		FFrame::KismetExecutionMessage(
 				*FString::Format(
 					TEXT("Trying to create an evaluation context for Player Controller '{0}' on Gameplay Camera component '{1}.{2}' "
-						 "but it was already created for Player Controller '{1}'. The evaluation context will be re-created."),
+						 "but it was already created for Player Controller '{3}'. The evaluation context will be re-created."),
 					{ 
 						*GetNameSafe(PlayerController), 
 						*GetNameSafe(GetOwner()),

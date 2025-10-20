@@ -149,10 +149,12 @@ void AGameplayCamerasPlayerCameraManager::ActivateGameplayCamera(UGameplayCamera
 					const bool bSuccess = ActiveContext->AddChildContext(GameplayCameraContext.ToSharedRef());
 					if (!bSuccess)
 					{
+						UObject* ActiveContextOwner = ActiveContext->GetOwner();
 						UE_LOG(LogCameraSystem, Error,
-								TEXT("Couldn't insert camera director for '{0}.{1}' inside camera director for '{2}.{3}'. "
+								TEXT("Couldn't insert camera director for '%s.%s' inside camera director for '%s'. "
 									 "Activation failed."),
-								*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
+								*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera),
+								*GetNameSafe(ActiveContextOwner));
 					}
 				}
 				else
