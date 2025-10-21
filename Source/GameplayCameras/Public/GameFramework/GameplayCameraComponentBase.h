@@ -264,6 +264,10 @@ public:
 
 private:
 
+	/**
+	 * Camera component that receives the "output" of the hosted camera system when bRunStandaloneCameraSystem
+	 * is enabled.
+	 */
 	UPROPERTY(Transient)
 	TObjectPtr<UCineCameraComponent> OutputCameraComponent;
 

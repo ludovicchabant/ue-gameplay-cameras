@@ -46,9 +46,6 @@ UGameplayCameraComponentBase::UGameplayCameraComponentBase(const FObjectInitiali
 
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.TickGroup = TG_PostPhysics;
-
-	OutputCameraComponent = ObjectInit.CreateDefaultSubobject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), true);
-	OutputCameraComponent->SetupAttachment(this);
 }
 
 void UGameplayCameraComponentBase::BeginDestroy()
@@ -444,6 +441,14 @@ void UGameplayCameraComponentBase::OnRegister()
 	using namespace UE::Cameras;
 
 	Super::OnRegister();
+
+	if (OutputCameraComponent == nullptr)
+	{
+		OutputCameraComponent = NewObject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), RF_Transient | RF_TextExportTransient);
+		OutputCameraComponent->SetupAttachment(this);
+		OutputCameraComponent->CreationMethod = CreationMethod;
+		OutputCameraComponent->RegisterComponentWithWorld(GetWorld());
+	}
 
 #if WITH_EDITOR
 
