@@ -451,13 +451,18 @@ void UObjectTreeGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Co
 		UObjectTreeGraphNode* OwningNode = Cast<UObjectTreeGraphNode>(DraggedPin->GetOwningNode());
 		if (OwningNode)
 		{
-			if (DraggedPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Self)
-			{
-				DraggedPinClass = OwningNode->GetObject()->GetClass();
-			}
-			else if (DraggedPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property)
+			if (DraggedPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Property)
 			{
 				DraggedPinClass = OwningNode->GetConnectedObjectClassForPin(DraggedPin);
+			}
+			else if (DraggedPin->PinType.PinCategory == UObjectTreeGraphSchema::PC_Self)
+			{
+				// Dragged the self pin, so in theory we should offer to create nodes that have
+				// output pins (properties) that are compatible with our own class. That would
+				// require inspecting all properties on connectable classes, and hopefully
+				// caching it all somewhere... instead for now we just encourage the user to
+				// connect things from the left to the right and not go up-stream.
+				bShouldShowNewObjectActions = false;
 			}
 			else
 			{
