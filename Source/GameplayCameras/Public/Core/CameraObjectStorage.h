@@ -8,6 +8,7 @@
 #include "Templates/AlignmentTemplates.h"
 #include "Templates/EnableIf.h"
 #include "Templates/PointerIsConvertibleFromTo.h"
+#include "Templates/UnrealTemplate.h"
 
 namespace UE::Cameras
 {

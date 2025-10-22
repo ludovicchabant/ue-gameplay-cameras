@@ -248,8 +248,8 @@ struct FCameraRigAssetReference : public FBaseCameraObjectReference
 
 public:
 
-	FCameraRigAssetReference();
-	FCameraRigAssetReference(UCameraRigAsset* InCameraRig);
+	GAMEPLAYCAMERAS_API FCameraRigAssetReference();
+	GAMEPLAYCAMERAS_API FCameraRigAssetReference(UCameraRigAsset* InCameraRig);
 
 	/** Returns whether this reference points to a valid camera rig. */
 	bool IsValid() const
