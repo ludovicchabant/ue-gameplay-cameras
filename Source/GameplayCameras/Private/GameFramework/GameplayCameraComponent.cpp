@@ -4,6 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "GameplayCamerasDelegates.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "Misc/EngineVersionComparison.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
@@ -72,25 +73,34 @@ void UGameplayCameraComponent::OnUpdateCameraEvaluationContext(bool bForceApplyP
 	// so we need to always re-apply values.
 	else
 	{
-		CameraReference.ApplyParameterOverrides(CachedParameterOverrides, InitialResult);
+		ApplyChangedParameterOverrides();
 	}
-
-	CachedParameterOverrides = CameraReference.GetParameters();
 #endif  // pre-5.7.0
 }
 
 void UGameplayCameraComponent::NotifyChangeCameraReference()
 {
+	// Sequencer animated some of our parameters... look for those whose value changed, compared to our
+	// cached parameter bag, and re-apply them to the evaluation context.
+	// TODO: This isn't a very efficient process, but it's unclear how to reconcile the reference's parameters struct
+	//		 with the evaluation context's variable/context-data tables.
+	ApplyChangedParameterOverrides();
+}
+
+void UGameplayCameraComponent::ApplyChangedParameterOverrides()
+{
 	using namespace UE::Cameras;
 
 	if (HasEvaluationContext())
 	{
-		// Sequencer animated some of our parameters... look for those whose value changed, compared to our
-		// cached parameter bag, and re-apply them to the evaluation context.
-		// TODO: This isn't a very efficient process, but it's unclear how to reconcile the reference's parameters struct
-		//		 with the evaluation context's variable/context-data tables.
+		const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
-		CameraReference.ApplyParameterOverrides(CachedParameterOverrides, InitialResult);
+
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&InitialResult.VariableTable, &InitialResult.ContextDataTable);
+		Helper.bOverridenOnly = false;
+		GetChangedParameterOverrides(CameraReference.GetParameters(), CachedParameterOverrides, Helper.OnlyParameterGuids);
+		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), CameraReference.GetParameters());
+
 		CachedParameterOverrides = CameraReference.GetParameters();
 	}
 }

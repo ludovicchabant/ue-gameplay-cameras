@@ -53,6 +53,8 @@ private:
 	void BuildGeneratedCamera();
 	void OnCameraRigAssetBuiltImpl();
 
+	void ApplyChangedParameterOverrides();
+
 #if WITH_EDITOR
 	void OnCameraRigAssetBuilt(const UCameraRigAsset* InCameraRigAsset);
 #endif

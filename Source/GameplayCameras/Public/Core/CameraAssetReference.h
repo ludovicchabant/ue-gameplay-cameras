@@ -81,9 +81,6 @@ public:
 	/** Applies the parameter override values to the given evaluation result. */
 	GAMEPLAYCAMERAS_API void ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const;
 
-	/** Applies the parameter override values to the given evaluation result. */
-	GAMEPLAYCAMERAS_API void ApplyParameterOverrides(const FInstancedPropertyBag& CachedParameters, UE::Cameras::FCameraNodeEvaluationResult& OutResult) const;
-
 public:
 
 	/** Returns whether the override parameters structure needs to be rebuilt. */

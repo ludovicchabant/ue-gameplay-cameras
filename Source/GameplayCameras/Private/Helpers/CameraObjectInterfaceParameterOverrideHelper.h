@@ -52,15 +52,7 @@ public:
 	void ApplyParameterOverrides(
 			const UObject* CameraObject,
 			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-			const FInstancedOverridablePropertyBag& ParameterOverrides,
-			bool bDrivenOnly);
-
-	/** Sets overriden values of interface parameters in the given variable and context data tables. */
-	void ApplyParameterOverrides(
-			const UObject* CameraObject,
-			TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-			const FInstancedOverridablePropertyBag& ParameterOverrides,
-			const FInstancedPropertyBag& CachedParameterOverrides);
+			const FInstancedOverridablePropertyBag& ParameterOverrides);
 
 private:
 
@@ -68,8 +60,16 @@ private:
 			const UObject* CameraObject,
 			const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 			const FInstancedOverridablePropertyBag& PropertyBag,
-			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
-			bool bDrivenOnly);
+			const FPropertyBagPropertyDesc& PropertyBagPropertyDesc);
+
+public:
+
+	/** Only parameters flagged as "overriden" should be applied. */
+	bool bOverridenOnly = true;
+	/** Only parameters that are dynamicaly driven should be applied. */
+	bool bDrivenOnly = false;
+	/** If not empty, the list of parameters we should only apply. */
+	TArray<FGuid> OnlyParameterGuids;
 
 private:
 

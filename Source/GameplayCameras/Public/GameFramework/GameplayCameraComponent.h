@@ -51,6 +51,8 @@ protected:
 
 private:
 
+	void ApplyChangedParameterOverrides();
+
 #if WITH_EDITOR
 	void OnCameraAssetBuilt(const UCameraAsset* InCameraAsset);
 #endif

@@ -197,6 +197,11 @@ protected:
 
 	void UpdateEvaluationContext(bool bForceApplyParameterOverrides);
 
+	void GetChangedParameterOverrides(
+			const FInstancedPropertyBag& InParameterOverrides,
+			FInstancedPropertyBag& InOutCachedParameterOverrides,
+			TArray<FGuid>& OutChangedParameterGuids);
+	
 	bool IsEditorWorld() const;
 	void UpdateControlRotationIfNeeded();
 

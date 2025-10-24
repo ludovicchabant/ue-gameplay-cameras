@@ -401,89 +401,42 @@ FCameraObjectInterfaceParameterOverrideHelper::FCameraObjectInterfaceParameterOv
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
 		const UObject* CameraObject,
 		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-		const FInstancedOverridablePropertyBag& ParameterOverrides,
-		bool bDrivenOnly)
+		const FInstancedOverridablePropertyBag& ParameterOverrides)
 {
 	using namespace Internal;
 
 	const UPropertyBag* ParameterOverridesStruct = ParameterOverrides.GetPropertyBagStruct();
-	if (!CameraObject || !ParameterOverridesStruct)
+	const uint8* ParameterOverridesMemory = ParameterOverrides.GetValue().GetMemory();
+	if (!CameraObject || !ParameterOverridesStruct || !ParameterOverridesMemory)
 	{
 		return;
 	}
 
 	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
 	{
-		if (!ContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
+		if ((!VariableTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Blendable) ||
+				(!ContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data))
 		{
 			continue;
 		}
 
-		if (!ParameterOverrides.IsPropertyOverriden(Definition.ParameterGuid))
+		if (bOverridenOnly && !ParameterOverrides.IsPropertyOverriden(Definition.ParameterGuid))
+		{
+			continue;
+		}
+
+		if (!OnlyParameterGuids.IsEmpty() && !OnlyParameterGuids.Contains(Definition.ParameterGuid))
 		{
 			continue;
 		}
 
 		const FPropertyBagPropertyDesc* PropertyDesc = ParameterOverridesStruct->FindPropertyDescByID(Definition.ParameterGuid);
 		if (!ensure(PropertyDesc))
-		{
-			continue;
-		}
-
-		ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc, bDrivenOnly);
-	}
-}
-
-void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverrides(
-		const UObject* CameraObject,
-		TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions,
-		const FInstancedOverridablePropertyBag& ParameterOverrides,
-		const FInstancedPropertyBag& CachedParameterOverrides)
-{
-	using namespace Internal;
-
-	const UPropertyBag* ParameterOverridesStruct = ParameterOverrides.GetPropertyBagStruct();
-	if (!CameraObject || !ParameterOverridesStruct)
-	{
-		return;
-	}
-
-	const uint8* ParameterOverridesMemory = ParameterOverrides.GetValue().GetMemory();
-	const uint8* CachedParameterOverridesMemory = CachedParameterOverrides.GetValue().GetMemory();
-	if (!ParameterOverridesMemory || !CachedParameterOverridesMemory)
-	{
-		return;
-	}
-
-	if (!ensure(ParameterOverridesStruct == CachedParameterOverrides.GetPropertyBagStruct()))
-	{
-		return;
-	}
-
-	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
-	{
-		if (!ContextDataTable && Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
 			continue;
 		}
 		
-		if (!ParameterOverrides.IsPropertyOverriden(Definition.ParameterGuid))
-		{
-			continue;
-		}
-
-		const FPropertyBagPropertyDesc* PropertyDesc = ParameterOverridesStruct->FindPropertyDescByID(Definition.ParameterGuid);
-		if (!ensure(PropertyDesc))
-		{
-			continue;
-		}
-
-		const void* RawValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(ParameterOverridesMemory);
-		const void* CachedRawValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(CachedParameterOverridesMemory);
-		if (!PropertyDesc->CachedProperty->Identical(RawValue, CachedRawValue))
-		{
-			ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc, false);
-		}
+		ApplyParameterOverride(CameraObject, Definition, ParameterOverrides, *PropertyDesc);
 	}
 }
 
@@ -491,8 +444,7 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterOverride(
 		const UObject* CameraObject,
 		const FCameraObjectInterfaceParameterDefinition& ParameterDefinition,
 		const FInstancedOverridablePropertyBag& PropertyBag,
-		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
-		bool bDrivenOnly)
+		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc)
 {
 	using namespace Internal;
 

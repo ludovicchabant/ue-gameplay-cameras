@@ -9,6 +9,7 @@
 #include "Directors/SingleCameraDirector.h"
 #include "GameFramework/Actor.h"  // IWYU pragma: keep
 #include "GameplayCamerasDelegates.h"
+#include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "Misc/EngineVersionComparison.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraRigComponent)
@@ -123,25 +124,34 @@ void UGameplayCameraRigComponent::OnUpdateCameraEvaluationContext(bool bForceApp
 	// so we need to always re-apply values.
 	else
 	{
-		CameraRigReference.ApplyParameterOverrides(CachedParameterOverrides, InitialResult);
+		ApplyChangedParameterOverrides();
 	}
-
-	CachedParameterOverrides = CameraRigReference.GetParameters();
 #endif  // pre-5.7.0
 }
 
 void UGameplayCameraRigComponent::NotifyChangeCameraRigReference()
 {
+	// Sequencer animated some of our parameters... look for those whose value changed, compared to our
+	// cached parameter bag, and re-apply them to the evaluation context.
+	// TODO: This isn't a very efficient process, but it's unclear how to reconcile the reference's parameters struct
+	//		 with the evaluation context's variable/context-data tables.
+	ApplyChangedParameterOverrides();
+}
+
+void UGameplayCameraRigComponent::ApplyChangedParameterOverrides()
+{
 	using namespace UE::Cameras;
 
 	if (HasEvaluationContext())
 	{
-		// Sequencer animated some of our parameters... look for those whose value changed, compared to our
-		// cached parameter bag, and re-apply them to the evaluation context.
-		// TODO: This isn't a very efficient process, but it's unclear how to reconcile the reference's parameters struct
-		//		 with the evaluation context's variable/context-data tables.
+		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
-		CameraRigReference.ApplyParameterOverrides(CachedParameterOverrides, InitialResult);
+
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&InitialResult.VariableTable, &InitialResult.ContextDataTable);
+		Helper.bOverridenOnly = false;
+		GetChangedParameterOverrides(CameraRigReference.GetParameters(), CachedParameterOverrides, Helper.OnlyParameterGuids);
+		Helper.ApplyParameterOverrides(CameraRigAsset, CameraRigAsset->GetParameterDefinitions(), CameraRigReference.GetParameters());
+
 		CachedParameterOverrides = CameraRigReference.GetParameters();
 	}
 }

@@ -597,6 +597,51 @@ void UGameplayCameraComponentBase::UpdateEvaluationContext(bool bForceApplyParam
 	}
 }
 
+void UGameplayCameraComponentBase::GetChangedParameterOverrides(
+		const FInstancedPropertyBag& InParameterOverrides,
+		FInstancedPropertyBag& InOutCachedParameterOverrides,
+		TArray<FGuid>& OutChangedParameterGuids)
+{
+	const UPropertyBag* ParameterStruct = InParameterOverrides.GetPropertyBagStruct();
+	const UPropertyBag* CachedParameterStruct = InOutCachedParameterOverrides.GetPropertyBagStruct();
+	const uint8* ParametersContainer = InParameterOverrides.GetValue().GetMemory();
+	const uint8* CachedParameterContainer = InOutCachedParameterOverrides.GetValue().GetMemory();
+	if (!ParameterStruct || !ParametersContainer)
+	{
+		InOutCachedParameterOverrides.Reset();
+		return;
+	}
+	if (!CachedParameterStruct || CachedParameterStruct != ParameterStruct || !CachedParameterContainer)
+	{
+		for (const FPropertyBagPropertyDesc& PropertyDesc : ParameterStruct->GetPropertyDescs())
+		{
+			OutChangedParameterGuids.Add(PropertyDesc.ID);
+		}
+		InOutCachedParameterOverrides = InParameterOverrides;
+		return;
+	}
+
+	for (const FPropertyBagPropertyDesc& PropertyDesc : ParameterStruct->GetPropertyDescs())
+	{
+		if (!PropertyDesc.CachedProperty)
+		{
+			continue;
+		}
+
+		const void* ValuePtr = PropertyDesc.CachedProperty->ContainerPtrToValuePtr<void>(ParametersContainer);
+		const void* CachedValuePtr = PropertyDesc.CachedProperty->ContainerPtrToValuePtr<void>(CachedParameterContainer);
+		if (!ValuePtr || !CachedValuePtr)
+		{
+			continue;
+		}
+
+		if (!PropertyDesc.CachedProperty->Identical(ValuePtr, CachedValuePtr))
+		{
+			OutChangedParameterGuids.Add(PropertyDesc.ID);
+		}
+	}
+}
+
 void UGameplayCameraComponentBase::UpdateControlRotationIfNeeded()
 {
 	using namespace UE::Cameras;
