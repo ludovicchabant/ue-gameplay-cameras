@@ -82,5 +82,85 @@
 
   </Type>
 
+  <Type Name="UE::Cameras::FCameraContextDataTable">
+
+    <DisplayString>Num={Entries.ArrayNum}</DisplayString>
+
+    <Expand>
+      
+      <Synthetic Name="Entries">
+
+        <DisplayString>Num={Entries.ArrayNum}</DisplayString>
+
+        <Expand>
+          <CustomListItems>
+
+            <Variable Name="EntryIndex" InitialValue="0" />
+            <Variable Name="EntryPtr" InitialValue="(UE::Cameras::FCameraContextDataTable::FEntry*)0" />
+            <Variable Name="NumEntries" InitialValue="Entries.ArrayNum" />
+
+            <Variable Name="ValuePtr" InitialValue="Memory" />
+
+            <Size>Entries.ArrayNum</Size>
+
+            <Loop>
+              <Break Condition="EntryIndex == NumEntries"/>
+              <Exec>EntryPtr = (UE::Cameras::FCameraContextDataTable::FEntry*)&amp;Entries[EntryIndex]</Exec>
+
+              <If Condition="EntryPtr->ContainerType == ECameraContextDataContainerType::Array">
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]">*(FEntryScriptArray*)(Memory + EntryPtr->Offset)</Item>
+              </If>
+              <If Condition="EntryPtr->ContainerType == ECameraContextDataContainerType::None">
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::Name">*(FName*)(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::String">*(FString*)(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::Enum">*(uint8*)(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::Struct">(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::Object">*(UObject*)(Memory + EntryPtr->Offset)</Item>
+                <Item Name="{EntryPtr->DebugName} [{EntryPtr->ID.Value}]" Condition="EntryPtr->Type == ECameraContextDataType::Class">*(UClass*)(Memory + EntryPtr->Offset)</Item>
+              </If>
+
+              <Exec>EntryIndex = EntryIndex + 1</Exec>
+            </Loop>
+            
+          </CustomListItems>
+        </Expand>
+        
+      </Synthetic>
+
+      <Synthetic Name="Flags">
+
+        <DisplayString>Num={Entries.ArrayNum}</DisplayString>
+
+        <Expand>
+          <CustomListItems>
+
+            <Variable Name="EntryIndex" InitialValue="0" />
+            <Variable Name="EntryPtr" InitialValue="(UE::Cameras::FCameraContextDataTable::FEntry*)0" />
+
+            <Variable Name="NumEntries" InitialValue="Entries.ArrayNum" />
+
+            <Loop>
+              <Break Condition="EntryIndex == NumEntries"/>
+              <Exec>EntryPtr = (UE::Cameras::FCameraContextDataTable::FEntry*)&amp;Entries[EntryIndex]</Exec>
+
+              <Item Name="{EntryPtr->DebugName}">EntryPtr->Flags</Item>
+
+              <Exec>EntryIndex = EntryIndex + 1</Exec>
+            </Loop>
+
+          </CustomListItems>
+        </Expand>
+
+      </Synthetic>
+
+      <Item Name="Details">Entries</Item>
+
+      <Item Name="Capacity">Capacity</Item>
+      <Item Name="Used">Used</Item>
+      
+    </Expand>
+    
+  </Type>
+
 </AutoVisualizer>
 
