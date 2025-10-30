@@ -194,7 +194,8 @@ private:
 	void ComputeDesiredState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
 
 	bool AcquireTargetInfo(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos);
-	bool ComputeFinalTargetInfo(const FCameraNodeEvaluationParams& Params, const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
+	bool ComputeFinalTargetInfo(const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
+	float ComputeScreenTargetSpeed(float DeltaTime, const FCameraPose& CameraPose, const FVector3d& OldWorldTarget, const FVector3d& NewWorldTarget);
 	FVector2d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector2d& InPreviousAnticipatedScreenTarget, const FVector2d& InScreenTarget);
 	FFramingZone ComputeEffectiveDeadZone();
 
@@ -247,6 +248,8 @@ protected:
 	{
 		/** Screen-space position of the ideal framing position. */
 		FVector2d IdealTarget;
+		/** Current aspect ratio of the screen. */
+		float AspectRatio;
 		/** Current reframing damping factor. */
 		float ReframeDampingFactor;
 		/** Current low reframing damping factor. */
@@ -279,6 +282,8 @@ protected:
 
 		/** Current state of the tracked target. */
 		ETargetFramingState TargetFramingState;
+		/** Current screen-space speed of the tracked target. */
+		float TargetScreenSpaceSpeed = 0.f;
 		/** Whether we are actively trying to bring the target back to the ideal position. */
 		bool bIsReframingTarget = false;
 
