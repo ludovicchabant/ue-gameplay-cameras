@@ -570,6 +570,7 @@ void FCameraSystemEvaluator::BuildDebugBlocksIfNeeded()
 {
 	if (!ShouldBuildOrDrawDebugBlocks())
 	{
+		RootDebugBlock = nullptr;
 		return;
 	}
 
