@@ -214,6 +214,10 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 				}
 				bHasAutoRotateDir = true;
 				break;
+			case ECameraAutoRotateDirection::Zero:
+				AutoRotateDir = FVector3d(1, 0, 0);
+				bHasAutoRotateDir = true;
+				break;
 		}
 	}
 	if (!bHasAutoRotateDir)

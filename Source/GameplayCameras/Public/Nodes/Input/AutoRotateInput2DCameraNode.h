@@ -26,7 +26,11 @@ enum class ECameraAutoRotateDirection
 	 * Re-align towards the evaluation context's movement direction if there is movement,
 	 * or towards its facing otherwise.
 	 */
-	MovementOrFacing
+	MovementOrFacing,
+	/**
+	 * Re-align towards the zero direction.
+	 */
+	Zero,
 };
 
 /**
