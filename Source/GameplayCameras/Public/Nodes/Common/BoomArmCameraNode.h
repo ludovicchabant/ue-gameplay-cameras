@@ -110,6 +110,13 @@ public:
 	 */
 	UPROPERTY(meta=(ObjectTreeGraphPinDirection=Input))
 	TObjectPtr<UInput2DCameraNode> InputSlot;
+
+	/* 
+	* If true, the boom arm's rotation will add to the existing rotation instead of being absolute.
+	*/
+	UPROPERTY(EditAnywhere, Category=Common)
+	bool bAdditiveRotation = false;
+
 };
 
 #undef UE_API

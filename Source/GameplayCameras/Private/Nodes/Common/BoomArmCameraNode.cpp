@@ -76,7 +76,13 @@ FRotator FBoomArmCameraNodeEvaluator::ComputeBoomRotation(const FCameraNodeEvalu
 
 void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	const FRotator3d BoomRotation = ComputeBoomRotation(Params, OutResult);
+	FRotator3d BoomRotation = ComputeBoomRotation(Params, OutResult);
+
+	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
+	if (BoomArmNode->bAdditiveRotation)
+	{
+		BoomRotation = OutResult.CameraPose.GetRotation() + BoomRotation;
+	}
 
 	// Here we want to logically apply transform in this order:
 	//
