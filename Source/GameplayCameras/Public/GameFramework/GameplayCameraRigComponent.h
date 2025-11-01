@@ -29,8 +29,9 @@ public:
 	virtual void OnUnregister() override;
 
 	// UObject interface.
+	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 #if WITH_EDITOR
-	virtual void PostEditChangeProperty( struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 #endif
 
 public:
@@ -45,8 +46,8 @@ protected:
 	void NotifyChangeCameraRigReference();
 
 	// UGameplayCameraComponentBase interface.
-	virtual UCameraAsset* GetCameraAsset() override;
-	virtual void OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides) override;
+	virtual UCameraAsset* OnCreateEvaluationContext() override;
+	virtual void OnUpdateEvaluationContext(bool bForceApplyParameterOverrides) override;
 
 private:
 

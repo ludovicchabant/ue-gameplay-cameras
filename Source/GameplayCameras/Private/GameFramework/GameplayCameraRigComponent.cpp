@@ -10,13 +10,32 @@
 #include "GameFramework/Actor.h"  // IWYU pragma: keep
 #include "GameplayCamerasDelegates.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "Misc/EngineVersionComparison.h"
+#include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraRigComponent)
 
 UGameplayCameraRigComponent::UGameplayCameraRigComponent(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
+}
+
+void UGameplayCameraRigComponent::PreSave(FObjectPreSaveContext ObjectSaveContext)
+{
+#if WITH_EDITOR
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		// Make sure parameters are up to date when cooking.
+		const ITargetPlatform* TargetPlatform = ObjectSaveContext.GetTargetPlatform();
+		if (TargetPlatform && TargetPlatform->RequiresCookedData())
+		{
+			CameraRigReference.RebuildParametersIfNeeded();
+		}
+	}
+#endif  // WITH_EDITOR
+
+	Super::PreSave(ObjectSaveContext);
 }
 
 void UGameplayCameraRigComponent::OnRegister()
@@ -45,21 +64,16 @@ void UGameplayCameraRigComponent::OnUnregister()
 	Super::OnUnregister();
 }
 
-UCameraAsset* UGameplayCameraRigComponent::GetCameraAsset()
+UCameraAsset* UGameplayCameraRigComponent::OnCreateEvaluationContext()
 {
-	if (!GeneratedCameraAsset)
+#if WITH_EDITOR
+	CameraRigReference.RebuildParametersIfNeeded();
+#endif  // WITH_EDITOR
+
+	if (!GeneratedCameraAsset && CameraRigReference.GetCameraRig())
 	{
 		USingleCameraDirector* SingleDirector = NewObject<USingleCameraDirector>(this, TEXT("GeneratedCameraDirector"), RF_Transient);
 		SingleDirector->CameraRig = CameraRigReference.GetCameraRig();
-		if (!SingleDirector->CameraRig)
-		{
-			UE_LOG(LogCameraSystem, Warning, 
-					TEXT("No camera rig specified on Gameplay Camera component '%s.%s', using a placeholder one."),
-					*GetNameSafe(GetOwner()), *GetNameSafe(this));
-
-			UCameraRigAsset* PlaceholderCameraRig = NewObject<UCameraRigAsset>();
-			SingleDirector->CameraRig = PlaceholderCameraRig;
-		}
 
 		GeneratedCameraAsset = NewObject<UCameraAsset>(this, TEXT("GeneratedCameraAsset"), RF_Transient);
 		GeneratedCameraAsset->SetCameraDirector(SingleDirector);
@@ -96,20 +110,24 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuiltImpl()
 {
 	using namespace UE::Cameras;
 
-	CameraRigReference.RebuildParametersIfNeeded();
-	if (HasEvaluationContext())
+	if (CameraRigReference.NeedsRebuildParameters())
 	{
+		Modify();
+		CameraRigReference.RebuildParameters();
+		if (HasEvaluationContext())
+		{
 #if WITH_EDITOR
-		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
-		const FCameraObjectAllocationInfo& AllocationInfo = CameraRigAsset->AllocationInfo;
-		ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
+			const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
+			const FCameraObjectAllocationInfo& AllocationInfo = CameraRigAsset->AllocationInfo;
+			ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
 #endif  // WITH_EDITOR
 
-		UpdateEvaluationContext(true);
+			UpdateEvaluationContext(true);
+		}
 	}
 }
 
-void UGameplayCameraRigComponent::OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
+void UGameplayCameraRigComponent::OnUpdateEvaluationContext(bool bForceApplyParameterOverrides)
 {
 	using namespace UE::Cameras;
 

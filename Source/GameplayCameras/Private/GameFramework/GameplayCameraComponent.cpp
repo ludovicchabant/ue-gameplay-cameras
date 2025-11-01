@@ -5,7 +5,9 @@
 #include "Core/CameraAsset.h"
 #include "GameplayCamerasDelegates.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
+#include "Interfaces/ITargetPlatform.h"
 #include "Misc/EngineVersionComparison.h"
+#include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(GameplayCameraComponent)
 
@@ -25,6 +27,23 @@ void UGameplayCameraComponent::PostLoad()
 		CameraReference.SetCameraAsset(Camera_DEPRECATED);
 		Camera_DEPRECATED = nullptr;
 	}
+}
+
+void UGameplayCameraComponent::PreSave(FObjectPreSaveContext ObjectSaveContext)
+{
+#if WITH_EDITOR
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		// Make sure parameters are up to date when cooking.
+		const ITargetPlatform* TargetPlatform = ObjectSaveContext.GetTargetPlatform();
+		if (TargetPlatform && TargetPlatform->RequiresCookedData())
+		{
+			CameraReference.RebuildParametersIfNeeded();
+		}
+	}
+#endif  // WITH_EDITOR
+
+	Super::PreSave(ObjectSaveContext);
 }
 
 void UGameplayCameraComponent::OnRegister()
@@ -53,12 +72,16 @@ void UGameplayCameraComponent::OnUnregister()
 	Super::OnUnregister();
 }
 
-UCameraAsset* UGameplayCameraComponent::GetCameraAsset()
+UCameraAsset* UGameplayCameraComponent::OnCreateEvaluationContext()
 {
+#if WITH_EDITOR
+	CameraReference.RebuildParametersIfNeeded();
+#endif  // WITH_EDITOR
+
 	return CameraReference.GetCameraAsset();
 }
 
-void UGameplayCameraComponent::OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides)
+void UGameplayCameraComponent::OnUpdateEvaluationContext(bool bForceApplyParameterOverrides)
 {
 	using namespace UE::Cameras;
 
@@ -118,12 +141,16 @@ void UGameplayCameraComponent::OnCameraAssetBuilt(const UCameraAsset* InCameraAs
 
 	// If our camera asset was just built, it may have some new parameters. We need to rebuild
 	// our variable table and context data table, and re-apply overrides.
-	CameraReference.RebuildParametersIfNeeded();
-	if (HasEvaluationContext())
+	if (CameraReference.NeedsRebuildParameters())
 	{
-		const FCameraAssetAllocationInfo& AllocationInfo = InCameraAsset->GetAllocationInfo();
-		ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
-		UpdateEvaluationContext(true);
+		Modify();
+		CameraReference.RebuildParameters();
+		if (HasEvaluationContext())
+		{
+			const FCameraAssetAllocationInfo& AllocationInfo = InCameraAsset->GetAllocationInfo();
+			ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
+			UpdateEvaluationContext(true);
+		}
 	}
 }
 

@@ -192,8 +192,8 @@ public:
 protected:
 
 	// UGameplayCameraComponentBase interface.
-	virtual UCameraAsset* GetCameraAsset() PURE_VIRTUAL(UGameplayCameraComponentBase::GetCameraAsset, return nullptr;)
-	virtual void OnUpdateCameraEvaluationContext(bool bForceApplyParameterOverrides) {}
+	virtual UCameraAsset* OnCreateEvaluationContext() { return nullptr; }
+	virtual void OnUpdateEvaluationContext(bool bForceApplyParameterOverrides) {}
 
 	void UpdateEvaluationContext(bool bForceApplyParameterOverrides);
 

@@ -225,7 +225,7 @@ void UGameplayCameraComponentBase::EnsureEvaluationContext(APlayerController* Pl
 
 	if (!EvaluationContext.IsValid())
 	{
-		UCameraAsset* CameraAsset = GetCameraAsset();
+		UCameraAsset* CameraAsset = OnCreateEvaluationContext();
 
 		// If we have no camera asset specified, make a placeholder one and log a warning.
 		if (!CameraAsset)
@@ -587,7 +587,7 @@ void UGameplayCameraComponentBase::UpdateEvaluationContext(bool bForceApplyParam
 			bIsCameraCutNextFrame = false;
 		}
 
-		OnUpdateCameraEvaluationContext(bForceApplyParameterOverrides);
+		OnUpdateEvaluationContext(bForceApplyParameterOverrides);
 
 #if WITH_EDITOR
 
