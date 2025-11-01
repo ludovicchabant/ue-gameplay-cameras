@@ -77,7 +77,8 @@ protected:
 			return SAssignNew(NameTextBlock, SInlineEditableTextBlock)
 				.IsSelected(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::IsSelected)
 				.Text_Lambda([this]() { return FText::FromString(Item->InterfaceParameterName); })
-				.OnTextCommitted(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted);
+				.OnTextCommitted(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted)
+				.ToolTipText(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::GetParameterToolTip);
 		}
 		else if (InColumnName == ParameterMessageColumn)
 		{
@@ -108,6 +109,12 @@ protected:
 
 		Item->Modify();
 		Item->InterfaceParameterName = Text.ToString();
+	}
+
+	FText GetParameterToolTip() const
+	{
+		FGuid Guid = Item->GetGuid();
+		return FText::FromString(Guid.ToString(EGuidFormats::DigitsWithHyphensInParentheses));
 	}
 
 	FText GetParameterMessageText() const
