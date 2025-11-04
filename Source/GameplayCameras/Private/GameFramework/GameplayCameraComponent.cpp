@@ -114,9 +114,9 @@ void UGameplayCameraComponent::ApplyChangedParameterOverrides()
 {
 	using namespace UE::Cameras;
 
-	if (HasEvaluationContext())
+	const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
+	if (CameraAsset && HasEvaluationContext())
 	{
-		const UCameraAsset* CameraAsset = CameraReference.GetCameraAsset();
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
 
 		FCameraObjectInterfaceParameterOverrideHelper Helper(&InitialResult.VariableTable, &InitialResult.ContextDataTable);

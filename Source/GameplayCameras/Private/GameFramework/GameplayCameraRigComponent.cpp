@@ -160,9 +160,9 @@ void UGameplayCameraRigComponent::ApplyChangedParameterOverrides()
 {
 	using namespace UE::Cameras;
 
-	if (HasEvaluationContext())
+	const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
+	if (CameraRigAsset && HasEvaluationContext())
 	{
-		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
 
 		FCameraObjectInterfaceParameterOverrideHelper Helper(&InitialResult.VariableTable, &InitialResult.ContextDataTable);
