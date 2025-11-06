@@ -4,9 +4,10 @@
 
 #include "Build/CameraAssetBuilder.h"
 #include "Build/CameraBuildLog.h"
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
-#include "Core/CameraRigProxyAsset.h"
+#include "Misc/EngineVersionComparison.h"
 #include "Misc/EngineVersionComparison.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectRedirector.h"
@@ -93,6 +94,11 @@ int32 UCameraAsset::RemoveExitTransition(UCameraRigTransition* InTransition)
 void UCameraAsset::PostLoad()
 {
 	Super::PostLoad();
+
+#if UE_VERSION_OLDER_THAN(5,8,0)
+	using namespace UE::Cameras;
+	FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
+#endif
 
 #if WITH_EDITOR
 	if (CameraDirector)

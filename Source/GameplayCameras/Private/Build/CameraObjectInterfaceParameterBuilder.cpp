@@ -8,7 +8,6 @@
 #include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "Core/CameraVariableReferences.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
-#include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/UnrealType.h"
 
@@ -412,6 +411,65 @@ void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(const UCam
 			break;
 	}
 }
+
+#if UE_VERSION_OLDER_THAN(5,8,0)
+
+void FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, FInstancedPropertyBag& InOutPropertyBag)
+{
+	const UPropertyBag* PropertyBag = InOutPropertyBag.GetPropertyBagStruct();
+	if (!PropertyBag)
+	{
+		return;
+	}
+
+	// Before UE 5.8, there was a bug with FInstancedPropertyBag not saving the PropertyFlags of its UPropertyBag
+	// struct, resulting in camera parameters losing their CPF_Interp flag. This meant that rebuilding a camera
+	// asset would create a new parameter struct that was slightly different from the loaded one (it had those
+	// flags). This made camera assets always dirty and in need of re-saving.
+	//
+	// This function aims to fix that as a band-aid: it gets called on PostLoad by camera assets and re-adds the
+	// missing flags.
+
+	bool bFixedAny = false;
+	TArray<FPropertyBagPropertyDesc> FixedPropertyDescs(PropertyBag->GetPropertyDescs());
+
+	for (const FCameraObjectInterfaceParameterDefinition& Definition : ParameterDefinitions)
+	{
+		FPropertyBagPropertyDesc* PropertyDesc = FixedPropertyDescs.FindByPredicate(
+				[&Definition](FPropertyBagPropertyDesc& Item)
+				{
+					return Definition.ParameterGuid == Item.ID;
+				});
+		if (!PropertyDesc)
+		{
+			continue;
+		}
+
+		// Fixup blendable struct properties, and any data properties that aren't a struct.
+		bool bFixPropertyDesc = false;
+		if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+		{
+			bFixPropertyDesc = (Definition.VariableType == ECameraVariableType::BlendableStruct);
+		}
+		else if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
+		{
+			bFixPropertyDesc = (Definition.DataType != ECameraContextDataType::Struct);
+		}
+		if (bFixPropertyDesc)
+		{
+			bFixedAny |= ((PropertyDesc->PropertyFlags & CPF_Interp) == 0);
+			PropertyDesc->PropertyFlags |= CPF_Interp;
+		}
+	}
+
+	if (bFixedAny)
+	{
+		const UPropertyBag* FixedPropertyBag = UPropertyBag::GetOrCreateFromDescs(FixedPropertyDescs);
+		InOutPropertyBag.MigrateToNewBagStruct(FixedPropertyBag);
+	}
+}
+
+#endif
 
 }  // namespace UE::Cameras
 

@@ -2,6 +2,9 @@
 
 #include "Core/BaseCameraObject.h"
 
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
+#include "Misc/EngineVersionComparison.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCameraObject)
 
 void FCameraObjectAllocationInfo::Append(const FCameraObjectAllocationInfo& OtherAllocationInfo)
@@ -15,5 +18,15 @@ void FCameraObjectAllocationInfo::Append(const FCameraObjectAllocationInfo& Othe
 
 	const FCameraContextDataTableAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);
 	ContextDataTableInfo.DataDefinitions.Append(OtherContextDataTableInfo.DataDefinitions);
+}
+
+void UBaseCameraObject::PostLoad()
+{
+	Super::PostLoad();
+
+#if UE_VERSION_OLDER_THAN(5,8,0)
+	using namespace UE::Cameras;
+	FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
+#endif
 }
 

@@ -18,6 +18,8 @@ const FName UCameraRigAsset::TransitionsGraphName(TEXT("Transitions"));
 
 void UCameraRigAsset::PostLoad()
 {
+	Super::PostLoad();
+
 #if WITH_EDITORONLY_DATA
 
 	if (GraphNodePosX_DEPRECATED != 0 || GraphNodePosY_DEPRECATED != 0)
@@ -67,8 +69,6 @@ void UCameraRigAsset::PostLoad()
 			}
 		}
 	}
-
-	Super::PostLoad();
 }
 
 void UCameraRigAsset::PostInitProperties()

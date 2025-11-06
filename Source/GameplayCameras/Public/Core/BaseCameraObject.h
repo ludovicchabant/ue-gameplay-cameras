@@ -106,6 +106,11 @@ public:
 	/** Get the root node of this camera object. */
 	virtual UCameraNode* GetRootNode() { return nullptr; }
 
+public:
+
+	// UObject interface.
+	virtual void PostLoad() override;
+
 private:
 
 	/** The default interface parameter values, generated during build. */
