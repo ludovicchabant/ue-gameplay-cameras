@@ -37,7 +37,7 @@ struct FCameraActorTargetInfo
 
 	/** The actor to target. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
-	TObjectPtr<AActor> Actor;
+	TSoftObjectPtr<AActor> Actor;
 
 	/** An optional socket to target on the actor. */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Interp, Category="Target")
