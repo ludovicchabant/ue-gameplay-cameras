@@ -99,7 +99,7 @@ struct FCameraVariableSetter
 	float BlendInTime = 1.f;
 	float BlendOutTime = 1.f;
 
-	virtual ~FCameraVariableSetter() {}
+	virtual ~FCameraVariableSetter() = default;
 
 	virtual void Apply(FCameraVariableTable& VariableTable) {}
 

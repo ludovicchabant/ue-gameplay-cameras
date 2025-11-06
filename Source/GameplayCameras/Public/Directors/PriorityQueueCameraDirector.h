@@ -36,7 +36,7 @@ class IPriorityQueueEntry
 {
 public:
 
-	virtual ~IPriorityQueueEntry() {}
+	virtual ~IPriorityQueueEntry() = default;
 
 	/** Gets the current priority of the sub-director. */
 	virtual int32 GetPriority() = 0;

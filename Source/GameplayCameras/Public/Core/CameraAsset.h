@@ -32,7 +32,7 @@ namespace UE::Cameras
 	class ICameraAssetEventHandler
 	{
 	public:
-		virtual ~ICameraAssetEventHandler() {}
+		virtual ~ICameraAssetEventHandler() = default;
 
 		/** Called when the camera director has been changed. */
 		virtual void OnCameraDirectorChanged(UCameraAsset* InCameraAsset, const TCameraPropertyChangedEvent<UCameraDirector*>& Event) {}

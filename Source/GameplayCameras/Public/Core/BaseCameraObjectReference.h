@@ -50,7 +50,7 @@ struct FBaseCameraObjectReference
 
 public:
 
-	virtual ~FBaseCameraObjectReference() {}
+	virtual ~FBaseCameraObjectReference() = default;
 
 	/** Gets the parameters for this camera rig, some of which containing overrides. */
 	const FInstancedOverridablePropertyBag& GetParameters() const

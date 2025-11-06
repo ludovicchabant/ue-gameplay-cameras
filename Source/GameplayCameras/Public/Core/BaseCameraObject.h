@@ -28,7 +28,7 @@ namespace UE::Cameras
 	class ICameraObjectEventHandler
 	{
 	public:
-		virtual ~ICameraObjectEventHandler() {}
+		virtual ~ICameraObjectEventHandler() = default;
 
 		/** Called when the camera object's interface has changed. */
 		virtual void OnCameraObjectInterfaceChanged() {}

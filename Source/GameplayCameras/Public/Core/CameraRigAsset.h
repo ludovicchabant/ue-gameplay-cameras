@@ -31,7 +31,7 @@ namespace UE::Cameras
 	class ICameraRigAssetEventHandler
 	{
 	public:
-		virtual ~ICameraRigAssetEventHandler() {}
+		virtual ~ICameraRigAssetEventHandler() = default;
 
 		/** Called when the camera rig asset has been built. */
 		virtual void OnCameraRigBuilt(const UCameraRigAsset* CameraRigAsset) {}

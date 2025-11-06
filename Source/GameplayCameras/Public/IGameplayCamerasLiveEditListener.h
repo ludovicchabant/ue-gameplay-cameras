@@ -27,7 +27,7 @@ class IGameplayCamerasLiveEditListener
 {
 public:
 
-	virtual ~IGameplayCamerasLiveEditListener() {}
+	virtual ~IGameplayCamerasLiveEditListener() = default;
 
 	/** Called when a camera asset has been (re)built. */
 	void PostBuildAsset(const FGameplayCameraAssetBuildEvent& BuildEvent) { OnPostBuildAsset(BuildEvent); }

@@ -69,7 +69,7 @@ public:
 	{}
 
 	/** Destructor */
-	virtual ~TCameraValueInterpolator() {}
+	virtual ~TCameraValueInterpolator() = default;
 
 	/** Gets the parameters class and casts it to the given sub-class.  */
 	template<typename TInterpolatorClass>

@@ -222,7 +222,7 @@ class FCameraDirectorEvaluator
 public:
 
 	GAMEPLAYCAMERAS_API FCameraDirectorEvaluator();
-	virtual ~FCameraDirectorEvaluator() {}
+	virtual ~FCameraDirectorEvaluator() = default;
 
 	/** Initializes a camera director evalutor. */
 	GAMEPLAYCAMERAS_API void Initialize(const FCameraDirectorInitializeParams& Params);

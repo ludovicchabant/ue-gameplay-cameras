@@ -24,7 +24,7 @@ class IGameplayCamerasLiveEditManager : public TSharedFromThis<IGameplayCamerasL
 {
 public:
 
-	virtual ~IGameplayCamerasLiveEditManager() {}
+	virtual ~IGameplayCamerasLiveEditManager() = default;
 
 	/** Whether cameras should be run in editor. */
 	virtual bool CanRunInEditor() const = 0;

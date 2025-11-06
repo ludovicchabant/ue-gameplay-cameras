@@ -15,7 +15,7 @@ class IGameplayCamerasFamily : public TSharedFromThis<IGameplayCamerasFamily>
 {
 public:
 
-	virtual ~IGameplayCamerasFamily() {}
+	virtual ~IGameplayCamerasFamily() = default;
 
 	virtual UObject* GetRootAsset() const = 0;
 

@@ -122,7 +122,7 @@ private:
  */
 struct IHasNamedObjectRegistry
 {
-	virtual ~IHasNamedObjectRegistry() {}
+	virtual ~IHasNamedObjectRegistry() = default;
 
 	virtual TSharedPtr<FNamedObjectRegistry> GetNamedObjectRegistry() = 0;
 };

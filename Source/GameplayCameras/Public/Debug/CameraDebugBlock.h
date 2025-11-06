@@ -33,7 +33,7 @@ struct FCameraDebugBlockDrawParams
  */
 struct FCameraDebugBlockField
 {
-	virtual ~FCameraDebugBlockField() {}
+	virtual ~FCameraDebugBlockField() = default;
 	virtual void SerializeField(FCameraDebugBlock* This, FArchive& Ar) = 0;
 
 	FName FieldName;
@@ -71,7 +71,7 @@ class FCameraDebugBlock
 
 public:
 
-	virtual ~FCameraDebugBlock() {}
+	virtual ~FCameraDebugBlock() = default;
 
 	/** Attaches a block to this block. */
 	GAMEPLAYCAMERAS_API void Attach(FCameraDebugBlock* InAttachment);
