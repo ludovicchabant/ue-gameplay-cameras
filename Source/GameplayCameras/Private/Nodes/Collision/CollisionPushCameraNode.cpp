@@ -260,7 +260,7 @@ void FCollisionPushCameraNodeEvaluator::RunCollisionTrace(UWorld* World, APlayer
 	RunCollisionTrace(Params, TraceParams, OutResult, TraceResult);
 
 	CollisionTraceHandle = TraceResult.AsyncTraceHandle;
-	if (!TraceResult.HitResults.IsEmpty())
+	if (!CollisionTraceHandle.IsValid())
 	{
 		HandleCollisionTraceResult(World, TraceResult.HitResults, SafePosition, Params, OutResult);
 	}
