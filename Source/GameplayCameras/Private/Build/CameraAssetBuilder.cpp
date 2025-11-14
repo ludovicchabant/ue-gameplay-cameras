@@ -62,6 +62,11 @@ void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingDirector", "Camera has no director set."));
 	}
 
+	// Some directors might add CDOs for some reason (for instance if they use a reference collector).
+	// We need to remove them and leave them untouched.
+	AllCameraRigs.Remove(GetDefault<UCameraRigAsset>());
+	AllCameraRigProxies.Remove(GetDefault<UCameraRigProxyAsset>());
+
 	if (AllCameraRigs.IsEmpty() && AllCameraRigProxies.IsEmpty())
 	{
 		BuildLog.AddMessage(EMessageSeverity::Warning, LOCTEXT("MissingRigs", "Camera director isn't using any camera rigs or proxies."));
