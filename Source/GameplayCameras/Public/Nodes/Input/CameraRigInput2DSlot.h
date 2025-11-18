@@ -13,6 +13,8 @@
 
 #include "CameraRigInput2DSlot.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UVector2dCameraVariable;
 
 /**
@@ -79,13 +81,13 @@ public:
 public:
 
 	// UObject interface.
-	virtual void PostLoad() override;
+	UE_API virtual void PostLoad() override;
 
 protected:
 
 	// UCameraNode interface.
-	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
-	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
+	UE_API virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
+	UE_API virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 private:
 
@@ -102,20 +104,20 @@ class FInput2DCameraNodeEvaluator;
 
 class FCameraRigInput2DSlotEvaluator : public FInput2DCameraNodeEvaluator
 {
-	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FCameraRigInput2DSlotEvaluator, FInput2DCameraNodeEvaluator)
+	UE_DECLARE_CAMERA_NODE_EVALUATOR_EX(UE_API, FCameraRigInput2DSlotEvaluator, FInput2DCameraNodeEvaluator)
 
 public:
 
-	FCameraRigInput2DSlotEvaluator();
+	UE_API FCameraRigInput2DSlotEvaluator();
 
 protected:
 
 	// FCameraNodeEvaluator interface.
-	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
-	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
-	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
+	UE_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	UE_API virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
+	UE_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+	UE_API virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
+	UE_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 protected:
 
@@ -128,4 +130,6 @@ protected:
 };
 
 }  // namespace UE::Cameras
+
+#undef UE_API
 

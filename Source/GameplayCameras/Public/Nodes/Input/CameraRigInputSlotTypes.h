@@ -6,6 +6,8 @@
 
 #include "CameraRigInputSlotTypes.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 /**
  * General options for an input slot.
  */
@@ -44,14 +46,14 @@ struct FCameraParameterClamping
 public:
 
 	/** Clamps the given value. */
-	double ClampValue(double Value) const;
+	UE_API double ClampValue(double Value) const;
 
 	/** 
 	 * Gets the effective min/max values for this struct.
 	 * If a bound is disabled, the effective value will be lowest or max
 	 * double precision values.
 	 */
-	void GetEffectiveClamping(double& OutMinValue, double& OutMaxValue) const;
+	UE_API void GetEffectiveClamping(double& OutMinValue, double& OutMaxValue) const;
 };
 
 /**
@@ -71,6 +73,8 @@ struct FCameraParameterNormalization
 public:
 
 	/** Normalizes the given value. */
-	double NormalizeValue(double Value) const;
+	UE_API double NormalizeValue(double Value) const;
 };
+
+#undef UE_API
 

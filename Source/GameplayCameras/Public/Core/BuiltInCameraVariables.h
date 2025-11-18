@@ -7,6 +7,8 @@
 
 #include "BuiltInCameraVariables.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UDoubleCameraVariable;
 class UVector2dCameraVariable;
 
@@ -51,14 +53,14 @@ class FBuiltInCameraVariables
 public:
 
 	/** Singleton access. */
-	static const FBuiltInCameraVariables& Get();
+	UE_API static const FBuiltInCameraVariables& Get();
 
 	/** Get the definition of a built-in camera variable. */
-	const FCameraVariableDefinition& GetDefinition(EBuiltInDoubleCameraVariable BuiltInVariable) const;
+	UE_API const FCameraVariableDefinition& GetDefinition(EBuiltInDoubleCameraVariable BuiltInVariable) const;
 	/** Get the definition of a built-in camera variable. */
-	const FCameraVariableDefinition& GetDefinition(EBuiltInVector2dCameraVariable BuiltInVariable) const;
+	UE_API const FCameraVariableDefinition& GetDefinition(EBuiltInVector2dCameraVariable BuiltInVariable) const;
 	/** Get the definition of a built-in camera variable. */
-	const FCameraVariableDefinition& GetDefinition(EBuiltInRotator3dCameraVariable BuiltInVariable) const;
+	UE_API const FCameraVariableDefinition& GetDefinition(EBuiltInRotator3dCameraVariable BuiltInVariable) const;
 
 public:
 
@@ -78,4 +80,6 @@ protected:
 };
 
 }  // namespace UE::Cameras
+
+#undef UE_API
 
