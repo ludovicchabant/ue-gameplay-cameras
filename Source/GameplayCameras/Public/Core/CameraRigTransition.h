@@ -163,6 +163,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Transition")
 	bool bOverrideInitialOrientation = false;
 
+	/** Freeze all previously running camera rigs. */
+	UPROPERTY(EditAnywhere, Category="Transition")
+	bool bFreezePreviousCameraRigs = false;
+
 	/**
 	 * Whether this transition allows merging two similar camera rigs together.
 	 * Similar camera rigs run the same underlying camera rig prefab with different parameter
