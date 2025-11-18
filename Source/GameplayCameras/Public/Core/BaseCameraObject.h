@@ -92,6 +92,9 @@ public:
 
 public:
 
+	/** Gets the object's unique ID. */
+	const FGuid& GetGuid() const { return Guid; }
+
 	/** Gets the default values for the parameters exposed on this camera rig. */
 	const FInstancedPropertyBag& GetDefaultParameters() const { return DefaultParameters; }
 
@@ -110,8 +113,14 @@ public:
 
 	// UObject interface.
 	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
 private:
+
+	/** The camera object's unique ID. */
+	UPROPERTY()
+	FGuid Guid;
 
 	/** The default interface parameter values, generated during build. */
 	UPROPERTY()

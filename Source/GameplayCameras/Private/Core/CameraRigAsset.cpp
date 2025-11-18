@@ -51,11 +51,6 @@ void UCameraRigAsset::PostLoad()
 
 #endif
 
-	if (!Guid.IsValid())
-	{
-		Guid = FGuid::NewGuid();
-	}
-
 	// Initialize the ParameterType of blendable parameters that pre-existed the new interface data.
 	// The type defaults to Boolean so check only those.
 	for (UCameraObjectInterfaceBlendableParameter* BlendableParameter : Interface.BlendableParameters)
@@ -68,27 +63,6 @@ void UCameraRigAsset::PostLoad()
 				BlendableParameter->PrivateVariable_DEPRECATED = nullptr;
 			}
 		}
-	}
-}
-
-void UCameraRigAsset::PostInitProperties()
-{
-	Super::PostInitProperties();
-
-	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
-			!Guid.IsValid())
-	{
-		Guid = FGuid::NewGuid();
-	}
-}
-
-void UCameraRigAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
-{
-	Super::PostDuplicate(DuplicateMode);
-
-	if (DuplicateMode == EDuplicateMode::Normal)
-	{
-		Guid = FGuid::NewGuid();
 	}
 }
 

@@ -91,9 +91,6 @@ public:
 	UPROPERTY(EditAnywhere, Category="Transition")
 	ECameraRigInitialOrientation InitialOrientation = ECameraRigInitialOrientation::None;
 
-	/** Gets the camera rig's unique ID. */
-	const FGuid& GetGuid() const { return Guid; }
-
 public:
 
 	/** The current build state of this camera rig. */
@@ -154,8 +151,6 @@ protected:
 
 	// UObject interface
 	virtual void PostLoad() override;
-	virtual void PostInitProperties() override;
-	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 	virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
 #if WITH_EDITOR
@@ -163,10 +158,6 @@ protected:
 #endif
 
 private:
-
-	/** The camera rig's unique ID. */
-	UPROPERTY()
-	FGuid Guid;
 
 #if WITH_EDITORONLY_DATA
 

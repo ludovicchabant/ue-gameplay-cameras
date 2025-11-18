@@ -21,18 +21,17 @@ class UCameraRigProxyAsset : public UObject
 
 public:
 
-	UCameraRigProxyAsset(const FObjectInitializer& ObjectInit);
-
-public:
+	/** Gets the camera rig proxy's unique ID. */
+	const FGuid& GetGuid() const { return Guid; }
 
 	// UObject interface.
-#if WITH_EDITORONLY_DATA
+	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-#endif
 
-public:
+private:
 
-	/** Unique identifier for this camera rig proxy. */
+	/** The camera rig proxy's unique ID. */
 	UPROPERTY()
 	FGuid Guid;
 };

@@ -51,11 +51,6 @@ public:
 
 public:
 
-	/** Gets the camera shake's unique ID. */
-	const FGuid& GetGuid() const { return Guid; }
-
-public:
-
 	/** The current build state of this camera shake. */
 	UPROPERTY(Transient)
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Dirty;
@@ -95,15 +90,9 @@ protected:
 #endif
 
 	// UObject interface.
-	virtual void PostInitProperties() override;
-	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 
 private:
-
-	/** The camera shake's unique ID. */
-	UPROPERTY()
-	FGuid Guid;
 
 #if WITH_EDITORONLY_DATA
 

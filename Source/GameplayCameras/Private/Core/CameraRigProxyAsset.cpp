@@ -6,13 +6,26 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraRigProxyAsset)
 
-UCameraRigProxyAsset::UCameraRigProxyAsset(const FObjectInitializer& ObjectInit)
-	: Super(ObjectInit)
+void UCameraRigProxyAsset::PostLoad()
 {
-	Guid = FGuid::NewGuid();
+	Super::PostLoad();
+
+	if (!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
 }
 
-#if WITH_EDITORONLY_DATA
+void UCameraRigProxyAsset::PostInitProperties()
+{
+	Super::PostInitProperties();
+	
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
+			!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
+}
 
 void UCameraRigProxyAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
@@ -23,6 +36,4 @@ void UCameraRigProxyAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		Guid = FGuid::NewGuid();
 	}
 }
-
-#endif
 

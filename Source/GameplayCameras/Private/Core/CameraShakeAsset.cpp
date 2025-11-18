@@ -4,33 +4,12 @@
 
 #include "Build/CameraBuildLog.h"
 #include "Build/CameraShakeAssetBuilder.h"
-#include "Core/ShakeCameraNode.h"
+#include "Core/ShakeCameraNode.h"  // IWYU pragma: keep
 #include "Misc/EngineVersionComparison.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraShakeAsset)
-
-void UCameraShakeAsset::PostInitProperties()
-{
-	Super::PostInitProperties();
-
-	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
-			!Guid.IsValid())
-	{
-		Guid = FGuid::NewGuid();
-	}
-}
-
-void UCameraShakeAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
-{
-	Super::PostDuplicate(DuplicateMode);
-
-	if (DuplicateMode == EDuplicateMode::Normal)
-	{
-		Guid = FGuid::NewGuid();
-	}
-}
 
 void UCameraShakeAsset::BuildCameraShake()
 {
