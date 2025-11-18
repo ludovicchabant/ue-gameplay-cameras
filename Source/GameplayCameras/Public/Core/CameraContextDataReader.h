@@ -19,6 +19,11 @@ struct TCameraContextDataReader
 		Initialize(Parameter);
 	}
 
+	TCameraContextDataReader(const DataType* InDefaultValuePtr, FCameraContextDataID InDataID)
+	{
+		Initialize(InDefaultValuePtr, InDataID);
+	}
+
 	template<typename ParameterType>
 	void Initialize(const ParameterType& Parameter)
 	{
@@ -32,11 +37,19 @@ struct TCameraContextDataReader
 		ensureMsgf(DefaultValuePtr, TEXT("The given parameter doesn't have a value!"));
 	}
 
+	void Initialize(const DataType* InDefaultValuePtr, FCameraContextDataID InDataID)
+	{
+		DefaultValuePtr = InDefaultValuePtr;
+		DataID = InDataID;
+
+		ensureMsgf(DefaultValuePtr, TEXT("No default value was provided!"));
+	}
+
 	DataType Get(const FCameraContextDataTable& ContextDataTable) const
 	{
 		if (!DataID.IsValid())
 		{
-			return *DefaultValuePtr;
+			return (DefaultValuePtr ? *DefaultValuePtr : DataType());
 		}
 
 		if constexpr(std::is_enum_v<DataType>)
@@ -58,7 +71,7 @@ struct TCameraContextDataReader
 				return *ActualValue;
 			}
 		}
-		return *DefaultValuePtr;
+		return (DefaultValuePtr ? *DefaultValuePtr : DataType());
 	}
 
 private:

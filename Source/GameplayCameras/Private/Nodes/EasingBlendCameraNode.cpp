@@ -2,6 +2,7 @@
 
 #include "Nodes/Blends/EasingBlendCameraNode.h"
 
+#include "Core/CameraContextDataReader.h"
 #include "Math/UnrealMathUtility.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(EasingBlendCameraNode)
@@ -127,18 +128,33 @@ class FEasingBlendCameraNodeEvaluator : public FSimpleFixedTimeBlendCameraNodeEv
 	UE_DECLARE_BLEND_CAMERA_NODE_EVALUATOR_EX(GAMEPLAYCAMERAS_API, FEasingBlendCameraNodeEvaluator, FSimpleFixedTimeBlendCameraNodeEvaluator)
 
 protected:
+
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnComputeBlendFactor(const FCameraNodeEvaluationParams& Params, FSimpleBlendCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	EEasingCameraBlendType BlendType;
 };
 
 UE_DEFINE_BLEND_CAMERA_NODE_EVALUATOR(FEasingBlendCameraNodeEvaluator)
+
+void FEasingBlendCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	Super::OnInitialize(Params, OutResult);
+
+	const UEasingBlendCameraNode* BlendNode = GetCameraNodeAs<UEasingBlendCameraNode>();
+	TCameraContextDataReader<EEasingCameraBlendType> BlendTypeReader;
+	BlendTypeReader.Initialize(&BlendNode->BlendType, BlendNode->BlendTypeDataID);
+	BlendType = BlendTypeReader.Get(OutResult.ContextDataTable);
+}
 
 void FEasingBlendCameraNodeEvaluator::OnComputeBlendFactor(const FCameraNodeEvaluationParams& Params, FSimpleBlendCameraNodeEvaluationResult& OutResult)
 {
 	using namespace UE::Cameras::Internal;
 
-	const UEasingBlendCameraNode* BlendNode = GetCameraNodeAs<UEasingBlendCameraNode>();
 	const float TimeFactor = GetTimeFactor();
-	OutResult.BlendFactor = EvaluateEasing(BlendNode->BlendType, TimeFactor);
+	OutResult.BlendFactor = EvaluateEasing(BlendType, TimeFactor);
 }
 
 }  // namespace UE::Cameras

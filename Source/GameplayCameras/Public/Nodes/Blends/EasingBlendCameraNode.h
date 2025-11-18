@@ -68,7 +68,10 @@ protected:
 public:
 
 	/** The type of curve to use. */
-	UPROPERTY(EditAnywhere, Category=Blending)
+	UPROPERTY(EditAnywhere, Category=Blending, meta=(CameraContextData=true))
 	EEasingCameraBlendType BlendType = EEasingCameraBlendType::Linear;
+
+	UPROPERTY()
+	FCameraContextDataID BlendTypeDataID;
 };
 
