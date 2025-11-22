@@ -188,6 +188,11 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 	FCameraEvaluationContextStack& ContextStack = HostedEvaluator->GetEvaluationContextStack();
 	ContextStack.PushContext(EvaluationContext.ToSharedRef());
 
+	if (ensure(OutputCameraComponent))
+	{
+		OutputCameraComponent->Activate();
+	}
+
 	return true;
 }
 
@@ -197,6 +202,7 @@ void UGameplayCameraComponentBase::DestroyCameraSystemHost()
 	if (OutputCameraComponent)
 	{
 		OutputCameraComponent->SetRelativeTransform(FTransform());
+		OutputCameraComponent->Deactivate();
 	}
 
 	DestroyCameraSystem();
@@ -445,6 +451,7 @@ void UGameplayCameraComponentBase::OnRegister()
 	if (OutputCameraComponent == nullptr)
 	{
 		OutputCameraComponent = NewObject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), RF_Transient | RF_TextExportTransient);
+		OutputCameraComponent->SetAutoActivate(false);
 		OutputCameraComponent->SetupAttachment(this);
 		OutputCameraComponent->CreationMethod = CreationMethod;
 		OutputCameraComponent->RegisterComponentWithWorld(GetWorld());
