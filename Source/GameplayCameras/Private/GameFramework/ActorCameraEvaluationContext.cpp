@@ -69,6 +69,7 @@ void FActorCameraEvaluationContext::ApplyMinimalViewInfo(const FMinimalViewInfo&
 	CameraPose.SetLocation(ViewInfo.Location);
 	CameraPose.SetRotation(ViewInfo.Rotation);
 	CameraPose.SetFieldOfView(ViewInfo.FOV);
+	CameraPose.SetFocalLength(-1.f);
 	CameraPose.SetNearClippingPlane(ViewInfo.PerspectiveNearClipPlane);
 	CameraPose.SetSensorWidth(CameraPose.GetSensorHeight() * ViewInfo.AspectRatio);
 	CameraPose.SetAspectRatioAxisConstraint(ViewInfo.AspectRatioAxisConstraint.Get(CameraPose.GetAspectRatioAxisConstraint()));
