@@ -149,7 +149,7 @@ void FRootCameraDebugBlock::BuildDebugBlocks(const FCameraSystemEvaluator& Camer
 
 void FRootCameraDebugBlock::RootDebugDraw(const FRootCameraDebugDrawParams& Params, FCameraDebugRenderer& Renderer)
 {
-	if (!ShouldDebugDraw(DebugID, Params.bIsCameraManagerOrViewTarget))
+	if (!ShouldDebugDraw(DebugID, Params.bFromDefaultCameraSystem))
 	{
 		return;
 	}
@@ -175,7 +175,7 @@ void FRootCameraDebugBlock::OnSerialize(FArchive& Ar)
 	Ar << DebugID;
 }
 
-bool FRootCameraDebugBlock::ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsActive)
+bool FRootCameraDebugBlock::ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsDefaultCameraSystem)
 {
 	if (!GGameplayCamerasDebugEnable)
 	{
@@ -191,7 +191,7 @@ bool FRootCameraDebugBlock::ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool
 	// we are in charge of the "active" camera, whatever that means.
 	const bool bDoDebugDraw = (WantedDebugID == InDebugID) 
 		|| WantedDebugID.IsAny()
-		|| (WantedDebugID.IsAuto() && (bIsActive || NumCameraSystems == 1));
+		|| (WantedDebugID.IsAuto() && (bIsDefaultCameraSystem || NumCameraSystems == 1));
 	return bDoDebugDraw;
 }
 

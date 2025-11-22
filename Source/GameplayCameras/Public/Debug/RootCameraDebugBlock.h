@@ -25,10 +25,10 @@ GAMEPLAYCAMERAS_API extern FString GGameplayCamerasDebugCategories;
 struct FRootCameraDebugDrawParams
 {
 	/**
-	 * Whether the debug blocks belong to a camera system running as the camera manager
-	 * of active view target.
+	 * Whether the debug blocks belong to a camera system that is considered the "default" one,
+	 * such as the one running inside the camera manager, or the active view target.
 	 */
-	bool bIsCameraManagerOrViewTarget = false;
+	bool bFromDefaultCameraSystem = false;
 
 	/** Whether to force draw the debug blocks. */
 	bool bForceDraw = false;
@@ -55,7 +55,7 @@ public:
 public:
 
 	/** Checks whether the debug data with the given ID would be drawn on screen. */
-	GAMEPLAYCAMERAS_API static bool ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsActive);
+	GAMEPLAYCAMERAS_API static bool ShouldDebugDraw(FCameraSystemDebugID InDebugID, bool bIsDefaultCameraSystem);
 
 protected:
 

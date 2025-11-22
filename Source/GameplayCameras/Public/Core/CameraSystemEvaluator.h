@@ -134,8 +134,11 @@ struct FCameraSystemDebugUpdateParams
 	/** Whether the debug camera is enabled, giving an "outside" view of camera system. */
 	bool bIsDebugCameraEnabled = false;
 
-	/** Whether this camera system is run by the active camera manager or view target. */
-	bool bIsCameraManagerOrViewTarget = false;
+	/**
+	 * Whether this camera system should be considered the "default" one, such as when
+	 * running inside the active camera manager or the view target.
+	 */
+	bool bIsDefaultCameraSystem = false;
 
 	/** Whether to force drawing debug info for this camera system. */
 	bool bForceDraw = false;

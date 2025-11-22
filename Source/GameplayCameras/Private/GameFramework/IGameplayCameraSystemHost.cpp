@@ -14,6 +14,7 @@
 #include "Debug/DebugDrawService.h"
 #include "Engine/Canvas.h"
 #include "Engine/World.h"
+#include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "Services/CameraModifierService.h"
 #include "Services/CameraShakeService.h"
@@ -308,17 +309,22 @@ void IGameplayCameraSystemHost::DebugDraw(UCanvas* Canvas, APlayerController* Pl
 		const AActor* ViewTarget = ActualPlayerController ? ActualPlayerController->GetViewTarget() : nullptr;
 		const bool bThisIsCameraManager = (ActualPlayerController && ThisAsObject == ActualPlayerController->PlayerCameraManager);
 		const bool bThisIsViewTarget = (ThisAsObject && ViewTarget && ThisAsObject->GetTypedOuter<AActor>() == ViewTarget);
+		const bool bHasCameraManager = (ActualPlayerController && ActualPlayerController->PlayerCameraManager->IsA<AGameplayCamerasPlayerCameraManager>());
 
 		// We're looking from the outside if we are not the view target, or if we don't have a player
 		// anymore (which happens in spectator mode like with the debug camera).
-		bool bIsDebugCameraEnabled = (
+		const bool bIsDebugCameraEnabled = (
 				(!bThisIsCameraManager && !bThisIsViewTarget) ||
 				!ActualPlayerController || !ActualPlayerController->Player);
+
+		// The default camera system is the one running the camera manager or, if there none there, the 
+		// one running the current view target.
+		const bool bIsDefaultCameraSystem = (bThisIsCameraManager || (bThisIsViewTarget && !bHasCameraManager));
 
 		FCameraSystemDebugUpdateParams DebugUpdateParams;
 		DebugUpdateParams.CanvasObject = Canvas;
 		DebugUpdateParams.bIsDebugCameraEnabled = bIsDebugCameraEnabled;
-		DebugUpdateParams.bIsCameraManagerOrViewTarget = (bThisIsCameraManager || bThisIsViewTarget);
+		DebugUpdateParams.bIsDefaultCameraSystem = bIsDefaultCameraSystem;
 		CameraSystemEvaluator->DebugUpdate(DebugUpdateParams);
 	}
 }

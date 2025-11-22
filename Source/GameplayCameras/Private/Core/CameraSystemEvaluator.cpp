@@ -603,7 +603,7 @@ void FCameraSystemEvaluator::DebugUpdate(const FCameraSystemDebugUpdateParams& P
 #endif
 
 	FRootCameraDebugDrawParams RootParams;
-	RootParams.bIsCameraManagerOrViewTarget = Params.bIsCameraManagerOrViewTarget;
+	RootParams.bFromDefaultCameraSystem = Params.bIsDefaultCameraSystem;
 	RootParams.bForceDraw = Params.bForceDraw;
 	FCameraDebugRenderer Renderer(OwnerWorld, Params.CanvasObject, Params.bIsDebugCameraEnabled);
 	RootDebugBlock->RootDebugDraw(RootParams, Renderer);
