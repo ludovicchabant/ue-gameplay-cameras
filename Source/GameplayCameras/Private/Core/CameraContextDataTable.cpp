@@ -197,8 +197,8 @@ bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType D
 			OutAlignOf = alignof(FString);
 			break;
 		case ECameraContextDataType::Enum:
-			OutSizeOf = sizeof(uint8);
-			OutAlignOf = alignof(uint8);
+			OutSizeOf = sizeof(uint32);
+			OutAlignOf = alignof(uint32);
 			break;
 		case ECameraContextDataType::Struct:
 			{
@@ -255,7 +255,7 @@ bool FCameraContextDataTable::ConstructDataValue(ECameraContextDataType DataType
 				const UEnum* EnumType = Cast<const UEnum>(DataTypeObject);
 				if (ensure(EnumType))
 				{
-					*reinterpret_cast<uint8*>(DataPtr) = (uint8)EnumType->GetValueByIndex(0);
+					*reinterpret_cast<uint32*>(DataPtr) = (uint32)EnumType->GetValueByIndex(0);
 				}
 			}
 			break;
@@ -407,7 +407,7 @@ const FName& FCameraContextDataTable::GetNameData(FCameraContextDataID InID) con
 
 const FString& FCameraContextDataTable::GetStringData(FCameraContextDataID InID) const
 {
-	if (const FString* Value = GetDataImpl<FString>(InID, ECameraContextDataType::Name, nullptr))
+	if (const FString* Value = GetDataImpl<FString>(InID, ECameraContextDataType::String, nullptr))
 	{
 		return *Value;
 	}
@@ -416,9 +416,9 @@ const FString& FCameraContextDataTable::GetStringData(FCameraContextDataID InID)
 	return DefaultValue;
 }
 
-uint8 FCameraContextDataTable::GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const
+uint32 FCameraContextDataTable::GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const
 {
-	if (const uint8* Value = GetDataImpl<uint8>(InID, ECameraContextDataType::Enum, EnumType))
+	if (const uint32* Value = GetDataImpl<uint32>(InID, ECameraContextDataType::Enum, EnumType))
 	{
 		return *Value;
 	}
@@ -450,7 +450,7 @@ FInstancedStruct FCameraContextDataTable::GetInstancedStructData(FCameraContextD
 
 UObject* FCameraContextDataTable::GetObjectData(FCameraContextDataID InID) const
 {
-	if (const TObjectPtr<UObject>* Value = GetDataImpl<TObjectPtr<UObject>>(InID, ECameraContextDataType::Name, nullptr))
+	if (const TObjectPtr<UObject>* Value = GetDataImpl<TObjectPtr<UObject>>(InID, ECameraContextDataType::Object, nullptr))
 	{
 		return Value->Get();
 	}
@@ -459,7 +459,7 @@ UObject* FCameraContextDataTable::GetObjectData(FCameraContextDataID InID) const
 
 UClass* FCameraContextDataTable::GetClassData(FCameraContextDataID InID) const
 {
-	if (const TObjectPtr<UClass>* Value = GetDataImpl<TObjectPtr<UClass>>(InID, ECameraContextDataType::Name, nullptr))
+	if (const TObjectPtr<UClass>* Value = GetDataImpl<TObjectPtr<UClass>>(InID, ECameraContextDataType::Class, nullptr))
 	{
 		return Value->Get();
 	}
@@ -476,7 +476,7 @@ void FCameraContextDataTable::SetStringData(FCameraContextDataID InID, const FSt
 	SetDataImpl(InID, ECameraContextDataType::String, nullptr, InData);
 }
 
-void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint8 InData)
+void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint32 InData)
 {
 	SetDataImpl(InID, ECameraContextDataType::Enum, EnumType, InData);
 }
@@ -533,7 +533,7 @@ void FCameraContextDataTable::SetStringArrayData(FCameraContextDataID InID, TCon
 	SetArrayDataImpl(InID, ECameraContextDataType::String, nullptr, InData);
 }
 
-void FCameraContextDataTable::SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint8> InData)
+void FCameraContextDataTable::SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint32> InData)
 {
 	SetArrayDataImpl(InID, ECameraContextDataType::Enum, EnumType, InData);
 }
@@ -842,7 +842,7 @@ bool FCameraContextDataTable::SetDataValue(ECameraContextDataType DataType, cons
 			*reinterpret_cast<FString*>(DestDataPtr) = *reinterpret_cast<const FString*>(SrcDataPtr);
 			break;
 		case ECameraContextDataType::Enum:
-			*reinterpret_cast<uint8*>(DestDataPtr) = *reinterpret_cast<const uint8*>(SrcDataPtr);
+			*reinterpret_cast<uint32*>(DestDataPtr) = *reinterpret_cast<const uint32*>(SrcDataPtr);
 			break;
 		case ECameraContextDataType::Struct:
 			{

@@ -68,7 +68,7 @@ public:
 
 	const FName& GetNameData(FCameraContextDataID InID) const;
 	const FString& GetStringData(FCameraContextDataID InID) const;
-	uint8 GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const;
+	uint32 GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const;
 	FConstStructView GetStructViewData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
 	FInstancedStruct GetInstancedStructData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
 	UObject* GetObjectData(FCameraContextDataID InID) const;
@@ -102,7 +102,7 @@ public:
 
 	void SetNameData(FCameraContextDataID InID, const FName& InData);
 	void SetStringData(FCameraContextDataID InID, const FString& InData);
-	void SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint8 InData);
+	void SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint32 InData);
 	void SetObjectData(FCameraContextDataID InID, UObject* InData);
 	void SetClassData(FCameraContextDataID InID, UClass* InData);
 
@@ -117,7 +117,7 @@ public:
 
 	void SetNameArrayData(FCameraContextDataID InID, TConstArrayView<FName> InData);
 	void SetStringArrayData(FCameraContextDataID InID, TConstArrayView<FString> InData);
-	void SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint8> InData);
+	void SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint32> InData);
 	void SetObjectArrayData(FCameraContextDataID InID, TConstArrayView<UObject*> InData);
 	void SetClassArrayData(FCameraContextDataID InID, TConstArrayView<UClass*> InData);
 
@@ -308,7 +308,7 @@ ENUM_CLASS_FLAGS(FCameraContextDataTable::EEntryFlags)
 template<typename EnumType>
 EnumType FCameraContextDataTable::GetEnumData(FCameraContextDataID InID) const
 {
-	if (const uint8* Value = GetDataImpl<uint8>(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>()))
+	if (const uint32* Value = GetDataImpl<uint32>(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>()))
 	{
 		return EnumType(*Value);
 	}
@@ -398,7 +398,7 @@ const ValueType* FCameraContextDataTable::TryGetArrayData(FCameraContextDataID I
 template<typename EnumType>
 void FCameraContextDataTable::SetEnumData(FCameraContextDataID InID, EnumType InData)
 {
-	SetDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), InData);
+	SetDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), (uint32)InData);
 }
 
 template<typename StructType>
@@ -500,7 +500,7 @@ ECameraContextDataType TCameraContextDataTraits<DataType>::GetDataType()
 	}
 	else if constexpr(std::is_same_v<DataType, FString>)
 	{
-		return ECameraContextDataType::Name;
+		return ECameraContextDataType::String;
 	}
 	else if constexpr(std::is_enum_v<DataType>)
 	{

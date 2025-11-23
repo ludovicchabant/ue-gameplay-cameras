@@ -38,14 +38,27 @@ struct TCameraContextDataReader
 		{
 			return *DefaultValuePtr;
 		}
+
+		if constexpr(std::is_enum_v<DataType>)
+		{
+			// Enums need to be converted: they are always stored as uint32 in the table,
+			// but they may actually have a different backing type. If that type is shorter
+			// or longer, we can't reinterpret_cast the memory, we need to convert the
+			// uint32 value instead.
+			if (const uint8* RawValue = ContextDataTable.TryGetData(
+						DataID, ECameraContextDataType::Enum, StaticEnum<DataType>()))
+			{
+				return DataType(*reinterpret_cast<const uint32*>(RawValue));
+			}
+		}
 		else
 		{
 			if (const DataType* ActualValue = ContextDataTable.TryGetData<DataType>(DataID))
 			{
 				return *ActualValue;
 			}
-			return *DefaultValuePtr;
 		}
+		return *DefaultValuePtr;
 	}
 
 private:
