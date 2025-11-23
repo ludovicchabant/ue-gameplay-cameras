@@ -54,7 +54,9 @@ public:
 	void RegisterEditor();
 	void UnregisterEditor();
 
-	void JumpToNode(UEdGraphNode* InNode);
+	void JumpToNode(UEdGraphNode* InNode, FName InPinName = NAME_None);
+	bool FindAndJumpToObjectNode(UObject* InObject, FName InPropertyName = NAME_None);
+
 	void ResyncDetailsView();
 
 	TSharedPtr<SGraphEditor> GetGraphEditor() { return GraphEditor; }

@@ -70,8 +70,8 @@ private:
 	void OnBuild();
 	void OnFindInCameraRig();
 
-	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
-	void OnJumpToObject(UObject* Object, FName PropertyName);
+	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnJumpToNode(UEdGraphNode* Node, FName PinName);
 
 	void OnInvokeCurveEditor(UObject* Object, FName PropertyName);
 

@@ -148,11 +148,11 @@ void SCameraRigTransitionEditor::FocusHome()
 	}
 }
 
-void SCameraRigTransitionEditor::JumpToNode(UEdGraphNode* InGraphNode)
+void SCameraRigTransitionEditor::JumpToNode(UEdGraphNode* InGraphNode, FName InPinName)
 {
 	if (InGraphNode)
 	{
-		TransitionGraphEditor->JumpToNode(InGraphNode);
+		TransitionGraphEditor->JumpToNode(InGraphNode, InPinName);
 	}
 }
 

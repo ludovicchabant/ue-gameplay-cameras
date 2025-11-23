@@ -153,8 +153,8 @@ void FCameraAssetEditorToolkit::CreateWidgets()
 
 	// Create the search panel.
 	SearchWidget = SNew(SFindInObjectTreeGraph)
-		.OnGetRootObjectsToSearch(this, &FCameraAssetEditorToolkit::OnGetRootObjectsToSearch)
-		.OnJumpToObjectRequested(this, &FCameraAssetEditorToolkit::OnJumpToObject);
+		.OnGetGraphsToSearch(this, &FCameraAssetEditorToolkit::OnGetGraphsToSearch)
+		.OnJumpToNodeRequested(this, &FCameraAssetEditorToolkit::OnJumpToNode);
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraAssetBuildMessages");
@@ -389,11 +389,20 @@ void FCameraAssetEditorToolkit::OnFindInCamera()
 	SearchWidget->FocusSearchEditBox();
 }
 
-void FCameraAssetEditorToolkit::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+void FCameraAssetEditorToolkit::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
 	TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
 			FCameraSharedTransitionsAssetEditorMode::ModeName);
-	SharedTransitionsMode->OnGetRootObjectsToSearch(OutSources);
+	SharedTransitionsMode->OnGetGraphsToSearch(OutSources);
+}
+
+void FCameraAssetEditorToolkit::OnJumpToNode(UEdGraphNode* Node, FName PinName)
+{
+	// We only have one graph, the shared transition graph, so go there directly.
+	TSharedPtr<FCameraSharedTransitionsAssetEditorMode> SharedTransitionsMode = GetTypedEditorMode<FCameraSharedTransitionsAssetEditorMode>(
+			FCameraSharedTransitionsAssetEditorMode::ModeName);
+	SetEditorMode(FCameraSharedTransitionsAssetEditorMode::ModeName);
+	SharedTransitionsMode->JumpToNode(Node, PinName);
 }
 
 void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object)

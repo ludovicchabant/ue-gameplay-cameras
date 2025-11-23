@@ -78,7 +78,9 @@ private:
 	void OnBuild();
 	void OnFindInCamera();
 
-	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnJumpToNode(UEdGraphNode* Node, FName PinName = NAME_None);
+
 	void OnJumpToObject(UObject* Object);
 	void OnJumpToObject(UObject* Object, FName PropertyName);
 

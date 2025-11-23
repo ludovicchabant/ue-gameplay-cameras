@@ -234,6 +234,24 @@ void SCameraRigAssetEditor::FocusHome()
 	FindAndJumpToObjectNode(CameraRigAsset, CurrentMode);
 }
 
+bool SCameraRigAssetEditor::JumpToNode(UEdGraphNode* InNode, FName InPinName)
+{
+	UEdGraph* OwningGraph = InNode->GetGraph();
+	if (OwningGraph == NodeGraph)
+	{
+		SetEditorMode(ECameraRigAssetEditorMode::NodeGraph);
+		NodeGraphEditor->JumpToNode(InNode, InPinName);
+		return true;
+	}
+	else if (OwningGraph == TransitionGraph)
+	{
+		SetEditorMode(ECameraRigAssetEditorMode::TransitionGraph);
+		TransitionGraphEditor->JumpToNode(InNode, InPinName);
+		return true;
+	}
+	return false;
+}
+
 bool SCameraRigAssetEditor::FindAndJumpToObjectNode(UObject* InObject)
 {
 	if (FindAndJumpToObjectNode(InObject, ECameraRigAssetEditorMode::NodeGraph))
@@ -280,7 +298,7 @@ FText SCameraRigAssetEditor::GetCameraRigAssetName(UObjectTreeGraph* ForGraph) c
 {
 	if (CameraRigAsset && ForGraph)
 	{
-		const FObjectTreeGraphConfig& GraphConfig = TransitionGraph->GetConfig();
+		const FObjectTreeGraphConfig& GraphConfig = ForGraph->GetConfig();
 		return GraphConfig.GetDisplayNameText(CameraRigAsset);
 	}
 	return LOCTEXT("NoCameraRig", "No Camera Rig");

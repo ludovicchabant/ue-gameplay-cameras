@@ -24,8 +24,9 @@ public:
 
 	FCameraSharedTransitionsAssetEditorMode(UCameraAsset* InCameraAsset);
 
-	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
-	bool JumpToObject(UObject* InObject, FName PropertyName);
+	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void JumpToNode(UEdGraphNode* InNode, FName InPinName);
+	bool JumpToObject(UObject* InObject, FName InPropertyName);
 
 protected:
 

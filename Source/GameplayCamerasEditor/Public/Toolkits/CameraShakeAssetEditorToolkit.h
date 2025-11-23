@@ -83,9 +83,11 @@ private:
 	void OnBuild();
 	void OnFindInCameraShake();
 
-	void OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
-	void OnFocusHome();
+	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
+	void OnJumpToNode(UEdGraphNode* Node, FName PinName);
+
 	void OnJumpToObject(UObject* Object, FName PropertyName);
+	void OnFocusHome();
 
 private:
 

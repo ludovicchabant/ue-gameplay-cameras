@@ -3,30 +3,34 @@
 #pragma once
 
 #include "Containers/UnrealString.h"
+#include "Templates/SharedPointer.h"
 #include "UObject/WeakObjectPtr.h"
 
+class UEdGraph;
+class UEdGraphNode;
 class UObject;
 struct FObjectTreeGraphConfig;
 
 /** Search result for an object tree graph search. */
 struct FObjectTreeGraphSearchResult
 {
-	/** The root object that the current search result was found in. */
-	UObject* RootObject = nullptr;
+	/** The graph in which the result was found. */
+	UEdGraph* Graph = nullptr;
 
-	/** The graph config for the object hierarchy this result was found in. */
-	const FObjectTreeGraphConfig* GraphConfig = nullptr;
+	/** The node found to match the search. */
+	UEdGraphNode* Node = nullptr;
 
-	/** The object found to match the search. */
-	UObject* Object = nullptr;
+	/** The name of the pin that matched the search. None if the node itself matches. */
+	FName PinName;
 
-	/** 
-	 * The specific object property that matched the search. 
-	 * None if the object itself matches.
-	 */
-	FName PropertyName;
+public:
+
+	FObjectTreeGraphSearchResult()
+	{}
+	FObjectTreeGraphSearchResult(UEdGraph* InGraph, UEdGraphNode* InNode, FName InPinName = NAME_None)
+		: Graph(InGraph), Node(InNode), PinName(InPinName)
+	{}
 };
-
 
 /**
  * A utility class that can search a series of string tokens across an
@@ -40,8 +44,10 @@ public:
 
 public:
 
-	/** Adds a root object to search through. */
-	void AddRootObject(UObject* InObject, const FObjectTreeGraphConfig* InGraphConfig);
+	/** Adds a graph to search inside of. */
+	void AddGraph(UEdGraph* InGraph);
+	/** Sets the graphs to search inside of. */
+	void SetGraphs(TConstArrayView<UEdGraph*> InGraphs);
 
 	/** Searchs for the given string tokens. */
 	void Search(TArrayView<FString> InTokens, TArray<FObjectTreeGraphSearchResult>& OutResults) const;
@@ -52,31 +58,18 @@ private:
 
 	struct FSearchState
 	{
-		const FObjectTreeGraphConfig* GraphConfig = nullptr;
+		UEdGraph* Graph = nullptr;
 		TArrayView<FString> Tokens;
-
-		UObject* RootObject = nullptr;
-		TArray<UObject*> ObjectStack;
-		TSet<UObject*> VisitedObjects;
-
 		TArray<FSearchResult> Results;
 	};
 
-	struct FRootObjectInfo
-	{
-		TWeakObjectPtr<> WeakRootObject;
-		const FObjectTreeGraphConfig* GraphConfig = nullptr;
-	};
+	void SearchGraph(UEdGraph* Graph, FSearchState& State) const;
+	void SearchNode(UEdGraphNode* Node, FSearchState& State) const;
 
-	void SearchRootObject(const FRootObjectInfo& InRootObjectInfo, TArrayView<FString> InTokens, TArray<FSearchResult>& OutResults) const;
-	void SearchObject(UObject* InObject, FSearchState& InOutState) const;
-
-	bool MatchObject(UObject* InObject, const FSearchState& InState) const;
-	bool MatchObjectProperty(UObject* InObject, FProperty* InProperty, const FSearchState& InState) const;
 	bool MatchString(const FString& InString, const FSearchState& InState) const;
 
 private:
 
-	TArray<FRootObjectInfo> RootObjectInfos;
+	TArray<UEdGraph*> SearchGraphs;
 };
 

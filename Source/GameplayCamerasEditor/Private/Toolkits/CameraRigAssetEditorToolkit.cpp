@@ -217,8 +217,8 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	TArray<UEdGraph*> CameraRigGraphs;
 	CameraRigEditorWidget->GetGraphs(CameraRigGraphs);
 	SearchWidget = SNew(SFindInObjectTreeGraph)
-		.OnGetRootObjectsToSearch(this, &FCameraRigAssetEditorToolkit::OnGetRootObjectsToSearch)
-		.OnJumpToObjectRequested(this, &FCameraRigAssetEditorToolkit::OnJumpToObject);
+		.OnGetGraphsToSearch(this, &FCameraRigAssetEditorToolkit::OnGetGraphsToSearch)
+		.OnJumpToNodeRequested(this, &FCameraRigAssetEditorToolkit::OnJumpToNode);
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
@@ -375,17 +375,21 @@ void FCameraRigAssetEditorToolkit::OnFindInCameraRig()
 	SearchWidget->FocusSearchEditBox();
 }
 
-void FCameraRigAssetEditorToolkit::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+void FCameraRigAssetEditorToolkit::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	UCameraRigAsset* CameraRig = Impl->GetCameraRigAsset();
-	OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &NodeGraphConfig });
-	OutSources.Add(FFindInObjectTreeGraphSource{ CameraRig, &TransitionGraphConfig });
+	TArray<UEdGraph*> Graphs;
+	TSharedPtr<SCameraRigAssetEditor> CameraRigEditor = Impl->GetCameraRigAssetEditor();
+	CameraRigEditor->GetGraphs(Graphs);
+	for (UEdGraph* Graph : Graphs)
+	{
+		OutSources.Add(FFindInObjectTreeGraphSource{ Graph });
+	}
 }
 
-void FCameraRigAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyName)
+void FCameraRigAssetEditorToolkit::OnJumpToNode(UEdGraphNode* Node, FName PinName)
 {
 	TSharedPtr<SCameraRigAssetEditor> CameraRigEditor = Impl->GetCameraRigAssetEditor();
-	CameraRigEditor->FindAndJumpToObjectNode(Object);
+	CameraRigEditor->JumpToNode(Node, PinName);
 }
 
 void FCameraRigAssetEditorToolkit::OnInvokeCurveEditor(UObject* Object, FName PropertyName)

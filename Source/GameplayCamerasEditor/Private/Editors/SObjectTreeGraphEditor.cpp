@@ -210,9 +210,30 @@ void SObjectTreeGraphEditor::InitializeBuiltInCommands()
 			);
 }
 
-void SObjectTreeGraphEditor::JumpToNode(UEdGraphNode* InNode)
+void SObjectTreeGraphEditor::JumpToNode(UEdGraphNode* InNode, FName InPinName)
 {
+	if (InPinName != NAME_None)
+	{
+		if (UEdGraphPin* Pin = InNode->FindPin(InPinName))
+		{
+			GraphEditor->JumpToPin(Pin);
+			return;
+		}
+	}
 	GraphEditor->JumpToNode(InNode);
+}
+
+bool SObjectTreeGraphEditor::FindAndJumpToObjectNode(UObject* InObject, FName InPropertyName)
+{
+	if (UObjectTreeGraph* CurrentGraph = Cast<UObjectTreeGraph>(GraphEditor->GetCurrentGraph()))
+	{
+		if (UObjectTreeGraphNode* Node = CurrentGraph->FindObjectNode(InObject))
+		{
+			JumpToNode(Node, InPropertyName);
+			return true;
+		}
+	}
+	return false;
 }
 
 void SObjectTreeGraphEditor::ResyncDetailsView()

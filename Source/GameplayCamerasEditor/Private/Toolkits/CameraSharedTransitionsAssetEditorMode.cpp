@@ -80,12 +80,21 @@ void FCameraSharedTransitionsAssetEditorMode::OnDeactivateMode(const FAssetEdito
 	UToolMenus::UnregisterOwner(this);
 }
 
-void FCameraSharedTransitionsAssetEditorMode::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+void FCameraSharedTransitionsAssetEditorMode::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	OutSources.Add(FFindInObjectTreeGraphSource{ CameraAsset, &TransitionGraphConfig });
+	UEdGraph* TransitionGraph = Impl->GetCameraRigTransitionEditor()->GetTransitionGraph();
+	OutSources.Add(FFindInObjectTreeGraphSource{ TransitionGraph });
 }
 
-bool FCameraSharedTransitionsAssetEditorMode::JumpToObject(UObject* InObject, FName PropertyName)
+void FCameraSharedTransitionsAssetEditorMode::JumpToNode(UEdGraphNode* InNode, FName InPinName)
+{
+	if (TSharedPtr<SCameraRigTransitionEditor> TransitionEditor = Impl->GetCameraRigTransitionEditor())
+	{
+		TransitionEditor->JumpToNode(InNode, InPinName);
+	}
+}
+
+bool FCameraSharedTransitionsAssetEditorMode::JumpToObject(UObject* InObject, FName InPropertyName)
 {
 	if (TSharedPtr<SCameraRigTransitionEditor> TransitionEditor = Impl->GetCameraRigTransitionEditor())
 	{

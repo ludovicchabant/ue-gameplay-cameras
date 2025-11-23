@@ -248,8 +248,8 @@ void FCameraShakeAssetEditorToolkit::CreateWidgets()
 
 	// Create the search panel.
 	SearchWidget = SNew(SFindInObjectTreeGraph)
-		.OnGetRootObjectsToSearch(this, &FCameraShakeAssetEditorToolkit::OnGetRootObjectsToSearch)
-		.OnJumpToObjectRequested(this, &FCameraShakeAssetEditorToolkit::OnJumpToObject);
+		.OnGetGraphsToSearch(this, &FCameraShakeAssetEditorToolkit::OnGetGraphsToSearch)
+		.OnJumpToNodeRequested(this, &FCameraShakeAssetEditorToolkit::OnJumpToNode);
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraShakeAssetBuildMessages");
@@ -402,22 +402,24 @@ void FCameraShakeAssetEditorToolkit::OnFindInCameraShake()
 	SearchWidget->FocusSearchEditBox();
 }
 
-void FCameraShakeAssetEditorToolkit::OnGetRootObjectsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
+void FCameraShakeAssetEditorToolkit::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)
 {
-	OutSources.Add(FFindInObjectTreeGraphSource{ CameraShakeAsset, &NodeGraphConfig });
+	OutSources.Add(FFindInObjectTreeGraphSource{ NodeGraph });
 }
 
-void FCameraShakeAssetEditorToolkit::OnFocusHome()
+void FCameraShakeAssetEditorToolkit::OnJumpToNode(UEdGraphNode* Node, FName PinName)
 {
-	OnJumpToObject(CameraShakeAsset, NAME_None);
+	NodeGraphEditor->JumpToNode(Node, PinName);
 }
 
 void FCameraShakeAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyName)
 {
-	if (UObjectTreeGraphNode* NodeGraphObjectNode = NodeGraph->FindObjectNode(Object))
-	{
-		NodeGraphEditor->JumpToNode(NodeGraphObjectNode);
-	}
+	NodeGraphEditor->FindAndJumpToObjectNode(Object, PropertyName);
+}
+
+void FCameraShakeAssetEditorToolkit::OnFocusHome()
+{
+	NodeGraphEditor->FindAndJumpToObjectNode(CameraShakeAsset);
 }
 
 FText FCameraShakeAssetEditorToolkit::GetBaseToolkitName() const
