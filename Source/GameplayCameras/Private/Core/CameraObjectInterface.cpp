@@ -2,28 +2,11 @@
 
 #include "Core/CameraObjectInterface.h"
 
+#include "Core/BaseCameraObject.h"
 #include "Core/CameraContextDataTableAllocationInfo.h"
 #include "Core/CameraVariableTableAllocationInfo.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraObjectInterface)
-
-#if WITH_EDITOR
-
-void UCameraObjectInterfaceParameterBase::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
-{
-	NodePosX = GraphNodePos.X;
-	NodePosY = GraphNodePos.Y;
-}
-
-void UCameraObjectInterfaceParameterBase::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
-{
-	Modify(bMarkDirty);
-
-	GraphNodePos.X = NodePosX;
-	GraphNodePos.Y = NodePosY;
-}
-
-#endif
 
 void UCameraObjectInterfaceParameterBase::PostLoad()
 {
@@ -70,6 +53,17 @@ FCameraVariableDefinition UCameraObjectInterfaceBlendableParameter::GetVariableD
 	return Definition;
 }
 
+void UCameraObjectInterfaceBlendableParameter::GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const
+{
+	OutParameterDefinition.ParameterName = FName(InterfaceParameterName);
+	OutParameterDefinition.ParameterGuid = Guid;
+	OutParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
+	OutParameterDefinition.bIsVisible = bIsVisible;
+	OutParameterDefinition.VariableID = PrivateVariableID;
+	OutParameterDefinition.VariableType = ParameterType;
+	OutParameterDefinition.BlendableStructType = BlendableStructType;
+}
+
 FCameraContextDataDefinition UCameraObjectInterfaceDataParameter::GetDataDefinition() const
 {
 	FCameraContextDataDefinition Definition;
@@ -81,6 +75,18 @@ FCameraContextDataDefinition UCameraObjectInterfaceDataParameter::GetDataDefinit
 	Definition.DataName = GetDataName();
 #endif
 	return Definition;
+}
+
+void UCameraObjectInterfaceDataParameter::GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const
+{
+	OutParameterDefinition.ParameterName = FName(InterfaceParameterName);
+	OutParameterDefinition.ParameterGuid = Guid;
+	OutParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Data;
+	OutParameterDefinition.bIsVisible = bIsVisible;
+	OutParameterDefinition.DataID = PrivateDataID;
+	OutParameterDefinition.DataType = DataType;
+	OutParameterDefinition.DataContainerType = DataContainerType;
+	OutParameterDefinition.DataTypeObject = DataTypeObject;
 }
 
 #if WITH_EDITORONLY_DATA
@@ -143,4 +149,50 @@ bool FCameraObjectInterface::HasBlendableParameter(const FString& ParameterName)
 {
 	return FindBlendableParameterByName(ParameterName) != nullptr;
 }
+
+UCameraObjectInterfaceParameterBase* UCameraObjectInterfaceParameterGetter::GetInterfaceParameter() const
+{
+	if (ParameterGuid.IsValid())
+	{
+		if (UBaseCameraObject* CameraObject = GetTypedOuter<UBaseCameraObject>())
+		{
+			if (UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraObject->Interface.FindBlendableParameterByGuid(ParameterGuid))
+			{
+				return BlendableParameter;
+			}
+			if (UCameraObjectInterfaceDataParameter* DataParameter = CameraObject->Interface.FindDataParameterByGuid(ParameterGuid))
+			{
+				return DataParameter;
+			}
+		}
+	}
+	return nullptr;
+}
+
+FString UCameraObjectInterfaceParameterGetter::GetInterfaceParameterName() const
+{
+	if (UCameraObjectInterfaceParameterBase* Parameter = GetInterfaceParameter())
+	{
+		return Parameter->InterfaceParameterName;
+	}
+	return FString();
+}
+
+#if WITH_EDITOR
+
+void UCameraObjectInterfaceParameterGetter::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
+{
+	NodePosX = GraphNodePos.X;
+	NodePosY = GraphNodePos.Y;
+}
+
+void UCameraObjectInterfaceParameterGetter::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+{
+	Modify(bMarkDirty);
+
+	GraphNodePos.X = NodePosX;
+	GraphNodePos.Y = NodePosY;
+}
+
+#endif
 

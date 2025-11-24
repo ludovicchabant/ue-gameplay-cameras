@@ -211,6 +211,7 @@ void FCameraParameterDetailsCustomization::UpdateVariableInfo()
 					if (RawData)
 					{
 						VariableInfo.bHasNonUserOverride |= HasNonUserOverride(RawData);
+						VariableInfo.bHasOverride |= HasOverride(RawData);
 					}
 					return true;
 				});
@@ -305,8 +306,8 @@ TSharedRef<SWidget> FCameraParameterDetailsCustomization::BuildCameraVariableBro
 bool FCameraParameterDetailsCustomization::IsValueEditorEnabled() const
 {
 	// The value widget is enabled (i.e. the user can change the value) if the parameter isn't driven by
-	// a variable that was set by the user.
-	return VariableInfo.VariableValue == ECameraVariableValue::NotSet;
+	// a variable or a rig parameter;
+	return !VariableInfo.bHasOverride;
 }
 
 bool FCameraParameterDetailsCustomization::IsCameraVariableBrowserEnabled() const
@@ -464,6 +465,11 @@ void FCameraParameterDetailsCustomization::OnResetToDefault(TSharedPtr<IProperty
 }
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+bool F##ValueName##CameraParameterDetailsCustomization::HasOverride(void* InRawData)\
+{\
+	F##ValueName##CameraParameter* TypedData = reinterpret_cast<F##ValueName##CameraParameter*>(InRawData);\
+	return TypedData->HasOverride();\
+}\
 bool F##ValueName##CameraParameterDetailsCustomization::HasNonUserOverride(void* InRawData)\
 {\
 	F##ValueName##CameraParameter* TypedData = reinterpret_cast<F##ValueName##CameraParameter*>(InRawData);\

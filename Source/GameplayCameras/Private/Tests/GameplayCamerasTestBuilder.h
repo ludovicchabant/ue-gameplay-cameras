@@ -400,7 +400,7 @@ private:
  *					.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d{ 1, 0, 0 })
  *					.Done()
  *				.AddChild<ULensParametersCameraNode>(&UArrayCameraNode::Children)
- *					.SetParameter(&ULensParametersCameraNode::FocalLenght, 18.f)
+ *					.SetParameter(&ULensParametersCameraNode::FocalLength, 18.f)
  *					.Done()
  *				.Done()
  *			.AddEnterTransition()
@@ -491,11 +491,15 @@ public:
 		UCameraObjectInterfaceBlendableParameter* BlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraRig);
 		BlendableParameter->InterfaceParameterName = ParameterName;
 		BlendableParameter->ParameterType = ParameterType;
-		BlendableParameter->Target = Target;
-		BlendableParameter->TargetPropertyName = TargetPropertyName;
 
 		NamedObjectRegistry->Register(BlendableParameter, ParameterName);
 		CameraRig->Interface.BlendableParameters.Add(BlendableParameter);
+
+		UCameraObjectInterfaceParameterGetter* Getter = NewObject<UCameraObjectInterfaceParameterGetter>(CameraRig);
+		Getter->ParameterGuid = BlendableParameter->GetGuid();
+		ensure(Getter->ParameterGuid.IsValid());
+		CameraRig->Connections.Add(Getter, NAME_None, Target, TargetPropertyName);
+
 		return *static_cast<ThisType*>(this);
 	}
 

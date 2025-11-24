@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Compat/EditorCompat.h"
-#include "Core/CameraRigAsset.h"
 #include "CoreTypes.h"
 #include "GraphEditor.h"
 #include "Templates/SharedPointerFwd.h"
@@ -14,6 +13,7 @@ class FAssetEditorToolkit;
 class IDetailsView;
 class SBox;
 class SObjectTreeGraphEditor;
+class UCameraRigAsset;
 class UEdGraphNode;
 class UObjectTreeGraph;
 struct FObjectTreeGraphConfig;
@@ -38,7 +38,6 @@ enum class ECameraRigAssetEditorMode
  */
 class SCameraRigAssetEditor 
 	: public SCompoundWidget
-	, public ICameraObjectEventHandler
 {
 public:
 
@@ -90,11 +89,6 @@ public:
 
 protected:
 
-	// ICameraObjectEventHandler interface.
-	virtual void OnCameraObjectInterfaceChanged() override;
-
-protected:
-
 	void CreateGraphEditors();
 	void CreateNodeGraphEditor();
 	void CreateTransitionGraphEditor();
@@ -113,9 +107,6 @@ private:
 
 	/** The asset being edited */
 	TObjectPtr<UCameraRigAsset> CameraRigAsset;
-
-	/** Event handler */
-	TCameraEventHandler<ICameraObjectEventHandler> EventHandler;
 
 	/** Reference to the details view */
 	TSharedPtr<IDetailsView> DetailsView;

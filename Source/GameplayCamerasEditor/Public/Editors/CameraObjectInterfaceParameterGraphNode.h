@@ -9,7 +9,7 @@
 class UCameraObjectInterfaceParameterBase;
 
 /**
- * Custom graph editor node for a camera rig parameter.
+ * Custom graph editor node for a camera rig parameter getter.
  */
 UCLASS()
 class UCameraObjectInterfaceParameterGraphNode : public UObjectTreeGraphNode
@@ -21,12 +21,13 @@ public:
 	/** Creates a new graph node. */
 	UCameraObjectInterfaceParameterGraphNode(const FObjectInitializer& ObjInit);
 
-	/** Gets the underlying object as a camera rig interface parameter. */
+	/** Finds the camera interface parameter. */
 	UCameraObjectInterfaceParameterBase* GetInterfaceParameter() const;
 
 public:
 
 	// UEdGraphNode interface
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
 };
 

@@ -66,6 +66,7 @@ private:
 	void OnCurvesTabClosed(TSharedRef<SDockTab> InTab);
 
 	void OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object);
+	void OnSearchCameraObjectInterfaceParameterNodes(UCameraObjectInterfaceParameterBase* Object);
 
 	void OnBuild();
 	void OnFindInCameraRig();

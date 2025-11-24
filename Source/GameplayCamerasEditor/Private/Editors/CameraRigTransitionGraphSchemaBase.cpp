@@ -6,6 +6,7 @@
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
 #include "EdGraph/EdGraphPin.h"
+#include "Editors/CameraNodeGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
@@ -73,37 +74,34 @@ private:
 
 }  // namespace UE::Cameras
 
-FObjectTreeGraphConfig UCameraRigTransitionGraphSchemaBase::BuildGraphConfig() const
+void UCameraRigTransitionGraphSchemaBase::OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const
 {
 	using namespace UE::Cameras;
 
+	Super::OnBuildGraphConfig(InOutGraphConfig);
+
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 
-	FObjectTreeGraphConfig GraphConfig;
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransition::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraRigTransitionCondition::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
-	GraphConfig.DefaultSelfPinName = NAME_None;
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransition::StaticClass())
+	InOutGraphConfig.ConnectableObjectClasses.Add(UCameraRigTransition::StaticClass());
+	InOutGraphConfig.ConnectableObjectClasses.Add(UCameraRigTransitionCondition::StaticClass());
+	InOutGraphConfig.ConnectableObjectClasses.Add(UBlendCameraNode::StaticClass());
+	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransition::StaticClass())
 		.NodeTitleColor(Settings->CameraRigTransitionTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
+	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraRigTransitionCondition::StaticClass())
 		.StripDisplayNameSuffix(TEXT("Transition Condition"))
 		.NodeTitleColor(Settings->CameraRigTransitionConditionTitleColor);
-	GraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())
+	InOutGraphConfig.ObjectClassConfigs.Emplace(UBlendCameraNode::StaticClass())
 		.StripDisplayNameSuffix(TEXT("Camera Node"))
 		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
-		.NodeTitleColor(Settings->CameraBlendNodeTitleColor);
-
-	OnBuildGraphConfig(GraphConfig);
-
-	return GraphConfig;
+		.NodeTitleColor(Settings->CameraBlendNodeTitleColor)
+		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
 }
 
 void UCameraRigTransitionGraphSchemaBase::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
 {
 	using namespace UE::Cameras;
 
-	// Only get the graph objects from the root interface.
+	// Start with the graph objects from the root interface.
 	CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, false);
 
 	// See if we are missing objects from AllTransitionsObjects... if so, add them and notify the user.

@@ -15,6 +15,9 @@
 
 #include "BaseCameraObject.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
+class IObjectTreeGraphRootObject;
 class UCameraNode;
 
 namespace UE::Cameras
@@ -72,6 +75,61 @@ struct TStructOpsTypeTraits<FCameraObjectAllocationInfo> : public TStructOpsType
 	};
 };
 
+/**
+ * A connection inside a camera object graph.
+ */
+USTRUCT()
+struct FCameraObjectConnection
+{
+	GENERATED_BODY()
+	
+public:
+
+	/** The source object of the connection. */
+	UPROPERTY()
+	TObjectPtr<UObject> Source;
+
+	/** The source object property of the connection. */
+	UPROPERTY()
+	FName SourcePropertyName;
+
+	/** The target object of the connection. */
+	UPROPERTY()
+	TObjectPtr<UObject> Target;
+
+	/** The target object property of the connection. */
+	UPROPERTY()
+	FName TargetPropertyName;
+};
+
+/**
+ * A collection of connections inside a camera object graph.
+ */
+USTRUCT()
+struct FCameraObjectConnections
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The list of connections. */
+	UPROPERTY()
+	TArray<FCameraObjectConnection> Connections;
+
+public:
+
+	UE_API void Add(UObject* InSource, FName InSourcePropertyName, UObject* InTarget, FName InTargetPropertyName);
+
+	UE_API FCameraObjectConnection* FindBySource(UObject* InSource);
+	UE_API FCameraObjectConnection* FindBySource(UObject* InSource, FName InSourcePropertyName);
+	UE_API FCameraObjectConnection* FindByTarget(UObject* InTarget);
+	UE_API FCameraObjectConnection* FindByTarget(UObject* InTarget, FName InTargetPropertyName);
+};
+
+/**
+ * A base class for a camera object that has a graph of camera nodes, connections between them,
+ * and some exposed parameters.
+ */
 UCLASS(Abstract, MinimalAPI)
 class UBaseCameraObject : public UObject
 {
@@ -82,6 +140,9 @@ public:
 	/** The public data interface of this camera object. */
 	UPROPERTY()
 	FCameraObjectInterface Interface;
+
+	UPROPERTY()
+	FCameraObjectConnections Connections;
 
 	/** Event handlers to be notified of data changes. */
 	UE::Cameras::TCameraEventHandlerContainer<UE::Cameras::ICameraObjectEventHandler> EventHandlers;
@@ -116,6 +177,13 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
+protected:
+
+#if WITH_EDITORONLY_DATA
+	// Utility method to be called on PostLoad by subclasses that need upgrading old data.
+	void UpgradeInterfaceConnections(IObjectTreeGraphRootObject* RootObject, FName DefaultGraphName);
+#endif
+
 private:
 
 	/** The camera object's unique ID. */
@@ -132,4 +200,6 @@ private:
 
 	friend class UE::Cameras::FCameraObjectInterfaceParameterBuilder;
 };
+
+#undef UE_API
 

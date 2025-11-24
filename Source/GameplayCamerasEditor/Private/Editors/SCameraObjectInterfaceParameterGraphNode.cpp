@@ -132,9 +132,9 @@ TSharedPtr<SGraphPin> SCameraObjectInterfaceParameterGraphNode::CreatePinWidget(
 
 FText SCameraObjectInterfaceParameterGraphNode::GetInterfaceParameterName() const
 {
-	if (UCameraObjectInterfaceParameterBase* InterfaceParameter = GetObjectGraphNode()->CastObject<UCameraObjectInterfaceParameterBase>())
+	if (UCameraObjectInterfaceParameterGetter* GetterNode = GetObjectGraphNode()->CastObject<UCameraObjectInterfaceParameterGetter>())
 	{
-		return FText::FromString(InterfaceParameter->InterfaceParameterName);
+		return FText::FromString(GetterNode->GetInterfaceParameterName());
 	}
 	return LOCTEXT("InvalidParameterName", "Invalid");
 }

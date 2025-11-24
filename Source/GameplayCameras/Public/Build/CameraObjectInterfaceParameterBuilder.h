@@ -8,6 +8,7 @@
 #define UE_API GAMEPLAYCAMERAS_API
 
 class UBaseCameraObject;
+class UCameraNode;
 class UCameraObjectInterfaceDataParameter;
 struct FCameraObjectInterfaceParameterDefinition;
 struct FInstancedPropertyBag;
@@ -16,12 +17,6 @@ struct FPropertyBagPropertyDesc;
 namespace UE::Cameras
 {
 
-
-/**
- * A helper class for building an FInstancedPropertyBag from a list of camera rig
- * parameter definitions.
- */
-/** Builds the parameter definitions for the given camera object. */
 /**
  * Builds the property bag that contains a property for each exposed parameter on the given camera object.
  * Each property's value is set to the default value of the corresponding parameter.
@@ -36,18 +31,16 @@ public:
 
 public:
 
-	static UE_API void BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag);
 	static UE_API void AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties);
 	static UE_API void AppendDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, TArray<FPropertyBagPropertyDesc>& OutProperties);
-	static UE_API void SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag);
+
+	static UE_API bool SetDefaultParameterValue(UBaseCameraObject* CameraObject, const FCameraObjectInterfaceParameterDefinition& ParameterDefinition, UCameraNode* TargetNode, FName TargetPropertyName, bool bAddParameterIfMissing = true);
 
 #if UE_VERSION_OLDER_THAN(5,8,0)
 	static void FixUpDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, FInstancedPropertyBag& InOutPropertyBag);
 #endif
 
 private:
-
-	static void SetDefaultParameterValue(const UCameraObjectInterfaceDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr);
 
 	void BuildParametersImpl();
 

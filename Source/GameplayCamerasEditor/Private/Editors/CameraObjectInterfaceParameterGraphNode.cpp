@@ -15,7 +15,20 @@ UCameraObjectInterfaceParameterGraphNode::UCameraObjectInterfaceParameterGraphNo
 
 UCameraObjectInterfaceParameterBase* UCameraObjectInterfaceParameterGraphNode::GetInterfaceParameter() const
 {
-	return CastChecked<UCameraObjectInterfaceParameterBase>(GetObject(), ECastCheckedType::NullAllowed);
+	if (UCameraObjectInterfaceParameterGetter* GetterNode = CastChecked<UCameraObjectInterfaceParameterGetter>(GetObject(), ECastCheckedType::NullAllowed))
+	{
+		return GetterNode->GetInterfaceParameter();
+	}
+	return nullptr;
+}
+
+FText UCameraObjectInterfaceParameterGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
+{
+	if (UCameraObjectInterfaceParameterGetter* GetterNode = CastChecked<UCameraObjectInterfaceParameterGetter>(GetObject(), ECastCheckedType::NullAllowed))
+	{
+		return FText::FromString(GetterNode->GetInterfaceParameterName());
+	}
+	return FText();
 }
 
 TSharedPtr<SGraphNode> UCameraObjectInterfaceParameterGraphNode::CreateVisualWidget()

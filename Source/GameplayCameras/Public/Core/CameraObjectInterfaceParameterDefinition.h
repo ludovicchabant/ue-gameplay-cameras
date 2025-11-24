@@ -8,7 +8,7 @@
 #include "CameraObjectInterfaceParameterDefinition.generated.h"
 
 /**
- * The type of a camera rig parameter.
+ * The type of a camera parameter.
  */
 UENUM()
 enum class ECameraObjectInterfaceParameterType : uint8
@@ -40,6 +40,10 @@ struct FCameraObjectInterfaceParameterDefinition
 	/** The type of this parameter. */
 	UPROPERTY()
 	ECameraObjectInterfaceParameterType ParameterType = ECameraObjectInterfaceParameterType::Blendable;
+
+	/** Whether to show this parameter on prefab nodes, references, components, etc. */
+	UPROPERTY()
+	bool bIsVisible = true;
 
 
 	// Blendable parameter properties.

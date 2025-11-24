@@ -42,11 +42,11 @@ private:
 
 private:
 
-	UE_API bool SetupCameraParameterOrVariableReferenceOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter);
-	UE_API bool SetupCustomBlendableParameterOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter);
+	UE_API bool SetupCameraParameterOrVariableReferenceOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter, UCameraNode* Target, FName TargetPropertyName);
+	UE_API bool SetupCustomBlendableParameterOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter, UCameraNode* Target, FName TargetPropertyName);
 
-	UE_API bool SetupDataContextPropertyOverride(const UCameraObjectInterfaceDataParameter* DataParameter);
-	UE_API bool SetupCustomDataParameterOverride(const UCameraObjectInterfaceDataParameter* DataParameter);
+	UE_API bool SetupDataContextPropertyOverride(const UCameraObjectInterfaceDataParameter* DataParameter, UCameraNode* Target, FName TargetPropertyName);
+	UE_API bool SetupCustomDataParameterOverride(const UCameraObjectInterfaceDataParameter* DataParameter, UCameraNode* Target, FName TargetPropertyName);
 
 private:
 

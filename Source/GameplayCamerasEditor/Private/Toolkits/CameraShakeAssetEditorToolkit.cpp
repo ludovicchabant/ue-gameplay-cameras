@@ -394,6 +394,8 @@ void FCameraShakeAssetEditorToolkit::OnBuild()
 	{
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
+
+	DetailsView->RequestForceRefresh();
 }
 
 void FCameraShakeAssetEditorToolkit::OnFindInCameraShake()

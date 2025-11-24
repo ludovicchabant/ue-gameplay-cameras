@@ -45,6 +45,7 @@ public:
 
 protected:
 
+	virtual bool HasOverride(void* InRawData) = 0;
 	virtual bool HasNonUserOverride(void* InRawData) = 0;
 	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
@@ -63,6 +64,7 @@ private:
 		UCameraVariableAsset* CommonVariable = nullptr;
 		ECameraVariableValue VariableValue = ECameraVariableValue::NotSet;
 		bool bHasNonUserOverride = false;
+		bool bHasOverride = false;
 
 		FText InfoText;
 		FText ErrorText;
@@ -116,6 +118,7 @@ protected:
 class F##ValueName##CameraParameterDetailsCustomization : public FCameraParameterDetailsCustomization\
 {\
 protected:\
+	virtual bool HasOverride(void* InRawData) override;\
 	virtual bool HasNonUserOverride(void* InRawData) override;\
 	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };

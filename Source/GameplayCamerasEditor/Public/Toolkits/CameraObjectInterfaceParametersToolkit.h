@@ -7,8 +7,6 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectPtr.h"
 
-#include "CameraObjectInterfaceParametersToolkit.generated.h"
-
 class SBox;
 class SWidget;
 class UBaseCameraObject;
@@ -41,8 +39,13 @@ public:
 	/** Gets the panel widget. */
 	TSharedPtr<SWidget> GetInterfaceParametersPanel() const;
 
+public:
+
 	/** Delegate invoked when a parmeter is selected in the panel. */
 	FOnCameraObjectInterfaceParameterEvent& OnInterfaceParameterSelected() { return OnInterfaceParameterSelectedDelegate; }
+
+	/** Delegate invoked when the user requests finding getter nodes in the graph. */
+	FOnCameraObjectInterfaceParameterEvent& OnSearchInterfaceParameterNodes() { return OnSearchInterfaceParameterNodesDelegate; }
 
 protected:
 
@@ -55,27 +58,11 @@ private:
 	TObjectPtr<UBaseCameraObject> CameraObject;
 
 	FOnCameraObjectInterfaceParameterEvent OnInterfaceParameterSelectedDelegate;
+	FOnCameraObjectInterfaceParameterEvent OnSearchInterfaceParameterNodesDelegate;
 
 	TSharedPtr<SBox> PanelContainer;
 	TSharedPtr<SCameraObjectInterfaceParametersPanel> Panel;
 };
 
 }  // namespace UE::Cameras
-
-UCLASS(MinimalAPI, Hidden)
-class UEdGraphSchema_CameraNodeK2 : public UEdGraphSchema_K2
-{
-	GENERATED_BODY()
-
-public:
-
-	virtual bool SupportsPinTypeContainer(TWeakPtr<const FEdGraphSchemaAction> SchemaAction, const FEdGraphPinType& PinType, const EPinContainerType& ContainerType) const
-	{
-		if (ContainerType == EPinContainerType::None || ContainerType == EPinContainerType::Array)
-		{
-			return Super::SupportsPinTypeContainer(SchemaAction, PinType, ContainerType);
-		}
-		return false;
-	}
-};
 

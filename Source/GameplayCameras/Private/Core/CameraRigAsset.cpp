@@ -43,7 +43,10 @@ void UCameraRigAsset::PostLoad()
 		}
 		if (UCameraObjectInterfaceParameterBase* InterfaceParameter = Cast<UCameraObjectInterfaceParameterBase>(Item))
 		{
-			InterfaceParameter->bHasGraphNode = true;
+			// This will get further upgraded below in UpgradeInterfaceConnections.
+			PRAGMA_DISABLE_DEPRECATION_WARNINGS
+			InterfaceParameter->bHasGraphNode_DEPRECATED = true;
+			PRAGMA_ENABLE_DEPRECATION_WARNINGS
 			It.RemoveCurrent();
 			continue;
 		}
@@ -64,6 +67,11 @@ void UCameraRigAsset::PostLoad()
 			}
 		}
 	}
+
+#if WITH_EDITORONLY_DATA
+	// Upgrade the old parameter connections.
+	UpgradeInterfaceConnections(this, NodeTreeGraphName);
+#endif
 }
 
 void UCameraRigAsset::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const

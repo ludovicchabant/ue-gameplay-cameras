@@ -90,6 +90,7 @@ protected:
 #endif
 
 	// UObject interface.
+	virtual void PostLoad() override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 
 private:

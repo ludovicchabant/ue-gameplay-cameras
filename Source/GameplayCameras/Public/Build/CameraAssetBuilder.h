@@ -9,6 +9,8 @@
 #define UE_API GAMEPLAYCAMERAS_API
 
 class UCameraAsset;
+class UCameraRigAsset;
+struct FInstancedPropertyBag;
 
 namespace UE::Cameras
 {
@@ -29,6 +31,8 @@ public:
 private:
 
 	void BuildCameraImpl(bool bBuildReferencedAssets);
+
+	void CopyDefaultParameterValues(const UCameraRigAsset* InCameraRig, FInstancedPropertyBag& DefaultParameters);
 
 	void UpdateBuildStatus();
 

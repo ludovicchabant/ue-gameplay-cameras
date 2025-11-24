@@ -9,6 +9,7 @@
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraRigAsset.h"
+#include "Core/CameraRigProxyAsset.h"
 #include "GameplayCamerasDelegates.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -163,7 +164,7 @@ void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 
 	for (const UCameraRigAsset* CameraRig : AllCameraRigs)
 	{
-		FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(CameraRig, DefaultParameters);
+		CopyDefaultParameterValues(CameraRig, DefaultParameters);
 	}
 
 	if (!DefaultParameters.Identical(&CameraAsset->DefaultParameters, 0))
@@ -185,6 +186,39 @@ void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 	{
 		CameraAsset->Modify();
 		CameraAsset->AllocationInfo = AllocationInfo;
+	}
+}
+
+void FCameraAssetBuilder::CopyDefaultParameterValues(const UCameraRigAsset* InCameraRig, FInstancedPropertyBag& DefaultParameters)
+{
+	// Our default parameters property bag is an aggregation of various camera rigs' parameters.
+	// Copy their default values over.
+	const FInstancedPropertyBag& SourceValues = InCameraRig->GetDefaultParameters();
+	const void* SourceValuesPtr = SourceValues.GetValue().GetMemory();
+	void* TargetValuesPtr = DefaultParameters.GetMutableValue().GetMemory();
+	const UPropertyBag* SourceValueStruct = SourceValues.GetPropertyBagStruct();
+	const UPropertyBag* TargetValueStruct = DefaultParameters.GetPropertyBagStruct();
+	if (!SourceValuesPtr || !TargetValuesPtr || !SourceValueStruct || !TargetValueStruct)
+	{
+		// We may have empty property bags for camera rigs with no parameters.
+		return;
+	}
+
+	for (const FPropertyBagPropertyDesc& SourcePropertyDesc : SourceValueStruct->GetPropertyDescs())
+	{
+		const FPropertyBagPropertyDesc* TargetPropertyDesc = TargetValueStruct->FindPropertyDescByID(SourcePropertyDesc.ID);
+		if (!ensure(TargetPropertyDesc && TargetPropertyDesc->CachedProperty && SourcePropertyDesc.CachedProperty))
+		{
+			continue;
+		}
+		if (!ensure(SourcePropertyDesc.CompatibleType(*TargetPropertyDesc)))
+		{
+			continue;
+		}
+
+		const void* SourcePtr = SourcePropertyDesc.CachedProperty->ContainerPtrToValuePtr<void>(SourceValuesPtr);
+		void* TargetPtr = TargetPropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(TargetValuesPtr);
+		SourcePropertyDesc.CachedProperty->CopyCompleteValue(TargetPtr, SourcePtr);
 	}
 }
 

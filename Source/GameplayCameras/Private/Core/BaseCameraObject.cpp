@@ -3,6 +3,8 @@
 #include "Core/BaseCameraObject.h"
 
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
+#include "Core/CameraNode.h"
+#include "Core/ObjectTreeGraphRootObject.h"
 #include "Misc/EngineVersionComparison.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCameraObject)
@@ -18,6 +20,48 @@ void FCameraObjectAllocationInfo::Append(const FCameraObjectAllocationInfo& Othe
 
 	const FCameraContextDataTableAllocationInfo& OtherContextDataTableInfo(OtherAllocationInfo.ContextDataTableInfo);
 	ContextDataTableInfo.DataDefinitions.Append(OtherContextDataTableInfo.DataDefinitions);
+}
+
+void FCameraObjectConnections::Add(UObject* InSource, FName InSourcePropertyName, UObject* InTarget, FName InTargetPropertyName)
+{
+	FCameraObjectConnection NewConnection;
+	NewConnection.Source = InSource;
+	NewConnection.SourcePropertyName = InSourcePropertyName;
+	NewConnection.Target = InTarget;
+	NewConnection.TargetPropertyName = InTargetPropertyName;
+	Connections.Add(NewConnection);
+}
+
+FCameraObjectConnection* FCameraObjectConnections::FindBySource(UObject* InSource)
+{
+	return Connections.FindByPredicate([InSource](FCameraObjectConnection& Item)
+			{
+				return Item.Source == InSource;
+			});
+}
+
+FCameraObjectConnection* FCameraObjectConnections::FindBySource(UObject* InSource, FName InSourcePropertyName)
+{
+	return Connections.FindByPredicate([InSource, InSourcePropertyName](FCameraObjectConnection& Item)
+			{
+				return Item.Source == InSource && Item.SourcePropertyName == InSourcePropertyName;
+			});
+}
+
+FCameraObjectConnection* FCameraObjectConnections::FindByTarget(UObject* InTarget)
+{
+	return Connections.FindByPredicate([InTarget](FCameraObjectConnection& Item)
+			{
+				return Item.Target == InTarget;
+			});
+}
+
+FCameraObjectConnection* FCameraObjectConnections::FindByTarget(UObject* InTarget, FName InTargetPropertyName)
+{
+	return Connections.FindByPredicate([InTarget, InTargetPropertyName](FCameraObjectConnection& Item)
+			{
+				return Item.Target == InTarget && Item.TargetPropertyName == InTargetPropertyName;
+			});
 }
 
 void UBaseCameraObject::PostLoad()
@@ -55,4 +99,62 @@ void UBaseCameraObject::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 		Guid = FGuid::NewGuid();
 	}
 }
+
+#if WITH_EDITORONLY_DATA
+
+void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* RootObject, FName DefaultGraphName)
+{
+	if (!ensure(RootObject))
+	{
+		return;
+	}
+
+	TArray<UCameraObjectInterfaceParameterBase*> AllParameters;
+	AllParameters.Append(Interface.BlendableParameters);
+	AllParameters.Append(Interface.DataParameters);
+
+	// Move the connection information to the new connection list.
+	// Create getter nodes for parameters that were added to the camera node graph.
+	bool bDidModify = false;
+	for (UCameraObjectInterfaceParameterBase* Parameter : AllParameters)
+	{
+		UCameraObjectInterfaceParameterGetter* GetterNode = nullptr;
+		const bool bIsConnected = (Parameter->Target_DEPRECATED && Parameter->TargetPropertyName_DEPRECATED != NAME_None);
+
+		if (Parameter->bHasGraphNode_DEPRECATED || bIsConnected)
+		{
+			GetterNode = NewObject<UCameraObjectInterfaceParameterGetter>(this);
+			GetterNode->ParameterGuid = Parameter->GetGuid();
+			GetterNode->GraphNodePos = Parameter->GraphNodePos_DEPRECATED;
+			RootObject->AddConnectableObject(DefaultGraphName, GetterNode);
+			bDidModify = true;
+
+			Parameter->bHasGraphNode_DEPRECATED = false;
+			Parameter->GraphNodePos_DEPRECATED = FIntVector2::ZeroValue;
+		}
+
+		if (bIsConnected)
+		{
+			ensure(GetterNode);
+
+			FCameraObjectConnection Connection;
+			Connection.Source = GetterNode;
+			Connection.Target = Parameter->Target_DEPRECATED;
+			Connection.TargetPropertyName = Parameter->TargetPropertyName_DEPRECATED;
+
+			Connections.Connections.Add(Connection);
+			bDidModify = true;
+
+			Parameter->Target_DEPRECATED = nullptr;
+			Parameter->TargetPropertyName_DEPRECATED = NAME_None;
+		}
+	}
+
+	if (bDidModify)
+	{
+		Modify();
+	}
+}
+
+#endif  // WITH_EDITORONLY_DATA
 

@@ -3,7 +3,7 @@
 #include "Editors/CameraNodeGraphDragDropOp.h"
 
 #include "Core/CameraRigAsset.h"
-#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraObjectGraphSchemaBase.h"
 #include "GraphEditor.h"
 #include "ScopedTransaction.h"
 
@@ -21,18 +21,8 @@ FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDragOver(TSharedPtr<
 {
 	if (InterfaceParameter)
 	{
-		if (!InterfaceParameter->bHasGraphNode)
-		{
-			const FSlateBrush* OKIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.OK"));
-			SetToolTip(LOCTEXT("OnDragOver_Success", "Add interface parameter"), OKIcon);
-		}
-		else
-		{
-			const FSlateBrush* ErrorIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.Error"));
-			SetToolTip(
-					LOCTEXT("OnDragOver_Error", "This interface parameter is already in the graph"),
-					ErrorIcon);
-		}
+		const FSlateBrush* OKIcon = FAppStyle::GetBrush(TEXT("Graph.ConnectorFeedback.OK"));
+		SetToolTip(LOCTEXT("OnDragOver_Success", "Add interface parameter getter"), OKIcon);
 	}
 
 	return FReply::Handled();
@@ -40,7 +30,7 @@ FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDragOver(TSharedPtr<
 
 FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FSlateCompatVector2f& NewLocation)
 {
-	if (!InterfaceParameter || InterfaceParameter->bHasGraphNode)
+	if (!InterfaceParameter)
 	{
 		return FReply::Handled();
 	}
@@ -51,7 +41,7 @@ FReply FCameraNodeGraphInterfaceParameterDragDropOp::ExecuteDrop(TSharedPtr<SGra
 
 	GraphEditor->ClearSelectionSet();
 
-	FCameraNodeGraphSchemaAction_AddInterfaceParameterNode Action;
+	FCameraObjectGraphSchemaAction_AddInterfaceParameterGetterNode Action;
 	Action.InterfaceParameter = InterfaceParameter;
 	UEdGraphNode* NewNode = Action.PerformAction(Graph, nullptr, NewLocation, false);
 	GraphEditor->SetNodeSelection(NewNode, true);

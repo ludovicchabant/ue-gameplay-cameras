@@ -10,51 +10,39 @@
 
 #include "CameraObjectInterface.generated.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraNode;
 struct FCameraContextDataDefinition;
+struct FCameraObjectInterfaceParameterDefinition;
 struct FCameraVariableDefinition;
 
 /**
  * Base class for interface parameters on a camera rig asset.
  */
-UCLASS(MinimalAPI, meta=(ObjectTreeGraphSelfPinDirection="Output"))
+UCLASS(MinimalAPI)
 class UCameraObjectInterfaceParameterBase 
 	: public UObject
-	, public IObjectTreeGraphObject
 {
 	GENERATED_BODY()
 
 public:
 
 	/** The exposed name for this parameter. */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY(EditAnywhere, Category="Camera")
 	FString InterfaceParameterName;
 
-	/** The camera node this parameter is connected to. */
-	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
-	TObjectPtr<UCameraNode> Target;
-
-	/**
-	 * The name of the property this parameter is connected to on the target camera node.
-	 * This may be an actual UObject property, but it may be something else, like the name
-	 * of an interface parameter on a nested camera rig, or the name of a Blueprint property
-	 * on the evaluator class of a Blueprint camera node.
-	 */
-	UPROPERTY()
-	FName TargetPropertyName;
-
-#if WITH_EDITORONLY_DATA
-
-	/** Whether this parameter has been added to the node graph in the editor. */
-	UPROPERTY()
-	bool bHasGraphNode = false;
-
-#endif  // WITH_EDITORONLY_DATA
+	/** Whether to show this parameter on prefab nodes, references, components, etc. */
+	UPROPERTY(EditAnywhere, Category="Visibility")
+	bool bIsVisible = true;
 
 public:
 
 	/** Gets this parameter's unique ID. */
 	const FGuid& GetGuid() const { return Guid; }
+
+	/** Gets the parameter definition. */
+	virtual void GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const {}
 
 protected:
 
@@ -64,23 +52,28 @@ protected:
 
 protected:
 
-	// IObjectTreeGraphObject interface.
-#if WITH_EDITOR
-	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
-	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
-#endif
-
 	// UObject interface.
 	virtual void PostLoad() override;
 	virtual void PostInitProperties() override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 
-private:
+public:
+
+	// Deprecated
+
+	UPROPERTY(meta=(ObjectTreeGraphHidden=true))
+	TObjectPtr<UCameraNode> Target_DEPRECATED;
+
+	UPROPERTY()
+	FName TargetPropertyName_DEPRECATED;
 
 #if WITH_EDITORONLY_DATA
 
 	UPROPERTY()
-	FIntVector2 GraphNodePos = FIntVector2::ZeroValue;
+	FIntVector2 GraphNodePos_DEPRECATED = FIntVector2::ZeroValue;
+
+	UPROPERTY()
+	bool bHasGraphNode_DEPRECATED = false;
 
 #endif  // WITH_EDITORONLY_DATA
 };
@@ -111,7 +104,7 @@ public:
 	 * each of their values will be blended in a first evaluation pass, and then
 	 * both camera rigs will evaluate with the same blended value.
 	 */
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category="Blending")
 	bool bIsPreBlended = false;
 
 	// Built on save/cook.
@@ -134,6 +127,9 @@ public:
 #if WITH_EDITORONLY_DATA
 	GAMEPLAYCAMERAS_API FString GetVariableName() const;
 #endif
+
+	// UCameraObjectInterfaceParameterBase interface.
+	virtual void GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const override;
 };
 
 UCLASS(MinimalAPI)
@@ -169,6 +165,9 @@ public:
 #if WITH_EDITORONLY_DATA
 	GAMEPLAYCAMERAS_API FString GetDataName() const;
 #endif
+
+	// UCameraObjectInterfaceParameterBase interface.
+	virtual void GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const override;
 };
 
 /**
@@ -215,4 +214,41 @@ private:
 	UPROPERTY()
 	FString DisplayName_DEPRECATED;
 };
+
+/**
+ * Getter object for adding a camera parameter to a camera node graph.
+ */
+UCLASS(MinimalAPI, meta=(ObjectTreeGraphSelfPinDirection="Output"))
+class UCameraObjectInterfaceParameterGetter
+	: public UObject
+	, public IObjectTreeGraphObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The Guid of the parameter to get. */
+	UPROPERTY()
+	FGuid ParameterGuid;
+
+	/** The location of this node in the graph. */
+	UPROPERTY()
+	FIntVector2 GraphNodePos = FIntVector2::ZeroValue;
+
+public:
+
+	UE_API UCameraObjectInterfaceParameterBase* GetInterfaceParameter() const;
+
+	UE_API FString GetInterfaceParameterName() const;
+	
+protected:
+
+	// IObjectTreeGraphObject interface.
+#if WITH_EDITOR
+	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+#endif
+};
+
+#undef UE_API
 

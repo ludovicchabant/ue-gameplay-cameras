@@ -876,7 +876,10 @@ void UObjectTreeGraphSchema::ApplyConnection(UEdGraphPin* A, UEdGraphPin* B) con
 		ValuePin = B;
 	}
 
-	checkf(PropertyPin && ValuePin, TEXT("Invalid pins passed for setting property values."));
+	if (!ensureMsgf(PropertyPin && ValuePin, TEXT("Invalid pins passed for setting property values.")))
+	{
+		return;
+	}
 
 	UObjectTreeGraphNode* PropertyNode = CastChecked<UObjectTreeGraphNode>(PropertyPin->GetOwningNode());
 	UObjectTreeGraphNode* ValueNode = CastChecked<UObjectTreeGraphNode>(ValuePin->GetOwningNode());
@@ -960,7 +963,10 @@ void UObjectTreeGraphSchema::ApplyDisconnection(UEdGraphPin* TargetPin) const
 	{
 		TargetPin = TargetPin->LinkedTo[0];
 	}
-	check(TargetPin->PinType.PinCategory == PC_Property);
+	if (!ensure(TargetPin->PinType.PinCategory == PC_Property))
+	{
+		return;
+	}
 
 	UObjectTreeGraphNode* PropertyNode = Cast<UObjectTreeGraphNode>(TargetPin->GetOwningNode());
 	check(PropertyNode);

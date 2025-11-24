@@ -151,6 +151,11 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 
 	for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraObject->GetParameterDefinitions())
 	{
+		if (!Definition.bIsVisible)
+		{
+			continue;
+		}
+
 		const FPropertyBagPropertyDesc* PropertyDesc = ParametersStruct->FindPropertyDescByID(Definition.ParameterGuid);
 		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
 		{

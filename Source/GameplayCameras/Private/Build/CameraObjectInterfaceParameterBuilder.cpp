@@ -42,12 +42,7 @@ void FCameraObjectInterfaceParameterBuilder::BuildParameterDefinitions()
 		if (BlendableParameter && BlendableParameter->PrivateVariableID)
 		{
 			FCameraObjectInterfaceParameterDefinition Definition;
-			Definition.ParameterName = FName(BlendableParameter->InterfaceParameterName);
-			Definition.ParameterGuid = BlendableParameter->GetGuid();
-			Definition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
-			Definition.VariableID = BlendableParameter->PrivateVariableID;
-			Definition.VariableType = BlendableParameter->ParameterType;
-			Definition.BlendableStructType = BlendableParameter->BlendableStructType;
+			BlendableParameter->GetParameterDefinition(Definition);
 			ParameterDefinitions.Add(Definition);
 		}
 	}
@@ -57,13 +52,7 @@ void FCameraObjectInterfaceParameterBuilder::BuildParameterDefinitions()
 		if (DataParameter && DataParameter->PrivateDataID)
 		{
 			FCameraObjectInterfaceParameterDefinition Definition;
-			Definition.ParameterName = FName(DataParameter->InterfaceParameterName);
-			Definition.ParameterGuid = DataParameter->GetGuid();
-			Definition.ParameterType = ECameraObjectInterfaceParameterType::Data;
-			Definition.DataID = DataParameter->PrivateDataID;
-			Definition.DataType = DataParameter->DataType;
-			Definition.DataContainerType = DataParameter->DataContainerType;
-			Definition.DataTypeObject = DataParameter->DataTypeObject;
+			DataParameter->GetParameterDefinition(Definition);
 			ParameterDefinitions.Add(Definition);
 		}
 	}
@@ -77,21 +66,14 @@ void FCameraObjectInterfaceParameterBuilder::BuildParameterDefinitions()
 
 void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters()
 {
-	FInstancedPropertyBag DefaultParameters;
-	BuildDefaultParameters(CameraObject, DefaultParameters);
-	if (!DefaultParameters.Identical(&CameraObject->DefaultParameters, 0))
-	{
-		CameraObject->Modify();
-		CameraObject->DefaultParameters = DefaultParameters;
-	}
-}
-
-void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& OutPropertyBag)
-{
 	TArray<FPropertyBagPropertyDesc> DefaultParameterProperties;
 	AppendDefaultParameterProperties(CameraObject, DefaultParameterProperties);
-	OutPropertyBag.AddProperties(DefaultParameterProperties);
-	SetDefaultParameterValues(CameraObject, OutPropertyBag);
+	const UPropertyBag* DefaultParametersStruct = UPropertyBag::GetOrCreateFromDescs(DefaultParameterProperties);
+	if (CameraObject->DefaultParameters.GetPropertyBagStruct() != DefaultParametersStruct)
+	{
+		CameraObject->Modify();
+		CameraObject->DefaultParameters.MigrateToNewBagStruct(DefaultParametersStruct);
+	}
 }
 
 void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties)
@@ -183,6 +165,10 @@ void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(TC
 			NewProperty.ID = Definition.ParameterGuid;
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 			NewProperty.PropertyFlags |= PropertyFlags;
+			if (!Definition.bIsVisible)
+			{
+				NewProperty.PropertyFlags &= ~CPF_Edit;
+			}
 #endif
 
 			OutProperties.Add(NewProperty);
@@ -190,107 +176,159 @@ void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(TC
 	}
 }
 
-void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(const UBaseCameraObject* CameraObject, FInstancedPropertyBag& PropertyBag)
+bool FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(UBaseCameraObject* CameraObject, const FCameraObjectInterfaceParameterDefinition& ParameterDefinition, UCameraNode* TargetNode, FName TargetPropertyName, bool bAddParameterIfMissing)
 {
-	uint8* PropertyBagValue = PropertyBag.GetMutableValue().GetMemory();
-	const UPropertyBag* PropertyBagStruct = PropertyBag.GetPropertyBagStruct();
-	if (!ensure(PropertyBagValue && PropertyBagStruct))
+	if (!ensure(CameraObject && TargetNode && TargetPropertyName != NAME_None))
 	{
-		return;
+		return false;
 	}
 
-	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraObject->Interface.BlendableParameters)
+	// Start by finding the source value, i.e. the value of the camera node property being exposed as a parameter.
+	const void* RawSourceValuePtr = nullptr;
+
+	// First check if the value is found on a custom parameter.
+	if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(TargetNode))
 	{
-		if (!ensure(BlendableParameter))
+		FCustomCameraNodeParameterInfos CustomParameters;
+		CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
+
+		FCustomCameraNodeParameterInfos::FBlendableParameterInfo* CustomBlendableParameter = 
+			CustomParameters.BlendableParameters.FindByPredicate(
+					[TargetPropertyName](FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
+					{
+						return CustomParameter.ParameterName == TargetPropertyName;
+					});
+		if (CustomBlendableParameter)
 		{
-			continue;
+			RawSourceValuePtr = CustomBlendableParameter->DefaultValue;
+			goto DoneSearchingRawSourceValuePtr;
 		}
 
-		UCameraNode* CameraNode = BlendableParameter->Target;
-		if (!CameraNode)
+		FCustomCameraNodeParameterInfos::FDataParameterInfo* CustomDataParameter =
+			CustomParameters.DataParameters.FindByPredicate(
+					[TargetPropertyName](FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
+					{
+						return CustomParameter.ParameterName == TargetPropertyName;
+					});
+		if (CustomDataParameter)
 		{
-			continue;
+			RawSourceValuePtr = CustomDataParameter->DefaultValue;
+			goto DoneSearchingRawSourceValuePtr;
 		}
+	}
 
-		const void* RawSourceValuePtr = nullptr;
-
-		// First check if the value is found on a custom parameter.
-		if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNode))
+	// If not found, check on a reflected UObject property.
+	// Blendable parameters would be hooked to a camera parameter struct, or a blendable struct.
+	// Data parameters could be hooked up to anything.
+	if (!RawSourceValuePtr)
+	{
+		const UClass* TargetClass = TargetNode->GetClass();
+		FProperty* TargetProperty = TargetClass->FindPropertyByName(TargetPropertyName);
+		FStructProperty* StructProperty = CastField<FStructProperty>(TargetProperty);
+		if (StructProperty && ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 		{
-			FCustomCameraNodeParameterInfos CustomParameters;
-			CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
-
-			FCustomCameraNodeParameterInfos::FBlendableParameterInfo* TargetCustomParameter = 
-				CustomParameters.BlendableParameters.FindByPredicate(
-						[BlendableParameter](FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
-						{
-							return CustomParameter.ParameterName == BlendableParameter->TargetPropertyName;
-						});
-			if (TargetCustomParameter)
+			switch (ParameterDefinition.VariableType)
 			{
-				RawSourceValuePtr = TargetCustomParameter->DefaultValue;
-			}
-		}
-
-		// If not found, check on a reflected UObject property.
-		if (!RawSourceValuePtr)
-		{
-			const UClass* TargetClass = CameraNode->GetClass();
-			FStructProperty* StructProperty = CastField<FStructProperty>(
-					TargetClass->FindPropertyByName(BlendableParameter->TargetPropertyName));
-			if (StructProperty)
-			{
-				switch (BlendableParameter->ParameterType)
-				{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-					case ECameraVariableType::ValueName:\
+				case ECameraVariableType::ValueName:\
+					{\
+						using CameraParameterType = F##ValueName##CameraParameter;\
+						using CameraVariableReferenceType = F##ValueName##CameraVariableReference;\
+						if (StructProperty->Struct == CameraParameterType::StaticStruct())\
 						{\
-							using CameraParameterType = F##ValueName##CameraParameter;\
-							using CameraVariableReferenceType = F##ValueName##CameraVariableReference;\
-							if (StructProperty->Struct == CameraParameterType::StaticStruct())\
-							{\
-								CameraParameterType* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<CameraParameterType>(CameraNode);\
-								RawSourceValuePtr = static_cast<void*>(&CameraParameterPtr->Value);\
-							}\
-							else if (StructProperty->Struct == CameraVariableReferenceType::StaticStruct())\
-							{\
-								CameraVariableReferenceType* VariableReferencePtr = StructProperty->ContainerPtrToValuePtr<CameraVariableReferenceType>(CameraNode);\
-								RawSourceValuePtr = VariableReferencePtr->Variable ? VariableReferencePtr->Variable->GetDefaultValuePtr() : nullptr;\
-							}\
+							CameraParameterType* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<CameraParameterType>(TargetNode);\
+							RawSourceValuePtr = static_cast<void*>(&CameraParameterPtr->Value);\
 						}\
-						break;
-					UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+						else if (StructProperty->Struct == CameraVariableReferenceType::StaticStruct())\
+						{\
+							CameraVariableReferenceType* VariableReferencePtr = StructProperty->ContainerPtrToValuePtr<CameraVariableReferenceType>(TargetNode);\
+							RawSourceValuePtr = VariableReferencePtr->Variable ? VariableReferencePtr->Variable->GetDefaultValuePtr() : nullptr;\
+						}\
+					}\
+					break;
+				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
-					case ECameraVariableType::BlendableStruct:
-						{
-							RawSourceValuePtr = StructProperty->ContainerPtrToValuePtr<void>(CameraNode);
-						}
-						break;
-				}
+				case ECameraVariableType::BlendableStruct:
+					{
+						RawSourceValuePtr = StructProperty->ContainerPtrToValuePtr<void>(TargetNode);
+					}
+					break;
 			}
 		}
-
-		if (!RawSourceValuePtr)
+		else if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
-			continue;
+			RawSourceValuePtr = TargetProperty->ContainerPtrToValuePtr<void>(TargetNode);
+		}
+	}
+
+DoneSearchingRawSourceValuePtr:
+
+	if (!RawSourceValuePtr)
+	{
+		return false;
+	}
+
+	// Second, find the corresponding property on the default parameters' property bag. We will write the source 
+	// value to this property. If we don't find it, either bail out, or add it to the property bag structure and 
+	// continue.
+	FInstancedPropertyBag& DefaultParameters = CameraObject->DefaultParameters;
+	const UPropertyBag* PropertyBagStruct = DefaultParameters.GetPropertyBagStruct();
+	if (!PropertyBagStruct)
+	{
+		if (!bAddParameterIfMissing)
+		{
+			return false;
+		}
+		// else, we will (re)create the property bag struct with the new property below.
+	}
+
+	const FPropertyBagPropertyDesc* PropertyDesc = PropertyBagStruct ? 
+		PropertyBagStruct->FindPropertyDescByID(ParameterDefinition.ParameterGuid) :
+		nullptr;
+	if (!PropertyDesc)
+	{
+		if (!bAddParameterIfMissing)
+		{
+			return false;
 		}
 
-		// Find the corresponding property on the default parameters' property bag.
-		const FPropertyBagPropertyDesc* PropertyDesc = PropertyBagStruct->FindPropertyDescByID(BlendableParameter->GetGuid());
-		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
+		TArray<FPropertyBagPropertyDesc> NewProperties;
+		TConstArrayView<FCameraObjectInterfaceParameterDefinition> NewParameterDefinitions = MakeConstArrayView(&ParameterDefinition, 1);
+		AppendDefaultParameterProperties(NewParameterDefinitions, NewProperties);
+		const EPropertyBagAlterationResult Result = DefaultParameters.AddProperties(NewProperties, false);
+		if (!ensure(Result == EPropertyBagAlterationResult::Success))
 		{
-			continue;
+			return false;
 		}
 
-		// This property should be a structure: either a camera parameter for all the standard blendable types,
-		// or a blendable structure.
+		// Re-query the struct, since it changed when we added the property.
+		PropertyBagStruct = DefaultParameters.GetPropertyBagStruct();
+		PropertyDesc = PropertyBagStruct->FindPropertyDescByID(ParameterDefinition.ParameterGuid);
+	}
+
+	if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
+	{
+		return false;
+	}
+
+	uint8* PropertyBagValue = DefaultParameters.GetMutableValue().GetMemory();
+	if (!ensure(PropertyBagValue && PropertyBagStruct))
+	{
+		return false;
+	}
+
+	// The given property should be a structure for blendable parameters (either a camera parameter or a blendable 
+	// structure). For data parameters, it can be anything we support. Now do the value copying!
+	bool bSuccess = true;
+	if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+	{
 		const FStructProperty* DefaultParameterProperty = CastField<FStructProperty>(PropertyDesc->CachedProperty);
 		if (!ensure(DefaultParameterProperty))
 		{
-			continue;
+			return false;
 		}
 
-		switch (BlendableParameter->ParameterType)
+		switch (ParameterDefinition.VariableType)
 		{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 			case ECameraVariableType::ValueName:\
@@ -307,109 +345,64 @@ void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValues(const UBa
 			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 			case ECameraVariableType::BlendableStruct:
-				if (ensure(DefaultParameterProperty->Struct == BlendableParameter->BlendableStructType))
+				if (ensure(DefaultParameterProperty->Struct == ParameterDefinition.BlendableStructType))
 				{
 					void* RawDestinationValuePtr = DefaultParameterProperty->ContainerPtrToValuePtr<void>(PropertyBagValue);
-					BlendableParameter->BlendableStructType->CopyScriptStruct(RawDestinationValuePtr, RawSourceValuePtr);
+					ParameterDefinition.BlendableStructType->CopyScriptStruct(RawDestinationValuePtr, RawSourceValuePtr);
 				}
+				break;
+			default:
+				ensureMsgf(false, TEXT("Unsupported or unknown variable type!"));
+				bSuccess = false;
 				break;
 		}
 	}
-
-	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraObject->Interface.DataParameters)
+	else if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 	{
-		if (!ensure(DataParameter))
-		{
-			continue;
-		}
-
-		UCameraNode* CameraNode = DataParameter->Target;
-		if (!CameraNode)
-		{
-			continue;
-		}
-
-		const uint8* RawSourceValuePtr = nullptr;
-
-		if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNode))
-		{
-			FCustomCameraNodeParameterInfos CustomParameters;
-			CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
-
-			FCustomCameraNodeParameterInfos::FDataParameterInfo* TargetCustomParameter = 
-				CustomParameters.DataParameters.FindByPredicate(
-						[DataParameter](FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
-						{
-							return CustomParameter.ParameterName == DataParameter->TargetPropertyName;
-						});
-			if (TargetCustomParameter)
-			{
-				RawSourceValuePtr = TargetCustomParameter->DefaultValue;
-			}
-		}
-
-		if (!RawSourceValuePtr)
-		{
-			const UClass* TargetClass = DataParameter->Target->GetClass();
-			FProperty* Property = TargetClass->FindPropertyByName(DataParameter->TargetPropertyName);
-			if (Property)
-			{
-				RawSourceValuePtr = (uint8*)Property->ContainerPtrToValuePtr<void>(DataParameter->Target);
-			}
-		}
-
-		if (!ensure(RawSourceValuePtr))
-		{
-			continue;
-		}
-
-		const FPropertyBagPropertyDesc* PropertyDesc = PropertyBagStruct->FindPropertyDescByID(DataParameter->GetGuid());
-		if (!ensure(PropertyDesc && PropertyDesc->CachedProperty))
-		{
-			continue;
-		}
-
-		if (DataParameter->DataContainerType == ECameraContextDataContainerType::None)
+		if (ParameterDefinition.DataContainerType == ECameraContextDataContainerType::None)
 		{
 			void* RawDestinationValuePtr = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(PropertyBagValue);
-			if (ensure(RawDestinationValuePtr))
+			if (!ensure(RawDestinationValuePtr))
 			{
-				SetDefaultParameterValue(DataParameter, RawDestinationValuePtr, RawSourceValuePtr);
+				return false;
+			}
+			
+			switch (ParameterDefinition.DataType)
+			{
+				case ECameraContextDataType::Name:
+					*((FName*)RawDestinationValuePtr) = *((FName*)RawSourceValuePtr);
+					break;
+				case ECameraContextDataType::String:
+					*((FString*)RawDestinationValuePtr) = *((FString*)RawSourceValuePtr);
+					break;
+				case ECameraContextDataType::Enum:
+					*((uint8*)RawDestinationValuePtr) = *((uint8*)RawSourceValuePtr);
+					break;
+				case ECameraContextDataType::Struct:
+					{
+						const UScriptStruct* StructType = CastChecked<const UScriptStruct>(ParameterDefinition.DataTypeObject);
+						StructType->CopyScriptStruct(RawDestinationValuePtr, RawSourceValuePtr);
+					}
+					break;
+				case ECameraContextDataType::Object:
+					*((FObjectPtr*)RawDestinationValuePtr) = *((FObjectPtr*)RawSourceValuePtr);
+					break;
+				case ECameraContextDataType::Class:
+					*((FObjectPtr*)RawDestinationValuePtr) = *((FObjectPtr*)RawSourceValuePtr);
+					break;
+				default:
+					ensureMsgf(false, TEXT("Unsupported or unknown data type!"));
+					bSuccess = false;
+					break;
 			}
 		}
-		else if (DataParameter->DataContainerType == ECameraContextDataContainerType::Array)
+		else if (ParameterDefinition.DataContainerType == ECameraContextDataContainerType::Array)
 		{
 			// Array properties are empty by default.
 		}
 	}
-}
 
-void FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(const UCameraObjectInterfaceDataParameter* DataParameter, void* DestValuePtr, const void* SrcValuePtr)
-{
-	switch (DataParameter->DataType)
-	{
-		case ECameraContextDataType::Name:
-			*((FName*)DestValuePtr) = *((FName*)SrcValuePtr);
-			break;
-		case ECameraContextDataType::String:
-			*((FString*)DestValuePtr) = *((FString*)SrcValuePtr);
-			break;
-		case ECameraContextDataType::Enum:
-			*((uint8*)DestValuePtr) = *((uint8*)SrcValuePtr);
-			break;
-		case ECameraContextDataType::Struct:
-			{
-				const UScriptStruct* StructType = CastChecked<const UScriptStruct>(DataParameter->DataTypeObject);
-				StructType->CopyScriptStruct(DestValuePtr, SrcValuePtr);
-			}
-			break;
-		case ECameraContextDataType::Object:
-			*((FObjectPtr*)DestValuePtr) = *((FObjectPtr*)SrcValuePtr);
-			break;
-		case ECameraContextDataType::Class:
-			*((FObjectPtr*)DestValuePtr) = *((FObjectPtr*)SrcValuePtr);
-			break;
-	}
+	return bSuccess;
 }
 
 #if UE_VERSION_OLDER_THAN(5,8,0)

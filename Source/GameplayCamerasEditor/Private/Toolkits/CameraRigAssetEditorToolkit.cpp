@@ -223,8 +223,9 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
 
-	// Hook-up the selection of interface parameters.
+	// Hook-up interface parameters events.
 	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
+	InterfaceParametersToolkit->OnSearchInterfaceParameterNodes().AddSP(this, &FCameraRigAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes);
 }
 
 void FCameraRigAssetEditorToolkit::RegisterToolbar()
@@ -333,7 +334,14 @@ void FCameraRigAssetEditorToolkit::PostRegenerateMenusAndToolbars()
 
 void FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object)
 {
-	OnJumpToObject(Object, NAME_None);
+	DetailsView->SetObject(Object);
+}
+
+void FCameraRigAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes(UCameraObjectInterfaceParameterBase* Object)
+{
+	TabManager->TryInvokeTab(SearchTabId);
+
+	SearchWidget->Search(Object->InterfaceParameterName);
 }
 
 void FCameraRigAssetEditorToolkit::OnBuild()
@@ -354,6 +362,8 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	{
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
+
+	DetailsView->RequestForceRefresh();
 
 	FCameraRigPackages BuiltPackages;
 	CameraRigAsset->GatherPackages(BuiltPackages);

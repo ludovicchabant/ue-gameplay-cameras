@@ -7,7 +7,7 @@
 class UCameraObjectInterfaceParameterGraphNode;
 
 /**
- * Custom graph editor node widget for a camera rig parameter node.
+ * Custom graph editor node widget for a camera rig parameter getter node.
  */
 class SCameraObjectInterfaceParameterGraphNode : public SObjectTreeGraphNode
 {

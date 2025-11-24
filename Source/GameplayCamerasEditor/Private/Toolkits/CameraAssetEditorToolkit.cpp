@@ -366,6 +366,8 @@ void FCameraAssetEditorToolkit::OnBuild()
 		TabManager->TryInvokeTab(MessagesTabId);
 	}
 
+	DetailsView->RequestForceRefresh();
+
 	for (UCameraRigAsset* CameraRigAsset : UsageInfo.CameraRigs)
 	{
 		FCameraRigPackages BuiltPackages;

@@ -19,6 +19,7 @@
 #include "ComponentVisualizers/GameplayCameraComponentVisualizer.h"
 #include "Core/CameraVariableCollection.h"
 #include "Customizations/CameraAssetReferenceDetailsCustomization.h"
+#include "Customizations/CameraObjectInterfaceParameterDetailsCustomization.h"
 #include "Customizations/CameraParameterDetailsCustomizations.h"
 #include "Customizations/CameraRigAssetReferenceDetailsCustomization.h"
 #include "Customizations/CameraShakeAssetReferenceDetailsCustomization.h"
@@ -492,6 +493,10 @@ private:
 				"FilmbackCameraNode", 
 				FOnGetDetailCustomizationInstance::CreateStatic(
 					&FFilmbackCameraNodeDetailsCustomization::MakeInstance));
+		PropertyEditorModule.RegisterCustomClassLayout(
+				"CameraObjectInterfaceParameterBase",
+				FOnGetDetailCustomizationInstance::CreateStatic(
+					&FCameraObjectInterfaceParameterDetailsCustomization::MakeInstance));
 	}
 
 	void UnregisterDetailsCustomizations()
@@ -513,6 +518,7 @@ private:
 			PropertyEditorModule->UnregisterCustomPropertyTypeLayout("CameraShakeAssetReference");
 
 			PropertyEditorModule->UnregisterCustomClassLayout("FilmbackCameraNode");
+			PropertyEditorModule->UnregisterCustomClassLayout("CameraObjectInterfaceParameterBase");
 		}
 	}
 

@@ -17,24 +17,30 @@ UCameraShakeCameraNodeGraphSchema::UCameraShakeCameraNodeGraphSchema(const FObje
 {
 }
 
-FObjectTreeGraphConfig UCameraShakeCameraNodeGraphSchema::BuildGraphConfig() const
+void UCameraShakeCameraNodeGraphSchema::CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const
 {
+	using namespace UE::Cameras;
+
+	// Only get the graph objects from the root interface.
+	CollectAllConnectableObjectsFromRootInterface(InGraph, OutAllObjects, false);
+}
+
+void UCameraShakeCameraNodeGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const
+{
+	Super::OnBuildGraphConfig(InOutGraphConfig);
+
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 
-	FObjectTreeGraphConfig GraphConfig;
-
-	BuildBaseGraphConfig(GraphConfig);
-
-	GraphConfig.ConnectableObjectClasses.Add(UShakeCameraNode::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(USimpleFixedTimeBlendCameraNode::StaticClass());
-	GraphConfig.ConnectableObjectClasses.Add(UCameraShakeAsset::StaticClass());
-	GraphConfig.ObjectClassConfigs.Emplace(UCameraShakeAsset::StaticClass())
+	InOutGraphConfig.GraphDisplayInfo.PlainName = LOCTEXT("NodeGraphPlainName", "CameraShakeNodes");
+	InOutGraphConfig.GraphDisplayInfo.DisplayName = LOCTEXT("NodeGraphDisplayName", "Camera Shake Nodes");
+	InOutGraphConfig.ConnectableObjectClasses.Add(UShakeCameraNode::StaticClass());
+	InOutGraphConfig.ConnectableObjectClasses.Add(USimpleFixedTimeBlendCameraNode::StaticClass());
+	InOutGraphConfig.ConnectableObjectClasses.Add(UCameraShakeAsset::StaticClass());
+	InOutGraphConfig.ObjectClassConfigs.Emplace(UCameraShakeAsset::StaticClass())
 		.OnlyAsRoot()
 		.HasSelfPin(false)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraShakeAssetTitleColor);
-
-	return GraphConfig;
 }
 
 #undef LOCTEXT_NAMESPACE

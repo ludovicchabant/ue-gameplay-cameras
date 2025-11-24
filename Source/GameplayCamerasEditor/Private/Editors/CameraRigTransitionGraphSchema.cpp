@@ -13,6 +13,8 @@
 
 void UCameraRigTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const
 {
+	Super::OnBuildGraphConfig(InOutGraphConfig);
+
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 
 	InOutGraphConfig.GraphName = UCameraRigAsset::TransitionsGraphName;

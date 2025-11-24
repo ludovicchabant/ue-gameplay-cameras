@@ -8,7 +8,7 @@
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "EdGraph/EdGraphPin.h"
-#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraObjectGraphSchemaBase.h"
 #include "Editors/SCameraNodeGraphNode.h"
 #include "GameplayCamerasDelegates.h"
 #include "ToolMenus.h"
@@ -71,7 +71,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 			if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
 			{\
-				PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraParameter;\
+				PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraParameter;\
 				PinType.PinSubCategory = UEnum::GetValueAsName(ECameraVariableType::ValueName);\
 				PinType.PinSubCategoryObject = F##ValueName##CameraParameter::StaticStruct();\
 				UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, PropertyName);\
@@ -81,7 +81,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 			}\
 			if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 			{\
-				PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraVariableReference;\
+				PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraVariableReference;\
 				PinType.PinSubCategory = UEnum::GetValueAsName(ECameraVariableType::ValueName);\
 				PinType.PinSubCategoryObject = F##ValueName##CameraVariableReference::StaticStruct();\
 				UEdGraphPin* VariableReferencePin = CreatePin(EGPD_Input, PinType, PropertyName);\
@@ -142,7 +142,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 
 			if (bGotValidDataProperty)
 			{
-				PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraContextData;
+				PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraContextData;
 				UEdGraphPin* ContextDataPin = CreatePin(EGPD_Input, PinType, PropertyName);
 				ContextDataPin->PinFriendlyName = PinFriendlyName;
 				ContextDataPin->PinToolTip = PinToolTip;
@@ -165,7 +165,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 		for (const FCustomCameraNodeBlendableParameter& BlendableParameter : CustomBlendableParameters)
 		{
 			FEdGraphPinType PinType;
-			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraParameter;
+			PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraParameter;
 			PinType.PinSubCategory = VariableTypeEnum->GetValueAsName(BlendableParameter.ParameterType);
 
 			switch (BlendableParameter.ParameterType)
@@ -194,7 +194,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 		for (const FCustomCameraNodeDataParameter& DataParameter : CustomDataParameters)
 		{
 			FEdGraphPinType PinType;
-			PinType.PinCategory = UCameraNodeGraphSchema::PC_CameraContextData;
+			PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraContextData;
 			PinType.PinSubCategory = DataTypeEnum->GetNameByValue((int64)DataParameter.ParameterType);
 			PinType.PinSubCategoryObject = const_cast<UObject*>(DataParameter.ParameterTypeObject.Get());
 

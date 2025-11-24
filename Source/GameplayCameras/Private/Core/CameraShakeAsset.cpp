@@ -38,6 +38,16 @@ void UCameraShakeAsset::DirtyBuildStatus()
 	BuildStatus = ECameraBuildStatus::Dirty;
 }
 
+void UCameraShakeAsset::PostLoad()
+{
+	Super::PostLoad();
+
+#if WITH_EDITORONLY_DATA
+	// Upgrade the old parameter connections.
+	UpgradeInterfaceConnections(this, NAME_None);
+#endif
+}
+
 void UCameraShakeAsset::PreSave(FObjectPreSaveContext ObjectSaveContext)
 {
 #if WITH_EDITOR

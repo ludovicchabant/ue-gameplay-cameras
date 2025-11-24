@@ -2,6 +2,7 @@
 
 #include "Build/CameraObjectInterfaceBuilder.h"
 
+#include "Build/CameraBuildLog.h"
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeHierarchy.h"
@@ -78,6 +79,7 @@ struct FInterfaceParameterBindingBuilder
 	template<typename CameraParameterOrVariableReferenceType>
 	void SetCameraParameterOrVariableReferenceOverride(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter,
+			UCameraNode* TargetNode,
 			FStructProperty* TargetProperty,
 			CameraParameterOrVariableReferenceType* CameraParameterOrVariableReferencePtr)
 	{
@@ -85,15 +87,13 @@ struct FInterfaceParameterBindingBuilder
 		using ValueType = typename VariableAssetType::ValueType;
 
 		ensure(BlendableParameter->PrivateVariableID.IsValid());
-		ensure(BlendableParameter->TargetPropertyName == TargetProperty->GetFName());
 
-		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CameraParameterOrVariableReferencePtr);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, TargetNode, TargetProperty->GetFName(), CameraParameterOrVariableReferencePtr);
 		if (!bIsValid)
 		{
 			return;
 		}
 
-		UObject* TargetNode = BlendableParameter->Target;
 		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(TargetProperty->GetFName(), TargetNode);
 		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
 		{
@@ -106,20 +106,21 @@ struct FInterfaceParameterBindingBuilder
 	template<typename VariableAssetType>
 	void SetCustomBlendableParameterOverride(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter,
+			UCameraNode* TargetNode,
+			FName TargetPropertyName,
 			const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
 	{
 		using ValueType = typename VariableAssetType::ValueType;
 
 		ensure(BlendableParameter->PrivateVariableID.IsValid());
-		ensure(BlendableParameter->TargetPropertyName == CustomParameter.ParameterName);
+		ensure(TargetPropertyName == CustomParameter.ParameterName);
 
-		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, TargetNode, TargetPropertyName, CustomParameter);
 		if (!bIsValid)
 		{
 			return;
 		}
 
-		UObject* TargetNode = BlendableParameter->Target;
 		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(CustomParameter.ParameterName, TargetNode);
 		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
 		{
@@ -131,12 +132,14 @@ struct FInterfaceParameterBindingBuilder
 
 	void SetCustomBlendableStructParameterOverride(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter,
+			UCameraNode* TargetNode,
+			FName TargetPropertyName,
 			const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
 	{
 		ensure(BlendableParameter->PrivateVariableID.IsValid());
-		ensure(BlendableParameter->TargetPropertyName == CustomParameter.ParameterName);
+		ensure(TargetPropertyName == CustomParameter.ParameterName);
 
-		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(BlendableParameter, TargetNode, TargetPropertyName, CustomParameter);
 		if (!bIsValid)
 		{
 			return;
@@ -145,14 +148,14 @@ struct FInterfaceParameterBindingBuilder
 		// Also ensure the struct type is compatible.
 		if (CustomParameter.BlendableStructType != BlendableParameter->BlendableStructType)
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"IncompatibleBlendableStructType", 
 							"Invalid interface parameter '{0}', driving property '{1}' on '{2}': expected type {3} but was {4}"),
 						FText::FromString(BlendableParameter->InterfaceParameterName),
-						FText::FromName(BlendableParameter->TargetPropertyName),
-						FText::FromName(BlendableParameter->Target->GetFName()),
+						FText::FromName(TargetPropertyName),
+						FText::FromName(TargetNode->GetFName()),
 #if WITH_EDITORONLY_DATA
 						CustomParameter.BlendableStructType->GetDisplayNameText(),
 						BlendableParameter->BlendableStructType->GetDisplayNameText()
@@ -164,7 +167,6 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		UObject* TargetNode = BlendableParameter->Target;
 		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(CustomParameter.ParameterName, TargetNode);
 		if (PreviousVariableID != BlendableParameter->PrivateVariableID)
 		{
@@ -176,18 +178,18 @@ struct FInterfaceParameterBindingBuilder
 
 	void SetDataContextPropertyOverride(
 			const UCameraObjectInterfaceDataParameter* DataParameter,
+			UCameraNode* TargetNode,
 			FProperty* TargetProperty,
 			FCameraContextDataID* OverrideDataID)
 	{
 		ensure(DataParameter->PrivateDataID);
 
-		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, TargetProperty, OverrideDataID);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, TargetNode, TargetProperty, OverrideDataID);
 		if (!bIsValid)
 		{
 			return;
 		}
 
-		UObject* TargetNode = DataParameter->Target;
 		FCameraContextDataID PreviousDataID = FindOldDrivingDataID(TargetProperty->GetFName(), TargetNode);
 		if (PreviousDataID != DataParameter->PrivateDataID)
 		{
@@ -199,18 +201,19 @@ struct FInterfaceParameterBindingBuilder
 
 	void SetCustomDataParameterOverride(
 			const UCameraObjectInterfaceDataParameter* DataParameter,
+			UCameraNode* TargetNode,
+			FName TargetPropertyName,
 			const FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
 	{
 		ensure(DataParameter->PrivateDataID);
-		ensure(DataParameter->TargetPropertyName == CustomParameter.ParameterName);
+		ensure(TargetPropertyName == CustomParameter.ParameterName);
 
-		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, CustomParameter);
+		const bool bIsValid = CheckIfParameterCanBeOverridden(DataParameter, TargetNode, TargetPropertyName, CustomParameter);
 		if (!bIsValid)
 		{
 			return;
 		}
 
-		UObject* TargetNode = DataParameter->Target;
 		FCameraContextDataID PreviousDataID = FindOldDrivingDataID(CustomParameter.ParameterName, TargetNode);
 		if (PreviousDataID != DataParameter->PrivateDataID)
 		{
@@ -245,17 +248,19 @@ private:
 	template<typename CameraParameterOrVariableReferenceType>
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter, 
+			UCameraNode* TargetNode,
+			const FName TargetPropertyName,
 			CameraParameterOrVariableReferenceType* CameraParameterOrVariableReference)
 	{
 		if (!MatchesVariableType<CameraParameterOrVariableReferenceType>(BlendableParameter->ParameterType))
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterTypeMismatch",
 							"Camera node parameter '{0}.{1}' of type {2} is not compatible with camera rig parameter '{3}' of type {4}"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
-						FText::FromName(BlendableParameter->TargetPropertyName),
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName),
 						GetVariableTypeAsText<CameraParameterOrVariableReferenceType>(),
 						FText::FromString(BlendableParameter->InterfaceParameterName),
 						UEnum::GetDisplayValueAsText(BlendableParameter->ParameterType)));
@@ -263,31 +268,33 @@ private:
 		}
 		if (CameraParameterOrVariableReference->Variable != nullptr)
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterDrivenTwice", 
 							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
-						FText::FromName(BlendableParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 
-		return CheckIfParameterCanBeOverridden(BlendableParameter, &CameraParameterOrVariableReference->VariableID);
+		return CheckIfParameterCanBeOverridden(BlendableParameter, TargetNode, TargetPropertyName, &CameraParameterOrVariableReference->VariableID);
 	}
 
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter, 
+			UCameraNode* TargetNode,
+			const FName TargetPropertyName,
 			const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
 	{
 		if (BlendableParameter->ParameterType != CustomParameter.ParameterType)
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterTypeMismatch",
 							"Camera node parameter '{0}.{1}' of type {2} is not compatible with camera rig parameter '{3}' of type {4}"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
+						FText::FromName(TargetNode->GetFName()), 
 						FText::FromName(CustomParameter.ParameterName),
 						UEnum::GetDisplayValueAsText(CustomParameter.ParameterType),
 						FText::FromString(BlendableParameter->InterfaceParameterName),
@@ -296,43 +303,45 @@ private:
 		}
 		if (CustomParameter.OverrideVariable != nullptr)
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterDrivenTwice", 
 							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
-						FText::FromName(BlendableParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 
-		return CheckIfParameterCanBeOverridden(BlendableParameter, CustomParameter.OverrideVariableID);
+		return CheckIfParameterCanBeOverridden(BlendableParameter, TargetNode, TargetPropertyName, CustomParameter.OverrideVariableID);
 	}
 
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceBlendableParameter* BlendableParameter, 
+			UCameraNode* TargetNode,
+			const FName TargetPropertyName,
 			FCameraVariableID* VariableID)
 	{
 		if (!VariableID)
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterMissingOverrideID", 
 							"Camera node parameter '{0}.{1}' cannot be overriden by a parameter"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
-						FText::FromName(BlendableParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 		if (VariableID->IsValid())
 		{
-			ReportError(BlendableParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"BlendableParameterDrivenTwice", 
 							"Camera node parameter '{0}.{1}' is both exposed and driven by a variable!"),
-						FText::FromName(BlendableParameter->Target->GetFName()), 
-						FText::FromName(BlendableParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 		return true;
@@ -340,16 +349,18 @@ private:
 
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceDataParameter* DataParameter,
+			UCameraNode* TargetNode,
+			const FName TargetPropertyName,
 			const FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
 	{
 		if (DataParameter->DataType != CustomParameter.ParameterType)
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterTypeMismatch",
 							"Camera node parameter '{0}.{1}' of type {2} is not compatible with camera rig parameter '{3}' of type {4}"),
-						FText::FromName(DataParameter->Target->GetFName()), 
+						FText::FromName(TargetNode->GetFName()), 
 						FText::FromName(CustomParameter.ParameterName),
 						UEnum::GetDisplayValueAsText(CustomParameter.ParameterType),
 						FText::FromString(DataParameter->InterfaceParameterName),
@@ -358,12 +369,12 @@ private:
 		}
 		if (DataParameter->DataContainerType != CustomParameter.ParameterContainerType)
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterContainerTypeMismatch",
 							"Camera node parameter '{0}.{1}' has a different container type than camera rig parameter '{2}' ({3} vs {4})"),
-						FText::FromName(DataParameter->Target->GetFName()), 
+						FText::FromName(TargetNode->GetFName()), 
 						FText::FromName(CustomParameter.ParameterName),
 						FText::FromString(DataParameter->InterfaceParameterName),
 						UEnum::GetDisplayValueAsText(CustomParameter.ParameterContainerType),
@@ -371,11 +382,12 @@ private:
 			return false;
 		}
 
-		return CheckIfParameterCanBeOverridden(DataParameter, CustomParameter.OverrideDataID);
+		return CheckIfParameterCanBeOverridden(DataParameter, TargetNode, TargetPropertyName, CustomParameter.OverrideDataID);
 	}
 
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceDataParameter* DataParameter,
+			UCameraNode* TargetNode,
 			const FProperty* TargetProperty,
 			FCameraContextDataID* DataID)
 	{
@@ -398,12 +410,12 @@ private:
 		}
 		if (!bDataContainerTypeMatches)
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterContainerTypeMismatch",
 							"Camera node parameter '{0}.{1}' has a different container type than camera rig parameter '{2}' ({3} vs {4})"),
-						FText::FromName(DataParameter->Target->GetFName()), 
+						FText::FromName(TargetNode->GetFName()), 
 						FText::FromName(TargetProperty->GetFName()),
 						FText::FromString(DataParameter->InterfaceParameterName),
 						TargetProperty->GetClass()->GetDisplayNameText(),
@@ -450,12 +462,12 @@ private:
 		}
 		if (!bDataTypeMatches)
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterTypeMismatch",
 							"Camera node parameter '{0}.{1}' of type {2} is not compatible with camera rig parameter '{3}' of type {4}"),
-						FText::FromName(DataParameter->Target->GetFName()), 
+						FText::FromName(TargetNode->GetFName()), 
 						FText::FromName(TargetProperty->GetFName()),
 						TargetProperty->GetClass()->GetDisplayNameText(),
 						FText::FromString(DataParameter->InterfaceParameterName),
@@ -463,33 +475,35 @@ private:
 			return false;
 		}
 
-		return CheckIfParameterCanBeOverridden(DataParameter, DataID);
+		return CheckIfParameterCanBeOverridden(DataParameter, TargetNode, TargetProperty->GetFName(), DataID);
 	}
 
 	bool CheckIfParameterCanBeOverridden(
 			const UCameraObjectInterfaceDataParameter* DataParameter,
+			UCameraNode* TargetNode,
+			const FName TargetPropertyName,
 			FCameraContextDataID* DataID)
 	{
 		if (!DataID)
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterMissingOverrideID", 
 							"Camera node parameter '{0}.{1}' cannot be overriden by a parameter"),
-						FText::FromName(DataParameter->Target->GetFName()), 
-						FText::FromName(DataParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 		if (DataID->IsValid())
 		{
-			ReportError(DataParameter->Target,
+			ReportError(TargetNode,
 					FText::Format(
 						LOCTEXT(
 							"DataParameterDrivenTwice",
 							"Camera node parameter '{0}.{1}' is somehow overriden twice!"),
-						FText::FromName(DataParameter->Target->GetFName()), 
-						FText::FromName(DataParameter->TargetPropertyName)));
+						FText::FromName(TargetNode->GetFName()), 
+						FText::FromName(TargetPropertyName)));
 			return false;
 		}
 		return true;
@@ -764,127 +778,131 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameterBindings()
 	// Each time we need to check for either a custom property (via ICustomCameraNodeParameterProvider),
 	// or a UObject property found with reflection.
 
-	using FBuiltDrivenParameter = TTuple<UObject*, FName>;
-	TSet<FBuiltDrivenParameter> BuiltDrivenParameters;
-
 	const FString CameraObjectName = CameraObject->GetName();
 	const FString CameraObjectPathName = CameraObject->GetPathName();
 
-	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraObject->Interface.BlendableParameters)
+	// Gather up all connected parameters, and what they're connected to.
+	using FCameraNodeProperty = TTuple<UCameraNode*, FName>;
+	TSet<FCameraNodeProperty> ConnectedCameraNodeProperties;
+	TMap<UCameraObjectInterfaceBlendableParameter*, TArray<FCameraNodeProperty>> BlendableParameterConnections;
+	TMap<UCameraObjectInterfaceDataParameter*, TArray<FCameraNodeProperty>> DataParameterConnections;
+	for (const FCameraObjectConnection& Connection : CameraObject->Connections.Connections)
 	{
-		// Basic validations.
-		if (!BlendableParameter->Target)
+		if (Connection.SourcePropertyName != NAME_None)
 		{
-			BuildLog.AddMessage(EMessageSeverity::Warning,
-					BlendableParameter,
-					LOCTEXT(
-						"InvalidBlendableParameterTarget",
-						"Invalid interface parameter: it has no target node."));
 			continue;
 		}
-		if (BlendableParameter->TargetPropertyName.IsNone())
+		if (Connection.Target == nullptr || Connection.TargetPropertyName == NAME_None)
 		{
-			BuildLog.AddMessage(EMessageSeverity::Error,
-					BlendableParameter,
-					LOCTEXT(
-						"InvalidBlendableParameterTargetPropertyName", 
-						"Invalid interface parameter: it has not target property name."));
-			continue;
-		}
-		if (BlendableParameter->InterfaceParameterName.IsEmpty())
-		{
-			// Error already logged in BuildInterfaceParameters().
 			continue;
 		}
 
-		// Check duplicate bindings.
-		FBuiltDrivenParameter NewDrivenParameter(BlendableParameter->Target, BlendableParameter->TargetPropertyName);
-		if (BuiltDrivenParameters.Contains(NewDrivenParameter))
+		const UCameraObjectInterfaceParameterGetter* ParameterGetter = Cast<UCameraObjectInterfaceParameterGetter>(Connection.Source);
+		if (!ParameterGetter || !ParameterGetter->ParameterGuid.IsValid())
 		{
-			BuildLog.AddMessage(EMessageSeverity::Error,
-					FText::Format(LOCTEXT(
-						"BlendableParameterTargetCollision",
-						"Multiple interface parameters targeting property '{0}' on camera node '{1}'. Ignoring duplicates."),
-						FText::FromName(BlendableParameter->TargetPropertyName),
-						FText::FromName(BlendableParameter->Target->GetFName())));
 			continue;
 		}
-		BuiltDrivenParameters.Add(NewDrivenParameter);
 
-		// See if this interface parameter is overriding a camera node parameter.
-		// Otherwise, maybe it's targeting a camera rig node's override for an inner rig interface parameter.
-		if (SetupCustomBlendableParameterOverride(BlendableParameter))
+		if (UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraObject->Interface.FindBlendableParameterByGuid(ParameterGetter->ParameterGuid))
 		{
-			// Implicit continue.
+			BlendableParameterConnections.FindOrAdd(BlendableParameter).Add(FCameraNodeProperty{ Connection.Target, Connection.TargetPropertyName });
 		}
-		else if (SetupCameraParameterOrVariableReferenceOverride(BlendableParameter))
+		else if (UCameraObjectInterfaceDataParameter* DataParameter = CameraObject->Interface.FindDataParameterByGuid(ParameterGetter->ParameterGuid))
 		{
-			// Implicit continue.
-		}
-		else
-		{
-			UObject* Target = BlendableParameter->Target;
-			BuildLog.AddMessage(EMessageSeverity::Error,
-					Target,
-					FText::Format(LOCTEXT(
-						"InvalidBlendableParameterTargetProperty",
-						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but no such property found."),
-						FText::FromString(BlendableParameter->InterfaceParameterName), 
-						FText::FromName(BlendableParameter->TargetPropertyName),
-						FText::FromName(Target->GetFName())));
+			DataParameterConnections.FindOrAdd(DataParameter).Add(FCameraNodeProperty{ Connection.Target, Connection.TargetPropertyName });
 		}
 	}
 
-	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraObject->Interface.DataParameters)
+	auto CheckConnectionCollision = [this, &ConnectedCameraNodeProperties](const FCameraNodeProperty& InConnectedProperty) -> bool
 	{
-		// Basic validations.
-		if (!DataParameter->Target)
-		{
-			BuildLog.AddMessage(EMessageSeverity::Warning,
-					DataParameter,
-					LOCTEXT(
-						"InvalidDataParameterTarget",
-						"Invalid interface parameter: it has no target node."));
-			continue;
-		}
-		if (DataParameter->TargetPropertyName.IsNone())
+		bool bAlreadyConnected = false;
+		ConnectedCameraNodeProperties.Add(InConnectedProperty, &bAlreadyConnected);
+		if (bAlreadyConnected)
 		{
 			BuildLog.AddMessage(EMessageSeverity::Error,
-					DataParameter,
-					LOCTEXT(
-						"InvalidDataParameterTargetPropertyName", 
-						"Invalid interface parameter: it has not target property name."));
-			continue;
-		}
-		if (DataParameter->InterfaceParameterName.IsEmpty())
-		{
-			continue;
-		}
-
-		if (SetupCustomDataParameterOverride(DataParameter))
-		{
-			// Implicit continue.
-		}
-		else if (SetupDataContextPropertyOverride(DataParameter))
-		{
-			// Implicit continue.
-		}
-		else
-		{
-			UObject* Target = DataParameter->Target;
-			BuildLog.AddMessage(EMessageSeverity::Error,
-					Target,
 					FText::Format(LOCTEXT(
-						"InvalidDataParameterTargetProperty",
-						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but no such property found."),
-						FText::FromString(DataParameter->InterfaceParameterName), 
-						FText::FromName(DataParameter->TargetPropertyName),
-						FText::FromName(Target->GetFName())));
+							"ParameterConnectionCollision",
+							"Multiple interface parameters targeting property '{0}' on camera node '{1}'. Ignoring duplicates."),
+						FText::FromName(InConnectedProperty.Value),
+						FText::FromName(InConnectedProperty.Key->GetFName())));
+		}
+		return bAlreadyConnected;
+	};
+
+	for (auto& Pair : BlendableParameterConnections)
+	{
+		const UCameraObjectInterfaceBlendableParameter* BlendableParameter(Pair.Key);
+		const TArray<FCameraNodeProperty>& ConnectedProperties(Pair.Value);
+	
+		for (const FCameraNodeProperty& ConnectedProperty : ConnectedProperties)
+		{
+			// Check if some other parameter was already connected to this node's property.
+			if (CheckConnectionCollision(ConnectedProperty))
+			{
+				continue;
+			}
+
+			// See if this interface parameter is overriding a camera node parameter.
+			// Otherwise, maybe it's targeting a camera rig node's override for an inner rig interface parameter.
+			if (SetupCustomBlendableParameterOverride(BlendableParameter, ConnectedProperty.Key, ConnectedProperty.Value))
+			{
+				// Implicit continue.
+			}
+			else if (SetupCameraParameterOrVariableReferenceOverride(BlendableParameter, ConnectedProperty.Key, ConnectedProperty.Value))
+			{
+				// Implicit continue.
+			}
+			else
+			{
+				BuildLog.AddMessage(EMessageSeverity::Error,
+						ConnectedProperty.Key,
+						FText::Format(LOCTEXT(
+								"InvalidBlendableParameterTargetProperty",
+								"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but no such property found."),
+							FText::FromString(BlendableParameter->InterfaceParameterName), 
+							FText::FromName(ConnectedProperty.Value),
+							FText::FromName(ConnectedProperty.Key->GetFName())));
+			}
+		}
+	}
+
+	for (auto& Pair : DataParameterConnections)
+	{
+		const UCameraObjectInterfaceDataParameter* DataParameter(Pair.Key);
+		const TArray<FCameraNodeProperty>& ConnectedProperties(Pair.Value);
+
+		for (const FCameraNodeProperty& ConnectedProperty : ConnectedProperties)
+		{
+			// Check if some other parameter was already connected to this node's property.
+			if (CheckConnectionCollision(ConnectedProperty))
+			{
+				continue;
+			}
+
+			if (SetupCustomDataParameterOverride(DataParameter, ConnectedProperty.Key, ConnectedProperty.Value))
+			{
+				// Implicit continue.
+			}
+			else if (SetupDataContextPropertyOverride(DataParameter, ConnectedProperty.Key, ConnectedProperty.Value))
+			{
+				// Implicit continue.
+			}
+			else
+			{
+				BuildLog.AddMessage(EMessageSeverity::Error,
+						ConnectedProperty.Key,
+						FText::Format(LOCTEXT(
+								"InvalidDataParameterTargetProperty",
+								"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but no such property found."),
+							FText::FromString(DataParameter->InterfaceParameterName), 
+							FText::FromName(ConnectedProperty.Value),
+							FText::FromName(ConnectedProperty.Key->GetFName())));
+			}
 		}
 	}
 }
 
-bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter)
+bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter, UCameraNode* Target, FName TargetPropertyName)
 {
 	using namespace Internal;
 
@@ -894,9 +912,8 @@ bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverr
 	// private variable of the given interface parameter, checking that the types match (UBooleanCameraVariable, 
 	// UInteger32CameraVariable, etc.)
 
-	UObject* Target = BlendableParameter->Target;
 	UClass* TargetClass = Target->GetClass();
-	FProperty* TargetProperty = TargetClass->FindPropertyByName(BlendableParameter->TargetPropertyName);
+	FProperty* TargetProperty = TargetClass->FindPropertyByName(TargetPropertyName);
 	if (!TargetProperty)
 	{
 		// No match, try something else.
@@ -912,7 +929,7 @@ bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverr
 						"InvalidCameraNodeParameter",
 						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but it's not a camera parameter."),
 					FText::FromString(BlendableParameter->InterfaceParameterName), 
-					FText::FromName(BlendableParameter->TargetPropertyName),
+					FText::FromName(TargetPropertyName),
 					FText::FromName(Target->GetFName())));
 		return true;
 	}
@@ -925,14 +942,14 @@ bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverr
 	{\
 		auto* CameraParameterPtr = TargetStructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(Target);\
 		Builder.SetCameraParameterOrVariableReferenceOverride<F##ValueName##CameraParameter>(\
-				BlendableParameter, TargetStructProperty, CameraParameterPtr\
+				BlendableParameter, Target, TargetStructProperty, CameraParameterPtr\
 				);\
 	}\
 	else if (TargetStructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 	{\
 		auto* VariableReferencePtr = TargetStructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(Target);\
 		Builder.SetCameraParameterOrVariableReferenceOverride<F##ValueName##CameraVariableReference>(\
-				BlendableParameter, TargetStructProperty, VariableReferencePtr\
+				BlendableParameter, Target, TargetStructProperty, VariableReferencePtr\
 				);\
 	}\
 	else
@@ -945,19 +962,19 @@ bool FCameraObjectInterfaceBuilder::SetupCameraParameterOrVariableReferenceOverr
 						"InvalidCameraNodeParameter",
 						"Invalid interface parameter '{0}', driving property '{1}' on '{2}', but it's not a camera parameter."),
 					FText::FromString(BlendableParameter->InterfaceParameterName), 
-					FText::FromName(BlendableParameter->TargetPropertyName),
+					FText::FromName(TargetPropertyName),
 					FText::FromName(Target->GetFName())));
 	}
 
 	return true;
 }
 
-bool FCameraObjectInterfaceBuilder::SetupCustomBlendableParameterOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter)
+bool FCameraObjectInterfaceBuilder::SetupCustomBlendableParameterOverride(const UCameraObjectInterfaceBlendableParameter* BlendableParameter, UCameraNode* Target, FName TargetPropertyName)
 {
 	using namespace Internal;
 
-	ICustomCameraNodeParameterProvider* Target = Cast<ICustomCameraNodeParameterProvider>(BlendableParameter->Target);
-	if (!Target)
+	ICustomCameraNodeParameterProvider* TargetProvider = Cast<ICustomCameraNodeParameterProvider>(Target);
+	if (!TargetProvider)
 	{
 		// No match, try something else.
 		return false;
@@ -966,13 +983,13 @@ bool FCameraObjectInterfaceBuilder::SetupCustomBlendableParameterOverride(const 
 	// Look for a parameter override matching the target name.
 	// TODO: we're querying the list of custom parameters every time, we may want to cache it for this phase.
 	FCustomCameraNodeParameterInfos CustomParameters;
-	Target->GetCustomCameraNodeParameters(CustomParameters);
+	TargetProvider->GetCustomCameraNodeParameters(CustomParameters);
 
 	FCustomCameraNodeParameterInfos::FBlendableParameterInfo* TargetCustomParameter = 
 		CustomParameters.BlendableParameters.FindByPredicate(
-			[BlendableParameter](FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
+			[TargetPropertyName](FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
 			{
-				return CustomParameter.ParameterName == BlendableParameter->TargetPropertyName;
+				return CustomParameter.ParameterName == TargetPropertyName;
 			});
 	if (!TargetCustomParameter)
 	{
@@ -985,25 +1002,25 @@ bool FCameraObjectInterfaceBuilder::SetupCustomBlendableParameterOverride(const 
 	{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		case ECameraVariableType::ValueName:\
-			Builder.SetCustomBlendableParameterOverride<U##ValueName##CameraVariable>(BlendableParameter, *TargetCustomParameter);\
+			Builder.SetCustomBlendableParameterOverride<U##ValueName##CameraVariable>(\
+					BlendableParameter, Target, TargetPropertyName, *TargetCustomParameter);\
 			break;
 	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 		case ECameraVariableType::BlendableStruct:
-			Builder.SetCustomBlendableStructParameterOverride(BlendableParameter, *TargetCustomParameter);
+			Builder.SetCustomBlendableStructParameterOverride(BlendableParameter, Target, TargetPropertyName, *TargetCustomParameter);
 			break;
 	}
 
 	return true;
 }
 
-bool FCameraObjectInterfaceBuilder::SetupDataContextPropertyOverride(const UCameraObjectInterfaceDataParameter* DataParameter)
+bool FCameraObjectInterfaceBuilder::SetupDataContextPropertyOverride(const UCameraObjectInterfaceDataParameter* DataParameter, UCameraNode* Target, FName TargetPropertyName)
 {
 	using namespace Internal;
 
-	UObject* Target = DataParameter->Target;
 	UClass* TargetClass = Target->GetClass();
-	FProperty* TargetProperty = TargetClass->FindPropertyByName(DataParameter->TargetPropertyName);
+	FProperty* TargetProperty = TargetClass->FindPropertyByName(TargetPropertyName);
 	if (!TargetProperty)
 	{
 		// No match, try something else.
@@ -1021,7 +1038,7 @@ bool FCameraObjectInterfaceBuilder::SetupDataContextPropertyOverride(const UCame
 						"Interface parameter '{0}' is driving data context property '{1}' on '{2}' "
 						"but no FCameraContextDataID property '{3}' was found to store the override ID."),
 					FText::FromString(DataParameter->InterfaceParameterName),
-					FText::FromName(DataParameter->TargetPropertyName),
+					FText::FromName(TargetPropertyName),
 					FText::FromName(Target->GetFName()),
 					FText::FromName(TargetDataIDPropertyName)));
 		return false;
@@ -1030,30 +1047,30 @@ bool FCameraObjectInterfaceBuilder::SetupDataContextPropertyOverride(const UCame
 	FCameraContextDataID* OverrideDataID = TargetDataIDProperty->ContainerPtrToValuePtr<FCameraContextDataID>(Target);
 
 	FInterfaceParameterBindingBuilder Builder(*this);
-	Builder.SetDataContextPropertyOverride(DataParameter, TargetProperty, OverrideDataID);
+	Builder.SetDataContextPropertyOverride(DataParameter, Target, TargetProperty, OverrideDataID);
 
 	return true;
 }
 
-bool FCameraObjectInterfaceBuilder::SetupCustomDataParameterOverride(const UCameraObjectInterfaceDataParameter* DataParameter)
+bool FCameraObjectInterfaceBuilder::SetupCustomDataParameterOverride(const UCameraObjectInterfaceDataParameter* DataParameter, UCameraNode* Target, FName TargetPropertyName)
 {
 	using namespace Internal;
 
-	ICustomCameraNodeParameterProvider* Target = Cast<ICustomCameraNodeParameterProvider>(DataParameter->Target);
-	if (!Target)
+	ICustomCameraNodeParameterProvider* TargetProvider = Cast<ICustomCameraNodeParameterProvider>(Target);
+	if (!TargetProvider)
 	{
 		// No match, try something else.
 		return false;
 	}
 
 	FCustomCameraNodeParameterInfos CustomParameters;
-	Target->GetCustomCameraNodeParameters(CustomParameters);
+	TargetProvider->GetCustomCameraNodeParameters(CustomParameters);
 
 	FCustomCameraNodeParameterInfos::FDataParameterInfo* TargetCustomParameter =
 		CustomParameters.DataParameters.FindByPredicate(
-				[DataParameter](FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
+				[TargetPropertyName](FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
 				{
-					return CustomParameter.ParameterName == DataParameter->TargetPropertyName;
+					return CustomParameter.ParameterName == TargetPropertyName;
 				});
 	if (!TargetCustomParameter)
 	{
@@ -1062,7 +1079,7 @@ bool FCameraObjectInterfaceBuilder::SetupCustomDataParameterOverride(const UCame
 	}
 
 	FInterfaceParameterBindingBuilder Builder(*this);
-	Builder.SetCustomDataParameterOverride(DataParameter, *TargetCustomParameter);
+	Builder.SetCustomDataParameterOverride(DataParameter, Target, TargetPropertyName, *TargetCustomParameter);
 
 	return true;
 }

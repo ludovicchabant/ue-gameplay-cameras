@@ -12,6 +12,8 @@
 
 void UCameraSharedTransitionGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const
 {
+	Super::OnBuildGraphConfig(InOutGraphConfig);
+
 	const UGameplayCamerasEditorSettings* Settings = GetDefault<UGameplayCamerasEditorSettings>();
 
 	InOutGraphConfig.GraphName = UCameraAsset::SharedTransitionsGraphName;

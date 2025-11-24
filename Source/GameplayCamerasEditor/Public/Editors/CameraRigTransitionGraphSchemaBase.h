@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Editors/ObjectTreeGraphSchema.h"
+#include "Editors/CameraObjectGraphSchemaBase.h"
 
 #include "CameraRigTransitionGraphSchemaBase.generated.h"
 
@@ -12,22 +12,16 @@ struct FObjectTreeGraphConfig;
  * Base schema class for camera transition graph.
  */
 UCLASS()
-class UCameraRigTransitionGraphSchemaBase : public UObjectTreeGraphSchema
+class UCameraRigTransitionGraphSchemaBase : public UCameraObjectGraphSchemaBase
 {
 	GENERATED_BODY()
-
-public:
-
-	FObjectTreeGraphConfig BuildGraphConfig() const;
 
 protected:
 
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const override;
 
-protected:
-
-	// UCameraRigTransitionGraphSchemaBase interface.
-	virtual void OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const {}
+	// UCameraObjectGraphSchemaBase interface.
+	virtual void OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const override;
 };
 

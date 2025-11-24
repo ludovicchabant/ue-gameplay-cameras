@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Editors/CameraNodeGraphSchema.h"
+#include "Editors/CameraObjectGraphSchemaBase.h"
 
 #include "CameraRigCameraNodeGraphSchema.generated.h"
 
@@ -10,7 +10,7 @@
  * Schema class for camera node graph.
  */
 UCLASS()
-class UCameraRigCameraNodeGraphSchema : public UCameraNodeGraphSchema
+class UCameraRigCameraNodeGraphSchema : public UCameraObjectGraphSchemaBase
 {
 	GENERATED_BODY()
 
@@ -18,11 +18,12 @@ public:
 
 	UCameraRigCameraNodeGraphSchema(const FObjectInitializer& ObjInit);
 
-	FObjectTreeGraphConfig BuildGraphConfig() const;
-
 protected:
 
 	// UObjectTreeGraphSchema interface.
 	virtual void CollectAllObjects(UObjectTreeGraph* InGraph, TSet<UObject*>& OutAllObjects) const override;
+
+	// UCameraObjectGraphSchemaBase interface.
+	virtual void OnBuildGraphConfig(FObjectTreeGraphConfig& InOutGraphConfig) const override;
 };
 
