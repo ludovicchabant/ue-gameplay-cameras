@@ -94,7 +94,7 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 		return;
 	}
 
-	StateTreeContext.Start(&StateTreeReference.GetParameters());
+	StateTreeContext.Start(StateTreeReference.GetGlobalParameters());
 }
 
 void FStateTreeCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
