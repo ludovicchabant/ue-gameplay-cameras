@@ -247,6 +247,13 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	{
 		Result.bIsValid = false;
 		PreVisualResult.bIsValid = false;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+		BuildDebugBlocksIfNeeded();
+#endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+		ContextStack.OnEndCameraSystemUpdate();
+
 		return;
 	}
 
