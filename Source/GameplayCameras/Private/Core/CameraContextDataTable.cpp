@@ -769,12 +769,19 @@ bool FCameraContextDataTable::TrySetArrayData(
 		return false;
 	}
 
-	if (!ensure(Entry->ContainerType == ECameraContextDataContainerType::Array))
+	if (!ensure(Entry->Type == ExpectedDataType && 
+				Entry->ContainerType == ECameraContextDataContainerType::Array &&
+				Entry->TypeObject == ExpectedDataTypeObject))
 	{
 		return false;
 	}
 
 	FArrayEntryHelper Helper(*Entry, Memory);
+	if (!ensure(Helper.IsValidIndex(Index)))
+	{
+		return false;
+	}
+
 	uint8* DataPtr = Helper.GetRawPtr(Index);
 	SetDataValue(Entry->Type, Entry->TypeObject, DataPtr, InRawDataPtr);
 

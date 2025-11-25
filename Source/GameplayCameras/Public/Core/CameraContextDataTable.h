@@ -350,6 +350,9 @@ TSubclassOf<BaseClass> FCameraContextDataTable::GetClassData(FCameraContextDataI
 template<typename ValueType>
 const ValueType* FCameraContextDataTable::TryGetData(FCameraContextDataID InID) const
 {
+	// Can't return a direct pointer to an enum value because we coerce them to uint32 but ValueType may be smaller or larger.
+	static_assert(!std::is_enum_v<ValueType>, "Enum types aren't supported with this method.");
+
 	ECameraContextDataType DataType = TCameraContextDataTraits<ValueType>::GetDataType();
 	const UObject* DataTypeObject = TCameraContextDataTraits<ValueType>::GetDataTypeObject();
 	if (const uint8* RawValue = TryGetData(InID, DataType, DataTypeObject))
@@ -373,6 +376,9 @@ TConstArrayView<ValueType> FCameraContextDataTable::TryGetArrayData(FCameraConte
 template<typename ValueType>
 bool FCameraContextDataTable::TryGetArrayData(FCameraContextDataID InID, TConstArrayView<ValueType>& OutValues) const
 {
+	// Can't return a direct pointer to an array of enums because we coerce them to uint32 but ValueType may be smaller or larger.
+	static_assert(!std::is_enum_v<ValueType>, "Enum types aren't supported with this method.");
+
 	ECameraContextDataType DataType = TCameraContextDataTraits<ValueType>::GetDataType();
 	const UObject* DataTypeObject = TCameraContextDataTraits<ValueType>::GetDataTypeObject();
 	if (const FEntryScriptArray* Array = TryGetArrayData(InID, DataType, DataTypeObject))
@@ -410,7 +416,12 @@ void FCameraContextDataTable::SetStructData(FCameraContextDataID InID, const Str
 template<typename EnumType>
 void FCameraContextDataTable::SetEnumArrayData(FCameraContextDataID InID, TConstArrayView<EnumType> InData)
 {
-	SetArrayDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), InData);
+	TArray<uint32> CoercedData;
+	for (EnumType Item : InData)
+	{
+		CoercedData.Add((uint32)Item);
+	}
+	SetArrayDataImpl(InID, ECameraContextDataType::Enum, StaticEnum<EnumType>(), CoercedData);
 }
 
 template<typename StructType>
