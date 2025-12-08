@@ -20,15 +20,15 @@ class UAccelerationDecelerationValueInterpolator : public UCameraValueInterpolat
 public:
 
 	/** The acceleration rate at the start of interpolation. */
-	UPROPERTY(EditAnywhere, Category="Speed")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Speed", meta=(ExposeOnSpawn=true))
 	float Acceleration = 1.f;
 
 	/** The maximum speed reachable during interpolation. */
-	UPROPERTY(EditAnywhere, Category="Speed")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Speed", meta=(ExposeOnSpawn=true))
 	float MaxSpeed = 10.f;
 
 	/** The deceleration rate at the end of interpolation. */
-	UPROPERTY(EditAnywhere, Category="Speed")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Speed", meta=(ExposeOnSpawn=true))
 	float Deceleration = 1.f;
 };
 

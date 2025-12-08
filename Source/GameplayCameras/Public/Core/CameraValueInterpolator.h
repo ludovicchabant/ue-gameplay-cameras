@@ -219,7 +219,7 @@ protected:
 /**
  * Base class for value interpolator parameters.
  */
-UCLASS(Abstract, DefaultToInstanced, EditInlineNew, CollapseCategories, MinimalAPI)
+UCLASS(MinimalAPI, Abstract, BlueprintType, DefaultToInstanced, EditInlineNew, CollapseCategories)
 class UCameraValueInterpolator : public UObject
 {
 	GENERATED_BODY()

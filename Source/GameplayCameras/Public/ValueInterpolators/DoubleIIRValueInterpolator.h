@@ -19,15 +19,15 @@ class UDoubleIIRValueInterpolator : public UCameraValueInterpolator
 public:
 
 	/** The primary speed of interpolation. */
-	UPROPERTY(EditAnywhere, Category="Speed")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Speed", meta=(ExposeOnSpawn=true))
 	float PrimarySpeed = 1.f;
 
 	/** The intermediate speed of interpolation. */
-	UPROPERTY(EditAnywhere, Category="Speed")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Speed", meta=(ExposeOnSpawn=true))
 	float IntermediateSpeed = 1.f;
 
 	/** Whether to use fixed-step evaluation. */
-	UPROPERTY(EditAnywhere, Category="Interpolation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interpolation", meta=(ExposeOnSpawn=true))
 	bool bUseFixedStep = true;
 };
 

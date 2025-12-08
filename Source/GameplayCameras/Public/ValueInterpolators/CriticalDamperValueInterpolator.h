@@ -20,7 +20,7 @@ class UCriticalDamperValueInterpolator : public UCameraValueInterpolator
 public:
 
 	/** The damping factor of the spring-mass system. */
-	UPROPERTY(EditAnywhere, Category="Damping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Damping", meta=(ExposeOnSpawn=true))
 	float DampingFactor = 1.f;
 };
 

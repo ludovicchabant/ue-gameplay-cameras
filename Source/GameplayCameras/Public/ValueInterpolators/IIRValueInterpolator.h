@@ -21,11 +21,11 @@ class UIIRValueInterpolator : public UCameraValueInterpolator
 public:
 
 	/** The speed of interpolation. */
-	UPROPERTY(EditAnywhere, Category="Interpolation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interpolation", meta=(ExposeOnSpawn=true))
 	float Speed = 1.f;
 
 	/** Whether to use fixed-step evaluation. */
-	UPROPERTY(EditAnywhere, Category="Interpolation")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interpolation", meta=(ExposeOnSpawn=true))
 	bool bUseFixedStep = true;
 };
 
