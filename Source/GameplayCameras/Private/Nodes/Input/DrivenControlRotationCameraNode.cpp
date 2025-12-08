@@ -183,10 +183,15 @@ protected:
 
 private:
 
+	void LimitControlRotation(APlayerController* PlayerController, FRotator3d& InOutControlRotation);
+
+private:
+
 	TSharedPtr<FDrivenControlRotationHelperService> HelperService;
 
 	FRotator3d LastControlRotation = FRotator3d::ZeroRotator;
 	bool bLastWasActiveCameraRig = false;
+	bool bIsLockedThisFrame = false;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	FRotator3d LastDeltaControlRotation;
@@ -218,18 +223,16 @@ void FDrivenControlRotationCameraNodeEvaluator::OnTeardown(const FCameraNodeEval
 
 void FDrivenControlRotationCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-	if (PlayerController)
+	if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 	{
-
 		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
 
-		if (Params.bIsActiveCameraRig)
+		if (Params.bIsActiveCameraRig && !bIsLockedThisFrame)
 		{
 			// We are running in the active camera rig. Just move with the control rotation.
 			InputValue = FVector2d(ControlRotation.Yaw, ControlRotation.Pitch);
 		}
-		else
+		else if (!Params.bIsActiveCameraRig && !bIsLockedThisFrame)
 		{
 			// We are not the active camera rig anymore. Only apply the delta between the last frame's
 			// control rotation and this frame's control rotation. One important thing to note here
@@ -243,19 +246,13 @@ void FDrivenControlRotationCameraNodeEvaluator::OnRun(const FCameraNodeEvaluatio
 			// messed up by new camera rigs' initializations.
 			const FRotator3d CachedControlRotation = HelperService->GetCachedControlRotation(Params.EvaluationContext);
 			FRotator3d DeltaRotation((CachedControlRotation - LastControlRotation).GetNormalized());
-			InputValue.X += DeltaRotation.Yaw;
-			InputValue.Y += DeltaRotation.Pitch;
+			FRotator3d LocalControlRotation(InputValue.Y + DeltaRotation.Pitch, InputValue.X + DeltaRotation.Yaw, 0.0);
 
 			// If we have a player camera manager, apply its limits to the correct angles.
-			if (APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager)
-			{
-				FRotator3d LocalControlRotation(InputValue.Y, InputValue.X, 0.0);
-				CameraManager->LimitViewPitch(LocalControlRotation, CameraManager->ViewPitchMin, CameraManager->ViewPitchMax);
-				CameraManager->LimitViewYaw(LocalControlRotation, CameraManager->ViewYawMin, CameraManager->ViewYawMax);
-				CameraManager->LimitViewRoll(LocalControlRotation, CameraManager->ViewRollMin, CameraManager->ViewRollMax);
-				InputValue.X = LocalControlRotation.Yaw;
-				InputValue.Y = LocalControlRotation.Pitch;
-			}
+			LimitControlRotation(PlayerController, LocalControlRotation);
+
+			InputValue.X = LocalControlRotation.Yaw;
+			InputValue.Y = LocalControlRotation.Pitch;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 			LastDeltaControlRotation = DeltaRotation;
@@ -266,40 +263,74 @@ void FDrivenControlRotationCameraNodeEvaluator::OnRun(const FCameraNodeEvaluatio
 	}
 
 	bLastWasActiveCameraRig = Params.bIsActiveCameraRig;
+
+	bIsLockedThisFrame = false;
 }
 
 void FDrivenControlRotationCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
 {
-	if (FYawPitchCameraOperation* Op = Operation.CastOperation<FYawPitchCameraOperation>())
+	if (FYawPitchCameraOperation* YawPitchOp = Operation.CastOperation<FYawPitchCameraOperation>())
 	{
-		// If we are running in the active camera rig, we have permission to affect the control rotation.
-		// Let's apply the yaw/pitch operation to it.
-		APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
-		if (bLastWasActiveCameraRig && PlayerController)
+		if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
 		{
-			FRotator3d ControlRotation = PlayerController->GetControlRotation();
-
-			// Make sure the corrected yaw/pitch angles are in [0..360[ and ]-180..180] respectively.
-			ControlRotation.Yaw = FRotator3d::ClampAxis(Op->Yaw.Apply(ControlRotation.Yaw));
-			ControlRotation.Pitch = FRotator3d::NormalizeAxis(Op->Pitch.Apply(ControlRotation.Pitch));
-
-			// If we have a player camera manager, apply its limits to the correct angles.
-			if (APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager)
+			// If we are running in the active camera rig, we have permission to affect the control rotation.
+			// In that case, let's apply the yaw/pitch operation to it. Otherwise, let's only apply the correction
+			// to our local cache.
+			if (bLastWasActiveCameraRig)
 			{
-				CameraManager->LimitViewPitch(ControlRotation, CameraManager->ViewPitchMin, CameraManager->ViewPitchMax);
-				CameraManager->LimitViewYaw(ControlRotation, CameraManager->ViewYawMin, CameraManager->ViewYawMax);
-				CameraManager->LimitViewRoll(ControlRotation, CameraManager->ViewRollMin, CameraManager->ViewRollMax);
-			}
+				FRotator3d ControlRotation = PlayerController->GetControlRotation();
 
-			PlayerController->SetControlRotation(ControlRotation);
+				// Make sure the corrected yaw/pitch angles are in [0..360[ and ]-180..180] respectively.
+				ControlRotation.Yaw = FRotator3d::ClampAxis(YawPitchOp->Yaw.Apply(ControlRotation.Yaw));
+				ControlRotation.Pitch = FRotator3d::NormalizeAxis(YawPitchOp->Pitch.Apply(ControlRotation.Pitch));
+
+				LimitControlRotation(PlayerController, ControlRotation);
+
+				PlayerController->SetControlRotation(ControlRotation);
+
+				InputValue = FVector2d(ControlRotation.Yaw, ControlRotation.Pitch);
+			}
+			else
+			{
+				InputValue.X = YawPitchOp->Yaw.Apply(InputValue.X);
+				InputValue.Y = YawPitchOp->Pitch.Apply(InputValue.Y);
+			}
 		}
+	}
+	else if (FLockUserInputCameraOperation* LockOp = Operation.CastOperation<FLockUserInputCameraOperation>())
+	{
+		// We are told to lock input this frame, so let's keep our input value and overwrite the control rotation to 
+		// keep it to what it was before.
+		APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
+		if (LockOp->bLockThisFrame && bLastWasActiveCameraRig && PlayerController)
+		{
+			FRotator3d LockedControlRotation(InputValue.Y, InputValue.X, 0);
+			LimitControlRotation(PlayerController, LockedControlRotation);
+			PlayerController->SetControlRotation(LockedControlRotation);
+		}
+
+		bIsLockedThisFrame = LockOp->bLockThisFrame;
+	}
+}
+
+void FDrivenControlRotationCameraNodeEvaluator::LimitControlRotation(APlayerController* PlayerController, FRotator3d& InOutControlRotation)
+{
+	// If we have a player camera manager, apply its limits to the correct angles.
+	if (APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager)
+	{
+		CameraManager->LimitViewPitch(InOutControlRotation, CameraManager->ViewPitchMin, CameraManager->ViewPitchMax);
+		CameraManager->LimitViewYaw(InOutControlRotation, CameraManager->ViewYawMin, CameraManager->ViewYawMax);
+		CameraManager->LimitViewRoll(InOutControlRotation, CameraManager->ViewRollMin, CameraManager->ViewRollMax);
 	}
 }
 
 void FDrivenControlRotationCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
+	Super::OnSerialize(Params, Ar);
+
 	Ar << LastControlRotation;
 	Ar << bLastWasActiveCameraRig;
+	Ar << bIsLockedThisFrame;
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

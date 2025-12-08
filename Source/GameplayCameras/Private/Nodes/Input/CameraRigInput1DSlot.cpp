@@ -58,38 +58,48 @@ void FCameraRigInput1DSlotEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 {
 	const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
 
-	const double Speed = 
-		SlotNode->bIsPreBlended ?
+	if (!bIsLockedThisFrame)
+	{
+		const double Speed = 
+			SlotNode->bIsPreBlended ?
 			OutResult.VariableTable.GetValue<double>(SlotNode->GetSpeedVariableID()) :
 			SpeedReader.Get(OutResult.VariableTable);
 
-	double FinalDelta(DeltaInputValue * Speed * Params.DeltaTime);
+		double FinalDelta(DeltaInputValue * Speed * Params.DeltaTime);
 
-	if (bIsAccumulated)
-	{
-		InputValue += FinalDelta;
-	}
-	else
-	{
-		InputValue = FinalDelta;
-	}
+		if (bIsAccumulated)
+		{
+			InputValue += FinalDelta;
+		}
+		else
+		{
+			InputValue = FinalDelta;
+		}
 
-	InputValue = SlotNode->Normalize.NormalizeValue(InputValue);
-	InputValue = SlotNode->Clamp.ClampValue(InputValue);
+		InputValue = SlotNode->Normalize.NormalizeValue(InputValue);
+
+		InputValue = SlotNode->Clamp.ClampValue(InputValue);
+	}
 
 	OutResult.VariableTable.SetValue<double>(SlotNode->GetVariableID(), InputValue);
+
+	bIsLockedThisFrame = false;	
 }
 
 void FCameraRigInput1DSlotEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
 {
-	if (FSingleValueCameraOperation* Op = Operation.CastOperation<FSingleValueCameraOperation>())
+	if (FSingleValueCameraOperation* YawPitchOp = Operation.CastOperation<FSingleValueCameraOperation>())
 	{
 		const UCameraRigInput1DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput1DSlot>();
 
 		double MinValue, MaxValue;
 		SlotNode->Clamp.GetEffectiveClamping(MinValue, MaxValue);
 
-		InputValue = Op->Value.Apply(InputValue, MinValue, MaxValue);
+		InputValue = YawPitchOp->Value.Apply(InputValue, MinValue, MaxValue);
+	}
+	else if (FLockUserInputCameraOperation* LockOp = Operation.CastOperation<FLockUserInputCameraOperation>())
+	{
+		bIsLockedThisFrame = LockOp->bLockThisFrame;
 	}
 }
 

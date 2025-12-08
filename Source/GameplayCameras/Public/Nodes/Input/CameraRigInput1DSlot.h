@@ -112,6 +112,7 @@ protected:
 
 	double DeltaInputValue = 0.f;
 	bool bIsAccumulated = true;
+	bool bIsLockedThisFrame = false;
 };
 
 }  // namespace UE::Cameras

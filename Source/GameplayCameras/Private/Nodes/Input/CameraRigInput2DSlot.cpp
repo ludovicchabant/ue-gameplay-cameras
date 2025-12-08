@@ -59,43 +59,48 @@ void FCameraRigInput2DSlotEvaluator::OnRun(const FCameraNodeEvaluationParams& Pa
 {
 	const UCameraRigInput2DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput2DSlot>();
 
-	const FVector2d Speed = 
-		SlotNode->bIsPreBlended ?
+	if (!bIsLockedThisFrame)
+	{
+		const FVector2d Speed = 
+			SlotNode->bIsPreBlended ?
 			OutResult.VariableTable.GetValue<FVector2d>(SlotNode->GetSpeedVariableID()) :
 			SpeedReader.Get(OutResult.VariableTable);
 
-	FVector2d FinalDelta(DeltaInputValue.X * Speed.X * Params.DeltaTime, DeltaInputValue.Y * Speed.Y * Params.DeltaTime);
+		FVector2d FinalDelta(DeltaInputValue.X * Speed.X * Params.DeltaTime, DeltaInputValue.Y * Speed.Y * Params.DeltaTime);
 
-	if (RevertAxisXReader.Get(OutResult.VariableTable))
-	{
-		FinalDelta.X = -FinalDelta.X;
-	}
-	if (RevertAxisYReader.Get(OutResult.VariableTable))
-	{
-		FinalDelta.Y = -FinalDelta.Y;
-	}
+		if (RevertAxisXReader.Get(OutResult.VariableTable))
+		{
+			FinalDelta.X = -FinalDelta.X;
+		}
+		if (RevertAxisYReader.Get(OutResult.VariableTable))
+		{
+			FinalDelta.Y = -FinalDelta.Y;
+		}
 
-	if (bIsAccumulated)
-	{
-		InputValue += FinalDelta;
-	}
-	else
-	{
-		InputValue = FinalDelta;
-	}
+		if (bIsAccumulated)
+		{
+			InputValue += FinalDelta;
+		}
+		else
+		{
+			InputValue = FinalDelta;
+		}
 
-	InputValue.X = SlotNode->NormalizeX.NormalizeValue(InputValue.X);
-	InputValue.Y = SlotNode->NormalizeY.NormalizeValue(InputValue.Y);
+		InputValue.X = SlotNode->NormalizeX.NormalizeValue(InputValue.X);
+		InputValue.Y = SlotNode->NormalizeY.NormalizeValue(InputValue.Y);
 
-	InputValue.X = SlotNode->ClampX.ClampValue(InputValue.X);
-	InputValue.Y = SlotNode->ClampY.ClampValue(InputValue.Y);
+		InputValue.X = SlotNode->ClampX.ClampValue(InputValue.X);
+		InputValue.Y = SlotNode->ClampY.ClampValue(InputValue.Y);
+	}
 
 	OutResult.VariableTable.SetValue<FVector2d>(SlotNode->GetVariableID(), InputValue);
+
+	bIsLockedThisFrame = false;
 }
 
 void FCameraRigInput2DSlotEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
 {
-	if (FYawPitchCameraOperation* Op = Operation.CastOperation<FYawPitchCameraOperation>())
+	if (FYawPitchCameraOperation* YawPitchOp = Operation.CastOperation<FYawPitchCameraOperation>())
 	{
 		const UCameraRigInput2DSlot* SlotNode = GetCameraNodeAs<UCameraRigInput2DSlot>();
 
@@ -105,8 +110,12 @@ void FCameraRigInput2DSlotEvaluator::OnExecuteOperation(const FCameraOperationPa
 		double MinValueY, MaxValueY;
 		SlotNode->ClampY.GetEffectiveClamping(MinValueY, MaxValueY);
 
-		InputValue.X = Op->Yaw.Apply(InputValue.X, MinValueX, MaxValueX);
-		InputValue.Y = Op->Pitch.Apply(InputValue.Y, MinValueY, MaxValueY);
+		InputValue.X = YawPitchOp->Yaw.Apply(InputValue.X, MinValueX, MaxValueX);
+		InputValue.Y = YawPitchOp->Pitch.Apply(InputValue.Y, MinValueY, MaxValueY);
+	}
+	else if (FLockUserInputCameraOperation* LockOp = Operation.CastOperation<FLockUserInputCameraOperation>())
+	{
+		bIsLockedThisFrame = LockOp->bLockThisFrame;
 	}
 }
 

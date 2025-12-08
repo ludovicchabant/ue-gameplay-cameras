@@ -127,6 +127,7 @@ protected:
 
 	FVector2d DeltaInputValue = FVector2d::ZeroVector;
 	bool bIsAccumulated = true;
+	bool bIsLockedThisFrame = false;
 };
 
 }  // namespace UE::Cameras

@@ -15,6 +15,7 @@ enum EBuiltInCameraOperationTypes : uint32
 {
 	YawPitch = 0,
 	SingleValue = 1,
+	LockUserInput = 2,
 
 	MAX = 3
 };
@@ -93,7 +94,9 @@ struct FYawPitchCameraOperation : public FCameraOperation
 {
 	UE_DECLARE_BUILT_IN_CAMERA_OPERATION(FYawPitchCameraOperation, EBuiltInCameraOperationTypes::YawPitch)
 
+	/** The yaw value to set or use as modifier. */
 	FConsumableDouble Yaw;
+	/** The pitch value to set or use as modifier. */
 	FConsumableDouble Pitch;
 };
 
@@ -106,6 +109,17 @@ struct FSingleValueCameraOperation : public FCameraOperation
 	UE_DECLARE_BUILT_IN_CAMERA_OPERATION(FSingleValueCameraOperation, EBuiltInCameraOperationTypes::SingleValue)
 
 	FConsumableDouble Value;
+};
+
+/**
+ * A camera operation that locks user input for a frame.
+ */
+struct FLockUserInputCameraOperation : public FCameraOperation
+{
+	UE_DECLARE_BUILT_IN_CAMERA_OPERATION(FLockUserInputCameraOperation, EBuiltInCameraOperationTypes::LockUserInput)
+
+	/** Whether the targeted nodes should lock their input value for this frame. */
+	bool bLockThisFrame = true;
 };
 
 #undef UE_DECLARE_BUILT_IN_CAMERA_OPERATION
