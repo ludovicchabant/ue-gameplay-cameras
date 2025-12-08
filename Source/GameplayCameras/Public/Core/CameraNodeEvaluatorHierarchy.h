@@ -45,7 +45,7 @@ public:
 
 	/** Executes the given predicate on each evaluator in depth-first order. */
 	template<typename PredicateClass>
-	void ForEachEvaluator(PredicateClass&& Predicate)
+	void ForEachEvaluator(PredicateClass&& Predicate) const
 	{
 		for (FCameraNodeEvaluator* Evaluator : FlattenedHierarchy)
 		{
@@ -55,7 +55,7 @@ public:
 
 	/** Executes the given predicate on each evaluator in the specified range in depth-first order. */
 	template<typename PredicateClass>
-	void ForEachEvaluator(const FName TaggedRangeName, PredicateClass&& Predicate)
+	void ForEachEvaluator(const FName TaggedRangeName, PredicateClass&& Predicate) const
 	{
 		const FTaggedRange& TaggedRange = TaggedRanges.FindChecked(TaggedRangeName);
 		for (int32 Index = TaggedRange.StartIndex; Index < TaggedRange.EndIndex; ++Index)
@@ -70,7 +70,7 @@ public:
 	 * depth-first order.
 	 */
 	template<typename PredicateClass>
-	void ForEachEvaluator(ECameraNodeEvaluatorFlags FilterFlags, PredicateClass&& Predicate)
+	void ForEachEvaluator(ECameraNodeEvaluatorFlags FilterFlags, PredicateClass&& Predicate) const
 	{
 		for (FCameraNodeEvaluator* Evaluator : FlattenedHierarchy)
 		{
@@ -86,7 +86,7 @@ public:
 	 * evaluator flags in depth-first order.
 	 */
 	template<typename PredicateClass>
-	void ForEachEvaluator(const FName TaggedRangeName, ECameraNodeEvaluatorFlags FilterFlags, PredicateClass&& Predicate)
+	void ForEachEvaluator(const FName TaggedRangeName, ECameraNodeEvaluatorFlags FilterFlags, PredicateClass&& Predicate) const
 	{
 		const FTaggedRange& TaggedRange = TaggedRanges.FindChecked(TaggedRangeName);
 		for (int32 Index = TaggedRange.StartIndex; Index < TaggedRange.EndIndex; ++Index)
