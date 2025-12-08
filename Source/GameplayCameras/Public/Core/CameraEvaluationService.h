@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraObjectRtti.h"
 #include "Debug/CameraDebugBlockFwd.h"
 #include "GameplayCameras.h"
@@ -45,6 +46,7 @@ struct FCameraEvaluationServiceUpdateParams
 {
 	FCameraSystemEvaluator* Evaluator = nullptr;
 	float DeltaTime = 0.f;
+	ECameraNodeEvaluationType EvaluationType = ECameraNodeEvaluationType::Standard;
 };
 
 /** Result structure for updating an evaluation service. */

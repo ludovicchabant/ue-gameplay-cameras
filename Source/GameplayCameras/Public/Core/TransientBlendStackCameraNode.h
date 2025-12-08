@@ -9,6 +9,8 @@
 namespace UE::Cameras
 {
 
+class FCameraActionScope;
+class FCameraActionService;
 class FCameraParameterSetterService;
 
 /**
@@ -70,12 +72,20 @@ public:
 	/** Gets the variable table containing the blended camera object interfaces parameters. */
 	const FCameraVariableTable& GetBlendedParameters() const { return PreBlendVariableTable; }
 
+	/** Gets the active camera rig's action scope, optionally creating one if needed. */
+	TSharedPtr<FCameraActionScope> GetActiveCameraRigActionScope(bool bCreateIfNeeded = false);
+
 protected:
 
 	// FCameraNodeEvaluator interface.
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
+	virtual void OnAddReferencedObjects(FReferenceCollector& Collector) override;
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
+#endif
 
 #if WITH_EDITOR
 	// FBlendStackCameraNodeEvaluator interface.
@@ -101,6 +111,9 @@ private:
 	/** Extra blending-related info for each camera rig entry. */
 	struct FCameraRigEntryExtraInfo
 	{
+		/** Action scope for this entry. */
+		TSharedPtr<FCameraActionScope> ActionScope;
+
 		/** Whether input slots were run. */
 		bool bInputRunThisFrame = false;
 		/** Whether the blend node was run. */

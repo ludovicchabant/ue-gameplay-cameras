@@ -428,6 +428,54 @@ bool UGameplayCameraComponentBase::StopCameraShakeAsset(FCameraShakeInstanceID I
 	}
 }
 
+FCameraActionInstanceID UGameplayCameraComponentBase::StartAction(const UCameraAction* CameraAction)
+{
+	if (HasCameraSystem())
+	{
+		return IGameplayCameraSystemHost::StartAction(CameraAction);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't start action");
+		return FCameraActionInstanceID();
+	}
+}
+
+bool UGameplayCameraComponentBase::IsActionRunning(FCameraActionInstanceID InInstanceID)
+{
+	if (HasCameraSystem())
+	{
+		return IGameplayCameraSystemHost::IsActionRunning(InInstanceID);
+	}
+	return false;
+}
+
+bool UGameplayCameraComponentBase::StopAction(FCameraActionInstanceID InInstanceID)
+{
+	if (HasCameraSystem())
+	{
+		return IGameplayCameraSystemHost::StopAction(InInstanceID);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't stop action");
+		return false;
+	}
+}
+
+bool UGameplayCameraComponentBase::StopAllActionsOfClass(TSubclassOf<UCameraAction> InActionClass)
+{
+	if (HasCameraSystem())
+	{
+		return IGameplayCameraSystemHost::StopAllActionsOfClass(InActionClass);
+	}
+	else
+	{
+		UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_ERROR_MESSAGE("Can't stop actions");
+		return false;
+	}
+}
+
 #undef UE_PRIVATE_GAMEPLAY_CAMERA_COMPONENT_VALIDATE_EVALUATION_CONTEXT
 
 FRotator UGameplayCameraComponentBase::GetEvaluatedCameraRotation() const

@@ -299,6 +299,11 @@ void FDefaultRootCameraNodeEvaluator::OnRunSingleCameraRig(const FSingleCameraRi
 	OutResult.bIsValid = true;
 }
 
+TSharedPtr<FCameraActionScope> FDefaultRootCameraNodeEvaluator::OnGetActiveCameraRigActionScope(bool bCreateIfNeeded)
+{
+	return MainLayer->GetActiveCameraRigActionScope(bCreateIfNeeded);
+}
+
 void FDefaultRootCameraNodeEvaluator::OnBlendStackEvent(const FBlendStackCameraRigEvent& InEvent)
 {
 	if (InEvent.EventType == EBlendStackCameraRigEventType::Pushed ||

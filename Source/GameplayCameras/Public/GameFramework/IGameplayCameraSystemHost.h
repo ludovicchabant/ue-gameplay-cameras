@@ -6,6 +6,7 @@
 #include "Core/CameraRigInstanceID.h"
 #include "Core/CameraShakeInstanceID.h"
 #include "GameplayCameras.h"
+#include "Services/CameraActionInstanceID.h"
 #include "Templates/SharedPointerFwd.h"
 #include "UObject/Interface.h"
 
@@ -13,6 +14,7 @@
 
 #define UE_API GAMEPLAYCAMERAS_API
 
+class UCameraAction;
 class UCameraRigAsset;
 class UCameraShakeAsset;
 class UCanvas;
@@ -118,6 +120,18 @@ protected:
 
 	/** Stops a running camera shake. */
 	UE_API bool StopCameraShake(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
+
+	/** Starts a new camera action. */
+	FCameraActionInstanceID StartAction(const UCameraAction* CameraAction);
+
+	/** Returns whether a given camera action instance is running. */
+	bool IsActionRunning(const FCameraActionInstanceID InInstanceID) const;
+
+	/** Stops a given camera action instance. */
+	bool StopAction(const FCameraActionInstanceID InInstanceID);
+
+	/** Stops all camera action instances of a given class. */
+	bool StopAllActionsOfClass(TSubclassOf<UCameraAction> InActionClass);
 
 protected:
 

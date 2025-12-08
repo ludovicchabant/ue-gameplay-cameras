@@ -18,6 +18,7 @@
 #include "Math/ColorList.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
+#include "Services/CameraActionService.h"
 #include "Services/CameraModifierService.h"
 #include "Services/CameraParameterSetterService.h"
 #include "Services/CameraShakeService.h"
@@ -97,6 +98,7 @@ void FCameraSystemEvaluator::Initialize(const FCameraSystemEvaluatorCreateParams
 	RegisterEvaluationService(MakeShared<FCameraParameterSetterService>());
 	RegisterEvaluationService(MakeShared<FCameraShakeService>());
 	RegisterEvaluationService(MakeShared<FOrientationInitializationService>());
+	RegisterEvaluationService(MakeShared<FCameraActionService>());
 
 	CameraRigCombinationRegistry = MakeShared<FCameraRigCombinationRegistry>();
 
@@ -239,7 +241,7 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	RootNodeResult.ContextDataTable.AutoResetValues();
 
 	// Pre-update all services.
-	PreUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);
+	PreUpdateServices(DeltaTime, EvaluationType, ECameraEvaluationServiceFlags::None);
 
 	// Get the active evaluation context.
 	TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext();
@@ -279,7 +281,7 @@ void FCameraSystemEvaluator::UpdateImpl(float DeltaTime, ECameraNodeEvaluationTy
 	}
 
 	// Post-update all services.
-	PostUpdateServices(DeltaTime, ECameraEvaluationServiceFlags::None);
+	PostUpdateServices(DeltaTime, EvaluationType, ECameraEvaluationServiceFlags::None);
 
 	// Harvest the result.
 	PreVisualResult.Reset(RootEvaluator->GetPreVisualLayerResult());
@@ -409,11 +411,12 @@ void FCameraSystemEvaluator::GetCombinedCameraRigRequest(TConstArrayView<FCamera
 	OutCombinedRequest.bForceActivateDeactivate = bAnyForceActivationDeactivation;
 }
 
-void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)
+void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType, ECameraEvaluationServiceFlags ExtraFlags)
 {
 	FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
 	ServiceUpdateParams.Evaluator = this;
 	ServiceUpdateParams.DeltaTime = DeltaTime;
+	ServiceUpdateParams.EvaluationType = EvaluationType;
 
 	FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
 
@@ -426,11 +429,12 @@ void FCameraSystemEvaluator::PreUpdateServices(float DeltaTime, ECameraEvaluatio
 	}
 }
 
-void FCameraSystemEvaluator::PostUpdateServices(float DeltaTime, ECameraEvaluationServiceFlags ExtraFlags)
+void FCameraSystemEvaluator::PostUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType, ECameraEvaluationServiceFlags ExtraFlags)
 {
 	FCameraEvaluationServiceUpdateParams ServiceUpdateParams;
 	ServiceUpdateParams.Evaluator = this;
 	ServiceUpdateParams.DeltaTime = DeltaTime;
+	ServiceUpdateParams.EvaluationType = EvaluationType;
 
 	FCameraEvaluationServiceUpdateResult ServiceUpdateResult(RootNodeResult);
 

@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
+#include "Services/CameraActionService.h"
 #include "Services/CameraModifierService.h"
 #include "Services/CameraShakeService.h"
 
@@ -187,6 +188,54 @@ bool IGameplayCameraSystemHost::StopCameraShake(FCameraShakeInstanceID InInstanc
 	{
 		TSharedPtr<FCameraShakeService> CameraShakeService = CameraSystemEvaluator->FindEvaluationService<FCameraShakeService>();
 		return CameraShakeService->StopCameraShake(InInstanceID, bImmediately);
+	}
+	return false;
+}
+
+FCameraActionInstanceID IGameplayCameraSystemHost::StartAction(const UCameraAction* CameraAction)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraActionService> CameraActionService = CameraSystemEvaluator->FindEvaluationService<FCameraActionService>();
+		return CameraActionService->StartAction(CameraAction);
+	}
+	return FCameraActionInstanceID();
+}
+
+bool IGameplayCameraSystemHost::IsActionRunning(const FCameraActionInstanceID InInstanceID) const
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraActionService> CameraActionService = CameraSystemEvaluator->FindEvaluationService<FCameraActionService>();
+		return CameraActionService->IsActionRunning(InInstanceID);
+	}
+	return false;
+}
+
+bool IGameplayCameraSystemHost::StopAction(const FCameraActionInstanceID InInstanceID)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraActionService> CameraActionService = CameraSystemEvaluator->FindEvaluationService<FCameraActionService>();
+		return CameraActionService->StopAction(InInstanceID);
+	}
+	return false;
+}
+
+bool IGameplayCameraSystemHost::StopAllActionsOfClass(TSubclassOf<UCameraAction> InActionClass)
+{
+	using namespace UE::Cameras;
+
+	if (ensure(CameraSystemEvaluator))
+	{
+		TSharedPtr<FCameraActionService> CameraActionService = CameraSystemEvaluator->FindEvaluationService<FCameraActionService>();
+		return CameraActionService->StopAllActionsOfClass(InActionClass);
 	}
 	return false;
 }

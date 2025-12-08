@@ -26,6 +26,7 @@ class URootCameraNode : public UCameraNode
 namespace UE::Cameras
 {
 
+class FCameraActionScope;
 class FCameraEvaluationContext;
 class FCameraSystemEvaluator;
 struct FCameraRigActivationDeactivationRequest;
@@ -163,6 +164,9 @@ public:
 	 */
 	GAMEPLAYCAMERAS_API void RunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult);
 
+	/** Gets the action scope for the active camera rig in the main layer. */
+	GAMEPLAYCAMERAS_API TSharedPtr<FCameraActionScope> GetActiveCameraRigActionScope(bool bCreateIfNeeded = false);
+
 	/** Gets the delegate for camera rig events. */
 	FOnRootCameraNodeCameraRigEvent& OnCameraRigEvent() { return OnCameraRigEventDelegate; }
 
@@ -199,6 +203,9 @@ protected:
 
 	/** Evaluates a single camera rig. See comments on RunSingleCameraRig. */
 	virtual void OnRunSingleCameraRig(const FSingleCameraRigEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) {}
+
+	/** Gets the action scope for the active camera rig in the main layer. */
+	virtual TSharedPtr<FCameraActionScope> OnGetActiveCameraRigActionScope(bool bCreateIfNeeded) { return nullptr; }
 
 protected:
 

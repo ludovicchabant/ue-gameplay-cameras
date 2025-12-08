@@ -100,6 +100,11 @@ void FRootCameraNodeEvaluator::RunSingleCameraRig(const FSingleCameraRigEvaluati
 	OnRunSingleCameraRig(Params, OutResult);
 }
 
+TSharedPtr<FCameraActionScope> FRootCameraNodeEvaluator::GetActiveCameraRigActionScope(bool bCreateIfNeeded)
+{
+	return OnGetActiveCameraRigActionScope(bCreateIfNeeded);
+}
+
 const FCameraNodeEvaluationResult& FRootCameraNodeEvaluator::GetPreVisualLayerResult() const
 {
 	return PreVisualResult;

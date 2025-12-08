@@ -5,9 +5,11 @@
 #include "Components/SceneComponent.h"
 #include "Core/CameraAssetReference.h"
 #include "Core/CameraEvaluationContext.h"
+#include "Core/CameraRigInstanceID.h"
 #include "Core/CameraShakeInstanceID.h"
 #include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
+#include "Services/CameraActionInstanceID.h"
 #include "UObject/ObjectMacros.h"
 
 #include "GameplayCameraComponentBase.generated.h"
@@ -16,6 +18,7 @@ class APlayerController;
 class FPrimitiveDrawInterface;
 class FSceneView;
 class FViewport;
+class UCameraAction;
 class UCameraAsset;
 class UCameraShakeAsset;
 class UCanvas;
@@ -145,6 +148,24 @@ public:
 	/** Stops a running camera shake. */
 	UFUNCTION(BlueprintCallable, Category="Camera")
 	bool StopCameraShakeAsset(FCameraShakeInstanceID InInstanceID, bool bImmediately = false);
+
+public:
+
+	/** Starts the given camera action. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	FCameraActionInstanceID StartAction(const UCameraAction* CameraAction);
+
+	/** Returns whether the given camera action instance is still running. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool IsActionRunning(FCameraActionInstanceID InInstanceID);
+
+	/** Stops the given camera action instance. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool StopAction(FCameraActionInstanceID InInstanceID);
+
+	/** Stops all camera actions of a given class. */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	bool StopAllActionsOfClass(TSubclassOf<UCameraAction> InActionClass);
 
 public:
 

@@ -12,8 +12,12 @@
 #include "Core/CameraRigCombinationRegistry.h"
 #include "Core/CameraRigTransition.h"
 #include "Core/CameraSystemEvaluator.h"
+#include "Debug/CameraDebugBlockBuilder.h"
+#include "Debug/CameraDebugRenderer.h"
 #include "Helpers/CameraRigTransitionFinder.h"
 #include "Nodes/Blends/PopBlendCameraNode.h"
+#include "Services/CameraActionEvaluator.h"
+#include "Services/CameraActionScope.h"
 #include "Services/CameraParameterSetterService.h"
 
 namespace UE::Cameras
@@ -219,6 +223,23 @@ void FTransientBlendStackCameraNodeEvaluator::FreezeAll(TSharedPtr<const FCamera
 	}
 }
 
+TSharedPtr<FCameraActionScope> FTransientBlendStackCameraNodeEvaluator::GetActiveCameraRigActionScope(bool bCreateIfNeeded)
+{
+	if (!EntryExtraInfos.IsEmpty())
+	{
+		FCameraRigEntryExtraInfo& ActiveEntryExtraInfo = EntryExtraInfos.Last();
+		if (bCreateIfNeeded && !ActiveEntryExtraInfo.ActionScope.IsValid())
+		{
+			ActiveEntryExtraInfo.ActionScope = MakeShared<FCameraActionScope>();
+
+			FCameraRigEvaluationInfo CameraRigInfo = GetActiveCameraRigEvaluationInfo();
+			ActiveEntryExtraInfo.ActionScope->Initialize(CameraRigInfo);
+		}
+		return ActiveEntryExtraInfo.ActionScope;
+	}
+	return nullptr;
+}
+
 void FTransientBlendStackCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	Super::OnInitialize(Params, OutResult);
@@ -272,7 +293,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalPreBlendPrepare(TArrayView
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
 		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
-		CurParams.bIsActiveCameraRig = (ResolvedEntry.EntryIndex == Entries.Num() - 1);
+		CurParams.bIsActiveCameraRig = ResolvedEntry.bIsActiveEntry;
 
 		FCameraNodeEvaluationResult& CurResult(Entry.Result);
 
@@ -400,7 +421,7 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		FCameraNodeEvaluationParams CurParams(Params);
 		CurParams.EvaluationContext = ResolvedEntry.Context;
 		CurParams.bIsFirstFrame = Entry.Flags.bIsFirstFrame;
-		CurParams.bIsActiveCameraRig = (ResolvedEntry.EntryIndex == Entries.Num() - 1);
+		CurParams.bIsActiveCameraRig = ResolvedEntry.bIsActiveEntry;
 
 		// Start with the input given to us.
 		CurResult.Reset();
@@ -419,11 +440,22 @@ void FTransientBlendStackCameraNodeEvaluator::InternalUpdate(TArrayView<FResolve
 		CurResult.AddCameraPoseTrailPointIfNeeded(ContextResult.CameraPose.GetLocation());
 #endif  // WITH_EDITOR || UE_GAMEPLAY_CAMERAS_DEBUG
 
+		const bool bHasActionScope = EntryExtraInfo.ActionScope.IsValid();
+		if (bHasActionScope)
+		{
+			EntryExtraInfo.ActionScope->PreScopeRun(CurParams, CurResult);
+		}
+
 		// Run the camera rig's root node.
 		FCameraNodeEvaluator* RootEvaluator = Entry.RootEvaluator->GetRootEvaluator();
 		if (RootEvaluator)
 		{
 			RootEvaluator->Run(CurParams, CurResult);
+		}
+
+		if (bHasActionScope)
+		{
+			EntryExtraInfo.ActionScope->PostScopeRun(CurParams, CurResult);
 		}
 	}
 }
@@ -489,10 +521,29 @@ void FTransientBlendStackCameraNodeEvaluator::OnSerialize(const FCameraNodeEvalu
 
 	for (FCameraRigEntryExtraInfo& ExtraInfo : EntryExtraInfos)
 	{
+		if (ExtraInfo.ActionScope)
+		{
+			FCameraActionEvaluatorSerializeParams ActionScopeParams;
+			ExtraInfo.ActionScope->Serialize(ActionScopeParams, Ar);
+		}
+
 		Ar << ExtraInfo.bInputRunThisFrame;
 		Ar << ExtraInfo.bBlendRunThisFrame;
 		Ar << ExtraInfo.bHasPreBlendedParameters;
 		Ar << ExtraInfo.bIsPreBlendFull;
+	}
+}
+
+void FTransientBlendStackCameraNodeEvaluator::OnAddReferencedObjects(FReferenceCollector& Collector)
+{
+	Super::OnAddReferencedObjects(Collector);
+
+	for (FCameraRigEntryExtraInfo& ExtraInfo : EntryExtraInfos)
+	{
+		if (ExtraInfo.ActionScope)
+		{
+			ExtraInfo.ActionScope->AddReferencedObjects(Collector);
+		}
 	}
 }
 
@@ -610,6 +661,45 @@ const UCameraRigTransition* FTransientBlendStackCameraNodeEvaluator::FindTransit
 
 	return nullptr;
 }
+
+#if UE_GAMEPLAY_CAMERAS_DEBUG
+
+class FActionScopesCameraDebugBlock : public FCameraDebugBlock
+{
+	UE_DECLARE_CAMERA_DEBUG_BLOCK(, FActionScopesCameraDebugBlock)
+
+public:
+
+	FActionScopesCameraDebugBlock() = default;
+
+protected:
+
+	// FCameraDebugBlock interface.
+	virtual void OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer) override;
+};
+
+void FTransientBlendStackCameraNodeEvaluator::OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder)
+{
+	Super::OnBuildDebugBlocks(Params, Builder);
+
+	FActionScopesCameraDebugBlock& DebugBlock = Builder.AttachDebugBlock<FActionScopesCameraDebugBlock>();
+
+	for (const FCameraRigEntryExtraInfo& EntryExtraInfo : EntryExtraInfos)
+	{
+		if (EntryExtraInfo.ActionScope.IsValid())
+		{
+			EntryExtraInfo.ActionScope->BuildDebugBlocks(Params, Builder);
+		}
+	}
+}
+
+UE_DEFINE_CAMERA_DEBUG_BLOCK(FActionScopesCameraDebugBlock)
+
+void FActionScopesCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawParams& Params, FCameraDebugRenderer& Renderer)
+{
+}
+
+#endif
 
 #if WITH_EDITOR
 
