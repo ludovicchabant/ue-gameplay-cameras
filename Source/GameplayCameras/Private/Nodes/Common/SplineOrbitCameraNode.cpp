@@ -2,21 +2,18 @@
 
 #include "Nodes/Common/SplineOrbitCameraNode.h"
 
-#include "Core/CameraEvaluationContext.h"
-#include "Core/CameraOperation.h"
 #include "Core/CameraParameterReader.h"
 #include "Core/CameraRigJoints.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "IGameplayCamerasModule.h"
 #include "IGameplayCamerasLiveEditListener.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "Math/CameraNodeSpaceMath.h"
 #include "Math/Ray.h"
+#include "Nodes/Input/DrivenControlRotationCameraNode.h"
 #include "Nodes/Input/Input2DCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SplineOrbitCameraNode)
@@ -55,7 +52,6 @@ protected:
 	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
 
 #if WITH_EDITOR
 	virtual void OnPostEditChangeProperty(const UCameraNode* InCameraNode, const FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -66,8 +62,6 @@ protected:
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
 private:
-
-	APlayerController* GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const;
 
 	void RebuildCurves();
 
@@ -119,12 +113,20 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FSplineOrbitCameraDebugBlock)
 void FSplineOrbitCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const USplineOrbitCameraNode* SplineOrbitNode = GetCameraNodeAs<USplineOrbitCameraNode>();
-	InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(SplineOrbitNode->InputSlot);
+	if (SplineOrbitNode->InputSlot)
+	{
+		InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(SplineOrbitNode->InputSlot);
+	}
+	else
+	{
+		const UDrivenControlRotationCameraNode* PlaceholderInput = NewObject<UDrivenControlRotationCameraNode>();
+		InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(PlaceholderInput);
+	}
 }
 
 void FSplineOrbitCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::None);
 
 	RebuildCurves();
 
@@ -179,16 +181,11 @@ FCameraNodeEvaluatorChildrenView FSplineOrbitCameraNodeEvaluator::OnGetChildren(
 void FSplineOrbitCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FRotator3d OrbitRotation = FRotator3d::ZeroRotator;
-	if (InputSlotEvaluator)
+	if (ensure(InputSlotEvaluator))
 	{
 		InputSlotEvaluator->Run(Params, OutResult);
 		const FVector2d YawPitch = InputSlotEvaluator->GetInputValue();
 		OrbitRotation = FRotator3d(YawPitch.Y, YawPitch.X, 0);
-	}
-	else if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
-	{
-		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
-		OrbitRotation = ControlRotation;
 	}
 	OrbitRotation.Normalize();
 
@@ -265,34 +262,6 @@ void FSplineOrbitCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 	OutResult.CameraPose.SetTransform(OrbitTransform);
 
 	OutResult.CameraRigJoints.AddYawPitchJoint(OrbitPivot);
-}
-
-void FSplineOrbitCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
-{
-	if (!InputSlotEvaluator)
-	{
-		// If we don't have an input slot, we use the pawn rotation directly in OnRun. So let's handle
-		// some operations by affecting that pawn rotation ourselves.
-		if (FYawPitchCameraOperation* Op = Operation.CastOperation<FYawPitchCameraOperation>())
-		{
-			if (APlayerController* PlayerController = GetPlayerController(Params.EvaluationContext))
-			{
-				FRotator3d ControlRotation = PlayerController->GetControlRotation();
-				ControlRotation.Yaw = Op->Yaw.Apply(ControlRotation.Yaw);
-				ControlRotation.Pitch = Op->Pitch.Apply(ControlRotation.Pitch);
-				PlayerController->SetControlRotation(ControlRotation);
-			}
-		}
-	}
-}
-
-APlayerController* FSplineOrbitCameraNodeEvaluator::GetPlayerController(TSharedPtr<const FCameraEvaluationContext> EvaluationContext) const
-{
-	if (EvaluationContext)
-	{
-		return EvaluationContext->GetPlayerController();
-	}
-	return nullptr;
 }
 
 #if WITH_EDITOR

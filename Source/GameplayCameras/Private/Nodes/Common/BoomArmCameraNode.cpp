@@ -2,15 +2,12 @@
 
 #include "Nodes/Common/BoomArmCameraNode.h"
 
-#include "Core/CameraEvaluationContext.h"
-#include "Core/CameraOperation.h"
 #include "Core/CameraRigJoints.h"
 #include "Core/CameraValueInterpolator.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerController.h"
+#include "Nodes/Input/DrivenControlRotationCameraNode.h"
 #include "Nodes/Input/Input2DCameraNode.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BoomArmCameraNode)
@@ -32,7 +29,15 @@ UE_DEFINE_CAMERA_DEBUG_BLOCK_WITH_FIELDS(FBoomArmCameraDebugBlock)
 void FBoomArmCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams& Params)
 {
 	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
-	InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(BoomArmNode->InputSlot);
+	if (BoomArmNode->InputSlot)
+	{
+		InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(BoomArmNode->InputSlot);
+	}
+	else
+	{
+		const UDrivenControlRotationCameraNode* PlaceholderInput = NewObject<UDrivenControlRotationCameraNode>();
+		InputSlotEvaluator = Params.BuildEvaluatorAs<FInput2DCameraNodeEvaluator>(PlaceholderInput);
+	}
 	if (BoomArmNode->BoomLengthInterpolator)
 	{
 		BoomLengthInterpolator = BoomArmNode->BoomLengthInterpolator->BuildDoubleInterpolator();
@@ -41,7 +46,7 @@ void FBoomArmCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParams&
 
 void FBoomArmCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::SupportsOperations);
+	SetNodeEvaluatorFlags(ECameraNodeEvaluatorFlags::NeedsSerialize);
 
 	const UBoomArmCameraNode* BoomArmNode = GetCameraNodeAs<UBoomArmCameraNode>();
 	BoomOffsetReader.Initialize(BoomArmNode->BoomOffset);
@@ -60,16 +65,11 @@ FCameraNodeEvaluatorChildrenView FBoomArmCameraNodeEvaluator::OnGetChildren()
 FRotator FBoomArmCameraNodeEvaluator::ComputeBoomRotation(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FRotator3d BoomRotation = FRotator3d::ZeroRotator;
-	if (InputSlotEvaluator)
+	if (ensure(InputSlotEvaluator))
 	{
 		InputSlotEvaluator->Run(Params, OutResult);
 		const FVector2d YawPitch = InputSlotEvaluator->GetInputValue();
 		BoomRotation = FRotator3d(YawPitch.Y, YawPitch.X, 0);
-	}
-	else if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
-	{
-		const FRotator3d ControlRotation = PlayerController->GetControlRotation();
-		BoomRotation = ControlRotation;
 	}
 	return BoomRotation;
 }
@@ -180,23 +180,16 @@ void FBoomArmCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Param
 	OutResult.CameraRigJoints.AddYawPitchJoint(BoomPivot);
 }
 
-void FBoomArmCameraNodeEvaluator::OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation)
+void FBoomArmCameraNodeEvaluator::OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar)
 {
-	if (!InputSlotEvaluator)
+	if (BoomLengthInterpolator)
 	{
-		// If we don't have an input slot, we use the pawn rotation directly in OnRun. So let's handle
-		// some operations by affecting that pawn rotation ourselves.
-		if (FYawPitchCameraOperation* Op = Operation.CastOperation<FYawPitchCameraOperation>())
-		{
-			if (APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController())
-			{
-				FRotator3d ControlRotation = PlayerController->GetControlRotation();
-				ControlRotation.Yaw = Op->Yaw.Apply(ControlRotation.Yaw);
-				ControlRotation.Pitch = Op->Pitch.Apply(ControlRotation.Pitch);
-				PlayerController->SetControlRotation(ControlRotation);
-			}
-		}
+		FCameraValueInterpolatorSerializeParams InterpolatorParams;
+		BoomLengthInterpolator->Serialize(InterpolatorParams, Ar);
 	}
+
+	Ar << LastPivotLocation;
+	Ar << CumulativePull;
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

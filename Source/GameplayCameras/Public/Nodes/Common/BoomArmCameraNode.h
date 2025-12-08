@@ -34,7 +34,7 @@ protected:
 	UE_API virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	UE_API virtual FCameraNodeEvaluatorChildrenView OnGetChildren() override;
 	UE_API virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-	UE_API virtual void OnExecuteOperation(const FCameraOperationParams& Params, FCameraOperation& Operation) override;
+	UE_API virtual void OnSerialize(const FCameraNodeEvaluatorSerializeParams& Params, FArchive& Ar) override;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	UE_API virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
