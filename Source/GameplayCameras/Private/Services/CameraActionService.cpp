@@ -10,6 +10,7 @@
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
+#include "Misc/EngineVersionComparison.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
 #include "Services/CameraAction.h"
@@ -240,12 +241,20 @@ void FCameraActionService::CleanUpActions()
 			{
 				if (!ActionScope->IsActionRunning(ActionInfo.ActionID))
 				{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 					ActionIt.RemoveCurrent(EAllowShrinking::No);
+#else
+					ActionIt.RemoveCurrent();
+#endif
 				}
 			}
 			else
 			{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 				ActionIt.RemoveCurrent(EAllowShrinking::No);
+#else
+				ActionIt.RemoveCurrent();
+#endif
 			}
 		}
 		if (ActionSet.Actions.IsEmpty())
@@ -254,7 +263,11 @@ void FCameraActionService::CleanUpActions()
 			{
 				RemoveCloningAction();
 			}
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 			SetIt.RemoveCurrent(EAllowShrinking::No);
+#else
+			SetIt.RemoveCurrent();
+#endif
 		}
 	}
 }

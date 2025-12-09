@@ -12,6 +12,7 @@
 #include "GameplayCamerasSettings.h"
 #include "Helpers/OutgoingReferenceFinder.h"
 #include "Logging/TokenizedMessage.h"
+#include "Misc/EngineVersionComparison.h"
 #include "StateTree.h"
 #include "StateTreeExecutionContext.h"
 #include "StateTreeInstanceData.h"
@@ -94,7 +95,11 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 		return;
 	}
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 	StateTreeContext.Start(StateTreeReference.GetGlobalParameters());
+#else
+	StateTreeContext.Start(&StateTreeReference.GetParameters());
+#endif
 }
 
 void FStateTreeCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeactivateParams& Params, FCameraDirectorEvaluationResult& OutResult)
