@@ -208,8 +208,7 @@ void UBlueprintCameraVariableTableFunctionLibrary::SetTransformCameraVariable(co
 	{\
 		FFrame::KismetExecutionMessage(TEXT("No camera context data table has been set"), ELogVerbosity::Error);\
 		return ErrorResult;\
-	}\
-
+	}
 
 FName UBlueprintCameraContextDataTableFunctionLibrary::GetNameData(const FBlueprintCameraEvaluationDataRef& CameraData, FCameraContextDataID DataID)
 {
@@ -302,4 +301,38 @@ bool UBlueprintCameraContextDataTableFunctionLibrary::SetClassData(const FBluepr
 }
 
 #undef UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_DATA_TABLE_VALIDATE
+
+#define UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE()\
+	using namespace UE::Cameras;\
+	if (!CameraData.IsValid())\
+	{\
+		FFrame::KismetExecutionMessage(TEXT("No valid camera data was provided"), ELogVerbosity::Error);\
+		return;\
+	}\
+
+void UBlueprintPostProcessSettingsCollectionFunctionLibrary::GetPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, FPostProcessSettings& OutPostProcessSettings)
+{
+	UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE()
+	OutPostProcessSettings = CameraData.GetResult()->PostProcessSettings.Get();
+}
+
+void UBlueprintPostProcessSettingsCollectionFunctionLibrary::SetPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings)
+{
+	UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE()
+	CameraData.GetResult()->PostProcessSettings.Get() = PostProcessSettings;
+}
+
+void UBlueprintPostProcessSettingsCollectionFunctionLibrary::OverrideChangedPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings)
+{
+	UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE()
+	CameraData.GetResult()->PostProcessSettings.OverrideChanged(PostProcessSettings);
+}
+
+void UBlueprintPostProcessSettingsCollectionFunctionLibrary::LerpPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings, float BlendFactor)
+{
+	UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE()
+	CameraData.GetResult()->PostProcessSettings.LerpAll(PostProcessSettings, BlendFactor);
+}
+
+#undef UE_PRIVATE_BLUEPRINT_CAMERA_CONTEXT_POST_PROCESS_VALIDATE
 

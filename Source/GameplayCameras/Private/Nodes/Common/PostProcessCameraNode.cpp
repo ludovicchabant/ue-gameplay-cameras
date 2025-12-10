@@ -2,6 +2,7 @@
 
 #include "Nodes/Common/PostProcessCameraNode.h"
 
+#include "Core/CameraContextDataReader.h"
 #include "Core/CameraPose.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(PostProcessCameraNode)
@@ -23,17 +24,28 @@ public:
 protected:
 
 	// FCameraNodeEvaluator interface.
+	virtual void OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
+
+private:
+
+	TCameraContextDataReader<FPostProcessSettings> PostProcessSettingsReader;
 };
 
 UE_DEFINE_CAMERA_NODE_EVALUATOR(FPostProcessCameraNodeEvaluator)
+
+void FPostProcessCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
+{
+	const UPostProcessCameraNode* PostProcessNode = GetCameraNodeAs<UPostProcessCameraNode>();
+	PostProcessSettingsReader.Initialize(&PostProcessNode->PostProcessSettings, PostProcessNode->PostProcessSettingsDataID);
+}
 
 void FPostProcessCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
 	FCameraPose& OutPose = OutResult.CameraPose;
 
-	const UPostProcessCameraNode* PostProcessNode = GetCameraNodeAs<UPostProcessCameraNode>();
-	OutResult.PostProcessSettings.OverrideChanged(PostProcessNode->PostProcessSettings);
+	const FPostProcessSettings& PostProcessSettings = PostProcessSettingsReader.GetRef(OutResult.ContextDataTable);
+	OutResult.PostProcessSettings.OverrideChanged(PostProcessSettings);
 }
 
 }  // namespace UE::Cameras

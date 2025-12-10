@@ -234,4 +234,31 @@ public:
 	static bool SetClassData(const FBlueprintCameraEvaluationDataRef& CameraData, FCameraContextDataID DataID, UClass* Data);
 };
 
+/**
+ * Utility Blueprint functions for camera post process settings.
+ */
+UCLASS()
+class UBlueprintPostProcessSettingsCollectionFunctionLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+public:
+
+	/** Gets the post-process settings. */
+	UFUNCTION(BlueprintPure, Category=Camera)
+	static void GetPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, FPostProcessSettings& OutPostProcessSettings);
+
+	/** Sets the post-process settings. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	static void SetPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings);
+
+	/** Overrides the post-process settings with the given ones. Only set properties are written. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	static void OverrideChangedPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings);
+
+	/** Interpolate the post-process settings towards the given ones. Only set properties are interpolated. */
+	UFUNCTION(BlueprintCallable, Category=Camera)
+	static void LerpPostProcessSettings(const FBlueprintCameraEvaluationDataRef& CameraData, const FPostProcessSettings& PostProcessSettings, float BlendFactor);
+};
+
 #undef UE_API

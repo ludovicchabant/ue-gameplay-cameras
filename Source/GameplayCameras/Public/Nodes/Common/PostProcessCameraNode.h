@@ -23,7 +23,11 @@ protected:
 
 public:
 
-	UPROPERTY(EditAnywhere, Category="Rendering")
+	/** The post-process settings to set on the output camera pose. */
+	UPROPERTY(EditAnywhere, Category="Rendering", meta=(CameraContextData=true))
 	FPostProcessSettings PostProcessSettings;
+
+	UPROPERTY()
+	FCameraContextDataID PostProcessSettingsDataID;
 };
 

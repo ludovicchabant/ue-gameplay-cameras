@@ -4,6 +4,7 @@
 
 #include "Core/CameraContextDataTable.h"
 #include "CoreTypes.h"
+#include <type_traits>
 
 namespace UE::Cameras
 {
@@ -72,6 +73,24 @@ struct TCameraContextDataReader
 			}
 		}
 		return (DefaultValuePtr ? *DefaultValuePtr : DataType());
+	}
+
+	const DataType& GetRef(const FCameraContextDataTable& ContextDataTable) const
+	{
+		static const DataType StaticDefaultValue = DataType();
+
+		static_assert(!std::is_enum_v<DataType>, "Can't use GetRef with enum types, please use Get instead");
+
+		if (!DataID.IsValid())
+		{
+			return (DefaultValuePtr ? *DefaultValuePtr : StaticDefaultValue);
+		}
+
+		if (const DataType* ActualValue = ContextDataTable.TryGetData<DataType>(DataID))
+		{
+			return *ActualValue;
+		}
+		return (DefaultValuePtr ? *DefaultValuePtr : StaticDefaultValue);
 	}
 
 private:
