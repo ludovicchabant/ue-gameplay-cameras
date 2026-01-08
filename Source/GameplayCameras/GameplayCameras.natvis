@@ -1,6 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <Type Name="FCameraVariableID">
+    <DisplayString Condition="Value == (uint32)-1">Invalid</DisplayString>
+    <DisplayString Condition="Value != (uint32)-1">Value={Value}</DisplayString>
+  </Type>
+
+  <Type Name="FCameraContextDataID">
+    <DisplayString Condition="Value == (uint32)-1">Invalid</DisplayString>
+    <DisplayString Condition="Value != (uint32)-1">Value={Value}</DisplayString>
+  </Type>
+
   <Type Name="UE::Cameras::FCameraVariableTable">
 
     <DisplayString>Num={Entries.ArrayNum}</DisplayString>

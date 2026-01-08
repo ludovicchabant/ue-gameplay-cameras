@@ -29,20 +29,25 @@ const UBaseCameraObject* FCameraRigAssetReference::GetCameraObject() const
 
 void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly, false);
 }
 
 void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, UE::Cameras::FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutVariableTable, &OutContextDataTable, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutVariableTable, &OutContextDataTable, bDrivenOnly, false);
 }
 
 void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, bDrivenOnly, false);
 }
 
-void FCameraRigAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly) const
+void FCameraRigAssetReference::ApplyParameterOverridesAndDefaults(UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
+{
+	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, false, true);
+}
+
+void FCameraRigAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly, bool bApplyUnwrittenDefaults) const
 {
 	using namespace UE::Cameras;
 
@@ -50,7 +55,11 @@ void FCameraRigAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraV
 	{
 		FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
 		Helper.bDrivenOnly = bDrivenOnly;
-		Helper.ApplyParameterOverrides(CameraRig, CameraRig->GetParameterDefinitions(), Parameters);
+		Helper.ApplyParameterOverrides(CameraRig, Parameters);
+		if (bApplyUnwrittenDefaults)
+		{
+			Helper.ApplyParameterDefaults(CameraRig, true);
+		}
 	}
 }
 

@@ -22,9 +22,16 @@ void FCameraAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEval
 	using namespace UE::Cameras;
 	if (CameraAsset)
 	{
-		FCameraObjectInterfaceParameterOverrideHelper Helper(&OutResult.VariableTable, &OutResult.ContextDataTable);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(OutResult);
 		Helper.bDrivenOnly = bDrivenOnly;
-		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), Parameters);
+		Helper.ApplyFilteredParameters(
+				CameraAsset, 
+				CameraAsset->GetParameterDefinitions(),
+				Parameters,
+				[this](const FCameraObjectInterfaceParameterDefinition& Definition) -> bool
+				{
+					return Parameters.IsPropertyOverriden(Definition.ParameterGuid);
+				});
 	}
 }
 

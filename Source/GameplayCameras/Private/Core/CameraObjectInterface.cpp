@@ -43,7 +43,7 @@ FCameraVariableDefinition UCameraObjectInterfaceBlendableParameter::GetVariableD
 {
 	FCameraVariableDefinition Definition;
 	Definition.VariableID = PrivateVariableID;
-	Definition.VariableType = ParameterType;
+	Definition.VariableType = VariableType;
 	Definition.BlendableStructType = BlendableStructType;
 	Definition.bIsPrivate = true;
 	Definition.bIsInput = bIsPreBlended;
@@ -60,7 +60,7 @@ void UCameraObjectInterfaceBlendableParameter::GetParameterDefinition(FCameraObj
 	OutParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
 	OutParameterDefinition.bIsVisible = bIsVisible;
 	OutParameterDefinition.VariableID = PrivateVariableID;
-	OutParameterDefinition.VariableType = ParameterType;
+	OutParameterDefinition.VariableType = VariableType;
 	OutParameterDefinition.BlendableStructType = BlendableStructType;
 }
 

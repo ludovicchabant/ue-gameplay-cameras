@@ -124,7 +124,7 @@ public:
 	virtual void PostLoad() override;
 
 	// ICustomCameraNodeParameterProvider interface.
-	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
+	virtual void GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos) override;
 };
 
 namespace UE::Cameras

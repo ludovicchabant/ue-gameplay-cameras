@@ -119,10 +119,17 @@ void UGameplayCameraComponent::ApplyChangedParameterOverrides()
 	{
 		FCameraNodeEvaluationResult& InitialResult = GetEvaluationContext()->GetInitialResult();
 
-		FCameraObjectInterfaceParameterOverrideHelper Helper(&InitialResult.VariableTable, &InitialResult.ContextDataTable);
-		Helper.bOverridenOnly = false;
-		GetChangedParameterOverrides(CameraReference.GetParameters(), CachedParameterOverrides, Helper.OnlyParameterGuids);
-		Helper.ApplyParameterOverrides(CameraAsset, CameraAsset->GetParameterDefinitions(), CameraReference.GetParameters());
+		TArray<FGuid> ChangedParameterGuids;
+		FCameraObjectInterfaceParameterOverrideHelper Helper(InitialResult);
+		GetChangedParameterOverrides(CameraReference.GetParameters(), CachedParameterOverrides, ChangedParameterGuids);
+		Helper.ApplyFilteredParameters(
+				CameraAsset,
+				CameraAsset->GetParameterDefinitions(),
+				CameraReference.GetParameters(),
+				[ChangedParameterGuids](const FCameraObjectInterfaceParameterDefinition& Definition) -> bool
+				{
+					return ChangedParameterGuids.Contains(Definition.ParameterGuid);
+				});
 
 		CachedParameterOverrides = CameraReference.GetParameters();
 	}

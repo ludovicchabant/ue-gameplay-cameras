@@ -44,22 +44,16 @@ void FCameraRigCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParam
 
 void FCameraRigCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Apply overrides right away.
-	ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, false);
-
+	// Apply overrides and defaults right away.
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
-	if (const UCameraRigAsset* CameraRig = PrefabNode->CameraRigReference.GetCameraRig())
-	{
-		// Set default values for unset entries in the variable table, so that pre-blending from default 
-		// values works.
-		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, OutResult.VariableTable);
-	}
+	PrefabNode->CameraRigReference.ApplyParameterOverridesAndDefaults(OutResult);
 }
 
 void FCameraRigCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	// Keep applying overrides in case they are driven by a variable.
-	ApplyParameterOverrides(OutResult.VariableTable, false);
+	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
+	PrefabNode->CameraRigReference.ApplyParameterOverrides(OutResult.VariableTable, false);
 }
 
 void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -68,18 +62,6 @@ void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Par
 	{
 		CameraRigRootEvaluator->Run(Params, OutResult);
 	}
-}
-
-void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly)
-{
-	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
-	PrefabNode->CameraRigReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
-}
-
-void FCameraRigCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly)
-{
-	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
-	PrefabNode->CameraRigReference.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
 }
 
 }  // namespace UE::Cameras
@@ -113,6 +95,12 @@ void UCameraRigCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 		return;
 	}
 
+	const bool bDidModify = CameraRigReference.PostBuild();
+	if (bDidModify)
+	{
+		Modify();
+	}
+
 	const UCameraRigAsset* OuterCameraRig = GetTypedOuter<UCameraRigAsset>();
 	if (OuterCameraRig != CameraRig)
 	{
@@ -141,7 +129,7 @@ void UCameraRigCameraNode::GatherPackages(FCameraRigPackages& OutPackages) const
 	}
 }
 
-void UCameraRigCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+void UCameraRigCameraNode::GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos)
 {
 	CameraRigReference.GetCustomCameraNodeParameters(OutParameterInfos);
 }

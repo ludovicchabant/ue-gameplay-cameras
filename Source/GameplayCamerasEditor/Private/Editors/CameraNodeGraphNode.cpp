@@ -51,6 +51,8 @@ void UCameraNodeGraphNode::OnCustomCameraNodeParametersChanged(const UCameraNode
 
 void UCameraNodeGraphNode::AllocateDefaultPins()
 {
+	using namespace UE::Cameras;
+
 	Super::AllocateDefaultPins();
 
 	// Add extra input pins for any camera parameter, variable reference, and context data.
@@ -154,21 +156,18 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 	ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(Object);
 	if (CustomParameterProvider)
 	{
-		FCustomCameraNodeParameterInfos CustomParameters;
-		CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
+		FCameraNodeParameterInfos ObjectParameters;
+		CustomParameterProvider->GetCustomCameraNodeParameters(ObjectParameters);
 
 		// Add pins for blendable parameters.
-		TArray<FCustomCameraNodeBlendableParameter> CustomBlendableParameters;
-		CustomParameters.GetBlendableParameters(CustomBlendableParameters);
-
 		const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
-		for (const FCustomCameraNodeBlendableParameter& BlendableParameter : CustomBlendableParameters)
+		for (const FCameraNodeBlendableParameterInfo& BlendableParameter : ObjectParameters.GetBlendableParameters())
 		{
 			FEdGraphPinType PinType;
 			PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraParameter;
-			PinType.PinSubCategory = VariableTypeEnum->GetValueAsName(BlendableParameter.ParameterType);
+			PinType.PinSubCategory = VariableTypeEnum->GetValueAsName(BlendableParameter.VariableType);
 
-			switch (BlendableParameter.ParameterType)
+			switch (BlendableParameter.VariableType)
 			{
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 				case ECameraVariableType::ValueName:\
@@ -177,28 +176,25 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 				UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 				case ECameraVariableType::BlendableStruct:
-					PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableParameter.BlendableStructType.Get());
+					PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableParameter.BlendableStructType);
 					break;
 			}
 
 			UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, BlendableParameter.ParameterName);
 			ParameterPin->PinFriendlyName = FText::FromName(BlendableParameter.ParameterName);
-			ParameterPin->PinToolTip = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter.ParameterType);
+			ParameterPin->PinToolTip = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter.VariableType);
 		}
 
 		// Add pins for data parameters.
-		TArray<FCustomCameraNodeDataParameter> CustomDataParameters;
-		CustomParameters.GetDataParameters(CustomDataParameters);
 		const UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
-
-		for (const FCustomCameraNodeDataParameter& DataParameter : CustomDataParameters)
+		for (const FCameraNodeDataParameterInfo& DataParameter : ObjectParameters.GetDataParameters())
 		{
 			FEdGraphPinType PinType;
 			PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraContextData;
-			PinType.PinSubCategory = DataTypeEnum->GetNameByValue((int64)DataParameter.ParameterType);
-			PinType.PinSubCategoryObject = const_cast<UObject*>(DataParameter.ParameterTypeObject.Get());
+			PinType.PinSubCategory = DataTypeEnum->GetNameByValue((int64)DataParameter.DataType);
+			PinType.PinSubCategoryObject = const_cast<UObject*>(DataParameter.DataTypeObject);
 
-			if (DataParameter.ParameterContainerType == ECameraContextDataContainerType::Array)
+			if (DataParameter.DataContainerType == ECameraContextDataContainerType::Array)
 			{
 				PinType.ContainerType = EPinContainerType::Array;
 			}
@@ -206,10 +202,10 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 			UEdGraphPin* ContextDataPin = CreatePin(EGPD_Input, PinType, DataParameter.ParameterName);
 			ContextDataPin->PinFriendlyName = FText::FromName(DataParameter.ParameterName);
 
-			FString PinToolTip = DataTypeEnum->GetNameStringByValue((int64)DataParameter.ParameterType);
-			if (DataParameter.ParameterTypeObject)
+			FString PinToolTip = DataTypeEnum->GetNameStringByValue((int64)DataParameter.DataType);
+			if (DataParameter.DataTypeObject)
 			{
-				PinToolTip = DataParameter.ParameterTypeObject->GetName();
+				PinToolTip = DataParameter.DataTypeObject->GetName();
 			}
 			ContextDataPin->PinToolTip = PinToolTip;
 		}

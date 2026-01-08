@@ -72,8 +72,13 @@ void FCameraObjectInterfaceParameterBuilder::BuildDefaultParameters()
 	if (CameraObject->DefaultParameters.GetPropertyBagStruct() != DefaultParametersStruct)
 	{
 		CameraObject->Modify();
+		// In theory, the default values were set when the editor called SetDefaultParameterValue, which happens when the user
+		// creates a new parameter or changes that parameter's default value in the Details View. So the DefaultParameters
+		// structure should have the correct values already and we only need to migrate them to the new struct if anything
+		// changed.
 		CameraObject->DefaultParameters.MigrateToNewBagStruct(DefaultParametersStruct);
 	}
+
 }
 
 void FCameraObjectInterfaceParameterBuilder::AppendDefaultParameterProperties(const UBaseCameraObject* CameraObject, TArray<FPropertyBagPropertyDesc>& OutProperties)
@@ -189,12 +194,12 @@ bool FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(UBaseCamer
 	// First check if the value is found on a custom parameter.
 	if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(TargetNode))
 	{
-		FCustomCameraNodeParameterInfos CustomParameters;
+		FCameraNodeParameterInfos CustomParameters;
 		CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
 
-		FCustomCameraNodeParameterInfos::FBlendableParameterInfo* CustomBlendableParameter = 
+		FCameraNodeBlendableParameterInfo* CustomBlendableParameter = 
 			CustomParameters.BlendableParameters.FindByPredicate(
-					[TargetPropertyName](FCustomCameraNodeParameterInfos::FBlendableParameterInfo& CustomParameter)
+					[TargetPropertyName](FCameraNodeBlendableParameterInfo& CustomParameter)
 					{
 						return CustomParameter.ParameterName == TargetPropertyName;
 					});
@@ -204,9 +209,9 @@ bool FCameraObjectInterfaceParameterBuilder::SetDefaultParameterValue(UBaseCamer
 			goto DoneSearchingRawSourceValuePtr;
 		}
 
-		FCustomCameraNodeParameterInfos::FDataParameterInfo* CustomDataParameter =
+		FCameraNodeDataParameterInfo* CustomDataParameter =
 			CustomParameters.DataParameters.FindByPredicate(
-					[TargetPropertyName](FCustomCameraNodeParameterInfos::FDataParameterInfo& CustomParameter)
+					[TargetPropertyName](FCameraNodeDataParameterInfo& CustomParameter)
 					{
 						return CustomParameter.ParameterName == TargetPropertyName;
 					});

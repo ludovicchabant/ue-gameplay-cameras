@@ -848,7 +848,7 @@ void UBaseFramingCameraNode::PostLoad()
 	}
 }
 
-void UBaseFramingCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+void UBaseFramingCameraNode::GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos)
 {
 	OutParameterInfos.AddBlendableParameter(
 			GET_MEMBER_NAME_CHECKED(UBaseFramingCameraNode, DeadZone),

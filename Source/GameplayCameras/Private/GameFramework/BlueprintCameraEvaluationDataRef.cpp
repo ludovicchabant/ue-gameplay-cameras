@@ -73,7 +73,8 @@ void UBlueprintCameraEvaluationDataFunctionLibrary::SetDefaultCameraRigParameter
 
 	if (FCameraNodeEvaluationResult* Result = CameraData.GetResult())
 	{
-		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParameters(CameraRig, Result->VariableTable, Result->ContextDataTable);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(*Result);
+		Helper.ApplyParameterDefaults(CameraRig);
 	}
 }
 

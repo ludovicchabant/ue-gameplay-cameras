@@ -91,7 +91,7 @@ public:
 
 	/** The type of this parameter. */
 	UPROPERTY()
-	ECameraVariableType ParameterType = ECameraVariableType::Boolean;
+	ECameraVariableType VariableType = ECameraVariableType::Boolean;
 
 	/** The struct type of this parameter if it is a blendable struct. */
 	UPROPERTY()

@@ -32,7 +32,7 @@ protected:
 	virtual void GatherPackages(FCameraRigPackages& OutPackages) const override;
 
 	// ICustomCameraNodeParameterProvider interface.
-	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
+	virtual void GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos) override;
 
 	// IObjectTreeGraphObject interface.
 #if WITH_EDITOR
@@ -73,11 +73,6 @@ protected:
 	virtual void OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult) override;
 	virtual void OnBuild(const FCameraNodeEvaluatorBuildParams& Params) override;
 	virtual void OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult) override;
-
-private:
-
-	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly);
-	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly);
 
 private:
 

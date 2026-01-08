@@ -42,6 +42,23 @@ void FInstancedOverridablePropertyBag::SetPropertyOverriden(const FGuid& InPrope
 	}
 }
 
+bool FInstancedOverridablePropertyBag::IsPropertyOverriden(const FName InPropertyName) const
+{
+	if (const FPropertyBagPropertyDesc* PropertyDesc = FindPropertyDescByName(InPropertyName))
+	{
+		return IsPropertyOverriden(PropertyDesc->ID);
+	}
+	return false;
+}
+
+void FInstancedOverridablePropertyBag::SetPropertyOverriden(const FName InPropertyName, bool bIsOverriden)
+{
+	if (const FPropertyBagPropertyDesc* PropertyDesc = FindPropertyDescByName(InPropertyName))
+	{
+		return SetPropertyOverriden(PropertyDesc->ID, bIsOverriden);
+	}
+}
+
 void FInstancedOverridablePropertyBag::MigrateToNewBagInstanceWithOverrides(const FInstancedPropertyBag& NewBagInstance)
 {
 	FInstancedPropertyBag::MigrateToNewBagInstanceWithOverrides(NewBagInstance, OverridenPropertyIDs);

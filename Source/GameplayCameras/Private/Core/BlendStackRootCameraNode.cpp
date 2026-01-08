@@ -290,7 +290,8 @@ void FBlendStackRootCameraNodeEvaluator::RunBlendedParameterOverridesStack(const
 
 		// Start by setting the default values of all parameters. If we don't do this, parameter overrides
 		// wouldn't have a base value to blend from.
-		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(BlendablePrefabCameraRig, CurResult.VariableTable);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(&CurResult.VariableTable, nullptr);
+		Helper.ApplyParameterDefaults(BlendablePrefabCameraRig);
 
 		// Next, override the defaults with the specific values of this entry, applied bottoms up.
 		for (int32 Index = BlendedParameterOverrides.PrefabTrail.Num() - 1; Index >= 0; --Index)

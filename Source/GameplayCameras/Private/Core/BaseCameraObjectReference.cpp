@@ -17,21 +17,15 @@ const FCameraObjectInterfaceParameterMetaData* FBaseCameraObjectReference::FindM
 			});
 }
 
-FCameraObjectInterfaceParameterMetaData& FBaseCameraObjectReference::FindOrAddMetaData(const FGuid& PropertyID)
+FCameraObjectInterfaceParameterMetaData& FBaseCameraObjectReference::GetMetaData(const FGuid& PropertyID)
 {
-	FCameraObjectInterfaceParameterMetaData* ExistingMetaData = ParameterMetaData.FindByPredicate(
-			[PropertyID](FCameraObjectInterfaceParameterMetaData& Item)
+	FCameraObjectInterfaceParameterMetaData* MetaData = ParameterMetaData.FindByPredicate(
+			[PropertyID](const FCameraObjectInterfaceParameterMetaData& Item)
 			{
 				return Item.ParameterGuid == PropertyID;
 			});
-	if (ExistingMetaData)
-	{
-		return *ExistingMetaData;
-	}
-
-	FCameraObjectInterfaceParameterMetaData& NewMetaData = ParameterMetaData.Emplace_GetRef();
-	NewMetaData.ParameterGuid = PropertyID;
-	return NewMetaData;
+	check(MetaData);
+	return *MetaData;
 }
 
 bool FBaseCameraObjectReference::IsParameterOverridden(const FGuid& PropertyID) const
@@ -131,7 +125,7 @@ void FBaseCameraObjectReference::RebuildParameters()
 	}
 }
 
-void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+void FBaseCameraObjectReference::GetCustomCameraNodeParameters(UE::Cameras::FCameraNodeParameterInfos& OutParameterInfos)
 {
 	RebuildParametersIfNeeded();
 
@@ -196,7 +190,7 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 						void* PropertyValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<void>(ParametersMemory);
 						if (ensure(PropertyValue))
 						{
-							FCameraObjectInterfaceParameterMetaData& MetaData = FindOrAddMetaData(Definition.ParameterGuid);
+							FCameraObjectInterfaceParameterMetaData& MetaData = GetMetaData(Definition.ParameterGuid);
 							OutParameterInfos.AddBlendableParameter(
 									Definition.ParameterName,
 									Definition.VariableType,
@@ -210,7 +204,7 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 		}
 		else if (Definition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
-			FCameraObjectInterfaceParameterMetaData& MetaData = FindOrAddMetaData(Definition.ParameterGuid);
+			FCameraObjectInterfaceParameterMetaData& MetaData = GetMetaData(Definition.ParameterGuid);
 
 			ECameraContextDataContainerType ContainerType = ECameraContextDataContainerType::None;
 			if (PropertyDesc->ContainerTypes.GetFirstContainerType() == EPropertyBagContainerType::Array)
@@ -265,6 +259,63 @@ void FBaseCameraObjectReference::GetCustomCameraNodeParameters(FCustomCameraNode
 			}
 		}
 	}
+}
+
+bool FBaseCameraObjectReference::PostBuild()
+{
+	const UPropertyBag* ParametersStruct = Parameters.GetPropertyBagStruct();
+	const uint8* ParametersMemory = Parameters.GetValue().GetMemory();
+	if (!ParametersStruct || !ParametersMemory)
+	{
+		return false;
+	}
+
+	// Parameters that are driven by a connection (such as a camera rig parameter) should be set as overriden.
+	// For most blendable parameters, we can tell about the connection from the VariableID being set on them.
+	// For blendable structs and data parameters, the VariableID or DataID is in our metadata.
+	bool bDidModify = false;
+	for (const FCameraObjectInterfaceParameterMetaData& MetaData : ParameterMetaData)
+	{
+		const FPropertyBagPropertyDesc* PropertyDesc = ParametersStruct->FindPropertyDescByID(MetaData.ParameterGuid);
+		if (!ensure(PropertyDesc))
+		{
+			continue;
+		}
+
+		if (PropertyDesc->ValueType == EPropertyBagPropertyType::Struct)
+		{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+			if (PropertyDesc->ValueTypeObject == F##ValueName##CameraParameter::StaticStruct())\
+			{\
+				using CameraParameterType = F##ValueName##CameraParameter;\
+				const CameraParameterType* PropertyValue = PropertyDesc->CachedProperty->ContainerPtrToValuePtr<CameraParameterType>(ParametersMemory);\
+				if (ensure(PropertyValue) && PropertyValue->VariableID.IsValid())\
+				{\
+					if (!Parameters.IsPropertyOverriden(MetaData.ParameterGuid))\
+					{\
+						Parameters.SetPropertyOverriden(MetaData.ParameterGuid, true);\
+						bDidModify = true;\
+					}\
+				}\
+			}\
+			else
+			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+			{
+				// Other struct, probably a blendable struct or data parameter, handled below.
+			}
+		}
+
+		if (MetaData.OverrideVariableID.IsValid() || MetaData.OverrideDataID.IsValid())
+		{
+			if (!Parameters.IsPropertyOverriden(MetaData.ParameterGuid))
+			{
+				Parameters.SetPropertyOverriden(MetaData.ParameterGuid, true);
+				bDidModify = true;
+			}
+		}
+	}
+	return bDidModify;
 }
 
 void FBaseCameraObjectReference::PostSerialize(const FArchive& Ar)

@@ -34,7 +34,7 @@ protected:
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 
 	// ICustomCameraNodeParameterProvider interface.
-	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
+	virtual void GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos) override;
 
 	// UObject interface.
 #if WITH_EDITOR

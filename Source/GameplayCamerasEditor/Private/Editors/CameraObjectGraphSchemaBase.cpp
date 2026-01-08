@@ -123,6 +123,8 @@ UEdGraphPin* UCameraObjectGraphSchemaBase::FindPinByType(UEdGraphNode* InNode, c
 
 void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
+	using namespace UE::Cameras;
+
 	// See if we were dragging a camera parameter pin or camera variable reference pin.
 	if (const UEdGraphPin* DraggedPin = ContextMenuBuilder.FromPin)
 	{
@@ -144,11 +146,11 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 			const UClass* CameraNodeClass = CameraNodeNode->GetObject()->GetClass();
 			FProperty* Property = CameraNodeClass->FindPropertyByName(DraggedPin->PinName);
 
-			FCustomCameraNodeParameterInfos CustomParameters;
+			FCameraNodeParameterInfos CameraNodeParameters;
 			ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNodeNode->GetObject());
 			if (CustomParameterProvider)
 			{
-				CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
+				CustomParameterProvider->GetCustomCameraNodeParameters(CameraNodeParameters);
 			}
 
 			TSharedRef<FCameraObjectGraphSchemaAction_NewInterfaceParameterNode> Action = 
@@ -163,11 +165,10 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 				ECameraVariableType VariableType;
 				const UScriptStruct* BlendableStructType = nullptr;
 
-				FCustomCameraNodeBlendableParameter BlendableParameter;
-				if (CustomParameters.FindBlendableParameter(DraggedPin->PinName, BlendableParameter))
+				if (const FCameraNodeBlendableParameterInfo* BlendableParameter = CameraNodeParameters.FindBlendableParameter(DraggedPin->PinName))
 				{
-					VariableType = BlendableParameter.ParameterType;
-					BlendableStructType = BlendableParameter.BlendableStructType;
+					VariableType = BlendableParameter->VariableType;
+					BlendableStructType = BlendableParameter->BlendableStructType;
 				}
 				else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 				{
@@ -206,12 +207,11 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 				ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
 				const UObject* DataTypeObject = nullptr;
 				
-				FCustomCameraNodeDataParameter DataParameter;
-				if (CustomParameters.FindDataParameter(DraggedPin->PinName, DataParameter))
+				if (const FCameraNodeDataParameterInfo* DataParameter = CameraNodeParameters.FindDataParameter(DraggedPin->PinName))
 				{
-					DataType = DataParameter.ParameterType;
-					DataContainerType = DataParameter.ParameterContainerType;
-					DataTypeObject = DataParameter.ParameterTypeObject;
+					DataType = DataParameter->DataType;
+					DataContainerType = DataParameter->DataContainerType;
+					DataTypeObject = DataParameter->DataTypeObject;
 				}
 				else if (Property)
 				{
@@ -296,7 +296,7 @@ const FPinConnectionResponse UCameraObjectGraphSchemaBase::CanCreateConnection(c
 			UCameraObjectInterfaceParameterBase* Parameter = ParameterGetter->GetInterfaceParameter();
 			UCameraObjectInterfaceBlendableParameter* BlendableParameter = Cast<UCameraObjectInterfaceBlendableParameter>(Parameter);
 			if (BlendableParameter && 
-					A->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->ParameterType))
+					A->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->VariableType))
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
 			}
@@ -322,7 +322,7 @@ const FPinConnectionResponse UCameraObjectGraphSchemaBase::CanCreateConnection(c
 			UCameraObjectInterfaceParameterBase* Parameter = ParameterGetter->GetInterfaceParameter();
 			UCameraObjectInterfaceBlendableParameter* BlendableParameter = Cast<UCameraObjectInterfaceBlendableParameter>(Parameter);
 			if (BlendableParameter && 
-					B->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->ParameterType))
+					B->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->VariableType))
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
 			}
@@ -572,7 +572,7 @@ UEdGraphNode* FCameraObjectGraphSchemaAction_NewInterfaceParameterNode::PerformA
 	if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 	{
 		UCameraObjectInterfaceBlendableParameter* NewBlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraObject, NAME_None, RF_Transactional);
-		NewBlendableParameter->ParameterType = ParameterDefinition.VariableType;
+		NewBlendableParameter->VariableType = ParameterDefinition.VariableType;
 		NewBlendableParameter->BlendableStructType = ParameterDefinition.BlendableStructType;
 		CameraObject->Interface.BlendableParameters.Add(NewBlendableParameter);
 		NewInterfaceParameter = NewBlendableParameter;

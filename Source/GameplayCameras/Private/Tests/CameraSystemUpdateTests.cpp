@@ -16,7 +16,7 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 	using namespace UE::Cameras::Test;
 
 	TSharedRef<FCameraEvaluationContext> EvaluationContext = FCameraEvaluationContextTestBuilder()
-		.AddCameraRig(TEXT("TestRig"))
+		.CreateCameraRig(TEXT("TestRig"))
 			.MakeRootNode<UUpdateTrackerCameraNode>()
 				.Done()
 			.Done()

@@ -126,6 +126,10 @@ void FBlendStackCameraNodeEvaluator::InitializeEntry(
 		}
 	}
 
+	// Set default values for unset entries in the variable and context data tables.
+	FCameraObjectInterfaceParameterOverrideHelper Helper(NewEntry.ContextResult);
+	Helper.ApplyParameterDefaults(CameraRig);
+
 	// Initialize the node evaluators.
 	if (RootEvaluator)
 	{
@@ -140,10 +144,7 @@ void FBlendStackCameraNodeEvaluator::InitializeEntry(
 		RootEvaluator->Initialize(InitParams, NewEntry.ContextResult);  // Initializing with the context result here.
 	}
 
-	// Set default values for unset entries in the variable table, so that pre-blending from default 
-	// values works.
-	FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultBlendableParameters(CameraRig, NewEntry.ContextResult.VariableTable);
-
+	// Apply the initialized result.
 	NewEntry.Result.OverrideAll(NewEntry.ContextResult, true);
 
 	// Wrap up!

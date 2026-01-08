@@ -44,17 +44,19 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 
 	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
-			.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d(10.0, 20.0, 0.0))
 			.Done()
 		.AddBlendableParameter(TEXT("TranslationOffset"), ECameraVariableType::Vector3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
+		.BuildCameraRig()
+		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
 	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
 
 	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
-			.SetParameter(&ULensParametersCameraNode::FocalLength, 55.0f)
 			.Done()
 		.AddBlendableParameter(TEXT("FocalLength"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
+		.BuildCameraRig()
+		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 55.0f)
 		.Get();
 	CameraDirector->AddCameraRig(CameraRigTwo, TEXT("Two"));
 
@@ -90,33 +92,36 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 
 	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
-			.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d(10.0, 20.0, 0.0))
 			.Done()
 		.AddBlendableParameter(TEXT("TranslationOffset"), ECameraVariableType::Vector3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
 		.AddBlendableParameter(TEXT("RotationOffset"), ECameraVariableType::Rotator3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, RotationOffset))
+		.BuildCameraRig()
+		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
 	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
 
 	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
-			.SetParameter(&ULensParametersCameraNode::FocalLength, 55.0f)
 			.Done()
 		.AddBlendableParameter(TEXT("FocalLength"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
 		.AddBlendableParameter(TEXT("Aperture"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, Aperture))
+		.BuildCameraRig()
+		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 55.0f)
 		.Get();
 	CameraDirector->AddCameraRig(CameraRigTwo, TEXT("Two"));
 
 	UCameraRigAsset* CameraRigThree = FCameraRigAssetTestBuilder(TEXT("Three"))
 		.MakeArrayRootNode()
 			.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children).Named(TEXT("Offset2"))
-				.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d(0.0, 10.0, 20.0))
 				.Done()
 			.AddChild<ULensParametersCameraNode>(&UArrayCameraNode::Children).Named(TEXT("Lens2"))
-				.SetParameter(&ULensParametersCameraNode::FocalLength, 35.0f)
 				.Done()
 			.Done()
 		.AddBlendableParameter(TEXT("TranslationOffset"), ECameraVariableType::Vector3d, TEXT("Offset2"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
 		.AddBlendableParameter(TEXT("FocalLength"), ECameraVariableType::Float, TEXT("Lens2"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
+		.BuildCameraRig()
+		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(0.0, 10.0, 20.0))
+		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 35.0f)
 		.Get();
 	CameraDirector->AddCameraRig(CameraRigThree, TEXT("Three"));
 

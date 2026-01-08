@@ -55,7 +55,7 @@ private:
 	UBaseCameraObject* CameraObject = nullptr;
 	TArray<UCameraNode*> CameraObjectNodes;
 
-	using FDrivenParameterKey = TTuple<FName, UObject*>;
+	using FDrivenParameterKey = TTuple<UObject*, FName>;
 	TMap<FDrivenParameterKey, FCameraVariableID> OldDrivenBlendableParameters;
 	TMap<FDrivenParameterKey, FCameraContextDataID> OldDrivenDataParameters;
 

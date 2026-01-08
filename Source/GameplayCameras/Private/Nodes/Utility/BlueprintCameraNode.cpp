@@ -126,7 +126,7 @@ void FBlueprintCameraNodeEvaluator::ApplyParameterOverrides(const FCameraVariabl
 			{
 				const uint8* ValuePtr = VariableTable.TryGetValue(
 						BlendableParameter.OverrideVariableID,
-						BlendableParameter.ParameterType,
+						BlendableParameter.VariableType,
 						BlendableParameter.BlendableStructType);
 				if (ValuePtr)
 				{
@@ -146,8 +146,8 @@ void FBlueprintCameraNodeEvaluator::ApplyParameterOverrides(const FCameraVariabl
 			{
 				const uint8* DataPtr = ContextDataTable.TryGetData(
 						DataParameter.OverrideDataID,
-						DataParameter.ParameterType,
-						DataParameter.ParameterTypeObject);
+						DataParameter.DataType,
+						DataParameter.DataTypeObject);
 				if (DataPtr)
 				{
 					Property->SetValue_InContainer(EvaluatorBlueprint, DataPtr);
@@ -277,7 +277,8 @@ void UBlueprintCameraNodeEvaluator::SetDefaultOwningCameraRigParameters(FBluepri
 	if (FCameraNodeEvaluationResult* Result = TargetCameraData.GetResult())
 	{
 		const UCameraRigAsset* OwningCameraRig = BlueprintNode->GetTypedOuter<UCameraRigAsset>();
-		FCameraObjectInterfaceParameterOverrideHelper::ApplyDefaultParameters(OwningCameraRig, Result->VariableTable, Result->ContextDataTable);
+		FCameraObjectInterfaceParameterOverrideHelper Helper(*Result);
+		Helper.ApplyParameterDefaults(OwningCameraRig);
 	}
 }
 
@@ -538,7 +539,7 @@ void UBlueprintCameraNode::RebuildOverrides()
 		{
 			FCustomCameraNodeBlendableParameter NewOverride;
 			NewOverride.ParameterName = Property->GetFName();
-			NewOverride.ParameterType = BlendablePropertyType;
+			NewOverride.VariableType = BlendablePropertyType;
 
 			// If this blendable parameter existed before and had an overriding variable set,
 			// preserve that override.
@@ -561,8 +562,8 @@ void UBlueprintCameraNode::RebuildOverrides()
 		{
 			FCustomCameraNodeDataParameter NewOverride;
 			NewOverride.ParameterName = Property->GetFName();
-			NewOverride.ParameterType = DataPropertyType;
-			NewOverride.ParameterTypeObject = DataPropertyTypeObject;
+			NewOverride.DataType = DataPropertyType;
+			NewOverride.DataTypeObject = DataPropertyTypeObject;
 
 			// If this data parameter existed before and had an override data ID set,
 			// preserve that override.
@@ -610,7 +611,7 @@ void UBlueprintCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 	}
 }
 
-void UBlueprintCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+void UBlueprintCameraNode::GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos)
 {
 	using namespace UE::Cameras::Internal;
 

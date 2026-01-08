@@ -490,7 +490,7 @@ public:
 	{
 		UCameraObjectInterfaceBlendableParameter* BlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraRig);
 		BlendableParameter->InterfaceParameterName = ParameterName;
-		BlendableParameter->ParameterType = ParameterType;
+		BlendableParameter->VariableType = ParameterType;
 
 		NamedObjectRegistry->Register(BlendableParameter, ParameterName);
 		CameraRig->Interface.BlendableParameters.Add(BlendableParameter);
@@ -513,6 +513,82 @@ public:
 		UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
 		ensure(Target);
 		return AddBlendableParameter(ParameterName, ParameterType, Target, TargetPropertyName);
+	}
+
+	/** Runs arbitrary setup logic on the camera rig. */
+	ThisType& Setup(TFunction<void(UCameraRigAsset*)> SetupCallback)
+	{
+		SetupCallback(CameraRig);
+		return *static_cast<ThisType*>(this);;
+	}
+
+	/** Runs arbitrary setup logic on the camera rig. */
+	ThisType& Setup(TFunction<void(UCameraRigAsset*, FNamedObjectRegistry*)> SetupCallback)
+	{
+		SetupCallback(CameraRig, NamedObjectRegistry.Get());
+		return *static_cast<ThisType*>(this);;
+	}
+
+	/**
+	 * Builds the camera rig.
+	 */
+	ThisType& BuildCameraRig()
+	{
+		CameraRig->BuildCameraRig();
+		return *static_cast<ThisType*>(this);
+	}
+
+	/**
+	 * Sets the default value for a camera rig parameter.
+	 * Requires that the camera rig has been built first.
+	 */
+	template<typename ValueType>
+	ThisType& SetDefaultParameterValue(const FName ParameterName, TCallTraits<ValueType>::ParamType ParameterValue)
+	{
+		const FCameraObjectInterfaceParameterDefinition* ParameterDefinition = CameraRig->GetParameterDefinitions().FindByPredicate(
+				[ParameterName](const FCameraObjectInterfaceParameterDefinition& Item)
+				{
+					return Item.ParameterName == ParameterName;
+				});
+		if (!ensureMsgf(ParameterDefinition, TEXT("You must build the camera rig before setting default parameter values")))
+		{
+			return *static_cast<ThisType*>(this);
+		}
+
+		FInstancedPropertyBag& DefaultParameters = CameraRig->GetDefaultParameters();
+		const UPropertyBag* PropertyBag = DefaultParameters.GetPropertyBagStruct();
+		if (!ensureMsgf(PropertyBag, TEXT("You must build the camera rig before setting default parameter values")))
+		{
+			return *static_cast<ThisType*>(this);
+		}
+
+		const FPropertyBagPropertyDesc* PropertyDesc = PropertyBag->FindPropertyDescByName(ParameterName);
+		if (!ensureMsgf(PropertyDesc, TEXT("No such camera rig parameter")))
+		{
+			return *static_cast<ThisType*>(this);
+		}
+
+		uint8* RawParameters = DefaultParameters.GetMutableValue().GetMemory();
+		void* TargetAddress = RawParameters + PropertyDesc->CachedProperty->GetOffset_ForInternal();
+		const void* SourceAddress = &ParameterValue;
+
+		if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+		{
+			if (ParameterDefinition->VariableType == ECameraVariableType::BlendableStruct)
+			{
+				PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
+			}
+			else
+			{
+				SetDefaultBlendableParameterValue(*ParameterDefinition, TargetAddress, ParameterValue);
+			}
+		}
+		else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
+		{
+			PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
+		}
+
+		return *static_cast<ThisType*>(this);
 	}
 
 	/** Gets the named object registry. */
@@ -548,6 +624,23 @@ private:
 
 		NamedObjectRegistry->Register(CameraRig, Name.ToString());
 	}
+
+	template<typename ValueType>
+	void SetDefaultBlendableParameterValue(const FCameraObjectInterfaceParameterDefinition& ParameterDefinition, void* TargetAddress, ValueType ParameterValue);
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+	template<>\
+	void SetDefaultBlendableParameterValue<ValueType>(const FCameraObjectInterfaceParameterDefinition& ParameterDefinition, void* TargetAddress, ValueType ParameterValue)\
+	{\
+		using ParameterType = F##ValueName##CameraParameter;\
+		if (ensure(ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable && ParameterDefinition.VariableType == ECameraVariableType::ValueName))\
+		{\
+			ParameterType* TargetParameter = static_cast<ParameterType*>(TargetAddress);\
+			TargetParameter->Value = ParameterValue;\
+		}\
+	}
+	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
 
 private:
 
@@ -760,12 +853,51 @@ public:
 		return MakeDirector<USingleCameraDirector>();
 	}
 
-	/** Creates a new camera rig asset builder and adds its camera rig to the camera asset.*/
-	TScopedCameraRigAssetTestBuilder<ThisType> AddCameraRig(FName Name = NAME_None)
+	/** Builds a new single camera director, set its camera rig, and returns a builder object for its. */
+	TCameraDirectorTestBuilder<ThisType, USingleCameraDirector> MakeSingleDirector(UCameraRigAsset* InCameraRig)
+	{
+		auto DirectorBuilder = MakeDirector<USingleCameraDirector>();
+		DirectorBuilder.Setup([InCameraRig](USingleCameraDirector* Director)
+				{
+					Director->CameraRig = InCameraRig;
+				});
+		return DirectorBuilder;
+	}
+
+	/** Builds a new single camera director, set its camera rig to the named object, and returns a builder object for its. */
+	TCameraDirectorTestBuilder<ThisType, USingleCameraDirector> MakeSingleDirector(const FString& InCameraRigName)
+	{
+		UCameraRigAsset* CameraRig = NamedObjectRegistry->Get<UCameraRigAsset>(InCameraRigName);
+
+		auto DirectorBuilder = MakeDirector<USingleCameraDirector>();
+		DirectorBuilder.Setup([CameraRig](USingleCameraDirector* Director)
+				{
+					Director->CameraRig = CameraRig;
+				});
+		return DirectorBuilder;
+	}
+
+	/** Creates a new camera rig asset builder and gives it a name to be recalled later.*/
+	TScopedCameraRigAssetTestBuilder<ThisType> CreateCameraRig(FName Name = NAME_None)
 	{
 		TScopedCameraRigAssetTestBuilder<ThisType> CameraRigBuilder(*this, GetNamedObjectRegistry(), Name, CameraAsset);
 		return CameraRigBuilder;
 	}
+
+	/** Runs arbitrary setup logic on the evaluation context. */
+	ThisType& Setup(TFunction<void(TSharedRef<FCameraEvaluationContext>)> SetupCallback)
+	{
+		SetupCallback(EvaluationContext.ToSharedRef());
+		return *this;
+	}
+
+	/** Runs arbitrary setup logic on the evaluation context. */
+	ThisType& Setup(TFunction<void(TSharedRef<FCameraEvaluationContext>, FNamedObjectRegistry*)> SetupCallback)
+	{
+		SetupCallback(EvaluationContext.ToSharedRef(), NamedObjectRegistry.Get());
+		return *this;
+	}
+
 
 	/** Gets the named object registry. */
 	virtual TSharedPtr<FNamedObjectRegistry> GetNamedObjectRegistry() override

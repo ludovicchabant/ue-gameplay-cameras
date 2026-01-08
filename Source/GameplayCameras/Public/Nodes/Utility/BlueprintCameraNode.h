@@ -169,7 +169,7 @@ protected:
 #endif  // WITH_EDITOR
 
 	// ICustomCameraNodeParameterProvider interface.
-	virtual void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos) override;
+	virtual void GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos) override;
 
 	// UObject interface.
 	virtual void PostLoad() override;

@@ -197,7 +197,7 @@ protected:
 	FEdGraphPinType GetBlendableParameterPinType() const
 	{
 		FEdGraphPinType PinType;
-		switch (Item->ParameterType)
+		switch (Item->VariableType)
 		{
 			case ECameraVariableType::Boolean:
 				PinType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
@@ -333,12 +333,12 @@ protected:
 			bIsValidType = false;
 		}
 
-		if (ensure(bIsValidType) && Item->ParameterType != NewParameterType)
+		if (ensure(bIsValidType) && Item->VariableType != NewParameterType)
 		{
 			const FScopedTransaction Transaction(LOCTEXT("ChangeBlendableParameterType", "Change Blendable Parameter Type"));
 
 			Item->Modify();
-			Item->ParameterType = NewParameterType;
+			Item->VariableType = NewParameterType;
 		}
 	}
 

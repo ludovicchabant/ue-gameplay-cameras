@@ -35,11 +35,6 @@ protected:
 
 private:
 
-	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly);
-	void ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly);
-
-private:
-
 	ECameraShakeEvaluationMode EvaluationMode = ECameraShakeEvaluationMode::VisualLayer;
 
 	FShakeCameraNodeEvaluator* CameraShakeRootEvaluator = nullptr;
@@ -77,8 +72,9 @@ void FCameraShakeCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildPar
 
 void FCameraShakeCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Apply overrides right away.
-	ApplyParameterOverrides(OutResult.VariableTable, OutResult.ContextDataTable, false);
+	// Apply overrides and defaults right away.
+	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
+	PrefabNode->CameraShakeReference.ApplyParameterOverridesAndDefaults(OutResult);
 
 	// If evaluating the shake later in the visual layer, acquire the shake service we will use to
 	// keep that shake alive.
@@ -92,7 +88,8 @@ void FCameraShakeCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIni
 void FCameraShakeCameraNodeEvaluator::OnUpdateParameters(const FCameraBlendedParameterUpdateParams& Params, FCameraBlendedParameterUpdateResult& OutResult)
 {
 	// Keep applying overrides in case they are driven by a variable.
-	ApplyParameterOverrides(OutResult.VariableTable, false);
+	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
+	PrefabNode->CameraShakeReference.ApplyParameterOverrides(OutResult.VariableTable, false);
 }
 
 void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
@@ -119,18 +116,6 @@ void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 		StartParams.CameraShake = CameraShakeNode->CameraShakeReference.GetCameraShake();
 		CameraShakeService->RequestCameraShakeThisFrame(StartParams);
 	}
-}
-
-void FCameraShakeCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, bool bDrivenOnly)
-{
-	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
-	PrefabNode->CameraShakeReference.ApplyParameterOverrides(OutVariableTable, bDrivenOnly);
-}
-
-void FCameraShakeCameraNodeEvaluator::ApplyParameterOverrides(FCameraVariableTable& OutVariableTable, FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly)
-{
-	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
-	PrefabNode->CameraShakeReference.ApplyParameterOverrides(OutVariableTable, OutContextDataTable, bDrivenOnly);
 }
 
 }  // namespace UE::Cameras
@@ -160,6 +145,12 @@ void UCameraShakeCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 		return;
 	}
 
+	const bool bDidModify = CameraShakeReference.PostBuild();
+	if (bDidModify)
+	{
+		Modify();
+	}
+
 	// Whatever allocations our inner camera shake needs for its evaluators and
 	// their camera variables, we add that to our camera shake's allocation info.
 	// If we're going to be running the shake in a deferred way, however, we need
@@ -175,7 +166,7 @@ void UCameraShakeCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 	BuildContext.AllocationInfo.Append(CameraShakeAllocationInfo);
 }
 
-void UCameraShakeCameraNode::GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos)
+void UCameraShakeCameraNode::GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos)
 {
 	CameraShakeReference.GetCustomCameraNodeParameters(OutParameterInfos);
 }

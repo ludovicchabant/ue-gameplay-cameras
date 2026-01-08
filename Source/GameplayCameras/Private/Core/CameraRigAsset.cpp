@@ -54,15 +54,15 @@ void UCameraRigAsset::PostLoad()
 
 #endif
 
-	// Initialize the ParameterType of blendable parameters that pre-existed the new interface data.
+	// Initialize the VariableType of blendable parameters that pre-existed the new interface data.
 	// The type defaults to Boolean so check only those.
 	for (UCameraObjectInterfaceBlendableParameter* BlendableParameter : Interface.BlendableParameters)
 	{
-		if (BlendableParameter->ParameterType == ECameraVariableType::Boolean)
+		if (BlendableParameter->VariableType == ECameraVariableType::Boolean)
 		{
 			if (BlendableParameter->PrivateVariable_DEPRECATED)
 			{
-				BlendableParameter->ParameterType = BlendableParameter->PrivateVariable_DEPRECATED->GetVariableType();
+				BlendableParameter->VariableType = BlendableParameter->PrivateVariable_DEPRECATED->GetVariableType();
 				BlendableParameter->PrivateVariable_DEPRECATED = nullptr;
 			}
 		}
@@ -285,7 +285,7 @@ void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) co
 		{
 			FAssetRegistryTag BlendableParameterTag;
 			BlendableParameterTag.Name = FName(BlendableParameter->InterfaceParameterName);
-			BlendableParameterTag.Value = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter->ParameterType);
+			BlendableParameterTag.Value = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter->VariableType);
 			BlendableParameterTag.Type = FAssetRegistryTag::TT_Alphabetical;
 			Context.AddTag(BlendableParameterTag);
 		}

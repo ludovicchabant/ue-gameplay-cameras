@@ -24,20 +24,25 @@ const UBaseCameraObject* FCameraShakeAssetReference::GetCameraObject() const
 
 void FCameraShakeAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly, false);
 }
 
 void FCameraShakeAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, UE::Cameras::FCameraContextDataTable& OutContextDataTable, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutVariableTable, &OutContextDataTable, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutVariableTable, &OutContextDataTable, bDrivenOnly, false);
 }
 
 void FCameraShakeAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraNodeEvaluationResult& OutResult, bool bDrivenOnly) const
 {
-	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, bDrivenOnly);
+	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, bDrivenOnly, false);
 }
 
-void FCameraShakeAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly) const
+void FCameraShakeAssetReference::ApplyParameterOverridesAndDefaults(UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
+{
+	ApplyParameterOverridesImpl(&OutResult.VariableTable, &OutResult.ContextDataTable, false, true);
+}
+
+void FCameraShakeAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCameraVariableTable* OutVariableTable, UE::Cameras::FCameraContextDataTable* OutContextDataTable, bool bDrivenOnly, bool bApplyUnwrittenDefaults) const
 {
 	using namespace UE::Cameras;
 	
@@ -45,7 +50,11 @@ void FCameraShakeAssetReference::ApplyParameterOverridesImpl(UE::Cameras::FCamer
 	{
 		FCameraObjectInterfaceParameterOverrideHelper Helper(OutVariableTable, OutContextDataTable);
 		Helper.bDrivenOnly = bDrivenOnly;
-		Helper.ApplyParameterOverrides(CameraShake, CameraShake->GetParameterDefinitions(), Parameters);
+		Helper.ApplyParameterOverrides(CameraShake, Parameters);
+		if (bApplyUnwrittenDefaults)
+		{
+			Helper.ApplyParameterDefaults(CameraShake, true);
+		}
 	}
 }
 

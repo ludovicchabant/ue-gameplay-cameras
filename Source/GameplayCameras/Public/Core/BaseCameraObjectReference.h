@@ -9,11 +9,11 @@
 #include "BaseCameraObjectReference.generated.h"
 
 class UBaseCameraObject;
-struct FCustomCameraNodeParameterInfos;
 
 namespace UE::Cameras
 {
 	struct FCameraNodeEvaluationResult;
+	struct FCameraNodeParameterInfos;
 }
 
 /**
@@ -28,7 +28,11 @@ struct FCameraObjectInterfaceParameterMetaData
 	UPROPERTY()
 	FGuid ParameterGuid;
 
-	/** The ID to use for overriding a blendable parameter. */
+	/** 
+	 * The ID to use for overriding a blendable parameter.
+	 * NOTE: only used for blendable structs, since other types are parameter structs with their
+	 * own variable ID inside.
+	 */
 	UPROPERTY()
 	FCameraVariableID OverrideVariableID;
 
@@ -88,7 +92,9 @@ public:
 
 	void PostSerialize(const FArchive& Ar);
 
-	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(FCustomCameraNodeParameterInfos& OutParameterInfos);
+	GAMEPLAYCAMERAS_API void GetCustomCameraNodeParameters(UE::Cameras::FCameraNodeParameterInfos& OutParameterInfos);
+
+	bool PostBuild();
 	
 	GAMEPLAYCAMERAS_API bool IsParameterOverridden(const FGuid& PropertyID) const;
 	GAMEPLAYCAMERAS_API void SetParameterOverridden(const FGuid& PropertyID, bool bIsOverridden);
@@ -96,10 +102,13 @@ public:
 	template<typename ContainerType>
 	void GetOverriddenParameterGuids(ContainerType& OutOverriddenIDs) const;
 
-private:
+protected:
 
 	const FCameraObjectInterfaceParameterMetaData* FindMetaData(const FGuid& PropertyID) const;
-	FCameraObjectInterfaceParameterMetaData& FindOrAddMetaData(const FGuid& PropertyID);
+
+private:
+
+	FCameraObjectInterfaceParameterMetaData& GetMetaData(const FGuid& PropertyID);
 
 protected:
 

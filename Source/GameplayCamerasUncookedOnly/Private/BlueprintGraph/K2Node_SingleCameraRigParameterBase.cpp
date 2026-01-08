@@ -33,7 +33,7 @@ void UK2Node_SingleCameraRigParameterBase::Initialize(const FAssetData& Unloaded
 		{
 			if (const UCameraObjectInterfaceBlendableParameter* BlendableParameter = LoadedCameraRig->Interface.FindBlendableParameterByName(InCameraParameterName))
 			{
-				Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->ParameterType, BlendableParameter->BlendableStructType);
+				Initialize(LoadedCameraRig, InCameraParameterName, BlendableParameter->VariableType, BlendableParameter->BlendableStructType);
 			}
 			else if (const UCameraObjectInterfaceDataParameter* DataParameter = LoadedCameraRig->Interface.FindDataParameterByName(InCameraParameterName))
 			{

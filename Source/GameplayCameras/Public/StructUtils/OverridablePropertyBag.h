@@ -40,6 +40,16 @@ public:
 	 */
 	GAMEPLAYCAMERAS_API void SetPropertyOverriden(const FGuid& InPropertyID, bool bIsOverriden);
 
+	/**
+	 * Returns whether the given property is overriden.
+	 */
+	GAMEPLAYCAMERAS_API bool IsPropertyOverriden(const FName InPropertyName) const;
+
+	/**
+	 * Sets whether the given property is overriden by setting the matching override property's value.
+	 */
+	GAMEPLAYCAMERAS_API void SetPropertyOverriden(const FName InPropertyName, bool bIsOverriden);
+
 public:
 
 	/**

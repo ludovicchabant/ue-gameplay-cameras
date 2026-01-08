@@ -127,10 +127,10 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	// Now do the same with custom parameters handled by the node itself.
 	if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNode))
 	{
-		FCustomCameraNodeParameterInfos CustomParameters;
-		CustomParameterProvider->GetCustomCameraNodeParameters(CustomParameters);
+		FCameraNodeParameterInfos CameraNodeParameters;
+		CustomParameterProvider->GetCustomCameraNodeParameters(CameraNodeParameters);
 
-		for (const FCustomCameraNodeParameterInfos::FBlendableParameterInfo& BlendableParameter : CustomParameters.BlendableParameters)
+		for (const FCameraNodeBlendableParameterInfo& BlendableParameter : CameraNodeParameters.BlendableParameters)
 		{
 			AddVariableToAllocationInfo(BlendableParameter.OverrideVariable, AllocationInfo.VariableTableInfo);
 		}
