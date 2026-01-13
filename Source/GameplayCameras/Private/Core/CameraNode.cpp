@@ -60,9 +60,9 @@ FCameraNodeChildrenView UCameraNode::GetChildren()
 	return ChildrenView;
 }
 
-void UCameraNode::PreBuild(FCameraBuildLog& BuildLog)
+void UCameraNode::PreBuild(FCameraBuildContext& BuildContext)
 {
-	OnPreBuild(BuildLog);
+	OnPreBuild(BuildContext);
 }
 
 void UCameraNode::Build(FCameraObjectBuildContext& BuildContext)

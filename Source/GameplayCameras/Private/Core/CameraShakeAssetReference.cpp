@@ -22,6 +22,16 @@ const UBaseCameraObject* FCameraShakeAssetReference::GetCameraObject() const
 	return CameraShake;
 }
 
+void FCameraShakeAssetReference::EnsureAllocationInfo(UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
+{
+	if (CameraShake)
+	{
+		const FCameraObjectAllocationInfo& AllocationInfo = CameraShake->AllocationInfo;
+		OutResult.VariableTable.EnsureVariables(AllocationInfo.VariableTableInfo);
+		OutResult.ContextDataTable.EnsureData(AllocationInfo.ContextDataTableInfo);
+	}
+}
+
 void FCameraShakeAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const
 {
 	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly, false);

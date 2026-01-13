@@ -167,6 +167,14 @@ public:
 
 public:
 
+	/** Finds a parameter definition by name. */
+	UE_API bool FindParameterDefinitionByName(const FName ParameterName, FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const;
+
+	/** Finds a parameter definition by ID. */
+	UE_API bool FindParameterDefinitionByGuid(const FGuid& ParameterGuid, FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const;
+
+public:
+
 	/** Get the root node of this camera object. */
 	virtual UCameraNode* GetRootNode() { return nullptr; }
 

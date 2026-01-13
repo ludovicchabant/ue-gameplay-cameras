@@ -12,6 +12,9 @@ namespace UE::Cameras
 namespace Private
 {
 
+static const uint32 GDefaultCapacity = 64;
+static const uint32 GDefaultAlignment = alignof(void*);
+
 static const FString GUnavailableVariableDebugName(TEXT("<no debug info>"));
 
 bool IsVariableInMask(FCameraVariableID VariableID, const FCameraVariableTableFlags* InMask, bool bInvertMask)
@@ -38,10 +41,12 @@ FCameraVariableTable::FCameraVariableTable(FCameraVariableTable&& Other)
 	, EntryLookup(MoveTemp(Other.EntryLookup))
 	, Memory(Other.Memory)
 	, Capacity(Other.Capacity)
+	, Alignment(Other.Alignment)
 	, Used(Other.Used)
 {
 	Other.Memory = nullptr;
 	Other.Capacity = 0;
+	Other.Alignment = 0;
 	Other.Used = 0;
 }
 
@@ -51,10 +56,12 @@ FCameraVariableTable& FCameraVariableTable::operator=(FCameraVariableTable&& Oth
 	EntryLookup = MoveTemp(Other.EntryLookup);
 	Memory = Other.Memory;
 	Capacity = Other.Capacity;
+	Alignment = Other.Alignment;
 	Used = Other.Used;
 
 	Other.Memory = nullptr;
 	Other.Capacity = 0;
+	Other.Alignment = 0;
 	Other.Used = 0;
 
 	return *this;
@@ -66,7 +73,7 @@ FCameraVariableTable::~FCameraVariableTable()
 	{
 		FMemory::Free(Memory);
 		Memory = nullptr;
-		Capacity = Used = 0;
+		Capacity = Alignment = Used = 0;
 	}
 }
 
@@ -93,39 +100,53 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
 
 		FEntry NewEntry;
-		NewEntry.ID = VariableDefinition.VariableID;
-		NewEntry.Type = VariableDefinition.VariableType;
-		NewEntry.StructType = VariableDefinition.BlendableStructType;
+		CreateEntry(VariableDefinition, NewEntry);
 		NewEntry.Offset = NewEntryOffset;
-		NewEntry.Flags = EEntryFlags::None;
-		if (VariableDefinition.bIsPrivate)
-		{
-			NewEntry.Flags |= EEntryFlags::Private;
-		}
-		if (VariableDefinition.bIsInput)
-		{
-			NewEntry.Flags |= EEntryFlags::Input;
-		}
-		if (VariableDefinition.bAutoReset)
-		{
-			NewEntry.Flags |= EEntryFlags::AutoReset;
-		}
-#if WITH_EDITORONLY_DATA
-		NewEntry.DebugName = VariableDefinition.VariableName;
-#endif
 		Entries.Add(NewEntry);
 		EntryLookup.Add(NewEntry.ID, Entries.Num() - 1);
 	}
 
 	// Allocate the memory buffer.
-	MaxAlignOf = FMath::Max(32u, MaxAlignOf);
+	MaxAlignOf = FMath::Max(Private::GDefaultAlignment, MaxAlignOf);
 	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, MaxAlignOf));
 	Capacity = TotalSizeOf;
+	Alignment = MaxAlignOf;
 	Used = TotalSizeOf;
 
 	// Go back to our entries and initialize each entry to the default value for that variable type.
-	for (const FEntry& Entry : Entries)
+	InitializeEntries();
+}
+
+void FCameraVariableTable::CreateEntry(const FCameraVariableDefinition& VariableDefinition, FEntry& OutEntry)
+{
+	OutEntry.ID = VariableDefinition.VariableID;
+	OutEntry.Type = VariableDefinition.VariableType;
+	OutEntry.StructType = VariableDefinition.BlendableStructType;
+	OutEntry.Offset = 0;
+	OutEntry.Flags = EEntryFlags::None;
+	if (VariableDefinition.bIsPrivate)
 	{
+		OutEntry.Flags |= EEntryFlags::Private;
+	}
+	if (VariableDefinition.bIsInput)
+	{
+		OutEntry.Flags |= EEntryFlags::Input;
+	}
+	if (VariableDefinition.bAutoReset)
+	{
+		OutEntry.Flags |= EEntryFlags::AutoReset;
+	}
+#if WITH_EDITORONLY_DATA
+	OutEntry.DebugName = VariableDefinition.VariableName;
+#endif
+}
+
+void FCameraVariableTable::InitializeEntries(int32 StartIndex, int32 EndIndex)
+{
+	EndIndex = (EndIndex >= 0 ? EndIndex : Entries.Num());
+	for (int32 Index = StartIndex; Index < EndIndex; ++Index)
+	{
+		const FEntry& Entry = Entries[Index];
 		uint8* ValuePtr = Memory + Entry.Offset;
 		switch (Entry.Type)
 		{
@@ -146,6 +167,54 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 				break;
 		}
 	}
+}
+
+bool FCameraVariableTable::EnsureVariables(const FCameraVariableTableAllocationInfo& AllocationInfo)
+{
+	uint32 TotalSizeOf = Used;
+	uint32 MaxAlignOf = 0;
+	uint32 CurSizeOf, CurAlignOf;
+
+	bool bAllExist = true;
+	int32 FirstNewEntry = Entries.Num();
+
+	for (const FCameraVariableDefinition& VariableDefinition : AllocationInfo.VariableDefinitions)
+	{
+		if (EntryLookup.Contains(VariableDefinition.VariableID))
+		{
+			continue;
+		}
+
+		GetVariableTypeAllocationInfo(VariableDefinition.VariableType, VariableDefinition.BlendableStructType, CurSizeOf, CurAlignOf);
+		const uint32 NewEntryOffset = Align(TotalSizeOf, CurAlignOf);
+		TotalSizeOf = NewEntryOffset + CurSizeOf;
+		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
+
+		FEntry NewEntry;
+		CreateEntry(VariableDefinition, NewEntry);
+		NewEntry.Offset = NewEntryOffset;
+		Entries.Add(NewEntry);
+		EntryLookup.Add(NewEntry.ID, Entries.Num() - 1);
+
+		bAllExist = false;
+	}
+
+	if (!bAllExist)
+	{
+		// Alignment may not have been initialized yet.
+		Alignment = FMath::Max(Alignment, MaxAlignOf);
+
+		if (TotalSizeOf > Capacity)
+		{
+			ReallocateBuffer(TotalSizeOf);
+		}
+
+		Used = TotalSizeOf;
+
+		InitializeEntries(FirstNewEntry);
+	}
+
+	return bAllExist;
 }
 
 void FCameraVariableTable::CacheBlendableStructs()
@@ -184,6 +253,9 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 
 	if (NewUsed > Capacity)
 	{
+		// Alignment may not have been initialized yet.
+		Alignment = FMath::Max(AlignOf, Private::GDefaultAlignment);
+
 		ReallocateBuffer(NewUsed);
 
 		VariablePtr = Align(Memory + Used, AlignOf);
@@ -192,44 +264,24 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	Used = NewUsed;
 
 	FEntry NewEntry;
-	NewEntry.ID = VariableDefinition.VariableID;
-	NewEntry.Type = VariableDefinition.VariableType;
-	NewEntry.StructType = VariableDefinition.BlendableStructType;
+	CreateEntry(VariableDefinition, NewEntry);
 	NewEntry.Offset = VariablePtr - Memory;
-	NewEntry.Flags = EEntryFlags::None;
-	if (VariableDefinition.bIsPrivate)
-	{
-		NewEntry.Flags |= EEntryFlags::Private;
-	}
-	if (VariableDefinition.bIsInput)
-	{
-		NewEntry.Flags |= EEntryFlags::Input;
-	}
-	if (VariableDefinition.bAutoReset)
-	{
-		NewEntry.Flags |= EEntryFlags::AutoReset;
-	}
-#if WITH_EDITORONLY_DATA
-	NewEntry.DebugName = VariableDefinition.VariableName;
-#endif
-
 	Entries.Add(NewEntry);
 	EntryLookup.Add(VariableDefinition.VariableID, Entries.Num() - 1);
+
+	InitializeEntries(Entries.Num() - 1);
 }
 
 void FCameraVariableTable::ReallocateBuffer(uint32 MinRequired)
 {
-	static const uint32 DefaultCapacity = 64;
-	static const uint32 DefaultAlignment = 32;
-
-	uint32 NewCapacity = Capacity <= 0 ? DefaultCapacity : Capacity * 2;
+	uint32 NewCapacity = Capacity <= 0 ? Private::GDefaultCapacity : Capacity * 2;
 	if (MinRequired > 0)
 	{
 		NewCapacity = FMath::Max(NewCapacity, MinRequired);
 	}
 
 	uint8* OldMemory = Memory;
-	uint8* NewMemory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, DefaultAlignment));
+	uint8* NewMemory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, Alignment));
 
 	if (OldMemory)
 	{

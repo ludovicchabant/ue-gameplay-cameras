@@ -72,8 +72,14 @@ void FCameraShakeCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildPar
 
 void FCameraShakeCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Apply overrides and defaults right away.
 	const UCameraShakeCameraNode* PrefabNode = GetCameraNodeAs<UCameraShakeCameraNode>();
+
+	// In editor and other uncooked builds, we don't have the allocation info for the variables and data of the
+	// reference shake because we try to keep assets standalone. So we need to make room for it.
+	// With cooked data we would have all that info already.
+	PrefabNode->CameraShakeReference.EnsureAllocationInfo(OutResult);
+
+	// Apply overrides and defaults right away.
 	PrefabNode->CameraShakeReference.ApplyParameterOverridesAndDefaults(OutResult);
 
 	// If evaluating the shake later in the visual layer, acquire the shake service we will use to
@@ -120,13 +126,17 @@ void FCameraShakeCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 
 }  // namespace UE::Cameras
 
-void UCameraShakeCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
+void UCameraShakeCameraNode::OnPreBuild(FCameraBuildContext& BuildContext)
 {
 	// Build the inner camera shake. Silently skip it if it's not set... but we will
 	// report an error in OnBuild about it.
 	if (UCameraShakeAsset* CameraShake = CameraShakeReference.GetCameraShake())
 	{
-		CameraShake->BuildCameraShake(BuildLog);
+		const bool bNeedsBuild = CameraShake->BuildStatus == ECameraBuildStatus::Dirty;
+		if (bNeedsBuild)
+		{
+			CameraShake->BuildCameraShake(BuildContext);
+		}
 	}
 
 	// Make sure the property bag of the camera shake reference is up to date.
@@ -151,19 +161,22 @@ void UCameraShakeCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 		Modify();
 	}
 
-	// Whatever allocations our inner camera shake needs for its evaluators and
-	// their camera variables, we add that to our camera shake's allocation info.
-	// If we're going to be running the shake in a deferred way, however, we need
-	// to make the variables public so that they propagate to it.
-	FCameraObjectAllocationInfo CameraShakeAllocationInfo(CameraShake->AllocationInfo);
-	if (EvaluationMode == ECameraShakeEvaluationMode::VisualLayer)
+	if (BuildContext.IsCooking())
 	{
-		for (FCameraVariableDefinition& VariableDefinition : CameraShakeAllocationInfo.VariableTableInfo.VariableDefinitions)
+		// Whatever allocations our inner camera shake needs for its evaluators and
+		// their camera variables, we add that to our camera shake's allocation info.
+		// If we're going to be running the shake in a deferred way, however, we need
+		// to make the variables public so that they propagate to it.
+		FCameraObjectAllocationInfo CameraShakeAllocationInfo(CameraShake->AllocationInfo);
+		if (EvaluationMode == ECameraShakeEvaluationMode::VisualLayer)
 		{
-			VariableDefinition.bIsPrivate = false;
+			for (FCameraVariableDefinition& VariableDefinition : CameraShakeAllocationInfo.VariableTableInfo.VariableDefinitions)
+			{
+				VariableDefinition.bIsPrivate = false;
+			}
 		}
+		BuildContext.AllocationInfo.Append(CameraShakeAllocationInfo);
 	}
-	BuildContext.AllocationInfo.Append(CameraShakeAllocationInfo);
 }
 
 void UCameraShakeCameraNode::GetCustomCameraNodeParameters(FCameraNodeParameterInfos& OutParameterInfos)

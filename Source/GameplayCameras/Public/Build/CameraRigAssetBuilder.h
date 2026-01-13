@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraNodeHierarchy.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
@@ -26,7 +26,7 @@ class FCameraRigAssetBuilder
 public:
 
 	/** Creates a new camera rig builder. */
-	UE_API FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraRigAssetBuilder(FCameraBuildContext& InBuildContext);
 
 	/** Builds the given camera rig. */
 	UE_API void BuildCameraRig(UCameraRigAsset* InCameraRig);
@@ -39,7 +39,7 @@ private:
 
 private:
 
-	FCameraBuildLog& BuildLog;
+	FCameraBuildContext BuildContext;
 
 	UCameraRigAsset* CameraRig = nullptr;
 

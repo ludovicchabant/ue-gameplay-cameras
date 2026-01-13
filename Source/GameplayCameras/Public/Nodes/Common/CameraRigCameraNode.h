@@ -24,7 +24,7 @@ class UCameraRigCameraNode
 protected:
 
 	// UCameraNode interface.
-	virtual void OnPreBuild(FCameraBuildLog& BuildLog) override;
+	virtual void OnPreBuild(FCameraBuildContext& BuildContext) override;
 	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) override;
 	virtual FCameraNodeEvaluatorPtr OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const override;
 

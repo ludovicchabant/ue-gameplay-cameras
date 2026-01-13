@@ -3,6 +3,7 @@
 #include "GameplayCamerasLiveEditManager.h"
 
 #include "Build/CameraAssetBuilder.h"
+#include "Build/CameraBuildContext.h"
 #include "Build/CameraRigAssetBuilder.h"
 #include "Build/CameraShakeAssetBuilder.h"
 #include "Core/CameraAsset.h"
@@ -181,10 +182,10 @@ struct TCameraObjectBuilderTraits;
 template<>
 struct TCameraObjectBuilderTraits<UCameraAsset>
 {
-	static void Build(UCameraAsset* InObject, FCameraBuildLog& InBuildLog)
+	static void Build(UCameraAsset* InObject, FCameraBuildContext& InBuildContext)
 	{
 		const bool bBuildReferencedAssets = false; // We are going to build rigs first.
-		FCameraAssetBuilder Builder(InBuildLog);
+		FCameraAssetBuilder Builder(InBuildContext);
 		Builder.BuildCamera(InObject, bBuildReferencedAssets); 
 	}
 };
@@ -192,9 +193,9 @@ struct TCameraObjectBuilderTraits<UCameraAsset>
 template<>
 struct TCameraObjectBuilderTraits<UCameraRigAsset>
 {
-	static void Build(UCameraRigAsset* InObject, FCameraBuildLog& InBuildLog)
+	static void Build(UCameraRigAsset* InObject, FCameraBuildContext& InBuildContext)
 	{
-		FCameraRigAssetBuilder Builder(InBuildLog);
+		FCameraRigAssetBuilder Builder(InBuildContext);
 		Builder.BuildCameraRig(InObject);
 	}
 };
@@ -202,9 +203,9 @@ struct TCameraObjectBuilderTraits<UCameraRigAsset>
 template<>
 struct TCameraObjectBuilderTraits<UCameraShakeAsset>
 {
-	static void Build(UCameraShakeAsset* InObject, FCameraBuildLog& InBuildLog)
+	static void Build(UCameraShakeAsset* InObject, FCameraBuildContext& InBuildContext)
 	{
-		FCameraShakeAssetBuilder Builder(InBuildLog);
+		FCameraShakeAssetBuilder Builder(InBuildContext);
 		Builder.BuildCameraShake(InObject); 
 	}
 };
@@ -235,13 +236,14 @@ struct TCameraObjectBuilderUtil
 	{
 		FCameraBuildLog BuildLog;
 		BuildLog.SetForwardMessagesToLogging(true);
+		FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::StartingPIE);
 
 		for (CameraObjectType* CameraObject : InCameraObjectsToBuild)
 		{
 			BuildLog.ResetMessages();
 			BuildLog.SetLoggingPrefix(CameraObject->GetName());
 
-			TCameraObjectBuilderTraits<CameraObjectType>::Build(CameraObject, BuildLog);
+			TCameraObjectBuilderTraits<CameraObjectType>::Build(CameraObject, BuildContext);
 		}
 	}
 };

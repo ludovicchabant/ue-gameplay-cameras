@@ -100,6 +100,36 @@ void UBaseCameraObject::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 	}
 }
 
+bool UBaseCameraObject::FindParameterDefinitionByName(const FName ParameterName, FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const
+{
+	const FCameraObjectInterfaceParameterDefinition* FoundItem = ParameterDefinitions.FindByPredicate(
+			[ParameterName](const FCameraObjectInterfaceParameterDefinition& Item)
+			{
+				return Item.ParameterName == ParameterName;
+			});
+	if (FoundItem)
+	{
+		OutParameterDefinition = *FoundItem;
+		return true;
+	}
+	return false;
+}
+
+bool UBaseCameraObject::FindParameterDefinitionByGuid(const FGuid& ParameterGuid, FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const
+{
+	const FCameraObjectInterfaceParameterDefinition* FoundItem = ParameterDefinitions.FindByPredicate(
+			[&ParameterGuid](const FCameraObjectInterfaceParameterDefinition& Item)
+			{
+				return Item.ParameterGuid == ParameterGuid;
+			});
+	if (FoundItem)
+	{
+		OutParameterDefinition = *FoundItem;
+		return true;
+	}
+	return false;
+}
+
 #if WITH_EDITORONLY_DATA
 
 void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* RootObject, FName DefaultGraphName)

@@ -2,7 +2,6 @@
 
 #include "Build/CameraObjectInterfaceBuilder.h"
 
-#include "Build/CameraBuildLog.h"
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeHierarchy.h"
@@ -38,7 +37,7 @@ struct FInterfaceParameterBindingBuilder
 
 	void ReportError(UObject* Object, FText&& ErrorMessage)
 	{
-		Owner.BuildLog.AddMessage(EMessageSeverity::Error, MoveTemp(ErrorMessage));
+		Owner.BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, MoveTemp(ErrorMessage));
 	}
 
 	void SetParameterOverride(
@@ -230,8 +229,8 @@ private:
 
 }  // namespace Internal
 
-FCameraObjectInterfaceBuilder::FCameraObjectInterfaceBuilder(FCameraBuildLog& InBuildLog)
-	: BuildLog(InBuildLog)
+FCameraObjectInterfaceBuilder::FCameraObjectInterfaceBuilder(FCameraBuildContext& InBuildContext)
+	: BuildContext(InBuildContext)
 {
 }
 
@@ -349,7 +348,7 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameters()
 		// Basic validations.
 		if (!BlendableParameter)
 		{
-			BuildLog.AddMessage(EMessageSeverity::Warning,
+			BuildContext.BuildLog.AddMessage(EMessageSeverity::Warning,
 					CameraObject,
 					LOCTEXT("InvalidBlendableParameter", "Invalid interface parameter was found and removed."));
 
@@ -361,7 +360,7 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameters()
 
 		if (BlendableParameter->InterfaceParameterName.IsEmpty())
 		{
-			BuildLog.AddMessage(EMessageSeverity::Error,
+			BuildContext.BuildLog.AddMessage(EMessageSeverity::Error,
 					BlendableParameter,
 					LOCTEXT(
 						"InvalidBlendableParameterName",
@@ -386,7 +385,7 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameters()
 		// Basic validations.
 		if (!DataParameter)
 		{
-			BuildLog.AddMessage(EMessageSeverity::Warning,
+			BuildContext.BuildLog.AddMessage(EMessageSeverity::Warning,
 					CameraObject,
 					LOCTEXT("InvalidDataParameter", "Invalid interface parameter was found and removed."));
 
@@ -398,7 +397,7 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameters()
 
 		if (DataParameter->InterfaceParameterName.IsEmpty())
 		{
-			BuildLog.AddMessage(EMessageSeverity::Error,
+			BuildContext.BuildLog.AddMessage(EMessageSeverity::Error,
 					DataParameter,
 					LOCTEXT(
 						"InvalidDataParameterName",

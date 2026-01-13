@@ -109,6 +109,9 @@ struct FCameraVariableTableAllocationInfo
 	/**Combines the given allocation info with this one. */
 	GAMEPLAYCAMERAS_API void Combine(const FCameraVariableTableAllocationInfo& OtherInfo);
 
+	/** Returns whether the given variable definitions already exist in our list. */
+	GAMEPLAYCAMERAS_API bool Contains(const FCameraVariableTableAllocationInfo& OtherInfo) const;
+
 	bool operator==(const FCameraVariableTableAllocationInfo& Other) const = default;
 };
 

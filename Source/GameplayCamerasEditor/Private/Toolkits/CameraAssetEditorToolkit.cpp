@@ -12,6 +12,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Editors/ObjectTreeGraphConfig.h"
+#include "Editors/SCameraAssetInterfaceParametersPanel.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "FileHelpers.h"
 #include "Framework/Docking/LayoutExtender.h"
@@ -47,6 +48,7 @@ namespace UE::Cameras
 
 const FName FCameraAssetEditorToolkit::SearchTabId(TEXT("CameraAssetEditor_Search"));
 const FName FCameraAssetEditorToolkit::MessagesTabId(TEXT("CameraAssetEditor_Messages"));
+const FName FCameraAssetEditorToolkit::InterfaceParametersTabId(TEXT("CameraAssetEditor_InterfaceParameters"));
 
 FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwningAssetEditor)
 	: FAssetEditorModeManagerToolkit(InOwningAssetEditor)
@@ -59,6 +61,7 @@ FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwnin
 
 	StandardLayout->AddBottomTab(SearchTabId);
 	StandardLayout->AddBottomTab(MessagesTabId);
+	StandardLayout->AddLeftTab(InterfaceParametersTabId, ETabState::OpenedTab);
 
 	TSharedPtr<FLayoutExtender> NewLayoutExtender = MakeShared<FLayoutExtender>();
 	{
@@ -71,6 +74,11 @@ FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwnin
 				FStandardToolkitLayout::BottomStackExtensionId,
 				ELayoutExtensionPosition::After,
 				FTabManager::FTab(MessagesTabId, ETabState::ClosedTab));
+
+		NewLayoutExtender->ExtendStack(
+				FStandardToolkitLayout::LeftStackExtensionId,
+				ELayoutExtensionPosition::Above,
+				FTabManager::FTab(InterfaceParametersTabId, ETabState::OpenedTab));
 	}
 	LayoutExtenders.Add(NewLayoutExtender);
 }
@@ -105,6 +113,11 @@ void FCameraAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<FTabManager
 		.SetDisplayName(LOCTEXT("Messages", "Messages"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraAssetEditor.Tabs.Messages"));
+
+	InTabManager->RegisterTabSpawner(InterfaceParametersTabId, FOnSpawnTab::CreateSP(this, &FCameraAssetEditorToolkit::SpawnTab_InterfaceParameters))
+		.SetDisplayName(LOCTEXT("InterfaceParameters", "Interface Parameters"))
+		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
+		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.InterfaceParameters"));
 }
 
 TSharedRef<SDockTab> FCameraAssetEditorToolkit::SpawnTab_Search(const FSpawnTabArgs& Args)
@@ -129,6 +142,17 @@ TSharedRef<SDockTab> FCameraAssetEditorToolkit::SpawnTab_Messages(const FSpawnTa
 	return MessagesTab.ToSharedRef();
 }
 
+TSharedRef<SDockTab> FCameraAssetEditorToolkit::SpawnTab_InterfaceParameters(const FSpawnTabArgs& Args)
+{
+	TSharedPtr<SDockTab> InterfaceParametersTab = SNew(SDockTab)
+		.Label(LOCTEXT("InterfaceParametersTabTitle", "Parameters"))
+		[
+			InterfaceParametersPanel.ToSharedRef()
+		];
+
+	return InterfaceParametersTab.ToSharedRef();
+}
+
 void FCameraAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManager>& InTabManager)
 {
 	// Skip FBaseAssetToolkit here because we don't want a viewport tab.
@@ -136,6 +160,7 @@ void FCameraAssetEditorToolkit::UnregisterTabSpawners(const TSharedRef<FTabManag
 
 	InTabManager->UnregisterTabSpawner(SearchTabId);
 	InTabManager->UnregisterTabSpawner(MessagesTabId);
+	InTabManager->UnregisterTabSpawner(InterfaceParametersTabId);
 }
 
 void FCameraAssetEditorToolkit::CreateWidgets()
@@ -155,6 +180,10 @@ void FCameraAssetEditorToolkit::CreateWidgets()
 	SearchWidget = SNew(SFindInObjectTreeGraph)
 		.OnGetGraphsToSearch(this, &FCameraAssetEditorToolkit::OnGetGraphsToSearch)
 		.OnJumpToNodeRequested(this, &FCameraAssetEditorToolkit::OnJumpToNode);
+
+	// Create the interface parameters panel.
+	InterfaceParametersPanel = SNew(SCameraAssetInterfaceParametersPanel, this);
+	InterfaceParametersPanel->OnInterfaceParameterSelected().AddSP(this, &FCameraAssetEditorToolkit::OnInterfaceParameterSelected);
 
 	// Create the message log.
 	BuildLogToolkit->Initialize("CameraAssetBuildMessages");
@@ -274,6 +303,11 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 	SetEditorMode(InitialModeName);
 
 	UpgradeLegacyCameraAssets();
+
+	// If the asset predates the FCameraAssetInterface, upgrade it. We don't mark it as modified in this case.
+	// We either let the user modify the asset and save it, or we'll re-upgrade it next time if needed again.
+	// This prevents prompting the user to save changes they don't know about.
+	FCameraAssetBuilder::BuildDefaultInterfaceIfNeeded(CameraAsset);
 }
 
 TSharedPtr<FAssetEditorMode> FCameraAssetEditorToolkit::CreateCameraDirectorAssetEditorMode()
@@ -353,10 +387,9 @@ void FCameraAssetEditorToolkit::OnBuild()
 		return;
 	}
 
-	FCameraDirectorRigUsageInfo UsageInfo;
-
 	FCameraBuildLog BuildLog;
-	FCameraAssetBuilder Builder(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::UserAction);
+	FCameraAssetBuilder Builder(BuildContext);
 	Builder.BuildCamera(CameraAsset);
 	
 	BuildLogToolkit->PopulateMessageListing(BuildLog);
@@ -368,14 +401,18 @@ void FCameraAssetEditorToolkit::OnBuild()
 
 	DetailsView->RequestForceRefresh();
 
-	for (UCameraRigAsset* CameraRigAsset : UsageInfo.CameraRigs)
+	TConstArrayView<UObject*> BuiltObjects = Builder.GetBuiltReferencedAssets();
+	for (UObject* BuiltObject : BuiltObjects)
 	{
-		FCameraRigPackages BuiltPackages;
-		CameraRigAsset->GatherPackages(BuiltPackages);
-
-		for (const UPackage* BuiltPackage : BuiltPackages)
+		if (UCameraRigAsset* CameraRigAsset = Cast<UCameraRigAsset>(BuiltObject))
 		{
-			LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
+			FCameraRigPackages BuiltPackages;
+			CameraRigAsset->GatherPackages(BuiltPackages);
+
+			for (const UPackage* BuiltPackage : BuiltPackages)
+			{
+				LiveEditManager->NotifyPostBuildAsset(BuiltPackage);
+			}
 		}
 	}
 
@@ -456,6 +493,11 @@ void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyNa
 		SharedTransitionsMode->JumpToObject(Object, PropertyName);
 		return;
 	}
+}
+
+void FCameraAssetEditorToolkit::OnInterfaceParameterSelected(UCameraAssetInterfaceParameter* InterfaceParameter)
+{
+	DetailsView->SetObject(InterfaceParameter);
 }
 
 FText FCameraAssetEditorToolkit::GetBaseToolkitName() const

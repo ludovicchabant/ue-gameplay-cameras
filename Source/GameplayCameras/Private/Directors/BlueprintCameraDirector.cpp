@@ -2,7 +2,7 @@
 
 #include "Directors/BlueprintCameraDirector.h"
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Components/ActorComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirectorEvaluator.h"
@@ -501,14 +501,14 @@ FCameraDirectorEvaluatorPtr UBlueprintCameraDirector::OnBuildEvaluator(FCameraDi
 	return Builder.BuildEvaluator<FBlueprintCameraDirectorEvaluator>();
 }
 
-void UBlueprintCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
+void UBlueprintCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 
 	// Check that a camera director evaluator Blueprint was specified.
 	if (!CameraDirectorEvaluatorClass)
 	{
-		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingBlueprintClass", "No evaluator Blueprint class is set."));
+		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingBlueprintClass", "No evaluator Blueprint class is set."));
 		return;
 	}
 }

@@ -4,6 +4,8 @@
 
 #include "Editors/CameraNodeGraphDragDropOp.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "Helpers/CameraContextDataPinTypeHelper.h"
+#include "Helpers/CameraVariablePinTypeHelper.h"
 #include "IGameplayCamerasModule.h"
 #include "SPinTypeSelector.h"
 #include "ScopedTransaction.h"
@@ -24,9 +26,6 @@
 
 namespace UE::Cameras
 {
-
-static const FName ParameterTypeColumn(TEXT("ParameterType"));
-static const FName ParameterNameColumn(TEXT("ParameterName"));
 
 /**
  * List entry for any interface parameter panel.
@@ -62,7 +61,7 @@ protected:
 
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override
 	{
-		if (InColumnName == ParameterNameColumn)
+		if (InColumnName == SCameraObjectInterfaceParametersPanel::ParameterNameColumn)
 		{
 			return SAssignNew(NameTextBlock, SInlineEditableTextBlock)
 				.IsSelected(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::IsSelected)
@@ -119,7 +118,7 @@ protected:
 
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override
 	{
-		if (InColumnName == ParameterTypeColumn)
+		if (InColumnName == SCameraObjectInterfaceParametersPanel::ParameterTypeColumn)
 		{
 			TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
 
@@ -196,67 +195,8 @@ protected:
 
 	FEdGraphPinType GetBlendableParameterPinType() const
 	{
-		FEdGraphPinType PinType;
-		switch (Item->VariableType)
-		{
-			case ECameraVariableType::Boolean:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
-				break;
-			case ECameraVariableType::Integer32:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Int;
-				break;
-			case ECameraVariableType::Float:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Float;
-				break;
-			case ECameraVariableType::Double:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Double;
-				break;
-			case ECameraVariableType::Vector2f:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TVariantStructure<FVector2f>::Get();
-				break;
-			case ECameraVariableType::Vector2d:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TBaseStructure<FVector2D>::Get();
-				break;
-			case ECameraVariableType::Vector3f:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TVariantStructure<FVector3f>::Get();
-				break;
-			case ECameraVariableType::Vector3d:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TBaseStructure<FVector>::Get();
-				break;
-			case ECameraVariableType::Vector4f:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TVariantStructure<FVector4f>::Get();
-				break;
-			case ECameraVariableType::Vector4d:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TBaseStructure<FVector4>::Get();
-				break;
-			case ECameraVariableType::Rotator3f:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TVariantStructure<FRotator3f>::Get();
-				break;
-			case ECameraVariableType::Rotator3d:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TBaseStructure<FRotator>::Get();
-				break;
-			case ECameraVariableType::Transform3f:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TVariantStructure<FTransform3f>::Get();
-				break;
-			case ECameraVariableType::Transform3d:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = TBaseStructure<FTransform>::Get();
-				break;
-			case ECameraVariableType::BlendableStruct:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(Item->BlendableStructType.Get());
-				break;
-		}
-		return PinType;
+		return FCameraVariablePinTypeHelper::GetPinType(
+				Item->VariableType, Item->BlendableStructType.Get());
 	}
 
 	void OnBlendableParameterPinTypeChanged(const FEdGraphPinType& PinType)
@@ -400,7 +340,7 @@ protected:
 
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& InColumnName) override
 	{
-		if (InColumnName == ParameterTypeColumn)
+		if (InColumnName == SCameraObjectInterfaceParametersPanel::ParameterTypeColumn)
 		{
 			TSharedRef<FGameplayCamerasEditorStyle> GameplayCamerasEditorStyle = FGameplayCamerasEditorStyle::Get();
 
@@ -432,39 +372,8 @@ protected:
 
 	FEdGraphPinType GetDataParameterPinType() const
 	{
-		FEdGraphPinType PinType;
-		PinType.PinSubCategoryObject = const_cast<UObject*>(Item->DataTypeObject.Get());
-
-		switch (Item->DataType)
-		{
-			case ECameraContextDataType::Name:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Name;
-				break;
-			case ECameraContextDataType::String:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_String;
-				break;
-			case ECameraContextDataType::Enum:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Enum;
-				break;
-			case ECameraContextDataType::Struct:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Struct;
-				break;
-			case ECameraContextDataType::Object:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Object;
-				break;
-			case ECameraContextDataType::Class:
-				PinType.PinCategory = UEdGraphSchema_K2::PC_Class;
-				break;
-		}
-
-		switch (Item->DataContainerType)
-		{
-			case ECameraContextDataContainerType::Array:
-				PinType.ContainerType = EPinContainerType::Array;
-				break;
-		}
-
-		return PinType;
+		return FCameraContextDataPinTypeHelper::GetPinType(
+				Item->DataType, Item->DataContainerType, Item->DataTypeObject.Get());
 	}
 
 	void OnDataParameterPinTypeChanged(const FEdGraphPinType& PinType)
@@ -528,6 +437,7 @@ protected:
 			Item->Modify();
 
 			Item->DataType = NewDataType;
+			Item->DataContainerType = NewDataContainerType;
 			Item->DataTypeObject = NewDataTypeObject;
 		}
 	}
@@ -537,6 +447,9 @@ protected:
 		return !IsHovered();
 	}
 };
+
+const FName SCameraObjectInterfaceParametersPanel::ParameterTypeColumn(TEXT("ParameterType"));
+const FName SCameraObjectInterfaceParametersPanel::ParameterNameColumn(TEXT("ParameterName"));
 
 void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FCameraObjectInterfaceParametersToolkit* OwnerToolkit)
 {

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Containers/ArrayView.h"
 #include "Core/CameraContextDataTableFwd.h"
 #include "Core/CameraVariableTableFwd.h"
@@ -26,7 +26,7 @@ class FCameraObjectInterfaceBuilder
 {
 public:
 
-	UE_API FCameraObjectInterfaceBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraObjectInterfaceBuilder(FCameraBuildContext& InBuildContext);
 
 	UE_API void BuildInterface(UBaseCameraObject* InCameraObject, const FCameraNodeHierarchy& InHierarchy, bool bCollectStrayNodes);
 	UE_API void BuildInterface(UBaseCameraObject* InCameraObject, TArrayView<UCameraNode*> InCameraObjectNodes);
@@ -50,7 +50,7 @@ private:
 
 private:
 
-	FCameraBuildLog& BuildLog;
+	FCameraBuildContext BuildContext;
 
 	UBaseCameraObject* CameraObject = nullptr;
 	TArray<UCameraNode*> CameraObjectNodes;

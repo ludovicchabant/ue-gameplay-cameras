@@ -3,7 +3,7 @@
 #include "GameFramework/GameplayCameraRigComponent.h"
 
 #include "Build/CameraAssetBuilder.h"
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraRigAsset.h"
 #include "Directors/SingleCameraDirector.h"
@@ -101,7 +101,8 @@ void UGameplayCameraRigComponent::BuildGeneratedCamera()
 
 		FCameraBuildLog BuildLog;
 		BuildLog.SetForwardMessagesToLogging(true);
-		FCameraAssetBuilder Builder(BuildLog);
+		FCameraBuildContext BuildContext(BuildLog);
+		FCameraAssetBuilder Builder(BuildContext);
 		Builder.BuildCamera(GeneratedCameraAsset, bBuildReferencedAssets);
 	}
 }

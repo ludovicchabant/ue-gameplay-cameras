@@ -83,6 +83,12 @@ public:
 	/** Initializes the variable table so that it fits the provided allocation info. */
 	UE_API void Initialize(const FCameraVariableTableAllocationInfo& AllocationInfo);
 
+	/**
+	 * Ensure that all the variables referenced in the given allocation info exist in the table.
+	 * Returns false if some variables had to be added.
+	 */
+	UE_API bool EnsureVariables(const FCameraVariableTableAllocationInfo& AllocationInfo);
+
 	/** Adds a variable to the table.
 	 *
 	 * This may re-allocate the internal memory buffer. It's recommended to pre-compute
@@ -206,6 +212,8 @@ private:
 
 	static UE_API bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf);
 
+	static void CreateEntry(const FCameraVariableDefinition& VariableDefinition, FEntry& OutEntry);
+
 	template<typename ValueType>
 	static bool CheckVariableType(ECameraVariableType InType)
 	{
@@ -219,6 +227,8 @@ private:
 
 	UE_API void InternalOverride(const FCameraVariableTable& OtherTable, ECameraVariableTableFilter Filter, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
 	UE_API void InternalLerp(const FCameraVariableTable& ToTable, ECameraVariableTableFilter Filter, float Factor, const FCameraVariableTableFlags* InMask, bool bInvertMask, FCameraVariableTableFlags* OutMask);
+
+	void InitializeEntries(int32 StartIndex = 0, int32 EndIndex = -1);
 
 private:
 
@@ -250,6 +260,7 @@ private:
 
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
+	uint32 Alignment = 0;
 	uint32 Used = 0;
 
 	static UE_API TArray<FBlendableStructInfo> CachedBlendableStructs;

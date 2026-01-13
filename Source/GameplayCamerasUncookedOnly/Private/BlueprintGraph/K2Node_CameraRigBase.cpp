@@ -12,6 +12,8 @@
 #include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "GameFramework/CameraRigParameterInterop.h"
 #include "GameplayCamerasDelegates.h"
+#include "Helpers/CameraContextDataPinTypeHelper.h"
+#include "Helpers/CameraVariablePinTypeHelper.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_EnumLiteral.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -145,57 +147,7 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(const UCame
 
 FEdGraphPinType UK2Node_CameraRigBase::MakeBlendableParameterPinType(ECameraVariableType CameraVariableType, const UScriptStruct* BlendableStructType)
 {
-	FName PinCategory;
-	FName PinSubCategory;
-	UObject* PinSubCategoryObject = nullptr;
-	switch (CameraVariableType)
-	{
-		case ECameraVariableType::Boolean:
-			PinCategory = UEdGraphSchema_K2::PC_Boolean;
-			break;
-		case ECameraVariableType::Integer32:
-			PinCategory = UEdGraphSchema_K2::PC_Int;
-			break;
-		case ECameraVariableType::Float:
-			// We'll cast down to float.
-			PinCategory = UEdGraphSchema_K2::PC_Real;
-			PinSubCategory = UEdGraphSchema_K2::PC_Float;
-			break;
-		case ECameraVariableType::Double:
-			PinCategory = UEdGraphSchema_K2::PC_Real;
-			PinSubCategory = UEdGraphSchema_K2::PC_Double;
-			break;
-		case ECameraVariableType::Vector2d:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = TBaseStructure<FVector2D>::Get();
-			break;
-		case ECameraVariableType::Vector3d:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = TBaseStructure<FVector>::Get();
-			break;
-		case ECameraVariableType::Vector4d:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = TBaseStructure<FVector4>::Get();
-			break;
-		case ECameraVariableType::Rotator3d:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = TBaseStructure<FRotator>::Get();
-			break;
-		case ECameraVariableType::Transform3d:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = TBaseStructure<FTransform>::Get();
-			break;
-		case ECameraVariableType::BlendableStruct:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableStructType);
-			break;
-	}
-
-	FEdGraphPinType PinType;
-	PinType.PinCategory = PinCategory;
-	PinType.PinSubCategory = PinSubCategory;
-	PinType.PinSubCategoryObject = PinSubCategoryObject;
-	return PinType;
+	return UE::Cameras::FCameraVariablePinTypeHelper::GetPinType(CameraVariableType, BlendableStructType);
 }
 
 FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(const UCameraObjectInterfaceDataParameter* DataParameter)
@@ -205,44 +157,7 @@ FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(const UCameraObj
 
 FEdGraphPinType UK2Node_CameraRigBase::MakeDataParameterPinType(ECameraContextDataType CameraContextDataType, ECameraContextDataContainerType CameraContextDataContainerType, const UObject* CameraContextDataTypeObject)
 {
-	FName PinCategory;
-	UObject* PinSubCategoryObject = const_cast<UObject*>(CameraContextDataTypeObject);
-	switch (CameraContextDataType)
-	{
-		case ECameraContextDataType::Name:
-			PinCategory = UEdGraphSchema_K2::PC_Name;
-			break;
-		case ECameraContextDataType::String:
-			PinCategory = UEdGraphSchema_K2::PC_String;
-			break;
-		case ECameraContextDataType::Enum:
-			PinCategory = UEdGraphSchema_K2::PC_Byte;
-			break;
-		case ECameraContextDataType::Struct:
-			PinCategory = UEdGraphSchema_K2::PC_Struct;
-			break;
-		case ECameraContextDataType::Object:
-			PinCategory = UEdGraphSchema_K2::PC_Object;
-			break;
-		case ECameraContextDataType::Class:
-			PinCategory = UEdGraphSchema_K2::PC_Class;
-			break;
-	}
-
-	EPinContainerType PinContainerType = EPinContainerType::None;
-	switch (CameraContextDataContainerType)
-	{
-		case ECameraContextDataContainerType::Array:
-			PinContainerType = EPinContainerType::Array;
-		default:
-			break;
-	}
-
-	FEdGraphPinType PinType;
-	PinType.PinCategory = PinCategory;
-	PinType.PinSubCategoryObject = PinSubCategoryObject;
-	PinType.ContainerType = PinContainerType;
-	return PinType;
+	return UE::Cameras::FCameraContextDataPinTypeHelper::GetPinType(CameraContextDataType, CameraContextDataContainerType, CameraContextDataTypeObject);
 }
 
 UK2Node_CallFunction* UK2Node_CameraRigBase::CreateMakeLiteralNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph, UK2Node* SourceNode, UClass* FunctionLibraryClass, const TCHAR* FunctionName, UEdGraphPin* SourceValuePin)

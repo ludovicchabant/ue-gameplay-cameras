@@ -7,6 +7,14 @@
 namespace UE::Cameras
 {
 
+namespace Private
+{
+
+static const uint32 GDefaultCapacity = 64;
+static const uint32 GDefaultAlignment = alignof(void*);
+
+}  // namespace Private
+
 FCameraContextDataTable::FCameraContextDataTable()
 {
 }
@@ -99,8 +107,8 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 	EntryLookup.Reset();
 
 	// Compute the total buffer size we need, and create our entries as we go.
-	const uint32 FirstAlignOf = 32u;
 	uint32 TotalSizeOf = 0;
+	uint32 MaxAlignOf = 0;
 	uint32 CurSizeOf, CurAlignOf;
 
 	for (const FCameraContextDataDefinition& DataDefinition : AllocationInfo.DataDefinitions)
@@ -108,29 +116,20 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 		GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataContainerType, DataDefinition.DataTypeObject, CurSizeOf, CurAlignOf);
 		const uint32 NewEntryOffset = Align(TotalSizeOf, CurAlignOf);
 		TotalSizeOf = NewEntryOffset + CurSizeOf;
+		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
 
 		FEntry NewEntry;
-		NewEntry.ID = DataDefinition.DataID;
-		NewEntry.Type = DataDefinition.DataType;
-		NewEntry.ContainerType = DataDefinition.DataContainerType;
-		NewEntry.TypeObject = DataDefinition.DataTypeObject;
+		CreateEntry(DataDefinition, NewEntry);
 		NewEntry.Offset = NewEntryOffset;
-		NewEntry.Flags = EEntryFlags::None;
-		if (DataDefinition.bAutoReset)
-		{
-			NewEntry.Flags |= EEntryFlags::AutoReset;
-		}
-#if WITH_EDITORONLY_DATA
-		NewEntry.DebugName = DataDefinition.DataName;
-#endif
-
 		Entries.Add(NewEntry);
 		EntryLookup.Add(NewEntry.ID, Entries.Num() - 1);
 	}
 
 	// Allocate the memory buffer.
-	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, FirstAlignOf));
+	MaxAlignOf = FMath::Max(Private::GDefaultAlignment, MaxAlignOf);
+	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, MaxAlignOf));
 	Capacity = TotalSizeOf;
+	Alignment = MaxAlignOf;
 	Used = TotalSizeOf;
 
 	// Go back to our entries and initialize each entry to the default value for that data type.
@@ -139,6 +138,59 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 		uint8* DataPtr = Memory + Entry.Offset;
 		ConstructDataValue(Entry.Type, Entry.ContainerType, Entry.TypeObject, DataPtr);
 	}
+}
+
+bool FCameraContextDataTable::EnsureData(const FCameraContextDataTableAllocationInfo& AllocationInfo)
+{
+	uint32 TotalSizeOf = Used;
+	uint32 MaxAlignOf = 0;
+	uint32 CurSizeOf, CurAlignOf;
+
+	bool bAllExist = true;
+	int32 FirstNewEntry = Entries.Num();
+
+	for (const FCameraContextDataDefinition& DataDefinition : AllocationInfo.DataDefinitions)
+	{
+		if (EntryLookup.Contains(DataDefinition.DataID))
+		{
+			continue;
+		}
+
+		GetDataTypeAllocationInfo(DataDefinition.DataType, DataDefinition.DataContainerType, DataDefinition.DataTypeObject, CurSizeOf, CurAlignOf);
+		const uint32 NewEntryOffset = Align(TotalSizeOf, CurAlignOf);
+		TotalSizeOf = NewEntryOffset + CurSizeOf;
+		MaxAlignOf = FMath::Max(MaxAlignOf, CurAlignOf);
+
+		FEntry NewEntry;
+		CreateEntry(DataDefinition, NewEntry);
+		NewEntry.Offset = NewEntryOffset;
+		Entries.Add(NewEntry);
+		EntryLookup.Add(NewEntry.ID, Entries.Num() - 1);
+
+		bAllExist = false;
+	}
+
+	if (!bAllExist)
+	{
+		// Alignment may not have been initialized yet.
+		Alignment = FMath::Max(Alignment, MaxAlignOf);
+
+		if (TotalSizeOf > Capacity)
+		{
+			ReallocateBuffer(TotalSizeOf);
+		}
+
+		Used = TotalSizeOf;
+
+		for (int32 Index = FirstNewEntry; Index < Entries.Num(); ++Index)
+		{
+			const FEntry& Entry = Entries[Index];
+			uint8* DataPtr = Memory + Entry.Offset;
+			ConstructDataValue(Entry.Type, Entry.ContainerType, Entry.TypeObject, DataPtr);
+		}
+	}
+
+	return bAllExist;
 }
 
 void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDefinition)
@@ -156,6 +208,9 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 
 	if (NewUsed > Capacity)
 	{
+		// Alignment may not have been initialized yet.
+		Alignment = FMath::Max(AlignOf, Private::GDefaultAlignment);
+
 		ReallocateBuffer(NewUsed);
 
 		DataPtr = Align(Memory + Used, AlignOf);
@@ -164,24 +219,29 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	Used = NewUsed;
 
 	FEntry NewEntry;
-	NewEntry.ID = DataDefinition.DataID;
-	NewEntry.Type = DataDefinition.DataType;
-	NewEntry.ContainerType = DataDefinition.DataContainerType;
-	NewEntry.TypeObject = DataDefinition.DataTypeObject;
+	CreateEntry(DataDefinition, NewEntry);
 	NewEntry.Offset = DataPtr - Memory;
-	NewEntry.Flags = EEntryFlags::None;
-	if (DataDefinition.bAutoReset)
-	{
-		NewEntry.Flags |= EEntryFlags::AutoReset;
-	}
-#if WITH_EDITORONLY_DATA
-	NewEntry.DebugName = DataDefinition.DataName;
-#endif
-	
 	Entries.Add(NewEntry);
 	EntryLookup.Add(DataDefinition.DataID, Entries.Num() - 1);
 
 	ConstructDataValue(NewEntry.Type, NewEntry.ContainerType, NewEntry.TypeObject, Memory + NewEntry.Offset);
+}
+
+void FCameraContextDataTable::CreateEntry(const FCameraContextDataDefinition& DataDefinition, FEntry& OutEntry)
+{
+	OutEntry.ID = DataDefinition.DataID;
+	OutEntry.Type = DataDefinition.DataType;
+	OutEntry.ContainerType = DataDefinition.DataContainerType;
+	OutEntry.TypeObject = DataDefinition.DataTypeObject;
+	OutEntry.Offset = 0;
+	OutEntry.Flags = EEntryFlags::None;
+	if (DataDefinition.bAutoReset)
+	{
+		OutEntry.Flags |= EEntryFlags::AutoReset;
+	}
+#if WITH_EDITORONLY_DATA
+	OutEntry.DebugName = DataDefinition.DataName;
+#endif
 }
 
 bool FCameraContextDataTable::GetDataTypeAllocationInfo(ECameraContextDataType DataType, const UObject* DataTypeObject, uint32& OutSizeOf, uint32& OutAlignOf)
@@ -350,17 +410,14 @@ bool FCameraContextDataTable::DestroyDataValue(ECameraContextDataType DataType, 
 
 void FCameraContextDataTable::ReallocateBuffer(uint32 MinRequired)
 {
-	static const uint32 DefaultCapacity = 64u;
-	static const uint32 DefaultAlignment = 32u;
-
-	uint32 NewCapacity = Capacity <= 0 ? DefaultCapacity : Capacity * 2;
+	uint32 NewCapacity = Capacity <= 0 ? Private::GDefaultCapacity : Capacity * 2;
 	if (MinRequired > 0)
 	{
 		NewCapacity = FMath::Max(NewCapacity, MinRequired);
 	}
 
 	uint8* OldMemory = Memory;
-	uint8* NewMemory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, DefaultAlignment));
+	uint8* NewMemory = reinterpret_cast<uint8*>(FMemory::Malloc(NewCapacity, Alignment));
 
 	if (OldMemory)
 	{

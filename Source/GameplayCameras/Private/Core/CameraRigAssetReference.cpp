@@ -27,6 +27,16 @@ const UBaseCameraObject* FCameraRigAssetReference::GetCameraObject() const
 	return CameraRig;
 }
 
+void FCameraRigAssetReference::EnsureAllocationInfo(UE::Cameras::FCameraNodeEvaluationResult& OutResult) const
+{
+	if (CameraRig)
+	{
+		const FCameraObjectAllocationInfo& AllocationInfo = CameraRig->AllocationInfo;
+		OutResult.VariableTable.EnsureVariables(AllocationInfo.VariableTableInfo);
+		OutResult.ContextDataTable.EnsureData(AllocationInfo.ContextDataTableInfo);
+	}
+}
+
 void FCameraRigAssetReference::ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const
 {
 	ApplyParameterOverridesImpl(&OutVariableTable, nullptr, bDrivenOnly, false);

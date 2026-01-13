@@ -385,7 +385,8 @@ void FCameraShakeAssetEditorToolkit::OnBuild()
 	}
 
 	FCameraBuildLog BuildLog;
-	FCameraShakeAssetBuilder Builder(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::UserAction);
+	FCameraShakeAssetBuilder Builder(BuildContext);
 	Builder.BuildCameraShake(CameraShakeAsset);
 
 	BuildLogToolkit->PopulateMessageListing(BuildLog);

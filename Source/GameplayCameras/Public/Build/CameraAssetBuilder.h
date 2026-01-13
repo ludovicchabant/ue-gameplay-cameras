@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "CoreTypes.h"
 #include "GameplayCameras.h"
 
@@ -23,24 +23,36 @@ class FCameraAssetBuilder
 public:
 
 	/** Creates a new camera builder. */
-	UE_API FCameraAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraAssetBuilder(FCameraBuildContext& InBuildContext);
 
 	/** Builds the given camera. */
 	UE_API void BuildCamera(UCameraAsset* InCameraAsset, bool bBuildReferencedAssets = true);
+
+	/** Gets the last built referenced assets. */
+	TConstArrayView<UObject*> GetBuiltReferencedAssets() const { return BuiltReferencedAssets; }
+
+public:
+
+	// Internal API.
+
+	UE_API static bool BuildDefaultInterfaceIfNeeded(UCameraAsset* InCameraAsset);
 
 private:
 
 	void BuildCameraImpl(bool bBuildReferencedAssets);
 
-	void CopyDefaultParameterValues(const UCameraRigAsset* InCameraRig, FInstancedPropertyBag& DefaultParameters);
+	void BuildParameters();
+	void CopyDefaultParameterValue(const UCameraRigAsset* InCameraRig, const FGuid& PropertyID, FInstancedPropertyBag& DefaultParameters);
 
 	void UpdateBuildStatus();
 
 private:
 
-	FCameraBuildLog& BuildLog;
+	FCameraBuildContext BuildContext;
 
 	UCameraAsset* CameraAsset = nullptr;
+
+	TArray<UObject*> BuiltReferencedAssets;
 };
 
 }  // namespace UE::Cameras

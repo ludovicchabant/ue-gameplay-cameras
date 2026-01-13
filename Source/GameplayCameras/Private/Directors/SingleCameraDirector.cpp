@@ -2,7 +2,7 @@
 
 #include "Directors/SingleCameraDirector.h"
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraAsset.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -42,11 +42,11 @@ FCameraDirectorEvaluatorPtr USingleCameraDirector::OnBuildEvaluator(FCameraDirec
 	return Builder.BuildEvaluator<FSingleCameraDirectorEvaluator>();
 }
 
-void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
+void USingleCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext)
 {
 	if (!CameraRig)
 	{
-		BuildLog.AddMessage(EMessageSeverity::Error, this, LOCTEXT("MissingCameraRig", "No camera rig is set."));
+		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, this, LOCTEXT("MissingCameraRig", "No camera rig is set."));
 	}
 }
 

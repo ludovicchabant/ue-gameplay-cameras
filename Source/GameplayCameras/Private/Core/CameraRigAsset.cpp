@@ -2,6 +2,7 @@
 
 #include "Core/CameraRigAsset.h"
 
+#include "Build/CameraBuildContext.h"
 #include "Build/CameraBuildLog.h"
 #include "Build/CameraRigAssetBuilder.h"
 #include "Core/CameraNode.h"
@@ -85,14 +86,15 @@ void UCameraRigAsset::BuildCameraRig()
 
 	FCameraBuildLog BuildLog;
 	BuildLog.SetForwardMessagesToLogging(true);
-	BuildCameraRig(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog);
+	BuildCameraRig(BuildContext);
 }
 
-void UCameraRigAsset::BuildCameraRig(UE::Cameras::FCameraBuildLog& InBuildLog)
+void UCameraRigAsset::BuildCameraRig(UE::Cameras::FCameraBuildContext& InBuildContext)
 {
 	using namespace UE::Cameras;
 
-	FCameraRigAssetBuilder Builder(InBuildLog);
+	FCameraRigAssetBuilder Builder(InBuildContext);
 	Builder.BuildCameraRig(this);
 }
 

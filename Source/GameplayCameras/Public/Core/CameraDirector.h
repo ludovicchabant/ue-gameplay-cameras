@@ -15,7 +15,7 @@
 class UCameraRigAsset;
 class UCameraRigProxy;
 
-namespace UE::Cameras { class FCameraBuildLog; }
+namespace UE::Cameras { struct FCameraBuildContext; }
 
 #if WITH_EDITOR
 
@@ -56,7 +56,7 @@ public:
 	UE_API FCameraDirectorEvaluatorPtr BuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const;
 
 	/** Builds and validates this camera director. */
-	UE_API void BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog);
+	UE_API void BuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext);
 
 	/** Gets the list of camera rigs used by this camera director. */
 	UE_API void GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const;
@@ -80,7 +80,7 @@ protected:
 	virtual FCameraDirectorEvaluatorPtr OnBuildEvaluator(FCameraDirectorEvaluatorBuilder& Builder) const { return nullptr; }
 
 	/** Builds and validates this camera director. */
-	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog) {}
+	virtual void OnBuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext) {}
 
 	/** Gets the list of camera rigs used by this camera director. */
 	virtual void OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const {}

@@ -2,7 +2,7 @@
 
 #include "Core/CameraShakeAsset.h"
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Build/CameraShakeAssetBuilder.h"
 #include "Core/ShakeCameraNode.h"  // IWYU pragma: keep
 #include "Misc/EngineVersionComparison.h"
@@ -17,14 +17,15 @@ void UCameraShakeAsset::BuildCameraShake()
 
 	FCameraBuildLog BuildLog;
 	BuildLog.SetForwardMessagesToLogging(true);
-	BuildCameraShake(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog);
+	BuildCameraShake(BuildContext);
 }
 
-void UCameraShakeAsset::BuildCameraShake(UE::Cameras::FCameraBuildLog& InBuildLog)
+void UCameraShakeAsset::BuildCameraShake(UE::Cameras::FCameraBuildContext& InBuildContext)
 {
 	using namespace UE::Cameras;
 
-	FCameraShakeAssetBuilder Builder(InBuildLog);
+	FCameraShakeAssetBuilder Builder(InBuildContext);
 	Builder.BuildCameraShake(this);
 }
 

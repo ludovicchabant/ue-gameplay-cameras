@@ -24,6 +24,7 @@ class FBuildButtonToolkit;
 class FCameraBuildLogToolkit;
 class FStandardToolkitLayout;
 class IGameplayCamerasLiveEditManager;
+class SCameraAssetInterfaceParametersPanel;
 
 /**
  * Editor toolkit for a camera asset.
@@ -37,6 +38,8 @@ public:
 
 	FCameraAssetEditorToolkit(UCameraAssetEditor* InOwningAssetEditor);
 	~FCameraAssetEditorToolkit();
+
+	UCameraAsset* GetCameraAsset() const { return CameraAsset; }
 
 protected:
 
@@ -69,6 +72,7 @@ private:
 
 	TSharedRef<SDockTab> SpawnTab_Search(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Messages(const FSpawnTabArgs& Args);
+	TSharedRef<SDockTab> SpawnTab_InterfaceParameters(const FSpawnTabArgs& Args);
 
 	void FillCameraMenu(FMenuBuilder& MenuBuilder);
 
@@ -84,12 +88,15 @@ private:
 	void OnJumpToObject(UObject* Object);
 	void OnJumpToObject(UObject* Object, FName PropertyName);
 
+	void OnInterfaceParameterSelected(UCameraAssetInterfaceParameter* InterfaceParameter);
+
 	void UpgradeLegacyCameraAssets();
 
 private:
 
 	static const FName SearchTabId;
 	static const FName MessagesTabId;
+	static const FName InterfaceParametersTabId;
 
 	/** The asset being edited */
 	TObjectPtr<UCameraAsset> CameraAsset;
@@ -109,6 +116,10 @@ private:
 	/** The search results window */
 	TSharedPtr<SFindInObjectTreeGraph> SearchWidget;
 
+	/** The panel for exposing parameters. */
+	TSharedPtr<SCameraAssetInterfaceParametersPanel> InterfaceParametersPanel;
+
+	/** A cached pointer to the editor settings. */
 	TObjectPtr<UGameplayCamerasEditorSettings> Settings;
 
 	/** Live edit manager for updating the assets in the runtime */

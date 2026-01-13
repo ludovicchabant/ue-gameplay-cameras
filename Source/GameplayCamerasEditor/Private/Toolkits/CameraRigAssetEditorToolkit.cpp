@@ -115,7 +115,7 @@ void FCameraRigAssetEditorToolkit::RegisterTabSpawners(const TSharedRef<class FT
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.Curves"));
 
 	InTabManager->RegisterTabSpawner(InterfaceParametersTabId, FOnSpawnTab::CreateSP(this, &FCameraRigAssetEditorToolkit::SpawnTab_InterfaceParameters))
-		.SetDisplayName(LOCTEXT("InterfaceParameters", "InterfaceParameters"))
+		.SetDisplayName(LOCTEXT("InterfaceParameters", "Interface Parameters"))
 		.SetGroup(AssetEditorTabsCategory.ToSharedRef())
 		.SetIcon(FSlateIcon(CamerasStyleSetName, "CameraRigAssetEditor.Tabs.InterfaceParameters"));
 }
@@ -353,7 +353,8 @@ void FCameraRigAssetEditorToolkit::OnBuild()
 	}
 
 	FCameraBuildLog BuildLog;
-	FCameraRigAssetBuilder Builder(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::UserAction);
+	FCameraRigAssetBuilder Builder(BuildContext);
 	Builder.BuildCameraRig(CameraRigAsset);
 
 	BuildLogToolkit->PopulateMessageListing(BuildLog);

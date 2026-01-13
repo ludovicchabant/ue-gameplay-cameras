@@ -44,8 +44,14 @@ void FCameraRigCameraNodeEvaluator::OnBuild(const FCameraNodeEvaluatorBuildParam
 
 void FCameraRigCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorInitializeParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
-	// Apply overrides and defaults right away.
 	const UCameraRigCameraNode* PrefabNode = GetCameraNodeAs<UCameraRigCameraNode>();
+
+	// In editor and other uncooked builds, we only have the allocation info for the variables and data of our own 
+	// camera rig.  So we need to make room for the referenced camera rig's stuff.
+	// With cooked data we would have all that info already.
+	PrefabNode->CameraRigReference.EnsureAllocationInfo(OutResult);
+	
+	// Apply overrides and defaults right away.
 	PrefabNode->CameraRigReference.ApplyParameterOverridesAndDefaults(OutResult);
 }
 
@@ -66,16 +72,17 @@ void FCameraRigCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Par
 
 }  // namespace UE::Cameras
 
-void UCameraRigCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
+void UCameraRigCameraNode::OnPreBuild(FCameraBuildContext& BuildContext)
 {
 	// Build the inner camera rig. Silently skip it if it's not set or invalid... but we will
 	// report an error in OnBuild about it.
 	if (UCameraRigAsset* CameraRig = CameraRigReference.GetCameraRig())
 	{
+		const bool bNeedsBuild = CameraRig->BuildStatus == ECameraBuildStatus::Dirty;
 		const UCameraRigAsset* OuterCameraRig = GetTypedOuter<UCameraRigAsset>();
-		if (OuterCameraRig != CameraRig)
+		if (OuterCameraRig != CameraRig && bNeedsBuild)
 		{
-			CameraRig->BuildCameraRig(BuildLog);
+			CameraRig->BuildCameraRig(BuildContext);
 		}
 	}
 
@@ -104,9 +111,12 @@ void UCameraRigCameraNode::OnBuild(FCameraObjectBuildContext& BuildContext)
 	const UCameraRigAsset* OuterCameraRig = GetTypedOuter<UCameraRigAsset>();
 	if (OuterCameraRig != CameraRig)
 	{
-		// Whatever allocations our inner camera rig needs for its evaluators and
-		// their camera variables, we add that to our camera rig's allocation info.
-		BuildContext.AllocationInfo.Append(CameraRig->AllocationInfo);
+		if (BuildContext.IsCooking())
+		{
+			// Whatever allocations our inner camera rig needs for its evaluators and
+			// their camera variables, we add that to our camera rig's allocation info.
+			BuildContext.AllocationInfo.Append(CameraRig->AllocationInfo);
+		}
 	}
 	else
 	{

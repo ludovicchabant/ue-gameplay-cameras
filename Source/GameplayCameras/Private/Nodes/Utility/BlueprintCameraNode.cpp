@@ -595,7 +595,7 @@ void UBlueprintCameraNode::RebuildOverrides()
 	}
 }
 
-void UBlueprintCameraNode::OnPreBuild(FCameraBuildLog& BuildLog)
+void UBlueprintCameraNode::OnPreBuild(FCameraBuildContext& BuildContext)
 {
 	RebuildOverrides();
 }

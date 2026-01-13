@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraNodeHierarchy.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
@@ -22,7 +22,7 @@ class FCameraNodeHierarchyBuilder
 public:
 
 	/** Creates a new camera node hierarchy builder. */
-	UE_API FCameraNodeHierarchyBuilder(FCameraBuildLog& InBuildLog, UBaseCameraObject* InCameraObject);
+	UE_API FCameraNodeHierarchyBuilder(FCameraBuildContext& InBuildContext, UBaseCameraObject* InCameraObject);
 
 	/** Gets the camera node hierarchy. */
 	const FCameraNodeHierarchy& GetHierarchy() const { return CameraNodeHierarchy; }
@@ -40,7 +40,7 @@ private:
 
 private:
 
-	FCameraBuildLog& BuildLog;
+	FCameraBuildContext BuildContext;
 	UBaseCameraObject* CameraObject = nullptr;
 	FCameraNodeHierarchy CameraNodeHierarchy;
 };

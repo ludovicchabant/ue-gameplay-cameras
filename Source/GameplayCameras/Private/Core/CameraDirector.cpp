@@ -29,14 +29,32 @@ FCameraDirectorEvaluatorPtr UCameraDirector::BuildEvaluator(FCameraDirectorEvalu
 	return NewEvaluator;
 }
 
-void UCameraDirector::BuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
+void UCameraDirector::BuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext)
 {
-	OnBuildCameraDirector(BuildLog);
+	OnBuildCameraDirector(BuildContext);
 }
 
 void UCameraDirector::GatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const
 {
 	OnGatherRigUsageInfo(UsageInfo);
+
+	// Add the rigs referenced by the proxy table.
+	for (const FCameraRigProxyRedirectTableEntry& Entry : CameraRigProxyRedirectTable.Entries)
+	{
+		if (Entry.CameraRigProxy)
+		{
+			UsageInfo.CameraRigProxies.AddUnique(Entry.CameraRigProxy);
+		}
+		if (Entry.CameraRig)
+		{
+			UsageInfo.CameraRigs.AddUnique(Entry.CameraRig);
+		}
+	}
+
+	// Some directors might add CDOs for some reason (for instance if they use a reference collector).
+	// We need to remove them and leave them untouched.
+	UsageInfo.CameraRigs.Remove(GetMutableDefault<UCameraRigAsset>());
+	UsageInfo.CameraRigProxies.Remove(GetMutableDefault<UCameraRigProxyAsset>());
 }
 
 void UCameraDirector::ExtendAssetRegistryTags(FAssetRegistryTagsContext Context) const
@@ -67,7 +85,7 @@ void UCameraDirector::ExtendAssetRegistryTags(FAssetRegistryTagsContext Context)
 	{
 		FAssetRegistryTag NumCameraRigProxiesTag;
 		NumCameraRigProxiesTag.Name = TEXT("NumUsedCameraRigProxies");
-		NumCameraRigProxiesTag.Value = LexToString(UsageInfo.CameraRigs.Num());
+		NumCameraRigProxiesTag.Value = LexToString(UsageInfo.CameraRigProxies.Num());
 		Context.AddTag(NumCameraRigProxiesTag);
 
 		TStringBuilder<256> CameraRigProxyListBuilder;

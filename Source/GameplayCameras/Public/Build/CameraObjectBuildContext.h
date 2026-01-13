@@ -2,24 +2,20 @@
 
 #pragma once
 
+#include "Build/CameraBuildContext.h"
 #include "Core/BaseCameraObject.h"
 
 namespace UE::Cameras
 {
 
-class FCameraBuildLog;
-
 /**
  * Camera object build context.
  */
-struct FCameraObjectBuildContext
+struct FCameraObjectBuildContext : public FCameraBuildContext
 {
-	FCameraObjectBuildContext(FCameraBuildLog& InBuildLog)
-		: BuildLog(InBuildLog)
+	FCameraObjectBuildContext(const FCameraBuildContext& InParentContext)
+		: FCameraBuildContext(InParentContext)
 	{}
-
-	/** The build log for emitting messages. */
-	FCameraBuildLog& BuildLog;
 
 	/** The allocation information for the camera rig. */
 	FCameraObjectAllocationInfo AllocationInfo;

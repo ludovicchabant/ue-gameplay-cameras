@@ -15,6 +15,7 @@
 namespace UE::Cameras
 {
 	class FCameraBuildLog;
+	struct FCameraBuildContext;
 	struct FCameraObjectBuildContext;
 }
 
@@ -44,6 +45,7 @@ class UCameraNode
 public:
 	
 	using FCameraBuildLog = UE::Cameras::FCameraBuildLog;
+	using FCameraBuildContext = UE::Cameras::FCameraBuildContext;
 	using FCameraObjectBuildContext = UE::Cameras::FCameraObjectBuildContext;
 	using FCameraNodeEvaluatorBuilder = UE::Cameras::FCameraNodeEvaluatorBuilder;
 
@@ -51,7 +53,7 @@ public:
 	UE_API FCameraNodeChildrenView GetChildren();
 
 	/** Optional build step executed at the beginning of the build process. */
-	UE_API void PreBuild(FCameraBuildLog& BuildLog);
+	UE_API void PreBuild(FCameraBuildContext& BuildContext);
 
 	/** Gets optional info about this node's required allocations at runtime. */
 	UE_API void Build(FCameraObjectBuildContext& BuildContext);
@@ -73,7 +75,7 @@ protected:
 	virtual FCameraNodeChildrenView OnGetChildren() { return FCameraNodeChildrenView(); }
 
 	/** Optional build step executed at the beginning of the build process. */
-	virtual void OnPreBuild(FCameraBuildLog& BuildLog) {}
+	virtual void OnPreBuild(FCameraBuildContext& BuildContext) {}
 
 	/** Gets optional info about this node's required allocations at runtime. */
 	virtual void OnBuild(FCameraObjectBuildContext& BuildContext) {}

@@ -2,7 +2,7 @@
 
 #include "Directors/StateTreeCameraDirector.h"
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigAsset.h"
@@ -227,14 +227,14 @@ FCameraDirectorEvaluatorPtr UStateTreeCameraDirector::OnBuildEvaluator(FCameraDi
 	return Builder.BuildEvaluator<FStateTreeCameraDirectorEvaluator>();
 }
 
-void UStateTreeCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildLog& BuildLog)
+void UStateTreeCameraDirector::OnBuildCameraDirector(UE::Cameras::FCameraBuildContext& BuildContext)
 {
 	using namespace UE::Cameras;
 
 	// Check that a state tree was specified.
 	if (!StateTreeReference.IsValid())
 	{
-		BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingStateTree", "No state tree reference is set."));
+		BuildContext.BuildLog.AddMessage(EMessageSeverity::Error, LOCTEXT("MissingStateTree", "No state tree reference is set."));
 		return;
 	}
 }

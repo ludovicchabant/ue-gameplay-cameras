@@ -15,8 +15,8 @@ class UShakeCameraNode;
 
 namespace UE::Cameras
 {
-	class FCameraBuildLog;
 	class FCameraShakeAssetBuilder;
+	struct FCameraBuildContext;
 }
 
 UCLASS(MinimalAPI, BlueprintType)
@@ -59,7 +59,7 @@ public:
 	GAMEPLAYCAMERAS_API void BuildCameraShake();
 
 	/** Builds this camera shake asset. */
-	GAMEPLAYCAMERAS_API void BuildCameraShake(UE::Cameras::FCameraBuildLog& InBuildLog);
+	GAMEPLAYCAMERAS_API void BuildCameraShake(UE::Cameras::FCameraBuildContext& InBuildContext);
 
 public:
 

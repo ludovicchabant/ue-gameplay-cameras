@@ -13,8 +13,8 @@
 namespace UE::Cameras
 {
 
-FCameraShakeAssetBuilder::FCameraShakeAssetBuilder(FCameraBuildLog& InBuildLog)
-	: BuildLog(InBuildLog)
+FCameraShakeAssetBuilder::FCameraShakeAssetBuilder(FCameraBuildContext& InBuildContext)
+	: BuildContext(InBuildContext)
 {
 }
 
@@ -27,11 +27,11 @@ void FCameraShakeAssetBuilder::BuildCameraShake(UCameraShakeAsset* InCameraShake
 
 	CameraShake = InCameraShake;
 
-	BuildLog.SetLoggingPrefix(CameraShake->GetPathName() + TEXT(": "));
+	BuildContext.BuildLog.SetLoggingPrefix(CameraShake->GetPathName() + TEXT(": "));
 	{
 		BuildCameraShakeImpl();
 	}
-	BuildLog.SetLoggingPrefix(FString());
+	BuildContext.BuildLog.SetLoggingPrefix(FString());
 	UpdateBuildStatus();
 
 	FGameplayCamerasDelegates::OnCameraShakeAssetBuilt().Broadcast(CameraShake);
@@ -41,10 +41,10 @@ void FCameraShakeAssetBuilder::BuildCameraShake(UCameraShakeAsset* InCameraShake
 
 void FCameraShakeAssetBuilder::BuildCameraShakeImpl()
 {
-	FCameraNodeHierarchyBuilder NodeBuilder(BuildLog, CameraShake);
+	FCameraNodeHierarchyBuilder NodeBuilder(BuildContext, CameraShake);
 	NodeBuilder.PreBuild();
 
-	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildLog);
+	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildContext);
 	InterfaceBuilder.BuildInterface(CameraShake, NodeBuilder.GetHierarchy(), true);
 
 	NodeBuilder.Build();
@@ -56,11 +56,11 @@ void FCameraShakeAssetBuilder::BuildCameraShakeImpl()
 void FCameraShakeAssetBuilder::UpdateBuildStatus()
 {
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Clean;
-	if (BuildLog.HasErrors())
+	if (BuildContext.BuildLog.HasErrors())
 	{
 		BuildStatus = ECameraBuildStatus::WithErrors;
 	}
-	else if (BuildLog.HasWarnings())
+	else if (BuildContext.BuildLog.HasWarnings())
 	{
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}

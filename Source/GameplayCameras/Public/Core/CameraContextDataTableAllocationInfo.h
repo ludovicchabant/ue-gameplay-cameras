@@ -63,6 +63,9 @@ struct FCameraContextDataTableAllocationInfo
 	/**Combines the given allocation info with this one. */
 	GAMEPLAYCAMERAS_API void Combine(const FCameraContextDataTableAllocationInfo& OtherInfo);
 
+	/** Returns whether the given data definitions already exist in our list. */
+	GAMEPLAYCAMERAS_API bool Contains(const FCameraContextDataTableAllocationInfo& OtherInfo) const;
+
 	bool operator==(const FCameraContextDataTableAllocationInfo& Other) const = default;
 };
 

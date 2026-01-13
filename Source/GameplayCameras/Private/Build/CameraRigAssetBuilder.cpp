@@ -13,8 +13,8 @@
 namespace UE::Cameras
 {
 
-FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraBuildLog& InBuildLog)
-	: BuildLog(InBuildLog)
+FCameraRigAssetBuilder::FCameraRigAssetBuilder(FCameraBuildContext& InBuildContext)
+	: BuildContext(InBuildContext)
 {
 }
 
@@ -27,13 +27,13 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 
 	CameraRig = InCameraRig;
 
-	BuildLog.SetLoggingPrefix(CameraRig->GetPathName() + TEXT(": "));
+	BuildContext.BuildLog.SetLoggingPrefix(CameraRig->GetPathName() + TEXT(": "));
 	{
 		BuildCameraRigImpl();
 
 		CameraRig->EventHandlers.Notify(&ICameraRigAssetEventHandler::OnCameraRigBuilt, CameraRig);
 	}
-	BuildLog.SetLoggingPrefix(FString());
+	BuildContext.BuildLog.SetLoggingPrefix(FString());
 	UpdateBuildStatus();
 
 	FGameplayCamerasDelegates::OnCameraRigAssetBuilt().Broadcast(CameraRig);
@@ -43,10 +43,10 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 
 void FCameraRigAssetBuilder::BuildCameraRigImpl()
 {
-	FCameraNodeHierarchyBuilder NodeBuilder(BuildLog, CameraRig);
+	FCameraNodeHierarchyBuilder NodeBuilder(BuildContext, CameraRig);
 	NodeBuilder.PreBuild();
 
-	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildLog);
+	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildContext);
 	InterfaceBuilder.BuildInterface(CameraRig, NodeBuilder.GetHierarchy(), true);
 
 	NodeBuilder.Build();
@@ -58,11 +58,11 @@ void FCameraRigAssetBuilder::BuildCameraRigImpl()
 void FCameraRigAssetBuilder::UpdateBuildStatus()
 {
 	ECameraBuildStatus BuildStatus = ECameraBuildStatus::Clean;
-	if (BuildLog.HasErrors())
+	if (BuildContext.BuildLog.HasErrors())
 	{
 		BuildStatus = ECameraBuildStatus::WithErrors;
 	}
-	else if (BuildLog.HasWarnings())
+	else if (BuildContext.BuildLog.HasWarnings())
 	{
 		BuildStatus = ECameraBuildStatus::CleanWithWarnings;
 	}

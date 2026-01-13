@@ -29,6 +29,11 @@ class SCameraObjectInterfaceParametersPanel
 {
 public:
 
+	static const FName ParameterTypeColumn;
+	static const FName ParameterNameColumn;
+
+public:
+
 	SLATE_BEGIN_ARGS(SCameraObjectInterfaceParametersPanel)
 	{}
 	SLATE_END_ARGS()

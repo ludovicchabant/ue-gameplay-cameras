@@ -3,8 +3,7 @@
 #include "Core/CameraAsset.h"
 
 #include "Build/CameraAssetBuilder.h"
-#include "Build/CameraBuildLog.h"
-#include "Build/CameraObjectInterfaceParameterBuilder.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Misc/EngineVersionComparison.h"
@@ -13,7 +12,68 @@
 #include "UObject/ObjectRedirector.h"
 #include "UObject/ObjectSaveContext.h"
 
+#if UE_VERSION_OLDER_THAN(5,8,0)
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
+#endif
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
+
+void UCameraAssetInterfaceParameter::PostLoad()
+{
+	if (!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
+
+	Super::PostLoad();
+}
+
+void UCameraAssetInterfaceParameter::PostInitProperties()
+{
+	Super::PostInitProperties();
+
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject | RF_NeedLoad | RF_WasLoaded) && 
+			!Guid.IsValid())
+	{
+		Guid = FGuid::NewGuid();
+	}
+}
+
+void UCameraAssetInterfaceParameter::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+
+	if (DuplicateMode == EDuplicateMode::Normal)
+	{
+		Guid = FGuid::NewGuid();
+	}
+}
+
+bool UCameraAssetInterfaceParameter::GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const
+{
+	UCameraRigAsset* CameraRig = SourceCameraRig.Get();
+	if (!CameraRig)
+	{
+		return false;
+	}
+
+	const FCameraObjectInterfaceParameterDefinition* SourceParameter = CameraRig->GetParameterDefinitions()
+		.FindByPredicate(
+			[this](const FCameraObjectInterfaceParameterDefinition& Item)
+			{
+				return Item.ParameterName == SourceParameterName;
+			});
+	if (!SourceParameter)
+	{
+		return false;
+	}
+
+	// The parameter definition is the same except that we might expose it under a different name.
+	OutParameterDefinition = *SourceParameter;
+	OutParameterDefinition.ParameterName = FName(InterfaceParameterName);
+
+	return true;
+}
 
 bool operator==(const FCameraAssetAllocationInfo& A, const FCameraAssetAllocationInfo& B)
 {
@@ -114,6 +174,14 @@ void UCameraAsset::PostLoad()
 		}
 	}
 #endif  // WITH_EDITOR
+
+	if (ParameterDefinitions.Num() > 0 && Interface.Parameters.IsEmpty())
+	{
+		// We have saved parameter definitions but they didn't come from building our interface,
+		// so this must be an old asset that pre-dates the interface field. It needs a default
+		// interface to be built for it.
+		bNeedsDefaultInterface = true;
+	}
 }
 
 void UCameraAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
@@ -161,14 +229,15 @@ void UCameraAsset::BuildCamera()
 
 	FCameraBuildLog BuildLog;
 	BuildLog.SetForwardMessagesToLogging(true);
-	BuildCamera(BuildLog);
+	FCameraBuildContext BuildContext(BuildLog);
+	BuildCamera(BuildContext);
 }
 
-void UCameraAsset::BuildCamera(UE::Cameras::FCameraBuildLog& InBuildLog)
+void UCameraAsset::BuildCamera(UE::Cameras::FCameraBuildContext& InBuildContext)
 {
 	using namespace UE::Cameras;
 
-	FCameraAssetBuilder Builder(InBuildLog);
+	FCameraAssetBuilder Builder(InBuildContext);
 	Builder.BuildCamera(this);
 }
 

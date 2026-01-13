@@ -23,8 +23,7 @@ class UCameraRigAsset;
 namespace UE::Cameras
 {
 	class FCameraAssetBuilder;
-	class FCameraAssetParameterOverrideEvaluator;
-	class FCameraBuildLog;
+	struct FCameraBuildContext;
 
 	/**
 	 * Interface for listening to changes on a camera asset.
@@ -40,8 +39,69 @@ namespace UE::Cameras
 		virtual void OnEnterTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
 		/* Changed when the exit transitions have been changed. */
 		virtual void OnExitTransitionsChanged(UCameraAsset* InCameraAsset, const TCameraArrayChangedEvent<UCameraRigTransition*>& Event) {}
+		/** Called when the camera asset's interface has changed. */
+		virtual void OnCameraAssetInterfaceChanged() {}
 	};
 }
+
+/**
+ * An interface parameter on a camera asset, which exposes one of its camera rigs' own interface parameters.
+ */
+UCLASS()
+class UCameraAssetInterfaceParameter : public UObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The exposed name for this parameter. */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	FString InterfaceParameterName;
+
+	/** The camera rig that owns the source parameter. */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	TSoftObjectPtr<UCameraRigAsset> SourceCameraRig;
+
+	/** The name of the parameter on the source camera rig. */
+	UPROPERTY(EditAnywhere, Category="Camera")
+	FName SourceParameterName;
+
+public:
+
+	/** Gets this parameter's unique ID. */
+	const FGuid& GetGuid() const { return Guid; }
+
+	/** Gets the parameter definition. */
+	bool GetParameterDefinition(FCameraObjectInterfaceParameterDefinition& OutParameterDefinition) const;
+
+protected:
+
+	/** The Guid of this parameter. */
+	UPROPERTY()
+	FGuid Guid;
+
+protected:
+
+	// UObject interface.
+	virtual void PostLoad() override;
+	virtual void PostInitProperties() override;
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
+};
+
+/**
+ * A structure defining the public interface of a camera asset.
+ */
+USTRUCT()
+struct FCameraAssetInterface
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The list of exposed parameters on the camera asset. */
+	UPROPERTY(Instanced)
+	TArray<TObjectPtr<UCameraAssetInterfaceParameter>> Parameters;
+};
 
 /**
  * Structure describing various allocations needed by a camera asset.
@@ -115,9 +175,9 @@ public:
 
 	/**
 	 * Builds and validates this camera, including all its camera rigs.
-	 * Errors and warnings will go to the provided build log.
+	 * Errors and warnings will go to the provided build context.
 	 */
-	GAMEPLAYCAMERAS_API void BuildCamera(UE::Cameras::FCameraBuildLog& InBuildLog);
+	GAMEPLAYCAMERAS_API void BuildCamera(UE::Cameras::FCameraBuildContext& InBuildContext);
 
 public:
 
@@ -165,6 +225,10 @@ public:
 	/** Event handlers to be notified of data changes. */
 	UE::Cameras::TCameraEventHandlerContainer<UE::Cameras::ICameraAssetEventHandler> EventHandlers;
 
+	/** The public interface of this camera asset. */
+	UPROPERTY()
+	FCameraAssetInterface Interface;
+
 private:
 
 	/** The camera director to use in this camera. */
@@ -195,12 +259,6 @@ private:
 	UPROPERTY()
 	FCameraAssetAllocationInfo AllocationInfo;
 
-
-	// Deprecated.
-
-	UPROPERTY()
-	TArray<TObjectPtr<UCameraRigAsset>> CameraRigs_DEPRECATED;
-
 #if WITH_EDITORONLY_DATA
 
 	/** Position of the camera node in the shared transitions graph editor. */
@@ -219,8 +277,10 @@ private:
 	friend class UCameraSharedTransitionGraphSchema;
 
 #endif  // WITH_EDITORONLY_DATA
-	
+
+	// Flag for whether we need to upgrade the interface on the next build.
+	bool bNeedsDefaultInterface = false;
+
 	friend class UE::Cameras::FCameraAssetBuilder;
-	friend class UE::Cameras::FCameraAssetParameterOverrideEvaluator;
 };
 

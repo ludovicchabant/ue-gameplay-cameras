@@ -43,8 +43,8 @@ void AddVariableToAllocationInfo(FCameraVariableID VariableID, ECameraVariableTy
 
 }  // namespace Internal
 
-FCameraNodeHierarchyBuilder::FCameraNodeHierarchyBuilder(FCameraBuildLog& InBuildLog, UBaseCameraObject* InCameraObject)
-	: BuildLog(InBuildLog)
+FCameraNodeHierarchyBuilder::FCameraNodeHierarchyBuilder(FCameraBuildContext& InBuildContext, UBaseCameraObject* InCameraObject)
+	: BuildContext(InBuildContext)
 	, CameraObject(InCameraObject)
 {
 	CameraNodeHierarchy.Build(CameraObject);
@@ -54,41 +54,66 @@ void FCameraNodeHierarchyBuilder::PreBuild()
 {
 	for (UCameraNode* CameraNode : CameraNodeHierarchy.GetFlattenedHierarchy())
 	{
-		CameraNode->PreBuild(BuildLog);
+		CameraNode->PreBuild(BuildContext);
 	}
 }
 
 void FCameraNodeHierarchyBuilder::Build()
 {
-	FCameraObjectBuildContext BuildContext(BuildLog);
+	FCameraObjectBuildContext ObjectBuildContext(BuildContext);
 
-	// Build a mock tree of evaluators.
-	FCameraNodeEvaluatorTreeBuildParams BuildParams;
-	BuildParams.RootCameraNode = CameraObject->GetRootNode();
-	FCameraNodeEvaluatorStorage Storage;
-	Storage.BuildEvaluatorTree(BuildParams);
+	// Get the size of the evaluators' allocation when cooking. When not cooking, we ignore it because
+	// we don't want to have to re-save assets because someone added a new C++ field to an evaluator.
+	if (BuildContext.IsCooking())
+	{
+		// To get the information we need, we build a mock tree of evaluators and see how much room
+		// that takes.
+		FCameraNodeEvaluatorTreeBuildParams BuildParams;
+		BuildParams.RootCameraNode = CameraObject->GetRootNode();
+		FCameraNodeEvaluatorStorage Storage;
+		Storage.BuildEvaluatorTree(BuildParams);
 
-	// Get the size of the evaluators' allocation.
-	Storage.GetAllocationInfo(BuildContext.AllocationInfo.EvaluatorInfo);
+		Storage.GetAllocationInfo(ObjectBuildContext.AllocationInfo.EvaluatorInfo);
+	}
 
 	// Call Build() on all camera nodes in the hierarchy (detached/orphaned camera nodes don't get called).
 	for (UCameraNode* CameraNode : CameraNodeHierarchy.GetFlattenedHierarchy())
 	{
-		CallBuild(BuildContext, CameraNode);
+		CallBuild(ObjectBuildContext, CameraNode);
 	}
 
 	// Add parameters to the allocation info.
-	BuildParametersAllocationInfo(BuildContext);
+	BuildParametersAllocationInfo(ObjectBuildContext);
 
 	// Set the final allocation info on the camera rig asset.
-	if (CameraObject->AllocationInfo != BuildContext.AllocationInfo)
+	if (CameraObject->AllocationInfo != ObjectBuildContext.AllocationInfo)
 	{
-		CameraObject->Modify();
-		CameraObject->AllocationInfo = BuildContext.AllocationInfo;
+		// Previously we would save the evaluator allocation info, and any referenced camera rigs' infos.
+		// Now not anymore (see above, and see UCameraRigCameraNode::OnBuild... we only do this when cooking now). 
+		// However, we don't want to make all camera rigs modified because this allocation info is now empty or 
+		// something.  So we do this extra check.
+		bool bShouldModify = true;
+		if (!BuildContext.IsCooking())
+		{
+			bShouldModify = false;
+			const FCameraObjectAllocationInfo& CurInfo = CameraObject->AllocationInfo;
+			const FCameraObjectAllocationInfo& NewInfo = ObjectBuildContext.AllocationInfo;
+			if (!CurInfo.VariableTableInfo.Contains(NewInfo.VariableTableInfo) ||
+					!CurInfo.ContextDataTableInfo.Contains(NewInfo.ContextDataTableInfo))
+			{
+				bShouldModify = true;
+			}
+		}
+
+		if (bShouldModify)
+		{
+			CameraObject->Modify();
+			CameraObject->AllocationInfo = ObjectBuildContext.AllocationInfo;
+		}
 	}
 }
 
-void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& BuildContext, UCameraNode* CameraNode)
+void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& ObjectBuildContext, UCameraNode* CameraNode)
 {
 	using namespace UE::Cameras::Internal;
 
@@ -96,7 +121,7 @@ void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& BuildCont
 	// This is only for user-defined variable overrides. We will do the same for exposed camera rig
 	// parameters later, in BuildParametersAllocationInfo.
 	UClass* CameraNodeClass = CameraNode->GetClass();
-	FCameraObjectAllocationInfo& AllocationInfo = BuildContext.AllocationInfo;
+	FCameraObjectAllocationInfo& AllocationInfo = ObjectBuildContext.AllocationInfo;
 	for (TFieldIterator<FProperty> It(CameraNodeClass); It; ++It)
 	{
 		FStructProperty* StructProperty = CastField<FStructProperty>(*It);
@@ -137,10 +162,10 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 	}
 
 	// Let the camera node add any custom variables or extra memory.
-	CameraNode->Build(BuildContext);
+	CameraNode->Build(ObjectBuildContext);
 }
 
-void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBuildContext& BuildContext)
+void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBuildContext& ObjectBuildContext)
 {
 	// The variables and context data definitions should have already been added by the camera nodes
 	// who have override variable IDs and data IDs set on them. 
@@ -153,7 +178,7 @@ void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBui
 		}
 
 		FCameraVariableDefinition Definition = BlendableParameter->GetVariableDefinition();
-		BuildContext.AllocationInfo.VariableTableInfo.VariableDefinitions.Add(Definition);
+		ObjectBuildContext.AllocationInfo.VariableTableInfo.VariableDefinitions.Add(Definition);
 	}
 
 	for (const UCameraObjectInterfaceDataParameter* DataParameter : CameraObject->Interface.DataParameters)
@@ -164,7 +189,7 @@ void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBui
 		}
 
 		FCameraContextDataDefinition Definition = DataParameter->GetDataDefinition();
-		BuildContext.AllocationInfo.ContextDataTableInfo.DataDefinitions.Add(Definition);
+		ObjectBuildContext.AllocationInfo.ContextDataTableInfo.DataDefinitions.Add(Definition);
 	}
 }
 

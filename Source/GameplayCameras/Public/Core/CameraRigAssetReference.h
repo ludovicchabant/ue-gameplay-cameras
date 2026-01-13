@@ -279,6 +279,11 @@ public:
 		}
 	}
 
+public:
+
+	/** Ensure the variable and data tables have the allocations for our referenced camera rig. */
+	void EnsureAllocationInfo(UE::Cameras::FCameraNodeEvaluationResult& OutResult) const;
+
 	/** Applies the parameter override values to the given variable table. */
 	void ApplyParameterOverrides(UE::Cameras::FCameraVariableTable& OutVariableTable, bool bDrivenOnly) const;
 

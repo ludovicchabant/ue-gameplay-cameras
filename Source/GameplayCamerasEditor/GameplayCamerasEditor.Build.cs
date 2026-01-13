@@ -33,6 +33,7 @@ public class GameplayCamerasEditor : ModuleRules
 				"EditorSubsystem",
 				"Engine",
 				"GameplayCameras",
+				"GameplayCamerasUncookedOnly",
 				"GraphEditor",
 				"InputCore",
 				"InteractiveToolsFramework",

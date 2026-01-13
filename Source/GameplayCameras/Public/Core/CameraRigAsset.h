@@ -22,8 +22,8 @@ class UCameraVariableAsset;
 
 namespace UE::Cameras
 {
-	class FCameraBuildLog;
 	class FCameraRigAssetBuilder;
+	struct FCameraBuildContext;
 
 	/**
 	 * Interface for listening to changes on a camera rig asset.
@@ -105,9 +105,9 @@ public:
 	GAMEPLAYCAMERAS_API void BuildCameraRig();
 
 	/**
-	 * Builds this camera rig, similar to BuildCameraRig() but using a given build log.
+	 * Builds this camera rig, similar to BuildCameraRig() but using a given build context.
 	 */
-	GAMEPLAYCAMERAS_API void BuildCameraRig(UE::Cameras::FCameraBuildLog& InBuildLog);
+	GAMEPLAYCAMERAS_API void BuildCameraRig(UE::Cameras::FCameraBuildContext& InBuildContext);
 
 public:
 

@@ -59,6 +59,12 @@ public:
 	/** Initializes the context data table so that it fits the provided allocation info. */
 	void Initialize(const FCameraContextDataTableAllocationInfo& AllocationInfo);
 
+	/**
+	 * Ensure that all the data referenced in the given allocation info exist in the table.
+	 * Returns false if some data had to be added.
+	 */
+	bool EnsureData(const FCameraContextDataTableAllocationInfo& AllocationInfo);
+
 	/** Adds a data entry to the table. */
 	void AddData(const FCameraContextDataDefinition& DataDefinition);
 
@@ -269,6 +275,8 @@ private:
 	static bool SetDataValue(ECameraContextDataType DataType, ECameraContextDataContainerType DataContainerType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr);
 	static bool SetDataValue(ECameraContextDataType DataType, const UObject* DataTypeObject, uint8* DestDataPtr, const uint8* SrcDataPtr);
 
+	static void CreateEntry(const FCameraContextDataDefinition& DataDefinition, FEntry& OutEntry);
+
 	const FEntry* FindEntry(FCameraContextDataID InID) const;
 	FEntry* FindEntry(FCameraContextDataID InID);
 
@@ -296,6 +304,7 @@ private:
 
 	uint8* Memory = nullptr;
 	uint32 Capacity = 0;
+	uint32 Alignment = 0;
 	uint32 Used = 0;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG

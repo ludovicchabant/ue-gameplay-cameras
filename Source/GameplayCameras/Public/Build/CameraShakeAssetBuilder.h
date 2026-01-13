@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Build/CameraBuildLog.h"
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraNodeHierarchy.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
@@ -16,7 +16,7 @@ class FCameraShakeAssetBuilder
 {
 public:
 
-	UE_API FCameraShakeAssetBuilder(FCameraBuildLog& InBuildLog);
+	UE_API FCameraShakeAssetBuilder(FCameraBuildContext& InBuildContext);
 
 	UE_API void BuildCameraShake(UCameraShakeAsset* InCameraShake);
 
@@ -28,7 +28,7 @@ private:
 
 private:
 
-	FCameraBuildLog& BuildLog;
+	FCameraBuildContext BuildContext;
 
 	UCameraShakeAsset* CameraShake = nullptr;
 
