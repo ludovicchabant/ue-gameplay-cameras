@@ -305,6 +305,20 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 			CameraRigEditorWidget->FindAndJumpToObjectNode(Object);
 		});
 
+	ToolkitCommands->MapAction(
+			Commands.RenameInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersToolkit->RenameSelectedParameter();
+				}));
+
+	ToolkitCommands->MapAction(
+			Commands.DeleteInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersToolkit->DeleteSelectedParameter();
+				}));
+
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 

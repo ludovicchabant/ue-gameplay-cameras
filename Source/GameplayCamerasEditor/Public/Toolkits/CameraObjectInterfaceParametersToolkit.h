@@ -7,6 +7,7 @@
 #include "Templates/SharedPointer.h"
 #include "UObject/ObjectPtr.h"
 
+class FUICommandList;
 class SBox;
 class SWidget;
 class UBaseCameraObject;
@@ -38,6 +39,14 @@ public:
 
 	/** Gets the panel widget. */
 	TSharedPtr<SWidget> GetInterfaceParametersPanel() const;
+
+public:
+
+	/** Rename the selected parameter in the focused panel. */
+	void RenameSelectedParameter();
+
+	/** Delete the selected parameter in the focused panel. */
+	void DeleteSelectedParameter();
 
 public:
 

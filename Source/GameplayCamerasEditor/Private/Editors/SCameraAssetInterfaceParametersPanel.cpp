@@ -490,6 +490,21 @@ void SCameraAssetInterfaceParametersPanel::Construct(const FArguments& Args, FCa
 						.ColorAndOpacity(FSlateColor::UseForeground())
 					]
 				]
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SButton)
+					.ButtonStyle(FAppStyle::Get(), "SimpleButton")
+					.ContentPadding(FMargin(1, 0))
+					.ToolTipText(LOCTEXT("AddParameterToolTip", "Removes the selected parameter(s)"))
+					.OnClicked(this, &SCameraAssetInterfaceParametersPanel::OnDeleteSelectedInterfaceParameter)
+					[
+						SNew(SImage)
+						.Image(FAppStyle::Get().GetBrush("Icons.MinusCircle"))
+						.ColorAndOpacity(FSlateColor::UseForeground())
+					]
+				]
 			]
 		]
 		+SVerticalBox::Slot()
@@ -527,6 +542,26 @@ void SCameraAssetInterfaceParametersPanel::Construct(const FArguments& Args, FCa
 void SCameraAssetInterfaceParametersPanel::RequestListRefresh()
 {
 	bListRefreshRequested = true;
+}
+
+void SCameraAssetInterfaceParametersPanel::RenameSelectedParameter()
+{
+	if (ParametersListView->HasKeyboardFocus())
+	{
+		TArray<TObjectPtr<UCameraAssetInterfaceParameter>> SelectedItems = ParametersListView->GetSelectedItems();
+		if (SelectedItems.Num() > 0)
+		{
+			OnRenameInterfaceParameter(SelectedItems[0]);
+		}
+	}
+}
+
+void SCameraAssetInterfaceParametersPanel::DeleteSelectedParameter()
+{
+	if (ParametersListView->HasKeyboardFocus())
+	{
+		OnDeleteSelectedInterfaceParameter();
+	}
 }
 
 void SCameraAssetInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -588,9 +623,34 @@ FReply SCameraAssetInterfaceParametersPanel::OnAddInterfaceParameter()
 	CameraAsset->Modify();
 
 	UCameraAssetInterfaceParameter* NewParameter = NewObject<UCameraAssetInterfaceParameter>(CameraAsset, NAME_None, RF_Transactional);
-	NewParameter->InterfaceParameterName = NewParameter->GetName();
+	NewParameter->InterfaceParameterName = GetNewParameterName();
 
 	CameraAsset->Interface.Parameters.Add(NewParameter);
+	CameraAsset->EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraAssetInterfaceChanged);
+
+	ParametersListView->RequestListRefresh();
+
+	return FReply::Handled();
+}
+
+FReply SCameraAssetInterfaceParametersPanel::OnDeleteSelectedInterfaceParameter()
+{
+	TArray<TObjectPtr<UCameraAssetInterfaceParameter>> SelectedItems = ParametersListView->GetSelectedItems();
+	if (SelectedItems.IsEmpty())
+	{
+		return FReply::Handled();
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("RemoveInterfaceParameter", "Remove Interface Parameter"));
+
+	CameraAsset->Modify();
+
+	for (TObjectPtr<UCameraAssetInterfaceParameter> Item : SelectedItems)
+	{
+		const int32 NumRemoved = CameraAsset->Interface.Parameters.Remove(Item);
+		ensure(NumRemoved == 1);
+	}
+
 	CameraAsset->EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraAssetInterfaceChanged);
 
 	ParametersListView->RequestListRefresh();
@@ -623,6 +683,32 @@ void SCameraAssetInterfaceParametersPanel::OnDeleteInterfaceParameter(TObjectPtr
 	CameraAsset->EventHandlers.Notify(&ICameraAssetEventHandler::OnCameraAssetInterfaceChanged);
 
 	ParametersListView->RequestListRefresh();
+}
+
+FString SCameraAssetInterfaceParametersPanel::GetNewParameterName()
+{
+	static const FString BaseNewParameterName(TEXT("NewParameter"));
+
+	int32 NameIndex = 0;
+	bool bFoundUniqueName = false;
+	FString NewParameterName(BaseNewParameterName);
+
+	while (!bFoundUniqueName)
+	{
+		const bool bFoundConflict = CameraAsset->Interface.Parameters.ContainsByPredicate(
+				[&NewParameterName](const UCameraAssetInterfaceParameter* Item)
+				{
+					return Item->InterfaceParameterName == NewParameterName;
+				});
+		bFoundUniqueName = !bFoundConflict;
+		if (bFoundConflict)
+		{
+			++NameIndex;
+			NewParameterName = FString::Printf(TEXT("%s_%d"), *BaseNewParameterName, NameIndex);
+		}
+	}
+
+	return NewParameterName;
 }
 
 void SCameraAssetInterfaceParametersPanel::OnCameraAssetInterfaceChanged()

@@ -40,6 +40,12 @@ public:
 	/** Request that the list of parameters be refreshed. */
 	void RequestListRefresh();
 
+	/** Rename the selected parameter in the focused panel. */
+	void RenameSelectedParameter();
+
+	/** Delete the selected parameter in the focused panel. */
+	void DeleteSelectedParameter();
+
 	/** Delegate invoked when a parmeter is selected in the panel. */
 	FOnCameraAssetInterfaceParameterEvent& OnInterfaceParameterSelected() { return OnInterfaceParameterSelectedDelegate; }
 
@@ -58,8 +64,12 @@ private:
 	TSharedPtr<SWidget> OnInterfaceParameterContextMenuOpening();
 
 	FReply OnAddInterfaceParameter();
+	FReply OnDeleteSelectedInterfaceParameter();
+
 	void OnRenameInterfaceParameter(TObjectPtr<UCameraAssetInterfaceParameter> Item);
 	void OnDeleteInterfaceParameter(TObjectPtr<UCameraAssetInterfaceParameter> Item);
+
+	FString GetNewParameterName();
 
 private:
 

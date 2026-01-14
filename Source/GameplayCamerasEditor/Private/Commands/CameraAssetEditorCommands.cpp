@@ -42,6 +42,11 @@ void FCameraAssetEditorCommands::RegisterCommands()
 			EUserInterfaceActionType::ToggleButton, FInputChord());
 	UI_COMMAND(FindInCamera, "Search", "Searches for nodes in this camera asset",
 			EUserInterfaceActionType::Button, FInputChord());
+
+	UI_COMMAND(RenameInterfaceParameter, "Rename Parameter", "Renames the selected interface parameter",
+			EUserInterfaceActionType::Button, FInputChord(EKeys::F2));
+	UI_COMMAND(DeleteInterfaceParameter, "Delete Parameter", "Deletes the selected interface parameter(s)",
+			EUserInterfaceActionType::Button, FInputChord(EKeys::Delete));
 }
 
 }  // namespace UE::Cameras

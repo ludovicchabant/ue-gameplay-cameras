@@ -35,6 +35,11 @@ void FCameraShakeAssetEditorCommands::RegisterCommands()
 			EUserInterfaceActionType::Button, FInputChord(EKeys::F, EModifierKey::Control));
 	UI_COMMAND(FocusHome, "Home", "Focuses the graph canvas back on the root node",
 			EUserInterfaceActionType::Button, FInputChord());
+
+	UI_COMMAND(RenameInterfaceParameter, "Rename Interface Parameter", "Renames the selected interface parameter",
+			EUserInterfaceActionType::Button, FInputChord(EKeys::F2));
+	UI_COMMAND(DeleteInterfaceParameter, "Delete Interface Parameter", "Deletes the selected interface parameter(s)",
+			EUserInterfaceActionType::Button, FInputChord(EKeys::Delete));
 }
 
 }  // namespace UE::Cameras

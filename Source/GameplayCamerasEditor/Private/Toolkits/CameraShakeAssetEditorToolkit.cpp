@@ -355,6 +355,20 @@ void FCameraShakeAssetEditorToolkit::PostInitAssetEditor()
 			OnJumpToObject(Object, NAME_None);
 		});
 
+	ToolkitCommands->MapAction(
+			Commands.RenameInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersToolkit->RenameSelectedParameter();
+				}));
+
+	ToolkitCommands->MapAction(
+			Commands.DeleteInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersToolkit->DeleteSelectedParameter();
+				}));
+
 	RegenerateMenusAndToolbars();
 }
 

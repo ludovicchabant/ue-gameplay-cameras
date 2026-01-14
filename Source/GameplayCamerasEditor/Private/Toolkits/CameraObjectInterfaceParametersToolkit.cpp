@@ -64,6 +64,16 @@ void FCameraObjectInterfaceParametersToolkit::PostRedo(bool bSuccess)
 	Panel->RequestListRefresh();
 }
 
+void FCameraObjectInterfaceParametersToolkit::RenameSelectedParameter()
+{
+	Panel->RenameSelectedParameter();
+}
+
+void FCameraObjectInterfaceParametersToolkit::DeleteSelectedParameter()
+{
+	Panel->DeleteSelectedParameter();
+}
+
 }  // namespace UE::Cameras
 
 #undef LOCTEXT_NAMESPACE

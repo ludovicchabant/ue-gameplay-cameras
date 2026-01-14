@@ -40,7 +40,14 @@ public:
 
 	void Construct(const FArguments& Args, FCameraObjectInterfaceParametersToolkit* OwnerToolkit);
 
+	/** Refresh the lists of parameters. */
 	void RequestListRefresh();
+
+	/** Rename the selected parameter in the focused panel. */
+	void RenameSelectedParameter();
+
+	/** Delete the selected parameter in the focused panel. */
+	void DeleteSelectedParameter();
 
 protected:
 
@@ -73,8 +80,21 @@ private:
 	void OnDeleteInterfaceParameter(
 			TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView, TObjectPtr<ItemType> Item);
 
+	template<typename ItemType>
+	void OnRenameSelectedInterfaceParameter(TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView);
+	template<typename ItemType>
+	void OnDeleteSelectedInterfaceParameter(TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView);
+
 	FReply OnAddBlendableParameter();
 	FReply OnAddDataParameter();
+
+	void OnRenameSelectedBlendableParameter();
+	void OnRenameSelectedDataParameter();
+
+	FReply OnDeleteSelectedBlendableParameter();
+	FReply OnDeleteSelectedDataParameter();
+
+	FString GetNewParameterName() const;
 
 private:
 

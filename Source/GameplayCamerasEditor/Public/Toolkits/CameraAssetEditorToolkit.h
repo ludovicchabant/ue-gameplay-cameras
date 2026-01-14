@@ -4,6 +4,7 @@
 
 #include "Core/CameraAsset.h"
 #include "Core/CameraEventHandler.h"
+#include "EditorUndoClient.h"
 #include "Toolkits/AssetEditorModeManagerToolkit.h"
 #include "Tools/BaseAssetToolkit.h"
 #include "UObject/GCObject.h"
@@ -31,6 +32,7 @@ class SCameraAssetInterfaceParametersPanel;
  */
 class FCameraAssetEditorToolkit 
 	: public FAssetEditorModeManagerToolkit
+	, public FEditorUndoClient
 	, public FGCObject
 	, public UE::Cameras::ICameraAssetEventHandler
 {
@@ -57,6 +59,10 @@ protected:
 	virtual FName GetToolkitFName() const override;
 	virtual FString GetWorldCentricTabPrefix() const override;
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
+
+	// FEditorUndoClient interface
+	virtual void PostUndo(bool bSuccess) override;
+	virtual void PostRedo(bool bSuccess) override;
 
 	// FGCObject interface
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;

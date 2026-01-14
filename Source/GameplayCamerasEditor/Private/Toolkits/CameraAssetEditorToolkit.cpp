@@ -11,6 +11,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
+#include "Editor.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/SCameraAssetInterfaceParametersPanel.h"
 #include "Editors/SFindInObjectTreeGraph.h"
@@ -81,10 +82,19 @@ FCameraAssetEditorToolkit::FCameraAssetEditorToolkit(UCameraAssetEditor* InOwnin
 				FTabManager::FTab(InterfaceParametersTabId, ETabState::OpenedTab));
 	}
 	LayoutExtenders.Add(NewLayoutExtender);
+
+	if (GEditor)
+	{
+		GEditor->RegisterForUndo(this);
+	}
 }
 
 FCameraAssetEditorToolkit::~FCameraAssetEditorToolkit()
 {
+	if (GEditor)
+	{
+		GEditor->UnregisterForUndo(this);
+	}
 }
 
 void FCameraAssetEditorToolkit::AddReferencedObjects(FReferenceCollector& Collector)
@@ -295,6 +305,20 @@ void FCameraAssetEditorToolkit::PostInitAssetEditor()
 
 	BuildLogToolkit->OnRequestJumpToObject().BindSP(this, &FCameraAssetEditorToolkit::OnJumpToObject);
 
+	ToolkitCommands->MapAction(
+			Commands.RenameInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersPanel->RenameSelectedParameter();
+				}));
+
+	ToolkitCommands->MapAction(
+			Commands.DeleteInterfaceParameter,
+			FExecuteAction::CreateSPLambda(this, [this]()
+				{
+					InterfaceParametersPanel->DeleteSelectedParameter();
+				}));
+
 	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
 
@@ -498,6 +522,16 @@ void FCameraAssetEditorToolkit::OnJumpToObject(UObject* Object, FName PropertyNa
 void FCameraAssetEditorToolkit::OnInterfaceParameterSelected(UCameraAssetInterfaceParameter* InterfaceParameter)
 {
 	DetailsView->SetObject(InterfaceParameter);
+}
+
+void FCameraAssetEditorToolkit::PostUndo(bool bSuccess)
+{
+	InterfaceParametersPanel->RequestListRefresh();
+}
+
+void FCameraAssetEditorToolkit::PostRedo(bool bSuccess)
+{
+	InterfaceParametersPanel->RequestListRefresh();
 }
 
 FText FCameraAssetEditorToolkit::GetBaseToolkitName() const

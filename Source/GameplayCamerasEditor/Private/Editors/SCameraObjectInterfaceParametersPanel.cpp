@@ -17,7 +17,6 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
 #include "Widgets/Text/SRichTextBlock.h"
-#include "Widgets/Text/STextBlock.h"
 #include "Widgets/Views/SListView.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(SCameraObjectInterfaceParametersPanel)
@@ -501,6 +500,21 @@ void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FC
 							.ColorAndOpacity(FSlateColor::UseForeground())
 						]
 					]
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(SButton)
+						.ButtonStyle(FAppStyle::Get(), "SimpleButton")
+						.ContentPadding(FMargin(1, 0))
+						.ToolTipText(LOCTEXT("AddBlendableToolTip", "Removes the selected blendable parameter(s)"))
+						.OnClicked(this, &SCameraObjectInterfaceParametersPanel::OnDeleteSelectedBlendableParameter)
+						[
+							SNew(SImage)
+							.Image(FAppStyle::Get().GetBrush("Icons.MinusCircle"))
+							.ColorAndOpacity(FSlateColor::UseForeground())
+						]
+					]
 				]
 			]
 			+SVerticalBox::Slot()
@@ -564,6 +578,21 @@ void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FC
 							.ColorAndOpacity(FSlateColor::UseForeground())
 						]
 					]
+					+SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					[
+						SNew(SButton)
+						.ButtonStyle(FAppStyle::Get(), "SimpleButton")
+						.ContentPadding(FMargin(1, 0))
+						.ToolTipText(LOCTEXT("RemoveDataParameterToolTip", "Removes the selected data parameter(s)"))
+						.OnClicked(this, &SCameraObjectInterfaceParametersPanel::OnDeleteSelectedDataParameter)
+						[
+							SNew(SImage)
+							.Image(FAppStyle::Get().GetBrush("Icons.MinusCircle"))
+							.ColorAndOpacity(FSlateColor::UseForeground())
+						]
+					]
 				]
 			]
 			+SVerticalBox::Slot()
@@ -594,6 +623,30 @@ void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FC
 void SCameraObjectInterfaceParametersPanel::RequestListRefresh()
 {
 	bListRefreshRequested = true;
+}
+
+void SCameraObjectInterfaceParametersPanel::RenameSelectedParameter()
+{
+	if (BlendableParametersListView->HasKeyboardFocus())
+	{
+		OnRenameSelectedBlendableParameter();
+	}
+	else if (DataParametersListView->HasKeyboardFocus())
+	{
+		OnRenameSelectedDataParameter();
+	}
+}
+
+void SCameraObjectInterfaceParametersPanel::DeleteSelectedParameter()
+{
+	if (BlendableParametersListView->HasKeyboardFocus())
+	{
+		OnDeleteSelectedBlendableParameter();
+	}
+	else if (DataParametersListView->HasKeyboardFocus())
+	{
+		OnDeleteSelectedDataParameter();
+	}
 }
 
 void SCameraObjectInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -730,12 +783,54 @@ void SCameraObjectInterfaceParametersPanel::OnDeleteInterfaceParameter(
 	ListView->RequestListRefresh();
 }
 
+template<typename ItemType>
+void SCameraObjectInterfaceParametersPanel::OnRenameSelectedInterfaceParameter(TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView)
+{
+	TArray<TObjectPtr<ItemType>> SelectedItems = ListView->GetSelectedItems();
+	if (SelectedItems.Num() > 0)
+	{
+		OnRenameInterfaceParameter(ListView, SelectedItems[0]);
+	}
+}
+
+template<typename ItemType>
+void SCameraObjectInterfaceParametersPanel::OnDeleteSelectedInterfaceParameter(TSharedPtr<SListView<TObjectPtr<ItemType>>> ListView)
+{
+	TArray<TObjectPtr<ItemType>> SelectedItems = ListView->GetSelectedItems();
+	if (SelectedItems.IsEmpty())
+	{
+		return;
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("RemoveInterfaceParameter", "Remove Interface Parameter"));
+
+	CameraObject->Modify();
+
+	for (TObjectPtr<ItemType> Item : SelectedItems)
+	{
+		if constexpr (std::is_same_v<ItemType, UCameraObjectInterfaceBlendableParameter>)
+		{
+			const int32 NumRemoved = CameraObject->Interface.BlendableParameters.Remove(Item);
+			ensure(NumRemoved == 1);
+		}
+		else if constexpr (std::is_same_v<ItemType, UCameraObjectInterfaceDataParameter>)
+		{
+			const int32 NumRemoved = CameraObject->Interface.DataParameters.Remove(Item);
+			ensure(NumRemoved == 1);
+		}
+	}
+
+	CameraObject->EventHandlers.Notify(&ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
+
+	ListView->RequestListRefresh();
+}
+
 FReply SCameraObjectInterfaceParametersPanel::OnAddBlendableParameter()
 {
 	const FScopedTransaction Transaction(LOCTEXT("AddBlendableParameter", "Add Blendable Parameter"));
 
 	UCameraObjectInterfaceBlendableParameter* NewBlendableParameter = NewObject<UCameraObjectInterfaceBlendableParameter>(CameraObject, NAME_None, RF_Transactional);
-	NewBlendableParameter->InterfaceParameterName = NewBlendableParameter->GetName();
+	NewBlendableParameter->InterfaceParameterName = GetNewParameterName();
 
 	CameraObject->Modify();
 	CameraObject->Interface.BlendableParameters.Add(NewBlendableParameter);
@@ -749,13 +844,65 @@ FReply SCameraObjectInterfaceParametersPanel::OnAddDataParameter()
 	const FScopedTransaction Transaction(LOCTEXT("AddDataParameter", "Add Data Parameter"));
 
 	UCameraObjectInterfaceDataParameter* NewDataParameter = NewObject<UCameraObjectInterfaceDataParameter>(CameraObject, NAME_None, RF_Transactional);
-	NewDataParameter->InterfaceParameterName = NewDataParameter->GetName();
+	NewDataParameter->InterfaceParameterName = GetNewParameterName();
 
 	CameraObject->Modify();
 	CameraObject->Interface.DataParameters.Add(NewDataParameter);
 	CameraObject->EventHandlers.Notify(&ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
 
 	return FReply::Handled();
+}
+
+void SCameraObjectInterfaceParametersPanel::OnRenameSelectedBlendableParameter()
+{
+	OnRenameSelectedInterfaceParameter(BlendableParametersListView);
+}
+
+void SCameraObjectInterfaceParametersPanel::OnRenameSelectedDataParameter()
+{
+	OnRenameSelectedInterfaceParameter(DataParametersListView);
+}
+
+FReply SCameraObjectInterfaceParametersPanel::OnDeleteSelectedBlendableParameter()
+{
+	OnDeleteSelectedInterfaceParameter(BlendableParametersListView);
+	return FReply::Handled();
+}
+
+FReply SCameraObjectInterfaceParametersPanel::OnDeleteSelectedDataParameter()
+{
+	OnDeleteSelectedInterfaceParameter(DataParametersListView);
+	return FReply::Handled();
+}
+
+FString SCameraObjectInterfaceParametersPanel::GetNewParameterName() const
+{
+	static const FString BaseNewParameterName(TEXT("NewParameter"));
+
+	int32 NameIndex = 0;
+	bool bFoundUniqueName = false;
+	FString NewParameterName(BaseNewParameterName);
+
+	TArray<UCameraObjectInterfaceParameterBase*> AllParameters;
+	AllParameters.Append(CameraObject->Interface.BlendableParameters);
+	AllParameters.Append(CameraObject->Interface.DataParameters);
+
+	while (!bFoundUniqueName)
+	{
+		const bool bFoundConflict = AllParameters.ContainsByPredicate(
+				[&NewParameterName](const UCameraObjectInterfaceParameterBase* Item)
+				{
+					return Item->InterfaceParameterName == NewParameterName;
+				});
+		bFoundUniqueName = !bFoundConflict;
+		if (bFoundConflict)
+		{
+			++NameIndex;
+			NewParameterName = FString::Printf(TEXT("%s_%d"), *BaseNewParameterName, NameIndex);
+		}
+	}
+
+	return NewParameterName;
 }
 
 void SCameraObjectInterfaceParametersPanel::OnCameraObjectInterfaceChanged()
