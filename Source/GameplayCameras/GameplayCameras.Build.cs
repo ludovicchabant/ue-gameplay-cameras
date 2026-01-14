@@ -19,6 +19,7 @@ public class GameplayCameras : ModuleRules
 				"HeadMountedDisplay",
 				"MovieScene",
 				"MovieSceneTracks",
+				"RewindDebuggerRuntimeInterface",
 				"StateTreeModule",
 				"TemplateSequence",
 				"TraceLog"

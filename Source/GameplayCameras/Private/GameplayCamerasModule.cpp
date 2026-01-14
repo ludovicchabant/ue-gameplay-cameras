@@ -9,6 +9,12 @@
 #include "ShowFlags.h"
 #include "UObject/UObjectBase.h"
 
+#if UE_GAMEPLAY_CAMERAS_TRACE
+#include "Debug/CameraSystemTrace.h"
+#include "Features/IModularFeatures.h"
+#include "RewindDebuggerRuntimeInterface/IRewindDebuggerRuntimeExtension.h"
+#endif // UE_GAMEPLAY_CAMERAS_TRACE
+
 #define LOCTEXT_NAMESPACE "GameplayCamerasModule"
 
 DEFINE_LOG_CATEGORY(LogCameraSystem);
@@ -18,7 +24,26 @@ namespace UE::Cameras
 
 TCustomShowFlag<> GameplayCamerasShowFlag(TEXT("GameplayCameras"), true, SFG_Developer, LOCTEXT("ShowFlagDisplayName", "Gameplay Cameras"));
 
-}  // namespace UE::Cameras
+#if UE_GAMEPLAY_CAMERAS_TRACE
+/**
+ * Rewind debugger runtime extension to control camera system traces.
+ */
+class FCameraSystemRewindDebuggerRuntimeExtension : public IRewindDebuggerRuntimeExtension
+{
+public:
+	virtual void RecordingStarted() override
+	{
+		Trace::ToggleChannel(*FCameraSystemTrace::ChannelName, true);
+	}
+
+	virtual void RecordingStopped() override
+	{
+		Trace::ToggleChannel(*FCameraSystemTrace::ChannelName, false);
+	}
+};
+#endif // UE_GAMEPLAY_CAMERAS_TRACE
+
+} // namespace UE::Cameras
 
 IGameplayCamerasModule& IGameplayCamerasModule::Get()
 {
@@ -37,10 +62,23 @@ public:
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 		UE::Cameras::FCameraDebugColors::RegisterBuiltinColorSchemes();
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+		using namespace UE::Cameras;
+
+		RewindDebuggerRuntimeExtension = MakeShared<FCameraSystemRewindDebuggerRuntimeExtension>();
+
+		IModularFeatures& ModularFeatures = IModularFeatures::Get();
+		ModularFeatures.RegisterModularFeature(IRewindDebuggerRuntimeExtension::ModularFeatureName, RewindDebuggerRuntimeExtension.Get());
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 	}
 
 	virtual void ShutdownModule() override
 	{
+#if UE_GAMEPLAY_CAMERAS_TRACE
+		IModularFeatures& ModularFeatures = IModularFeatures::Get();
+		ModularFeatures.UnregisterModularFeature(IRewindDebuggerRuntimeExtension::ModularFeatureName, RewindDebuggerRuntimeExtension.Get());
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 		UnregisterBuiltInBlendableStructs();
 	}
 
@@ -125,6 +163,10 @@ private:
 #if WITH_EDITOR
 	TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager;
 #endif
+
+#if UE_GAMEPLAY_CAMERAS_TRACE
+	TSharedPtr<UE::Cameras::FCameraSystemRewindDebuggerRuntimeExtension> RewindDebuggerRuntimeExtension;
+#endif  // UE_GAMEPLAY_CAMERAS_TRACE
 };
 
 IMPLEMENT_MODULE(FGameplayCamerasModule, GameplayCameras);

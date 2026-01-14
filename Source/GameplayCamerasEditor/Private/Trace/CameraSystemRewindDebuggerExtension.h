@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -32,9 +32,7 @@ public:
 	virtual ~FCameraSystemRewindDebuggerExtension();
 
 	// IRewindDebuggerExtension interface.
-	virtual void RecordingStarted(IRewindDebugger* RewindDebugger) override;
 	virtual void Update(float DeltaTime, IRewindDebugger* RewindDebugger) override;
-	virtual void RecordingStopped(IRewindDebugger* RewindDebugger) override;
 	virtual void Clear(IRewindDebugger* RewindDebugger) override;
 
 private:

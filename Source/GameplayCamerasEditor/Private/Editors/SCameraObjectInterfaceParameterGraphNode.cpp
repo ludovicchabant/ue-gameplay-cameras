@@ -37,8 +37,6 @@ void SCameraObjectInterfaceParameterGraphNode::UpdateGraphNode()
 
 	SetupErrorReporting();
 
-	ContentScale.Bind(this, &SGraphNode::GetContentScale);
-
 	GetOrAddSlot(ENodeZone::Center)
 	.HAlign(HAlign_Center)
 	.VAlign(VAlign_Center)

@@ -28,11 +28,6 @@ FCameraSystemRewindDebuggerExtension::~FCameraSystemRewindDebuggerExtension()
 	EnsureDebugDrawDelegate(false);
 }
 
-void FCameraSystemRewindDebuggerExtension::RecordingStarted(IRewindDebugger* RewindDebugger)
-{
-	UE::Trace::ToggleChannel(*FCameraSystemTrace::ChannelName, true);
-}
-
 void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugger* RewindDebugger)
 {
 	if (RewindDebugger->IsPIESimulating() || RewindDebugger->GetRecordingDuration() == 0.0)
@@ -82,11 +77,6 @@ void FCameraSystemRewindDebuggerExtension::Update(float DeltaTime, IRewindDebugg
 			RootDebugBlock = ReadBlock->CastThisChecked<FRootCameraDebugBlock>();
 		}
 	}
-}
-
-void FCameraSystemRewindDebuggerExtension::RecordingStopped(IRewindDebugger* RewindDebugger)
-{
-	UE::Trace::ToggleChannel(*FCameraSystemTrace::ChannelName, false);
 }
 
 void FCameraSystemRewindDebuggerExtension::Clear(IRewindDebugger* RewindDebugger)
