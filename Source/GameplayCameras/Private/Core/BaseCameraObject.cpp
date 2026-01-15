@@ -145,7 +145,6 @@ void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* 
 
 	// Move the connection information to the new connection list.
 	// Create getter nodes for parameters that were added to the camera node graph.
-	bool bDidModify = false;
 	for (UCameraObjectInterfaceParameterBase* Parameter : AllParameters)
 	{
 		UCameraObjectInterfaceParameterGetter* GetterNode = nullptr;
@@ -157,7 +156,6 @@ void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* 
 			GetterNode->ParameterGuid = Parameter->GetGuid();
 			GetterNode->GraphNodePos = Parameter->GraphNodePos_DEPRECATED;
 			RootObject->AddConnectableObject(DefaultGraphName, GetterNode);
-			bDidModify = true;
 
 			Parameter->bHasGraphNode_DEPRECATED = false;
 			Parameter->GraphNodePos_DEPRECATED = FIntVector2::ZeroValue;
@@ -173,16 +171,10 @@ void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* 
 			Connection.TargetPropertyName = Parameter->TargetPropertyName_DEPRECATED;
 
 			Connections.Connections.Add(Connection);
-			bDidModify = true;
 
 			Parameter->Target_DEPRECATED = nullptr;
 			Parameter->TargetPropertyName_DEPRECATED = NAME_None;
 		}
-	}
-
-	if (bDidModify)
-	{
-		Modify();
 	}
 }
 

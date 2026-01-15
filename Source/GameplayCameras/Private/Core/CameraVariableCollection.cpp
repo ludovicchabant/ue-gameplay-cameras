@@ -58,8 +58,6 @@ void UCameraVariableCollection::CleanUpStrayObjects()
 			continue;
 		}
 
-		Modify();
-
 		Variable->ClearFlags(RF_Public | RF_Standalone);
 		StrayObjects.Add(Variable);
 	}
