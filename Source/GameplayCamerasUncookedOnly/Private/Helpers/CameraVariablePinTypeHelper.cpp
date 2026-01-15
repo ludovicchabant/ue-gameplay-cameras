@@ -1,7 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#pragma once
-
 #include "Helpers/CameraVariablePinTypeHelper.h"
 
 #include "EdGraphSchema_K2.h"
