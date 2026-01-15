@@ -262,6 +262,11 @@ void FCameraNodeParameterInfos::BuildFrom(UCameraNode* InCameraNode)
 				DataPropertyType = ECameraContextDataType::Enum;
 				DataPropertyTypeObject = EnumProperty->GetEnum();
 			}
+			else if (FStructProperty* StructProperty = CastField<FStructProperty>(ActualProperty))
+			{
+				DataPropertyType = ECameraContextDataType::Struct;
+				DataPropertyTypeObject = StructProperty->Struct;
+			}
 			else if (FClassProperty* ClassProperty = CastField<FClassProperty>(ActualProperty))
 			{
 				DataPropertyType = ECameraContextDataType::Class;
