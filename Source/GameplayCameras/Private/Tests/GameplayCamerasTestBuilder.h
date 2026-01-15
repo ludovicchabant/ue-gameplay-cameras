@@ -802,6 +802,44 @@ public:
 		return DirectorBuilder;
 	}
 
+	/**
+	 * Creates a new interface parameter that exposes the given camera rig parameter, optionally
+	 * under a different name.
+	 */
+	ThisType& AddInterfaceParameter(UCameraRigAsset* SourceCameraRig, const FName SourceParameterName, const FString& InterfaceParameterName)
+	{
+		if (ensure(SourceCameraRig))
+		{
+			UCameraAssetInterfaceParameter* InterfaceParameter = NewObject<UCameraAssetInterfaceParameter>(CameraAsset);
+			InterfaceParameter->SourceCameraRig = SourceCameraRig;
+			InterfaceParameter->SourceParameterName = SourceParameterName;
+			InterfaceParameter->InterfaceParameterName = (
+					InterfaceParameterName.IsEmpty() ?
+					SourceParameterName.ToString() : InterfaceParameterName);
+
+			CameraAsset->Interface.Parameters.Add(InterfaceParameter);
+		}
+		return *static_cast<ThisType*>(this);
+	}
+
+	ThisType& AddInterfaceParameter(UCameraRigAsset* SourceCameraRig, const FName SourceParameterName)
+	{
+		return AddInterfaceParameter(SourceCameraRig, SourceParameterName, SourceParameterName.ToString());
+	}
+
+	ThisType& AddInterfaceParameter(const FString& SourceCameraRigName, const FName& SourceParameterName, const FString& InterfaceParameterName)
+	{
+		return AddInterfaceParameter(
+				NamedObjectRegistry->Get<UCameraRigAsset>(SourceCameraRigName),
+				SourceParameterName,
+				InterfaceParameterName);
+	}
+
+	ThisType& AddInterfaceParameter(const FString& SourceCameraRigName, const FName SourceParameterName)
+	{
+		return AddInterfaceParameter(SourceCameraRigName, SourceParameterName, SourceParameterName.ToString());
+	}
+
 	/** Gets the named object registry. */
 	virtual TSharedPtr<FNamedObjectRegistry> GetNamedObjectRegistry() override
 	{

@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "Build/CameraBuildContext.h"
 #include "Core/CameraRigAsset.h"
 #include "Misc/AutomationTest.h"
 #include "Nodes/Blends/SmoothBlendCameraNode.h"
@@ -10,6 +11,19 @@
 
 #define LOCTEXT_NAMESPACE "CameraRigAssetBuilderTests"
 
+namespace UE::Cameras::Test
+{
+
+void BuildCameraRigAsIfCooking(UCameraRigAsset* CameraRig)
+{
+	FCameraBuildLog BuildLog;
+	BuildLog.SetForwardMessagesToLogging(true);
+	FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::Cooking);
+	CameraRig->BuildCameraRig(BuildContext);
+}
+
+}  // namespace UE::Cameras::Test
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderNullTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.Null", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 {
@@ -18,7 +32,7 @@ bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("EmptyTest")).Get();
 	UTEST_EQUAL("Dirty status", CameraRig->BuildStatus, ECameraBuildStatus::Dirty);
 
-	CameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(CameraRig);
 	UTEST_EQUAL("Clean status", CameraRig->BuildStatus, ECameraBuildStatus::Clean);
 
 	return true;
@@ -37,7 +51,7 @@ bool FCameraRigAssetBuilderSimpleAllocationTest::RunTest(const FString& Paramete
 		.Get();
 
 	UTEST_EQUAL("No evaluator allocation info", CameraRig->AllocationInfo.EvaluatorInfo.TotalSizeof, 0);
-	CameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(CameraRig);
 
 	int32 TotalSizeof = UArrayCameraNode::GetEvaluatorAllocationInfo().Key;
 	const TTuple<int32, int32> OffsetEvaluatorInfo = UOffsetCameraNode::GetEvaluatorAllocationInfo();
@@ -62,7 +76,7 @@ bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameter
 		.AddBlendableParameter(TEXT("Test"), ECameraVariableType::Vector3d, OffsetNode, GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
 		.Get();
 
-	CameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(CameraRig);
 
 	UCameraObjectInterfaceBlendableParameter* Parameter = CameraRig->Interface.BlendableParameters[0];
 	UTEST_EQUAL("Test parameter", Parameter->InterfaceParameterName, TEXT("Test"));
@@ -94,7 +108,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 		.AddBlendableParameter(TEXT("FocalLengthParam"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
 		.Get();
 
-	InnerCameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(InnerCameraRig);
 
 	// Make a camera rig that uses the previous one, with overrides on both the offset (now 15, 25, 35)
 	// and the focal length (now 25). Expose the offset further up as an interface parameter.
@@ -125,7 +139,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 			.AddBlendableParameter(TEXT("MiddleOffsetParam"), ECameraVariableType::Vector3d, MiddlePrefabNode, TEXT("OffsetParam"))
 		.Get();
 
-	MiddleCameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(MiddleCameraRig);
 
 	// Make another camera rig that uses the previous one, which makes a total of 3 nesting levels of camera rigs.
 	// This level overrides the offset parameter some more (now 20, 50, 70).
@@ -149,7 +163,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 			.Done()
 		.Get();
 
-	OuterCameraRig->BuildCameraRig();
+	UE::Cameras::Test::BuildCameraRigAsIfCooking(OuterCameraRig);
 
 	UCameraObjectInterfaceBlendableParameter* OffsetParam = InnerCameraRig->Interface.BlendableParameters[0];
 	UCameraObjectInterfaceBlendableParameter* FocalLengthParam = InnerCameraRig->Interface.BlendableParameters[1];

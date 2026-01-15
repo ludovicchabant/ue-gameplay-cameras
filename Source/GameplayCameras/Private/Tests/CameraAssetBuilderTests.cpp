@@ -35,13 +35,6 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 {
 	using namespace UE::Cameras::Test;
 
-	UFixedTestCameraDirector* CameraDirector = nullptr;
-	UCameraAsset* Camera = FCameraAssetTestBuilder()
-		.MakeDirector<UFixedTestCameraDirector>()
-			.Pin(CameraDirector)
-			.Done()
-		.Get();
-
 	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
 			.Done()
@@ -49,7 +42,6 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 		.BuildCameraRig()
 		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
-	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
 
 	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
@@ -58,6 +50,16 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 		.BuildCameraRig()
 		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 55.0f)
 		.Get();
+
+	UFixedTestCameraDirector* CameraDirector = nullptr;
+	UCameraAsset* Camera = FCameraAssetTestBuilder()
+		.MakeDirector<UFixedTestCameraDirector>()
+			.Pin(CameraDirector)
+			.Done()
+		.AddInterfaceParameter(CameraRigOne, TEXT("TranslationOffset"))
+		.AddInterfaceParameter(CameraRigTwo, TEXT("FocalLength"))
+		.Get();
+	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
 	CameraDirector->AddCameraRig(CameraRigTwo, TEXT("Two"));
 
 	Camera->BuildCamera();
@@ -83,13 +85,6 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 {
 	using namespace UE::Cameras::Test;
 
-	UFixedTestCameraDirector* CameraDirector = nullptr;
-	UCameraAsset* Camera = FCameraAssetTestBuilder()
-		.MakeDirector<UFixedTestCameraDirector>()
-			.Pin(CameraDirector)
-			.Done()
-		.Get();
-
 	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
 			.Done()
@@ -98,7 +93,6 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.BuildCameraRig()
 		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
-	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
 
 	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
@@ -108,7 +102,6 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.BuildCameraRig()
 		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 55.0f)
 		.Get();
-	CameraDirector->AddCameraRig(CameraRigTwo, TEXT("Two"));
 
 	UCameraRigAsset* CameraRigThree = FCameraRigAssetTestBuilder(TEXT("Three"))
 		.MakeArrayRootNode()
@@ -123,6 +116,21 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(0.0, 10.0, 20.0))
 		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 35.0f)
 		.Get();
+
+	UFixedTestCameraDirector* CameraDirector = nullptr;
+	UCameraAsset* Camera = FCameraAssetTestBuilder()
+		.MakeDirector<UFixedTestCameraDirector>()
+			.Pin(CameraDirector)
+			.Done()
+		.AddInterfaceParameter(CameraRigOne, TEXT("TranslationOffset"), TEXT("One_TranslationOffset"))
+		.AddInterfaceParameter(CameraRigOne, TEXT("RotationOffset"))
+		.AddInterfaceParameter(CameraRigTwo, TEXT("FocalLength"), TEXT("Two_FocalLength"))
+		.AddInterfaceParameter(CameraRigTwo, TEXT("Aperture"))
+		.AddInterfaceParameter(CameraRigThree, TEXT("TranslationOffset"), TEXT("Three_TranslationOffset"))
+		.AddInterfaceParameter(CameraRigThree, TEXT("FocalLength"), TEXT("Three_FocalLength"))
+		.Get();
+	CameraDirector->AddCameraRig(CameraRigOne, TEXT("One"));
+	CameraDirector->AddCameraRig(CameraRigTwo, TEXT("Two"));
 	CameraDirector->AddCameraRig(CameraRigThree, TEXT("Three"));
 
 	Camera->BuildCamera();
