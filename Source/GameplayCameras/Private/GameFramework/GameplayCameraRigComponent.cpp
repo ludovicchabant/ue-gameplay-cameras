@@ -101,7 +101,12 @@ void UGameplayCameraRigComponent::BuildGeneratedCamera()
 
 		FCameraBuildLog BuildLog;
 		BuildLog.SetForwardMessagesToLogging(true);
-		FCameraBuildContext BuildContext(BuildLog);
+
+		// Build the asset as if we were cooking so we get the referenced camera rig's allocation info
+		// accumulated into ours. It's more efficient and more importantly it lets us initialize the
+		// evaluation context's variable and context data tables with all the entries we need for later
+		// calling CameraRigReference.EnsureAllocationInfo().
+		FCameraBuildContext BuildContext(BuildLog, ECameraBuildReason::Cooking);
 		FCameraAssetBuilder Builder(BuildContext);
 		Builder.BuildCamera(GeneratedCameraAsset, bBuildReferencedAssets);
 	}
