@@ -7,13 +7,8 @@
 namespace UE::Cameras
 {
 
-namespace Private
-{
-
-static const uint32 GDefaultCapacity = 64;
-static const uint32 GDefaultAlignment = alignof(void*);
-
-}  // namespace Private
+const uint32 FCameraContextDataTable::GDefaultCapacity = 64;
+const uint32 FCameraContextDataTable::GDefaultAlignment = alignof(void*);
 
 FCameraContextDataTable::FCameraContextDataTable()
 {
@@ -126,7 +121,7 @@ void FCameraContextDataTable::Initialize(const FCameraContextDataTableAllocation
 	}
 
 	// Allocate the memory buffer.
-	MaxAlignOf = FMath::Max(Private::GDefaultAlignment, MaxAlignOf);
+	MaxAlignOf = FMath::Max(GDefaultAlignment, MaxAlignOf);
 	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, MaxAlignOf));
 	Capacity = TotalSizeOf;
 	Alignment = MaxAlignOf;
@@ -209,7 +204,7 @@ void FCameraContextDataTable::AddData(const FCameraContextDataDefinition& DataDe
 	if (NewUsed > Capacity)
 	{
 		// Alignment may not have been initialized yet.
-		Alignment = FMath::Max(AlignOf, Private::GDefaultAlignment);
+		Alignment = FMath::Max(AlignOf, GDefaultAlignment);
 
 		ReallocateBuffer(NewUsed);
 
@@ -410,7 +405,7 @@ bool FCameraContextDataTable::DestroyDataValue(ECameraContextDataType DataType, 
 
 void FCameraContextDataTable::ReallocateBuffer(uint32 MinRequired)
 {
-	uint32 NewCapacity = Capacity <= 0 ? Private::GDefaultCapacity : Capacity * 2;
+	uint32 NewCapacity = Capacity <= 0 ? GDefaultCapacity : Capacity * 2;
 	if (MinRequired > 0)
 	{
 		NewCapacity = FMath::Max(NewCapacity, MinRequired);

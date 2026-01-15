@@ -12,9 +12,6 @@ namespace UE::Cameras
 namespace Private
 {
 
-static const uint32 GDefaultCapacity = 64;
-static const uint32 GDefaultAlignment = alignof(void*);
-
 static const FString GUnavailableVariableDebugName(TEXT("<no debug info>"));
 
 bool IsVariableInMask(FCameraVariableID VariableID, const FCameraVariableTableFlags* InMask, bool bInvertMask)
@@ -28,6 +25,9 @@ bool IsVariableInMask(FCameraVariableID VariableID, const FCameraVariableTableFl
 }
 
 }  // namespace Private
+
+const uint32 FCameraVariableTable::GDefaultCapacity = 64;
+const uint32 FCameraVariableTable::GDefaultAlignment = alignof(void*);
 
 TArray<FBlendableStructInfo> FCameraVariableTable::CachedBlendableStructs;
 bool FCameraVariableTable::bCachedBlendableStructs(false);
@@ -107,7 +107,7 @@ void FCameraVariableTable::Initialize(const FCameraVariableTableAllocationInfo& 
 	}
 
 	// Allocate the memory buffer.
-	MaxAlignOf = FMath::Max(Private::GDefaultAlignment, MaxAlignOf);
+	MaxAlignOf = FMath::Max(GDefaultAlignment, MaxAlignOf);
 	Memory = reinterpret_cast<uint8*>(FMemory::Malloc(TotalSizeOf, MaxAlignOf));
 	Capacity = TotalSizeOf;
 	Alignment = MaxAlignOf;
@@ -254,7 +254,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 	if (NewUsed > Capacity)
 	{
 		// Alignment may not have been initialized yet.
-		Alignment = FMath::Max(AlignOf, Private::GDefaultAlignment);
+		Alignment = FMath::Max(AlignOf, GDefaultAlignment);
 
 		ReallocateBuffer(NewUsed);
 
@@ -274,7 +274,7 @@ void FCameraVariableTable::AddVariable(const FCameraVariableDefinition& Variable
 
 void FCameraVariableTable::ReallocateBuffer(uint32 MinRequired)
 {
-	uint32 NewCapacity = Capacity <= 0 ? Private::GDefaultCapacity : Capacity * 2;
+	uint32 NewCapacity = Capacity <= 0 ? GDefaultCapacity : Capacity * 2;
 	if (MinRequired > 0)
 	{
 		NewCapacity = FMath::Max(NewCapacity, MinRequired);

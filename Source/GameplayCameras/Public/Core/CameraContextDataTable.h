@@ -299,6 +299,9 @@ private:
 
 private:
 
+	static const uint32 GDefaultCapacity;
+	static const uint32 GDefaultAlignment;
+
 	TArray<FEntry> Entries;
 	TMap<FCameraContextDataID, int32> EntryLookup;
 

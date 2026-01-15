@@ -232,6 +232,9 @@ private:
 
 private:
 
+	static const uint32 GDefaultCapacity;
+	static const uint32 GDefaultAlignment;
+
 	enum class EEntryFlags : uint8
 	{
 		None = 0,
