@@ -184,7 +184,7 @@ bool FAimAtCameraActionEvaluator::RunPreviewEvaluation(const FCameraActionEvalua
 		return false;
 	}
 
-	OutCorrection = TotalCorrection;
+	OutCorrection = TotalCorrection.GetNormalized();
 	return true;
 }
 
