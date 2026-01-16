@@ -116,20 +116,17 @@ void UGameplayCameraRigComponent::OnCameraRigAssetBuiltImpl()
 {
 	using namespace UE::Cameras;
 
-	if (CameraRigReference.NeedsRebuildParameters())
+	CameraRigReference.RebuildParametersIfNeeded();
+
+	if (HasEvaluationContext())
 	{
-		Modify();
-		CameraRigReference.RebuildParameters();
-		if (HasEvaluationContext())
-		{
 #if WITH_EDITOR
-			const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
-			const FCameraObjectAllocationInfo& AllocationInfo = CameraRigAsset->AllocationInfo;
-			ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
+		const UCameraRigAsset* CameraRigAsset = CameraRigReference.GetCameraRig();
+		const FCameraObjectAllocationInfo& AllocationInfo = CameraRigAsset->AllocationInfo;
+		ReinitializeEvaluationContext(AllocationInfo.VariableTableInfo, AllocationInfo.ContextDataTableInfo);
 #endif  // WITH_EDITOR
 
-			UpdateEvaluationContext(true);
-		}
+		UpdateEvaluationContext(true);
 	}
 }
 
