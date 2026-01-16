@@ -5,6 +5,8 @@
 #include "CoreTypes.h"
 #include "Math/MathFwd.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 namespace UE::Cameras
 {
 
@@ -19,15 +21,17 @@ class FCameraFramingMath
 {
 public:
 
-	static FVector2d GetTargetAngles(const FVector2d& Target, const FCameraFieldsOfView& FieldsOfView);
+	UE_API static FVector2d GetTargetAngles(const FVector2d& Target, const FCameraFieldsOfView& FieldsOfView);
 
 	/** Gets the framing zone's half-angles for a given camera FOV. */
-	static FFramingZoneAngles GetFramingZoneAngles(const FFramingZone& FramingZone, const FCameraFieldsOfView& FieldsOfView);
+	UE_API static FFramingZoneAngles GetFramingZoneAngles(const FFramingZone& FramingZone, const FCameraFieldsOfView& FieldsOfView);
 
 private:
 
-	static double GetBoundAngle(float FactorFromCenter, double TanHalfFOV);
+	UE_API static double GetBoundAngle(float FactorFromCenter, double TanHalfFOV);
 };
 
 }  // namespace UE::Cameras
+
+#undef UE_API
 

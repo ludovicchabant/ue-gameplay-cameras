@@ -5,6 +5,8 @@
 #include "CoreTypes.h"
 #include "Containers/Array.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class UCameraNode;
 class UEnhancedInputComponent;
 class UInputAction;
@@ -19,17 +21,19 @@ class FInputAxisBindingHelpers
 {
 public:
 
-	static UEnhancedInputComponent* FindInputComponent(const UE::Cameras::FCameraNodeEvaluatorInitializeParams& Params);
+	UE_API static UEnhancedInputComponent* FindInputComponent(const UE::Cameras::FCameraNodeEvaluatorInitializeParams& Params);
 
-	static void BindActionValues(
+	UE_API static void BindActionValues(
 			const UE::Cameras::FCameraNodeEvaluatorInitializeParams& Params,
 			const UCameraNode* CameraNode,
 			UEnhancedInputComponent* InputComponent,
 			const TArray<TObjectPtr<UInputAction>>& AxisActions,
 			TArray<FEnhancedInputActionValueBinding*>& OutAxisValueBindings);
 
-	static FVector2d GetHighestValue(const TArray<FEnhancedInputActionValueBinding*>& AxisValueBindings);
+	UE_API static FVector2d GetHighestValue(const TArray<FEnhancedInputActionValueBinding*>& AxisValueBindings);
 };
 
 }  // namespace UE::Cameras
+
+#undef UE_API
 

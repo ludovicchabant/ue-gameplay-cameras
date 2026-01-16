@@ -5,6 +5,8 @@
 #include "Containers/ContainersFwd.h"
 #include "Math/UnrealMath.h"
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 class FArchive;
 struct FCameraFramingZone;
 struct FCameraPose;
@@ -27,7 +29,7 @@ struct FFramingZone
 	double BottomBound = 0;
 
 	/** Builds an empty framing zone. */
-	FFramingZone();
+	UE_API FFramingZone();
 
 	/** Gets the width of the framing zone. */
 	double Width() const { return FMath::Max(0.0, RightBound - LeftBound); }
@@ -42,63 +44,63 @@ struct FFramingZone
 	 * Returns whether this framing zone is well-formed (bounds in 0..1 UI space, 
 	 * with left/top bounds lesser than or equal to right/bottom bounds).
 	 */
-	bool IsValid() const;
+	UE_API bool IsValid() const;
 
 	/** Makes sure all the bounds have valid values between 0 and 1. */
-	void ClampBounds();
+	UE_API void ClampBounds();
 
 	/**
 	 * Makes sure all the bounds have valid values between 0 and 1, and that the
 	 * enclosed rectangle contains the given target point.
 	 */
-	void ClampBounds(const FVector2d& MustContain);
+	UE_API void ClampBounds(const FVector2d& MustContain);
 
 	/**
 	 * Makes sure all the bounds have valid values between 0 and 1, and that the
 	 * enclosed rectangle contains the given target point, with a uniform margin.
 	 */
-	void ClampBounds(const FVector2d& MustContain, double Margin);
+	UE_API void ClampBounds(const FVector2d& MustContain, double Margin);
 
 	/**
 	 * Makes sure all the bounds have valid values between 0 and 1, and that the
 	 * enclosed rectangle contains the given inner rectangle.
 	 */
-	void ClampBounds(const FFramingZone& MustContain);
+	UE_API void ClampBounds(const FFramingZone& MustContain);
 
 	/**
 	 * Expands this framing zone to include the other framing zone.
 	 */
-	void Add(const FFramingZone& Other);
+	UE_API void Add(const FFramingZone& Other);
 
 	/** Checks whether the given point (in 0..1 UI space) is inside this zone. */
-	bool Contains(const FVector2d& Point) const;
+	UE_API bool Contains(const FVector2d& Point) const;
 
 	/** 
 	 * Computes intersections between a line and the zone's box, and returns the one closest
 	 * to the line's origin point.
 	 */
-	FVector2d ComputeClosestIntersection(const FVector2d& Origin, const FVector2d& LineDir, bool bLineDirIsNormalized = false) const;
+	UE_API FVector2d ComputeClosestIntersection(const FVector2d& Origin, const FVector2d& LineDir, bool bLineDirIsNormalized = false) const;
 
 	/** Gets the inner margins of this zone compared to the screen's center. */
-	FVector4d GetNormalizedBounds() const;
+	UE_API FVector4d GetNormalizedBounds() const;
 
 	/** Gets the coordinates of the top-left corner of the zone, in 0..Width/Height canvas units. */
-	FVector2d GetCanvasPosition(const FVector2d& CanvasSize) const;
+	UE_API FVector2d GetCanvasPosition(const FVector2d& CanvasSize) const;
 	/** Gets the size of the zone, in 0..Width/Height canvas units. */
-	FVector2d GetCanvasSize(const FVector2d& CanvasSize) const;
+	UE_API FVector2d GetCanvasSize(const FVector2d& CanvasSize) const;
 
-	void Serialize(FArchive& Ar);
+	UE_API void Serialize(FArchive& Ar);
 
 public:
 
 	/** Build a framing zone from a set of margins relative to the screen edge. */
-	static FFramingZone FromScreenMargins(const FCameraFramingZone& Margins);
+	UE_API static FFramingZone FromScreenMargins(const FCameraFramingZone& Margins);
 
 	/** Build a framing zone from a set of margins relative to a screen location. */
-	static FFramingZone FromRelativeMargins(const FVector2d& ScreenLocation, const FCameraFramingZone& Margins);
+	UE_API static FFramingZone FromRelativeMargins(const FVector2d& ScreenLocation, const FCameraFramingZone& Margins);
 
 	/** Build a framing zone that encompasses all the given points (in 0..1 UI space). */
-	static FFramingZone FromPoints(TConstArrayView<FVector2d> ScreenPoints);
+	UE_API static FFramingZone FromPoints(TConstArrayView<FVector2d> ScreenPoints);
 
 private:
 
@@ -120,4 +122,6 @@ struct FFramingZoneAngles
 };
 
 }  // namespace UE::Cameras
+
+#undef UE_API
 
