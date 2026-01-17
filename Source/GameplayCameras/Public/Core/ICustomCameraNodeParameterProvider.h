@@ -61,7 +61,8 @@ public:
 			ECameraVariableType VariableType, 
 			const UScriptStruct* BlendableStructType,
 			const uint8* DefaultValue,
-			FCameraVariableID* OverrideVariableID);
+			FCameraVariableID* OverrideVariableID,
+			UCameraVariableAsset* OverrideVariable = nullptr);
 
 	GAMEPLAYCAMERAS_API void AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue);
 
