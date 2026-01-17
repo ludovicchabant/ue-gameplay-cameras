@@ -421,9 +421,11 @@ void FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(TCo
 	}
 
 	// Before UE 5.8, there was a bug with FInstancedPropertyBag not saving the PropertyFlags of its UPropertyBag
-	// struct, resulting in camera parameters losing their CPF_Interp flag. This meant that rebuilding a camera
-	// asset would create a new parameter struct that was slightly different from the loaded one (it had those
-	// flags). This made camera assets always dirty and in need of re-saving.
+	// struct, resulting in camera parameters losing their CPF_Interp flag, or still having a CPF_Edit flag even
+	// though they're supposed to not be visible/editable.
+	//
+	// This meant that rebuilding a camera asset would create a new parameter struct that was slightly different
+	// from the loaded one (it had those flags). This made camera assets always dirty and in need of re-saving.
 	//
 	// This function aims to fix that as a band-aid: it gets called on PostLoad by camera assets and re-adds the
 	// missing flags.
@@ -457,6 +459,13 @@ void FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(TCo
 		{
 			bFixedAny |= ((PropertyDesc->PropertyFlags & CPF_Interp) == 0);
 			PropertyDesc->PropertyFlags |= CPF_Interp;
+		}
+
+		// Remove CPF_Edit if the property isn't visible/editable.
+		if (!Definition.bIsVisible)
+		{
+			bFixedAny = true;
+			PropertyDesc->PropertyFlags &= ~CPF_Edit;
 		}
 	}
 

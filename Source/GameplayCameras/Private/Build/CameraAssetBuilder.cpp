@@ -41,11 +41,8 @@ void BuildCameraAssetDefaultParameterDefinitions(UCameraAsset* CameraAsset, TArr
 			TArray<FCameraObjectInterfaceParameterDefinition>& DefinitionsForCameraRig = DefinitionsByCameraRig.Add(CameraRig);
 			for (const FCameraObjectInterfaceParameterDefinition& Definition : CameraRig->GetParameterDefinitions())
 			{
-				if (Definition.bIsVisible)
-				{
-					DefinitionsForCameraRig.Add(Definition);
-					UsedParameterNames.FindOrAdd(Definition.ParameterName).Add(CameraRig);
-				}
+				DefinitionsForCameraRig.Add(Definition);
+				UsedParameterNames.FindOrAdd(Definition.ParameterName).Add(CameraRig);
 			}
 		}
 	}
