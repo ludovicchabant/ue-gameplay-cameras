@@ -12,8 +12,8 @@
  * These types are copied from, and behave in the same way as the corresponding easing
  * types from Sequencer.
  */
-UENUM()
-enum class EEasingCameraBlendType
+UENUM(BlueprintType)
+enum class EEasingCameraBlendType : uint8
 {
 	// Linear easing
 	Linear UMETA(Grouping=Linear, DisplayName="Linear"),
