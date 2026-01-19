@@ -117,11 +117,6 @@ void FRootCameraNodeEvaluator::SetPreVisualLayerResult(const FCameraNodeEvaluati
 
 void FRootCameraNodeEvaluator::BroadcastCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent) const
 {
-	if (ensure(OwningEvaluator))
-	{
-		OwningEvaluator->NotifyRootCameraNodeEvent(InEvent);
-	}
-
 	OnCameraRigEventDelegate.Broadcast(InEvent);
 }
 

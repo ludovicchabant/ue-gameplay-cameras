@@ -212,17 +212,6 @@ TSharedPtr<FCameraEvaluationService> FCameraSystemEvaluator::FindEvaluationServi
 	return nullptr;
 }
 
-void FCameraSystemEvaluator::NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent)
-{
-	for (TSharedPtr<FCameraEvaluationService> EvaluationService : EvaluationServices)
-	{
-		if (EvaluationService->HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsRootCameraNodeEvents))
-		{
-			EvaluationService->NotifyRootCameraNodeEvent(InEvent);
-		}
-	}
-}
-
 void FCameraSystemEvaluator::Update(const FCameraSystemEvaluationParams& Params)
 {
 	UpdateImpl(Params.DeltaTime, ECameraNodeEvaluationType::Standard);

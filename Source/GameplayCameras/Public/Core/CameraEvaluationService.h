@@ -101,8 +101,6 @@ public:
 
 	// Internal API.
 
-	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
-
 	ECameraEvaluationServiceFlags GetEvaluationServiceFlags() const { return PrivateFlags; }
 	bool HasAllEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags) const;
 
@@ -130,6 +128,10 @@ protected:
 	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) {}
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 
+private:
+
+	void RootCameraNodeEventHandler(const FRootCameraNodeCameraRigEvent& InEvent);
+
 protected:
 
 	/**
@@ -139,6 +141,9 @@ protected:
 	void SetEvaluationServiceFlags(ECameraEvaluationServiceFlags InFlags);
 
 private:
+
+	/** The camera system that this service lives inside of. */
+	FCameraSystemEvaluator* Evaluator = nullptr;
 
 	/** Evaluation service flags. */
 	ECameraEvaluationServiceFlags PrivateFlags = ECameraEvaluationServiceFlags::None;

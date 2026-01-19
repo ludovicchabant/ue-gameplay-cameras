@@ -305,8 +305,6 @@ private:
 	void PostCameraDirectorUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
 	void PostUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
 
-	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
-
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	static bool IsDebugTraceEnabled();
 	static bool ShouldBuildOrDrawDebugBlocks();
