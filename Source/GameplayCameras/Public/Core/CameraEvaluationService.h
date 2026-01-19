@@ -22,10 +22,11 @@ enum class ECameraEvaluationServiceFlags
 {
 	None = 0,
 	NeedsPreUpdate = 1 << 0,
-	NeedsPostUpdate = 1 << 1,
-	NeedsRootCameraNodeEvents = 1 << 2,
+	NeedsPostCameraDirectorUpdate = 1 << 1,
+	NeedsPostUpdate = 1 << 2,
+	NeedsRootCameraNodeEvents = 1 << 3,
 
-	Default = NeedsPreUpdate | NeedsPostUpdate | NeedsRootCameraNodeEvents
+	Default = NeedsPreUpdate | NeedsPostCameraDirectorUpdate | NeedsPostUpdate | NeedsRootCameraNodeEvents
 };
 ENUM_CLASS_FLAGS(ECameraEvaluationServiceFlags);
 
@@ -81,6 +82,8 @@ public:
 	void Initialize(const FCameraEvaluationServiceInitializeParams& Params);
 	/** Runs at the start of the camera system update. */
 	void PreUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult);
+	/** Runs after the camera director update. */
+	void PostCameraDirectorUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult);
 	/** Runs at the end of the camera system update. */
 	void PostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult);
 	/** Tears down the evaluation service. */
@@ -109,6 +112,8 @@ protected:
 	virtual void OnInitialize(const FCameraEvaluationServiceInitializeParams& Params) {}
 	/** Runs at the start of the camera system update. */
 	virtual void OnPreUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) {}
+	/** Runs after the camera director update. */
+	virtual void OnPostCameraDirectorUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) {}
 	/** Runs at the end of the camera system update. */
 	virtual void OnPostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) {}
 	/** Tears down the evaluation service. */

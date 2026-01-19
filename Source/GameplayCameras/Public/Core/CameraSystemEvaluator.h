@@ -301,8 +301,9 @@ private:
 	void UpdateCameraDirector(float DeltaTime, FCameraDirectorEvaluator* CameraDirectorEvaluator);
 	void GetCombinedCameraRigRequest(TConstArrayView<FCameraRigActivationDeactivationRequest> Requests, FCameraRigActivationDeactivationRequest& OutCombinedRequest);
 
-	void PreUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType, ECameraEvaluationServiceFlags ExtraFlags);
-	void PostUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType, ECameraEvaluationServiceFlags ExtraFlags);
+	void PreUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
+	void PostCameraDirectorUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
+	void PostUpdateServices(float DeltaTime, ECameraNodeEvaluationType EvaluationType);
 
 	void NotifyRootCameraNodeEvent(const FRootCameraNodeCameraRigEvent& InEvent);
 

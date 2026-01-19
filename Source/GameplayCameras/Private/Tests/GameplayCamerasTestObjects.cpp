@@ -37,7 +37,27 @@ void FFixedTextCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 	}
 }
 
-}  // namespace UE::Cameras::Tests
+UE_DEFINE_CAMERA_ACTION_EVALUATOR(FUpdateTrackerCameraActionEvaluator)
+
+void FUpdateTrackerCameraActionEvaluator::OnPreScopeRun(const FCameraActionEvaluationParams& Params, FCameraActionEvaluationResult& OutResult)
+{
+	const UUpdateTrackerCameraAction* Action = GetCameraActionAs<UUpdateTrackerCameraAction>();
+	if (ensure(Action))
+	{
+		++NumUpdatesReceived;
+		if (NumUpdatesReceived >= Action->NumUpdates)
+		{
+			OutResult.bIsActionFinished = true;
+		}
+	}
+}
+
+void FUpdateTrackerCameraActionEvaluator::OnSerialize(const FCameraActionEvaluatorSerializeParams& Params, FArchive& Ar)
+{
+	Ar << NumUpdatesReceived;
+}
+
+}  // namespace UE::Cameras::Test
 
 FCameraNodeEvaluatorPtr UUpdateTrackerCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
@@ -79,5 +99,11 @@ FCameraDirectorEvaluatorPtr UFixedTestCameraDirector::OnBuildEvaluator(FCameraDi
 void UFixedTestCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo& UsageInfo) const
 {
 	UsageInfo.CameraRigs.Append(CameraRigs);
+}
+
+FCameraActionEvaluatorPtr UUpdateTrackerCameraAction::OnBuildEvaluator(FCameraActionEvaluatorBuilder& Builder) const
+{
+	using namespace UE::Cameras::Test;
+	return Builder.BuildEvaluator<FUpdateTrackerCameraActionEvaluator>();
 }
 

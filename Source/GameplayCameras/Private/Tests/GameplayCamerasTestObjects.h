@@ -8,6 +8,8 @@
 #include "Core/CameraNodeEvaluator.h"
 #include "Core/CameraParameters.h"
 #include "Nodes/CameraNodeTypes.h"
+#include "Services/CameraAction.h"
+#include "Services/CameraActionEvaluator.h"
 
 #include "GameplayCamerasTestObjects.generated.h"
 
@@ -53,7 +55,22 @@ private:
 	int32 ActiveIndex = INDEX_NONE;
 };
 
-}  // namespace UE::Cameras::Tests
+class FUpdateTrackerCameraActionEvaluator : public FCameraActionEvaluator
+{
+	UE_DECLARE_CAMERA_ACTION_EVALUATOR(GAMEPLAYCAMERAS_API, FUpdateTrackerCameraActionEvaluator)
+
+protected:
+
+	// FCameraActionEvaluator interface.
+	virtual void OnPreScopeRun(const FCameraActionEvaluationParams& Params, FCameraActionEvaluationResult& OutResult) override;
+	virtual void OnSerialize(const FCameraActionEvaluatorSerializeParams& Params, FArchive& Ar) override;
+
+private:
+
+	int32 NumUpdatesReceived = 0;
+};
+
+}  // namespace UE::Cameras::Test
 
 UCLASS(MinimalAPI, Hidden)
 class UUpdateTrackerCameraNode : public UCameraNode
@@ -98,5 +115,21 @@ private:
 
 	UPROPERTY()
 	TArray<FName> CameraRigNames;
+};
+
+UCLASS(MinimalAPI, Hidden)
+class UUpdateTrackerCameraAction : public UCameraAction
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	int32 NumUpdates = 1;
+
+protected:
+
+	// UCameraAction interface.
+	virtual FCameraActionEvaluatorPtr OnBuildEvaluator(FCameraActionEvaluatorBuilder& Builder) const;
 };
 

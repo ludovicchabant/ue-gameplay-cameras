@@ -46,11 +46,26 @@ public:
 	/** Stops all camera action instances of a given class. */
 	bool StopAllActionsOfClass(TSubclassOf<UCameraAction> InActionClass);
 
+public:
+
+	/**
+	 * Returns how many actual actions are running for the given instance ID.
+	 *
+	 * This returns 1 for a running non-propagating action.
+	 * For a propagating action, this returns the number of running camera rig instances that the action is currently
+	 * affecting, i.e. the number of running clones.
+	 * If an action has been started but the camera system hasn't updated yet, it returns 0 since action evaluators
+	 * are created only on the first update.
+	 */
+	int32 GetNumScopeActions(const FCameraActionInstanceID InInstanceID) const;
+
 protected:
 
 	// FCameraEvaluationService interface.
 	virtual void OnInitialize(const FCameraEvaluationServiceInitializeParams& Params) override;
+	virtual void OnPostCameraDirectorUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) override;
 	virtual void OnPostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult) override;
+	virtual void OnTeardown(const FCameraEvaluationServiceTeardownParams& Params) override;
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	virtual void OnBuildDebugBlocks(const FCameraDebugBlockBuildParams& Params, FCameraDebugBlockBuilder& Builder) override;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
@@ -59,10 +74,8 @@ private:
 
 	struct FActionSetInfo;
 
-	void OnRootCameraNodeCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent);
+	void OnRootNodeCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent);
 
-	void AddCloningAction();
-	void RemoveCloningAction();
 	void CloneAction(FActionSetInfo& ActionSet, TSharedRef<FCameraActionScope> NewActionScope);
 
 	void CleanUpActions();
@@ -80,6 +93,7 @@ private:
 		TObjectPtr<const UCameraAction> Data;
 		TArray<FActionInfo, TInlineAllocator<4>> Actions;
 		FCameraActionInstanceID InstanceID;
+		bool bIsPending = false;
 	};
 
 	FRootCameraNodeEvaluator* RootNodeEvaluator = nullptr;
@@ -87,7 +101,8 @@ private:
 	TArray<FActionSetInfo> ActionSets;
 
 	uint32 NextActionSetID = 0;
-	uint8 NumCloningActions = 0;
+
+	bool bHasAnyNewActiveCameraRigs = false;
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
 	friend class FCameraActionServiceDebugBlock;

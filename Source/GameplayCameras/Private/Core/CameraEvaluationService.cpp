@@ -25,6 +25,11 @@ void FCameraEvaluationService::PreUpdate(const FCameraEvaluationServiceUpdatePar
 	OnPreUpdate(Params, OutResult);
 }
 
+void FCameraEvaluationService::PostCameraDirectorUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult)
+{
+	OnPostCameraDirectorUpdate(Params, OutResult);
+}
+
 void FCameraEvaluationService::PostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult)
 {
 	OnPostUpdate(Params, OutResult);

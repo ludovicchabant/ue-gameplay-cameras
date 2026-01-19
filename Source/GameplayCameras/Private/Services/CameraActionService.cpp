@@ -24,9 +24,7 @@ UE_DEFINE_CAMERA_EVALUATION_SERVICE(FCameraActionService)
 
 FCameraActionService::~FCameraActionService()
 {
-	// If we are destroying the owning evaluator while a cloning camera action is running,
-	// we need to clean-up our delegate for root node events.
-	if (RootNodeEvaluator && NumCloningActions > 0)
+	if (RootNodeEvaluator)
 	{
 		RootNodeEvaluator->OnCameraRigEvent().RemoveAll(this);
 	}
@@ -34,9 +32,54 @@ FCameraActionService::~FCameraActionService()
 
 void FCameraActionService::OnInitialize(const FCameraEvaluationServiceInitializeParams& Params)
 {
-	SetEvaluationServiceFlags(ECameraEvaluationServiceFlags::NeedsPostUpdate);
+	SetEvaluationServiceFlags(
+			ECameraEvaluationServiceFlags::NeedsPostCameraDirectorUpdate |
+			ECameraEvaluationServiceFlags::NeedsPostUpdate);
 
 	RootNodeEvaluator = Params.Evaluator->GetRootNodeEvaluator();
+	if (ensure(RootNodeEvaluator))
+	{
+		RootNodeEvaluator->OnCameraRigEvent().AddRaw(this, &FCameraActionService::OnRootNodeCameraRigEvent);
+	}
+}
+
+void FCameraActionService::OnPostCameraDirectorUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult)
+{
+	for (FActionSetInfo& ActionSet : ActionSets)
+	{
+		if (!ensure(ActionSet.Data))
+		{
+			continue;
+		}
+
+		if (ActionSet.bIsPending)
+		{
+			// This action is pending and its first evaluator needs to be created on the active camera rig instance's
+			// action scope.
+			TSharedPtr<FCameraActionScope> ActionScope = RootNodeEvaluator->GetActiveCameraRigActionScope(true);
+			if (ensure(ActionScope))
+			{
+				FCameraActionInstanceID NewInstanceID = ActionScope->StartAction(ActionSet.Data);
+				if (ensure(NewInstanceID.IsValid()))
+				{
+					ActionSet.Actions.Add(FActionInfo{ ActionScope, NewInstanceID });
+				}
+			}
+			ActionSet.bIsPending = false;
+		}
+		else if (bHasAnyNewActiveCameraRigs && ActionSet.Data->bPropagateToNewCameraRigs)
+		{
+			// This action is already running but a new camera rig instance has been activated, and the action wants
+			// to propagate to it, so we clone its evaluator onto the new action scope.
+			TSharedPtr<FCameraActionScope> ActionScope = RootNodeEvaluator->GetActiveCameraRigActionScope(true);
+			if (ensure(ActionScope))
+			{
+				CloneAction(ActionSet, ActionScope.ToSharedRef());
+			}
+		}
+	}
+
+	bHasAnyNewActiveCameraRigs = false;
 }
 
 void FCameraActionService::OnPostUpdate(const FCameraEvaluationServiceUpdateParams& Params, FCameraEvaluationServiceUpdateResult& OutResult)
@@ -47,6 +90,25 @@ void FCameraActionService::OnPostUpdate(const FCameraEvaluationServiceUpdatePara
 	}
 }
 
+void FCameraActionService::OnTeardown(const FCameraEvaluationServiceTeardownParams& Params)
+{
+	if (ensure(RootNodeEvaluator))
+	{
+		RootNodeEvaluator->OnCameraRigEvent().RemoveAll(this);
+	}
+
+	RootNodeEvaluator = nullptr;
+	ActionSets.Reset();
+}
+
+void FCameraActionService::OnRootNodeCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent)
+{
+	if (InEvent.EventType == ERootCameraNodeCameraRigEventType::Activated && InEvent.EventLayer == ECameraRigLayer::Main)
+	{
+		bHasAnyNewActiveCameraRigs = true;
+	}
+}
+
 FCameraActionInstanceID FCameraActionService::StartAction(const UCameraAction* CameraAction)
 {
 	if (!CameraAction)
@@ -54,28 +116,11 @@ FCameraActionInstanceID FCameraActionService::StartAction(const UCameraAction* C
 		return FCameraActionInstanceID();
 	}
 	
-	TSharedPtr<FCameraActionScope> ActionScope = RootNodeEvaluator->GetActiveCameraRigActionScope(true);
-	if (!ensure(ActionScope))
-	{
-		return FCameraActionInstanceID();
-	}
-	
-	FCameraActionInstanceID NewInstanceID = ActionScope->StartAction(CameraAction);
-	if (!ensure(NewInstanceID.IsValid()))
-	{
-		return FCameraActionInstanceID();
-	}
-
 	FActionSetInfo& NewActionSet = ActionSets.Emplace_GetRef();
 	NewActionSet.Data = CameraAction;
-	NewActionSet.Actions.Add(FActionInfo{ ActionScope, NewInstanceID });
 	NewActionSet.InstanceID = FCameraActionInstanceID(NextActionSetID++);
+	NewActionSet.bIsPending = true;
 
-	if (CameraAction->bPropagateToNewCameraRigs)
-	{
-		AddCloningAction();
-	}
-	
 	return NewActionSet.InstanceID;
 }
 
@@ -109,10 +154,6 @@ bool FCameraActionService::StopAction(const FCameraActionInstanceID InInstanceID
 				ensure(bStopped);
 			}
 		}
-		if (ActionSet.Data->bPropagateToNewCameraRigs)
-		{
-			RemoveCloningAction();
-		}
 		ActionSets.RemoveAt(Index);
 		return true;
 	}
@@ -136,57 +177,24 @@ bool FCameraActionService::StopAllActionsOfClass(TSubclassOf<UCameraAction> InAc
 					bAnyStopped = true;
 				}
 			}
-			if (ActionSet.Data->bPropagateToNewCameraRigs)
-			{
-				RemoveCloningAction();
-			}
 			It.RemoveCurrent();
 		}
 	}
 	return bAnyStopped;
 }
 
-void FCameraActionService::OnRootCameraNodeCameraRigEvent(const FRootCameraNodeCameraRigEvent& InEvent)
+int32 FCameraActionService::GetNumScopeActions(const FCameraActionInstanceID InInstanceID) const
 {
-	if (InEvent.EventType == ERootCameraNodeCameraRigEventType::Activated && InEvent.EventLayer == ECameraRigLayer::Main)
-	{
-		TSharedPtr<FCameraActionScope> ActionScope = RootNodeEvaluator->GetActiveCameraRigActionScope(true);
-		if (ensure(ActionScope))
-		{
-			int32 NumCloned = 0;
-			for (FActionSetInfo& ActionSet : ActionSets)
+	const int32 Index = ActionSets.IndexOfByPredicate([InInstanceID](const FActionSetInfo& Item)
 			{
-				if (ensure(ActionSet.Data) && ActionSet.Data->bPropagateToNewCameraRigs)
-				{
-					CloneAction(ActionSet, ActionScope.ToSharedRef());
-					++NumCloned;
-				}
-			}
-			ensureMsgf(
-					NumCloned > 0, 
-					TEXT("No actions found to clone: we are still registered with root camera rig events for nothing"));
-		}
-	}
-}
-
-void FCameraActionService::AddCloningAction()
-{
-	const bool bRegisterEvent = (NumCloningActions == 0);
-	++NumCloningActions;
-	if (bRegisterEvent)
+				return Item.InstanceID == InInstanceID;
+			});
+	if (Index != INDEX_NONE)
 	{
-		RootNodeEvaluator->OnCameraRigEvent().AddRaw(this, &FCameraActionService::OnRootCameraNodeCameraRigEvent);
+		const FActionSetInfo& ActionSet = ActionSets[Index];
+		return ActionSet.Actions.Num();
 	}
-}
-
-void FCameraActionService::RemoveCloningAction()
-{
-	ensure(NumCloningActions > 0);
-	--NumCloningActions;
-	if (NumCloningActions == 0)
-	{
-		RootNodeEvaluator->OnCameraRigEvent().RemoveAll(this);
-	}
+	return 0;
 }
 
 void FCameraActionService::CloneAction(FActionSetInfo& ActionSet, TSharedRef<FCameraActionScope> NewActionScope)
@@ -232,6 +240,9 @@ void FCameraActionService::CleanUpActions()
 	for (auto SetIt = ActionSets.CreateIterator(); SetIt; ++SetIt)
 	{
 		FActionSetInfo& ActionSet(*SetIt);
+
+		ensure(!ActionSet.bIsPending);
+
 		for (auto ActionIt = ActionSet.Actions.CreateIterator(); ActionIt; ++ActionIt)
 		{
 			// Remove finished actions, whether they finished on their own, or were ended by their action scope 
@@ -259,10 +270,6 @@ void FCameraActionService::CleanUpActions()
 		}
 		if (ActionSet.Actions.IsEmpty())
 		{
-			if (ActionSet.Data->bPropagateToNewCameraRigs)
-			{
-				RemoveCloningAction();
-			}
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 			SetIt.RemoveCurrent(EAllowShrinking::No);
 #else
