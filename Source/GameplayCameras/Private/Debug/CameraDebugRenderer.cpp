@@ -158,7 +158,7 @@ void FCameraDebugRenderer::Initialize(UWorld* InWorld, const FSceneView* InScene
 			ViewRect = InSceneView->UnconstrainedViewRect;
 		}
 
-		CanvasSize = FVector2d(ViewRect.Width(), ViewRect.Height());
+		CanvasSize = FVector2d(ViewRect.Width(), ViewRect.Height()) / InCanvas->GetDPIScale();
 
 		NextCardPosition = FVector2f{ 
 			(float)CanvasSize.X - (float)GGameplayCamerasDebugCardWidth - (float)GGameplayCamerasDebugRightMargin,
