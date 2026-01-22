@@ -8,6 +8,7 @@
 #include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "Core/CameraVariableReferences.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/UnrealType.h"
 
@@ -410,8 +411,6 @@ DoneSearchingRawSourceValuePtr:
 	return bSuccess;
 }
 
-#if UE_VERSION_OLDER_THAN(5,8,0)
-
 void FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, FInstancedPropertyBag& InOutPropertyBag)
 {
 	const UPropertyBag* PropertyBag = InOutPropertyBag.GetPropertyBagStruct();
@@ -475,8 +474,6 @@ void FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(TCo
 		InOutPropertyBag.MigrateToNewBagStruct(FixedPropertyBag);
 	}
 }
-
-#endif
 
 }  // namespace UE::Cameras
 

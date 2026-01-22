@@ -93,3 +93,18 @@ struct TStructOpsTypeTraits<FInstancedOverridablePropertyBag> : public TStructOp
 	};
 };
 
+namespace FOverridablePropertyBagCustomVersion
+{
+	enum Type
+	{
+		BeforeCustomVersionWasAdded = 0,
+		FixSerializer = 1,
+		MissingPropertyFlags = 2,
+
+		VersionPlusOne,
+		LatestVersion = VersionPlusOne - 1
+	};
+
+	const FGuid GUID(0x5426C227, 0x4B3145B2, 0x9B9BED1F, 0x327FB126);
+}
+

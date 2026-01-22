@@ -6,20 +6,6 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OverridablePropertyBag)
 
-namespace FOverridablePropertyBagCustomVersion
-{
-	enum Type
-	{
-		BeforeCustomVersionWasAdded = 0,
-		FixSerializer = 1,
-
-		VersionPlusOne,
-		LatestVersion = VersionPlusOne - 1
-	};
-
-	const FGuid GUID(0x5426C227, 0x4B3145B2, 0x9B9BED1F, 0x327FB126);
-}
-
 FCustomVersionRegistration GOverridablePropertyBagCustomVersion(
 		FOverridablePropertyBagCustomVersion::GUID,
 		FOverridablePropertyBagCustomVersion::LatestVersion,
@@ -93,7 +79,8 @@ bool FInstancedOverridablePropertyBag::Serialize(FArchive& Ar)
 {
 	Ar.UsingCustomVersion(FOverridablePropertyBagCustomVersion::GUID);
 
-	if (Ar.IsLoading() && Ar.CustomVer(FOverridablePropertyBagCustomVersion::GUID) < FOverridablePropertyBagCustomVersion::FixSerializer)
+	if (Ar.IsLoading() && 
+			Ar.CustomVer(FOverridablePropertyBagCustomVersion::GUID) < FOverridablePropertyBagCustomVersion::FixSerializer)
 	{
 		// There was a short time during which developer data was saved with only default tagged
 		// serialization. This causes data corruption so we avoid that with this use-case here.

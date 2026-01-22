@@ -181,6 +181,7 @@ public:
 public:
 
 	// UObject interface.
+	virtual void Serialize(FArchive& Ar) override;
 	virtual void PostLoad() override;
 	virtual void PostInitProperties() override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
@@ -205,6 +206,9 @@ private:
 	/** The definitions of parameters exposed on this camera rig. */
 	UPROPERTY()
 	TArray<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions;
+
+	// Flag for DefaultParameters maybe having missing property flags.
+	bool bDefaultParametersMayHaveMissingPropertyFlags = false;
 
 	friend class UE::Cameras::FCameraObjectInterfaceParameterBuilder;
 };

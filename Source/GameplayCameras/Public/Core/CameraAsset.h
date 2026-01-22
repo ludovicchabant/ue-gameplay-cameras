@@ -213,6 +213,7 @@ protected:
 #endif
 
 	// UObject interface.
+	virtual void Serialize(FArchive& Ar) override;
 	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 	virtual void PostLoad() override;
 	virtual void GetAssetRegistryTags(FAssetRegistryTagsContext Context) const override;
@@ -278,6 +279,8 @@ private:
 
 #endif  // WITH_EDITORONLY_DATA
 
+	// Flag for DefaultParameters maybe having missing property flags.
+	bool bDefaultParametersMayHaveMissingPropertyFlags = false;
 	// Flag for whether we need to upgrade the interface on the next build.
 	bool bNeedsDefaultInterface = false;
 

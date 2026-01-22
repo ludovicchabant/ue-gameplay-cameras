@@ -4,17 +4,15 @@
 
 #include "Build/CameraAssetBuilder.h"
 #include "Build/CameraBuildContext.h"
+#include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraDirector.h"
 #include "Core/CameraRigAsset.h"
 #include "Misc/EngineVersionComparison.h"
 #include "Misc/EngineVersionComparison.h"
+#include "StructUtils/OverridablePropertyBag.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectRedirector.h"
 #include "UObject/ObjectSaveContext.h"
-
-#if UE_VERSION_OLDER_THAN(5,8,0)
-#include "Build/CameraObjectInterfaceParameterBuilder.h"
-#endif
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAsset)
 
@@ -151,14 +149,33 @@ int32 UCameraAsset::RemoveExitTransition(UCameraRigTransition* InTransition)
 	return NumRemoved;
 }
 
+void UCameraAsset::Serialize(FArchive& Ar)
+{
+	// Before 5.8, property bags are never saved with property flags, so always fix them up in PostLoad.
+	// With 5.8, that bug is fixed so we only fix up the property bags if the asset was saved before.
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
+	Ar.UsingCustomVersion(FOverridablePropertyBagCustomVersion::GUID);
+#endif
+
+	Super::Serialize(Ar);
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
+	bDefaultParametersMayHaveMissingPropertyFlags = Ar.CustomVer(FOverridablePropertyBagCustomVersion::GUID) < FOverridablePropertyBagCustomVersion::MissingPropertyFlags;
+#else
+	bDefaultParametersMayHaveMissingPropertyFlags = true;
+#endif
+}
+
 void UCameraAsset::PostLoad()
 {
 	Super::PostLoad();
 
-#if UE_VERSION_OLDER_THAN(5,8,0)
-	using namespace UE::Cameras;
-	FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
-#endif
+	if (bDefaultParametersMayHaveMissingPropertyFlags)
+	{
+		using namespace UE::Cameras;
+		FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
+		bDefaultParametersMayHaveMissingPropertyFlags = false;
+	}
 
 #if WITH_EDITOR
 	if (CameraDirector)

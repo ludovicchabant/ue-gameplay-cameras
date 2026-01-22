@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Containers/Array.h"
-#include "Misc/EngineVersionComparison.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
 
@@ -36,9 +35,7 @@ public:
 
 	static UE_API bool SetDefaultParameterValue(UBaseCameraObject* CameraObject, const FCameraObjectInterfaceParameterDefinition& ParameterDefinition, UCameraNode* TargetNode, FName TargetPropertyName, bool bAddParameterIfMissing = true);
 
-#if UE_VERSION_OLDER_THAN(5,8,0)
 	static void FixUpDefaultParameterProperties(TConstArrayView<FCameraObjectInterfaceParameterDefinition> ParameterDefinitions, FInstancedPropertyBag& InOutPropertyBag);
-#endif
 
 private:
 

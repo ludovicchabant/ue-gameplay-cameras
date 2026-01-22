@@ -6,6 +6,7 @@
 #include "Core/CameraNode.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "Misc/EngineVersionComparison.h"
+#include "StructUtils/OverridablePropertyBag.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCameraObject)
 
@@ -64,6 +65,23 @@ FCameraObjectConnection* FCameraObjectConnections::FindByTarget(UObject* InTarge
 			});
 }
 
+void UBaseCameraObject::Serialize(FArchive& Ar)
+{
+	// Before 5.8, property bags are never saved with property flags, so always fix them up in PostLoad.
+	// With 5.8, that bug is fixed so we only fix up the property bags if the asset was saved before.
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
+	Ar.UsingCustomVersion(FOverridablePropertyBagCustomVersion::GUID);
+#endif
+
+	Super::Serialize(Ar);
+
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
+	bDefaultParametersMayHaveMissingPropertyFlags = Ar.CustomVer(FOverridablePropertyBagCustomVersion::GUID) < FOverridablePropertyBagCustomVersion::MissingPropertyFlags;
+#else
+	bDefaultParametersMayHaveMissingPropertyFlags = true;
+#endif
+}
+
 void UBaseCameraObject::PostLoad()
 {
 	Super::PostLoad();
@@ -73,10 +91,12 @@ void UBaseCameraObject::PostLoad()
 		Guid = FGuid::NewGuid();
 	}
 
-#if UE_VERSION_OLDER_THAN(5,8,0)
-	using namespace UE::Cameras;
-	FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
-#endif
+	if (bDefaultParametersMayHaveMissingPropertyFlags)
+	{
+		using namespace UE::Cameras;
+		FCameraObjectInterfaceParameterBuilder::FixUpDefaultParameterProperties(ParameterDefinitions, DefaultParameters);
+		bDefaultParametersMayHaveMissingPropertyFlags = false;
+	}
 }
 
 void UBaseCameraObject::PostInitProperties()
