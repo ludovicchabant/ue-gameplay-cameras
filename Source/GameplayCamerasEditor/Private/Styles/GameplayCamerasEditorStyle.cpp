@@ -49,6 +49,10 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("ClassThumbnail.CameraShakeAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraShake", Icon64x64));
 
 	// Camera actors and components.
+	Set("ClassIcon.GameplayCameraRigComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCameraRig_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraRigComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCameraRig_64", Icon64x64));
+	Set("ClassIcon.GameplayCameraRigActor", new IMAGE_BRUSH_SVG("Icons/GameplayCameraRig_16", Icon16x16));
+	Set("ClassThumbnail.GameplayCameraRigActor", new IMAGE_BRUSH_SVG("Icons/GameplayCameraRig_64", Icon64x64));
 	Set("ClassIcon.GameplayCameraComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_16", Icon16x16));
 	Set("ClassThumbnail.GameplayCameraComponent", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_64", Icon64x64));
 	Set("ClassIcon.GameplayCameraActor", new IMAGE_BRUSH_SVG("Icons/GameplayCamera_16", Icon16x16));
