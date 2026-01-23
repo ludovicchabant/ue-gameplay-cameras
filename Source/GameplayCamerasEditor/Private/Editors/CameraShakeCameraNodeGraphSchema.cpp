@@ -4,6 +4,7 @@
 
 #include "Core/CameraShakeAsset.h"
 #include "Core/ShakeCameraNode.h"
+#include "Editors/CameraNodeGraphNode.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "GameplayCamerasEditorSettings.h"
 #include "Nodes/Blends/SimpleBlendCameraNode.h"
@@ -41,6 +42,11 @@ void UCameraShakeCameraNodeGraphSchema::OnBuildGraphConfig(FObjectTreeGraphConfi
 		.HasSelfPin(false)
 		.NodeTitleUsesObjectName(true)
 		.NodeTitleColor(Settings->CameraShakeAssetTitleColor);
+	InOutGraphConfig.ObjectClassConfigs.Emplace(UShakeCameraNode::StaticClass())
+		.StripDisplayNameSuffix(TEXT("Camera Node"))
+		.CreateCategoryMetaData(TEXT("CameraNodeCategories"))
+		.NodeTitleColor(Settings->CameraNodeTitleColor)
+		.GraphNodeClass(UCameraNodeGraphNode::StaticClass());
 }
 
 #undef LOCTEXT_NAMESPACE
