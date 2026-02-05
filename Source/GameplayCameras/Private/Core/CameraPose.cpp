@@ -231,6 +231,33 @@ double FCameraPose::GetVerticalProjectionOffset() const
 	return 2.0 * SensorVerticalOffset / (CroppedSensorHeight * EffectiveOverscan);
 }
 
+void FCameraPose::GetViewInfo(FMinimalViewInfo& OutViewInfo) const
+{
+	OutViewInfo.Location = Location;
+	OutViewInfo.Rotation = Rotation;
+	OutViewInfo.FOV = GetEffectiveFieldOfView();
+	OutViewInfo.DesiredFOV = OutViewInfo.FOV;
+
+	OutViewInfo.AspectRatio = GetSensorAspectRatio();
+	OutViewInfo.bConstrainAspectRatio = ConstrainAspectRatio;
+	OutViewInfo.AspectRatioAxisConstraint = OverrideAspectRatioAxisConstraint ? 
+		TOptional<EAspectRatioAxisConstraint>(AspectRatioAxisConstraint.GetValue()) : 
+		TOptional<EAspectRatioAxisConstraint>();
+
+	OutViewInfo.ProjectionMode = ProjectionMode;
+	if (ProjectionMode == ECameraProjectionMode::Orthographic)
+	{
+		OutViewInfo.OrthoWidth = OrthographicWidth;
+	}
+
+	OutViewInfo.PerspectiveNearClipPlane = NearClippingPlane > 0.0f ? NearClippingPlane : GNearClippingPlane;
+
+	OutViewInfo.OffCenterProjectionOffset.X = GetHorizontalProjectionOffset();
+	OutViewInfo.OffCenterProjectionOffset.Y = GetVerticalProjectionOffset();
+
+	OutViewInfo.ApplyOverscan(GetOverscan());
+}
+
 bool FCameraPose::ApplyPhysicalCameraSettings(FPostProcessSettings& PostProcessSettings, bool bOverwriteSettings) const
 {
 	if (!EnablePhysicalCamera || PhysicalCameraBlendWeight <= 0.f)

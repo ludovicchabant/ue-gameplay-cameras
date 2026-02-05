@@ -228,10 +228,13 @@ public:
 	/** Interpolate this result towards the other given result. */
 	UE_API void LerpAll(const FCameraNodeEvaluationResult& ToResult, float BlendFactor, bool bIncludePrivateValues = false);
 
+public:
+
+	/** Export this result into the given view info. */
+	UE_API void GetViewInfo(FMinimalViewInfo& OutViewInfo) const;
+
 	/** Serializes this result to the given archive. */
 	UE_API void Serialize(FArchive& Ar);
-
-public:
 
 	/** Collects objects from the context data table. */
 	UE_API void AddReferencedObjects(FReferenceCollector& Collector);

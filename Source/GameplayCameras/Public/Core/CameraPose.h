@@ -194,6 +194,11 @@ public:
 	/** Gets the default sensor size. */
 	static UE_API void GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHeight);
 
+	/** 
+	 * Exports the current camera pose to the given view info.
+	 */
+	UE_API void GetViewInfo(FMinimalViewInfo& OutViewInfo) const;
+
 	/**
 	 * Applies the necessary post-process settings given the current values
 	 * on this camera pose.

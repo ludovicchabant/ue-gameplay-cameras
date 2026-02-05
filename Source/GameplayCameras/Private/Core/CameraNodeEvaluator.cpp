@@ -73,6 +73,17 @@ void FCameraNodeEvaluationResult::LerpAll(const FCameraNodeEvaluationResult& ToR
 	bIsValid = (bIsValid && ToResult.bIsValid);
 }
 
+void FCameraNodeEvaluationResult::GetViewInfo(FMinimalViewInfo& OutViewInfo) const
+{
+	// Get the view info from the camera pose.
+	CameraPose.GetViewInfo(OutViewInfo);
+
+	OutViewInfo.PostProcessSettings = PostProcessSettings.Get();
+	OutViewInfo.PostProcessBlendWeight = 1.f;
+	// Create the physical camera settings if needed. Don't overwrite settings that were set by hand.
+	CameraPose.ApplyPhysicalCameraSettings(OutViewInfo.PostProcessSettings, false);
+}
+
 void FCameraNodeEvaluationResult::Serialize(FArchive& Ar)
 {
 	CameraPose.SerializeWithFlags(Ar);

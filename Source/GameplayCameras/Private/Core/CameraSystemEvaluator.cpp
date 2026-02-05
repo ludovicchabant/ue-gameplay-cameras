@@ -488,35 +488,7 @@ void FCameraSystemEvaluator::ViewRotationPreviewUpdate(const FCameraSystemEvalua
 
 void FCameraSystemEvaluator::GetEvaluatedCameraView(FMinimalViewInfo& DesiredView)
 {
-	const FCameraPose& CameraPose = RootNodeResult.CameraPose;
-	DesiredView.Location = CameraPose.GetLocation();
-	DesiredView.Rotation = CameraPose.GetRotation();
-	DesiredView.FOV = CameraPose.GetEffectiveFieldOfView();
-	DesiredView.DesiredFOV = DesiredView.FOV;
-
-	DesiredView.AspectRatio = CameraPose.GetSensorAspectRatio();
-	DesiredView.bConstrainAspectRatio = CameraPose.GetConstrainAspectRatio();
-	DesiredView.AspectRatioAxisConstraint = CameraPose.GetOverrideAspectRatioAxisConstraint() ?
-		CameraPose.GetAspectRatioAxisConstraint() : TOptional<EAspectRatioAxisConstraint>();
-
-	DesiredView.ProjectionMode = CameraPose.GetProjectionMode();
-	if (CameraPose.GetProjectionMode() == ECameraProjectionMode::Orthographic)
-	{
-		DesiredView.OrthoWidth = CameraPose.GetOrthographicWidth();
-	}
-
-	DesiredView.PerspectiveNearClipPlane = CameraPose.GetNearClippingPlane();
-
-	DesiredView.OffCenterProjectionOffset.X = CameraPose.GetHorizontalProjectionOffset();
-	DesiredView.OffCenterProjectionOffset.Y = CameraPose.GetVerticalProjectionOffset();
-
-	const FPostProcessSettingsCollection& PostProcessSettings = RootNodeResult.PostProcessSettings;
-	DesiredView.PostProcessSettings = PostProcessSettings.Get();
-	DesiredView.PostProcessBlendWeight = 1.f;
-	// Create the physical camera settings if needed. Don't overwrite settings that were set by hand.
-	CameraPose.ApplyPhysicalCameraSettings(DesiredView.PostProcessSettings, false);
-
-	DesiredView.ApplyOverscan(CameraPose.GetOverscan());
+	RootNodeResult.GetViewInfo(DesiredView);
 }
 
 void FCameraSystemEvaluator::ExecuteOperation(FCameraOperation& Operation)
