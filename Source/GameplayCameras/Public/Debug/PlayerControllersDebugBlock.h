@@ -38,13 +38,20 @@ private:
 	{
 		FString PlayerControllerName;
 		FString CameraManagerName;
-		FString ViewTargetName;
 		FString LocalPlayerName;
-		TOptional<EAspectRatioAxisConstraint> DefaultAspectRatioAxisConstraint;
+
+		FIntPoint ViewportSize;
+		TEnumAsByte<EAspectRatioAxisConstraint> DefaultAspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
+		bool bHasDefaultAspectRatioAxisConstraint = true;
+
+		FString ViewTargetName;
 		FVector3d ViewTargetLocation;
 		FRotator3d ViewTargetRotation;
 		float ViewTargetFOV;
 		float ViewTargetAspectRatio;
+		TEnumAsByte<EAspectRatioAxisConstraint> ViewTargetAspectRatioAxisConstraint = AspectRatio_MaintainXFOV;
+		bool bViewTargetConstrainAspectRatio;
+		bool bViewTargetOverrideAspectRatioAxisConstraint = false;
 	};
 	TArray<FPlayerControllerDebugInfo> PlayerControllers;
 	bool bHadValidWorld = false;
