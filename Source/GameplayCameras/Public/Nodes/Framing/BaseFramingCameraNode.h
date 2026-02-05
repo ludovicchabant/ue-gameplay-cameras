@@ -194,12 +194,12 @@ private:
 	void ComputeDesiredState(const FCameraNodeEvaluationParams& Params, const FCameraNodeEvaluationResult& OutResult);
 
 	bool AcquireTargetInfo(TSharedPtr<const FCameraEvaluationContext> EvaluationContext, const FCameraNodeEvaluationResult& InResult, TArray<FCameraActorComputedTargetInfo>& OutInfos);
-	bool ComputeFinalTargetInfo(const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
-	float ComputeScreenTargetSpeed(float DeltaTime, const FCameraPose& CameraPose, const FVector3d& OldWorldTarget, const FVector3d& NewWorldTarget);
+	bool ComputeFinalTargetInfo(const FCameraPose& CameraPose, const FMatrix& ViewProjectionMatrix, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds);
+	float ComputeScreenTargetSpeed(float DeltaTime, const FMatrix& ViewProjectionMatrix, const FVector3d& OldWorldTarget, const FVector3d& NewWorldTarget);
 	FVector2d ComputeAnticipatedScreenTarget(float DeltaTime, const FVector2d& InPreviousAnticipatedScreenTarget, const FVector2d& InScreenTarget);
 	FFramingZone ComputeEffectiveDeadZone();
 
-	static FFramingZone ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds);
+	static FFramingZone ComputeScreenTargetBounds(const FMatrix& ViewProjectionMatrix, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds);
 
 protected:
 
@@ -248,8 +248,6 @@ protected:
 	{
 		/** Screen-space position of the ideal framing position. */
 		FVector2d IdealTarget;
-		/** Current aspect ratio of the screen. */
-		float AspectRatio;
 		/** Current reframing damping factor. */
 		float ReframeDampingFactor;
 		/** Current low reframing damping factor. */

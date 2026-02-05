@@ -193,6 +193,21 @@ void FCameraPose::GetDefaultSensorSize(float& OutSensorWidth, float& OutSensorHe
 	OutSensorHeight = 18.67f;
 }
 
+EAspectRatioAxisConstraint FCameraPose::GetEffectiveAspectRatioAxisConstraint() const
+{
+	// Use the same default as UCameraComponent.
+	return GetEffectiveAspectRatioAxisConstraint(EAspectRatioAxisConstraint::AspectRatio_MaintainXFOV);
+}
+
+EAspectRatioAxisConstraint FCameraPose::GetEffectiveAspectRatioAxisConstraint(EAspectRatioAxisConstraint DefaultAspectRatioAxisConstraint) const
+{
+	if (OverrideAspectRatioAxisConstraint)
+	{
+		return AspectRatioAxisConstraint;
+	}
+	return DefaultAspectRatioAxisConstraint;
+}
+
 double FCameraPose::GetHorizontalProjectionOffset() const
 {
 	// Compute projection offset with similar code to UCineCameraComponent...

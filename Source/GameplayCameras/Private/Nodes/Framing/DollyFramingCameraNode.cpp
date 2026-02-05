@@ -4,16 +4,12 @@
 
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
-#include "Core/CameraVariableAssets.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
-#include "GameFramework/Pawn.h"
-#include "GameFramework/PlayerController.h"
 #include "GameplayCameras.h"
-#include "Math/CameraFramingMath.h"
+#include "Math/CameraAimingMath.h"
 #include "Math/CameraPoseMath.h"
-#include "Math/InverseRotationMatrix.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(DollyFramingCameraNode)
 
@@ -142,40 +138,26 @@ FTransform3d FDollyFramingCameraNodeEvaluator::BuildDollyShotTransform(const FCa
 
 FVector3d FDollyFramingCameraNodeEvaluator::ComputeFramingTranslation(const FCameraPose& CameraPose, TSharedPtr<const FCameraEvaluationContext> EvaluationContext)
 {
-	const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(CameraPose, EvaluationContext);
-	const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(CameraPose, AspectRatio));
-
 	// Get the position of the current target in camera space.
 	const FTransform3d InverseCameraTransform = CameraPose.GetTransform().Inverse();
 	const FVector3d TargetInCameraSpace = InverseCameraTransform.TransformPosition(State.WorldTarget);
 
-	// Get the horizontal and vertical angles, relative to the aiming vector, for the desired 
-	// target position.
-	const FVector2d DesiredAngles = FCameraFramingMath::GetTargetAngles(Desired.ScreenTarget, FOVs);
+	// Get the direction, relative to the aiming vector, for the desired target position.
+	const FMatrix LocalViewProjectionMatrix = FCameraPoseMath::BuildLocalViewProjectionMatrix(CameraPose, EvaluationContext);
+	const FMatrix InvLocalViewProjectionMatrix = LocalViewProjectionMatrix.InverseFast();
+	const FRay3d DesiredAim = FCameraPoseMath::UnprojectFromScreen(InvLocalViewProjectionMatrix, Desired.ScreenTarget);
 
-	// The position of the desired target in camera space can be deduced from the angle and the current
-	// target position. We know that:
+	// We want the distance to the desired target to be so that it sits on the same Y/Z plane as the current target.
+	// That is, we want to only move laterally and vertically. This means that:
 	//
-	// 1) The current and desired targets will be on a plane parallel to the focal plane (i.e. on a plane
-	//    orthogonal to the aiming vector). This is because our dolly shot only translate laterally and
-	//    vertically -- it doesn't translate forwards/backwards.
+	//     DesiredAim.Direction . LocalUnitX = TargetInCameraSpace.X
+	// 
+	// Since DesiredAim's direction vector is a unit vector, we can therefore do:
 	//
-	// 2) We can do basic trigonometry for each axis (left/right and up/down, a.k.a. Y and Z in camera 
-	//    space). There's a right triangle between the aim vector (up to the targets' distance) and the
-	//    vector from the camera position to the desired target position.
-	//
-	// From (1) we know that the desired target's distance from the focal plane is the same as the
-	// current target's. So the X coordinates (near/far) are the same.
-	//
-	// From (2) we can use the sin() of the horizontal/vertical angles to get the horizontal/vertical
-	// coordinates of the desired target (again, in camera space). We just need to invert the vertical
-	// one because positive Z is up, while positive vertical angle is down (because this was computed
-	// in -1..1 UI screen-space).
-	//
-	const FVector3d DesiredInCameraSpace(
-			TargetInCameraSpace.X,
-			TargetInCameraSpace.X * FMath::Sin(FMath::DegreesToRadians(DesiredAngles.X)),
-			TargetInCameraSpace.X * -FMath::Sin(FMath::DegreesToRadians(DesiredAngles.Y)));
+	const double CosAngle = FVector3d::DotProduct(DesiredAim.Direction, FVector3d::UnitX());
+	ensure(CosAngle != 0.0);
+	const double DesiredAimLength = (CosAngle != 0) ? TargetInCameraSpace.X / CosAngle : TargetInCameraSpace.X;
+	const FVector3d DesiredInCameraSpace = DesiredAim.Direction * DesiredAimLength;
 
 	// Now we can figure out the desired camera-space offset that the dolly needs to move by. Remember
 	// that, for instance, moving the camera to the *right* will result in the target moving to the

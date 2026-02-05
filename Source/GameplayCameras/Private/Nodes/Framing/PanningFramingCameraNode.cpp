@@ -9,7 +9,7 @@
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
 #include "GameplayCameras.h"
-#include "Math/CameraFramingMath.h"
+#include "Math/CameraAimingMath.h"
 #include "Math/CameraPoseMath.h"
 #include "Math/InverseRotationMatrix.h"
 
@@ -98,21 +98,17 @@ void FPanningFramingCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 	{
 		FCameraPose LastShotPose(OutResult.CameraPose);
 		LastShotPose.SetTransform(LastShotTransform);
+		const FMatrix LocalViewProjectionMatrix = FCameraPoseMath::BuildLocalViewProjectionMatrix(LastShotPose, Params.EvaluationContext);
+		const FMatrix InvLocalViewProjectionMatrix = LocalViewProjectionMatrix.InverseFast();
 
-		const float AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(LastShotPose, Params.EvaluationContext);
-		const FCameraFieldsOfView FOVs(FCameraPoseMath::GetEffectiveFieldsOfView(LastShotPose, AspectRatio));
+		// Get the direction for where the target is currently at, and where we want it to be at.
+		const FRay3d TargetAim = FCameraPoseMath::UnprojectFromScreen(InvLocalViewProjectionMatrix, State.ScreenTarget);
+		const FRay3d DesiredAim = FCameraPoseMath::UnprojectFromScreen(InvLocalViewProjectionMatrix, Desired.ScreenTarget);
 
-		// Get yaw/pitch angles for where the target is currently at, and where we want it to be at.
-		const FVector2d TargetAngles = FCameraFramingMath::GetTargetAngles(State.ScreenTarget, FOVs);
-		const FVector2d DesiredAngles = FCameraFramingMath::GetTargetAngles(Desired.ScreenTarget, FOVs);
-
-		// We need to reverse pitch because rotators treat positive pitch as up, whereas we were 
-		// treating that as negative (due to the -1..1 normalized space of our math).
-		const FRotator3d PanningCorrection(
-				(DesiredAngles.Y - TargetAngles.Y),	// Pitch
-				(TargetAngles.X - DesiredAngles.X),	// Yaw
-				0);									// Roll
-		if (ensure(!PanningCorrection.ContainsNaN()))
+		// Compute the yaw/pitch correction needed. Remember that if we want the target to move left on the screen, we
+		// need to turn to the right. This is why we compute the Desired->Current angle, and not the other way around.
+		const FRotator3d PanningCorrection = FCameraAimingMath::GetNoRollRotationBetween(DesiredAim.Direction, TargetAim.Direction);
+		if (ensure(!PanningCorrection.ContainsNaN() && PanningCorrection.Roll == 0.0))
 		{
 			PanningRotation += PanningCorrection;
 		}

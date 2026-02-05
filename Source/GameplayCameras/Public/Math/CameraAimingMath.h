@@ -42,8 +42,21 @@ public:
 	/** Computes the rotation correction needed for the given camera to be aimed at the given target.*/
 	static bool ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection);
 
+	/**
+	 * As per the other ComputeTwoBonesCorrection function, but take into account an additional angular offset for the
+	 * camera's line of sight. These angles should be expressed in the pivot's coordinate system.
+	 */
+	static bool ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FRotator3d& AimOffsetAngles, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection);
+	static bool ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FVector3d& CustomAim, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection);
+
 	/** Computes the difference between two aim vectors. */
-	static double GetErrorAngle(const FVector3d& AimA, const FVector3d& AimB);
+	static double GetAngleBetween(const FVector3d& AimA, const FVector3d& AimB);
+
+	/** Computes the rotation between two aim vectors. */
+	static FRotator3d GetRotationBetween(const FVector3d& AimA, const FVector3d& AimB);
+
+	/** Computes the rotation between two aim vectors, using only yaw and pitch. */
+	static FRotator3d GetNoRollRotationBetween(const FVector3d& AimA, const FVector3d& AimB);
 
 private:
 

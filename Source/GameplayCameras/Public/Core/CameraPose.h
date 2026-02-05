@@ -165,6 +165,12 @@ public:
 	/** Gets the aspect ratio of the camera sensor. */
 	UE_API double GetSensorAspectRatio() const;
 
+	/** Gets the aspect ratio axis constraint if overriden, otherwise a default one. */
+	UE_API EAspectRatioAxisConstraint GetEffectiveAspectRatioAxisConstraint() const;
+
+	/** Gets the aspect ratio axis constraint if overriden, otherwise the provided default one. */
+	UE_API EAspectRatioAxisConstraint GetEffectiveAspectRatioAxisConstraint(EAspectRatioAxisConstraint DefaultAspectRatioAxisConstraint) const;
+
 	/** Gets the horizontal projection offset. */
 	UE_API double GetHorizontalProjectionOffset() const;
 

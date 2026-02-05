@@ -78,6 +78,57 @@ bool FCameraAimingMath::ComputeTwoBonesCorrection(const FCameraPose& CurrentPose
 	return true;
 }
 
+bool FCameraAimingMath::ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FRotator3d& AimOffsetAngles, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection)
+{
+	// See above for the math. The only difference is that we offset CameraAim by AimOffsetAngles.
+	const FVector3d PivotToDesiredTarget = (DesiredTarget - PivotLocation);
+	const double SphereRadius = PivotToDesiredTarget.Length();
+
+	const FVector3d CameraLocation = CurrentPose.GetLocation();
+	const FRotator3d CameraRotation = CurrentPose.GetRotation();
+	const FVector3d OffsetCameraAim = CameraRotation.RotateVector(AimOffsetAngles.RotateVector(FVector3d::ForwardVector));
+
+	double DistanceToX = 0.0;
+	const bool bGotX = RaySphereIntersectExit(CameraLocation, OffsetCameraAim, PivotLocation, SphereRadius, DistanceToX);
+	if (!bGotX)
+	{
+		return false;
+	}
+
+	const FVector3d X = CameraLocation + OffsetCameraAim * DistanceToX;
+	const FVector3d PX = (X - PivotLocation);
+	const FVector3d PD = (DesiredTarget - PivotLocation);
+	const FRotator3d RotPX = PX.ToOrientationRotator();
+	const FRotator3d RotPD = PD.ToOrientationRotator();
+	OutCorrection = RotPD - RotPX;
+	return true;
+}
+
+bool FCameraAimingMath::ComputeTwoBonesCorrection(const FCameraPose& CurrentPose, const FVector3d& CustomAim, const FVector3d& PivotLocation, const FVector3d& DesiredTarget, FRotator3d& OutCorrection)
+{
+	// See above for the math. The only difference is that we use a custom camera aim vector.
+	const FVector3d PivotToDesiredTarget = (DesiredTarget - PivotLocation);
+	const double SphereRadius = PivotToDesiredTarget.Length();
+
+	const FVector3d CameraLocation = CurrentPose.GetLocation();
+	const FVector3d NormalizedCustomAim = CustomAim.GetUnsafeNormal();
+
+	double DistanceToX = 0.0;
+	const bool bGotX = RaySphereIntersectExit(CameraLocation, NormalizedCustomAim, PivotLocation, SphereRadius, DistanceToX);
+	if (!bGotX)
+	{
+		return false;
+	}
+
+	const FVector3d X = CameraLocation + NormalizedCustomAim * DistanceToX;
+	const FVector3d PX = (X - PivotLocation);
+	const FVector3d PD = (DesiredTarget - PivotLocation);
+	const FRotator3d RotPX = PX.ToOrientationRotator();
+	const FRotator3d RotPD = PD.ToOrientationRotator();
+	OutCorrection = RotPD - RotPX;
+	return true;
+}
+
 const FCameraRigJoint* FCameraAimingMath::FindPivotJoint(const FCameraNodeEvaluationResult& Result)
 {
 	return FindPivotJoint(Result.CameraRigJoints);
@@ -200,18 +251,32 @@ bool FCameraAimingMath::RaySphereIntersectExit(const FVector3d& RayStart, const 
 	return false;
 }
 
-double FCameraAimingMath::GetErrorAngle(const FVector3d& AimA, const FVector3d& AimB)
+double FCameraAimingMath::GetAngleBetween(const FVector3d& AimA, const FVector3d& AimB)
 {
-	const double MultipliedLengths = AimA.Length() * AimB.Length();
-	if (MultipliedLengths > UE_SMALL_NUMBER)
+	const FQuat4d Quat = FQuat4d::FindBetweenVectors(AimA, AimB);
+	return Quat.GetAngle();
+}
+
+FRotator3d FCameraAimingMath::GetRotationBetween(const FVector3d& AimA, const FVector3d& AimB)
+{
+	const FQuat4d Quat = FQuat4d::FindBetweenVectors(AimA, AimB);
+	return Quat.Rotator();
+}
+
+FRotator3d FCameraAimingMath::GetNoRollRotationBetween(const FVector3d& AimA, const FVector3d& AimB)
+{
+	const double SqLenA = AimA.SquaredLength();
+	const double SqLenB = AimB.SquaredLength();
+	if (SqLenA > UE_DOUBLE_SMALL_NUMBER && SqLenB > UE_DOUBLE_SMALL_NUMBER)
 	{
-		const double OrthLength = AimA.Cross(AimB).Length();
-		const double ErrorAngle = FMath::Asin(OrthLength / MultipliedLengths);
-		return FMath::RadiansToDegrees(ErrorAngle);
+		const FRotator3d RotationA = AimA.ToOrientationRotator();
+		const FRotator3d RotationB = AimB.ToOrientationRotator();
+		ensure(RotationA.Roll == 0.0 && RotationB.Roll == 0.0);
+		return (RotationB - RotationA);
 	}
 	else
 	{
-		return 0.0;
+		return FRotator3d::ZeroRotator;
 	}
 }
 

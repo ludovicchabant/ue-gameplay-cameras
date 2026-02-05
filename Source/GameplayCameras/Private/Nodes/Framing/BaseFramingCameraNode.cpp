@@ -181,9 +181,6 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 	// Get screen-space coordinates of the ideal framing point. These are in 0..1 UI space.
 	State.IdealTarget = Readers.IdealFramingLocation.Get(OutResult.VariableTable);
 
-	// Cache the aspect ratio.
-	State.AspectRatio = FCameraPoseMath::GetEffectiveAspectRatio(OutResult.CameraPose, Params.EvaluationContext);
-
 	// Update the damping factors and reengage/disengage times in case they are driven by a variable.
 	State.ReframeDampingFactor = Readers.ReframeDampingFactor.Get(OutResult.VariableTable);
 	State.LowReframeDampingFactor = Readers.LowReframeDampingFactor.Get(OutResult.VariableTable);
@@ -208,17 +205,18 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 	// shot transform.
 	FCameraPose TempPose(OutResult.CameraPose);
 	TempPose.SetTransform(LastFraming);
+	const FMatrix TempPoseViewProjectionMatrix = FCameraPoseMath::BuildViewProjectionMatrix(TempPose, Params.EvaluationContext);
 
 	// Process our targets and figure out the weighted average we should be aiming at.
 	FVector2d NewScreenTarget;
 	FVector3d OldWorldTarget = State.WorldTarget;
-	ComputeFinalTargetInfo(TempPose, State.WorldTarget, NewScreenTarget, State.ScreenTargetBounds);
+	ComputeFinalTargetInfo(TempPose, TempPoseViewProjectionMatrix, State.WorldTarget, NewScreenTarget, State.ScreenTargetBounds);
 
 	// See if we need to extrapolate where the target will be in "anticipation time" seconds.
 	State.ScreenTarget = ComputeAnticipatedScreenTarget(Params.DeltaTime, State.ScreenTarget, NewScreenTarget);
 
 	// Compute how fast the target has moved over the last frame.
-	State.TargetScreenSpaceSpeed = ComputeScreenTargetSpeed(Params.DeltaTime, TempPose, OldWorldTarget, State.WorldTarget);
+	State.TargetScreenSpaceSpeed = ComputeScreenTargetSpeed(Params.DeltaTime, TempPoseViewProjectionMatrix, OldWorldTarget, State.WorldTarget);
 
 	// Compute the effective dead-zone, which is the subset of the dead-zone that encompasses as much
 	// of the target's bound as possible.
@@ -361,7 +359,7 @@ void FBaseFramingCameraNodeEvaluator::ComputeCurrentState(const FCameraNodeEvalu
 	}
 }
 
-bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraPose& CameraPose, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds)
+bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraPose& CameraPose, const FMatrix& ViewProjectionMatrix, FVector3d& OutWorldTarget, FVector2d& OutScreenTarget, FFramingZone& OutScreenBounds)
 {
 	TConstArrayView<FCameraActorComputedTargetInfo> TargetInfos(WorldTargets.TargetInfos);
 
@@ -392,11 +390,11 @@ bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraPose& 
 		FComputedTargetScreenInfo& TargetScreenInfo(TargetScreenInfos[Index]);
 
 		const FVector3d& WorldTarget = TargetInfo.Transform.GetLocation();
-		const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectWorldToScreen(CameraPose, State.AspectRatio, WorldTarget, true);
+		const TOptional<FVector2d> ScreenTarget = FCameraPoseMath::ProjectToScreen(ViewProjectionMatrix, WorldTarget, true);
 
 		TargetScreenInfo.WorldTarget = WorldTarget;
 		TargetScreenInfo.ScreenTarget = ScreenTarget.Get(FVector2d(0.5, 0.5));
-		TargetScreenInfo.ScreenBounds = ComputeScreenTargetBounds(CameraPose, State.AspectRatio, TargetInfo.Transform, TargetInfo.LocalBounds);
+		TargetScreenInfo.ScreenBounds = ComputeScreenTargetBounds(ViewProjectionMatrix, TargetInfo.Transform, TargetInfo.LocalBounds);
 		TargetScreenInfo.WorldTargetDistance = FVector3d::Distance(CameraPose.GetLocation(), WorldTarget);
 		TargetScreenInfo.NormalizedWeight = TargetInfo.NormalizedWeight;
 
@@ -429,7 +427,8 @@ bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraPose& 
 
 	// Unproject the final screen target, and use the weigted average distance to get, roughly, what
 	// world-space target we might be looking at.
-	const FVector3d FinalWorldTarget = FCameraPoseMath::UnprojectScreenToWorld(CameraPose, State.AspectRatio, FinalScreenTarget, FinalWorldTargetDistance);
+	const FMatrix InvViewProjectionMatrix = ViewProjectionMatrix.InverseFast();
+	const FVector3d FinalWorldTarget = FCameraPoseMath::UnprojectFromScreen(InvViewProjectionMatrix, FinalScreenTarget, FinalWorldTargetDistance);
 
 	OutScreenTarget = FinalScreenTarget;
 	OutScreenBounds = FinalScreenBounds;
@@ -438,7 +437,7 @@ bool FBaseFramingCameraNodeEvaluator::ComputeFinalTargetInfo(const FCameraPose& 
 	return true;
 }
 
-float FBaseFramingCameraNodeEvaluator::ComputeScreenTargetSpeed(float DeltaTime, const FCameraPose& CameraPose, const FVector3d& OldWorldTarget, const FVector3d& NewWorldTarget)
+float FBaseFramingCameraNodeEvaluator::ComputeScreenTargetSpeed(float DeltaTime, const FMatrix& ViewProjectionMatrix, const FVector3d& OldWorldTarget, const FVector3d& NewWorldTarget)
 {
 	if (DeltaTime <= 0.f)
 	{
@@ -446,8 +445,8 @@ float FBaseFramingCameraNodeEvaluator::ComputeScreenTargetSpeed(float DeltaTime,
 		return State.TargetScreenSpaceSpeed;
 	}
 
-	TOptional<FVector2d> OldScreenTarget = FCameraPoseMath::ProjectWorldToScreen(CameraPose, State.AspectRatio, OldWorldTarget, true);
-	TOptional<FVector2d> NewScreenTarget = FCameraPoseMath::ProjectWorldToScreen(CameraPose, State.AspectRatio, NewWorldTarget, true);
+	TOptional<FVector2d> OldScreenTarget = FCameraPoseMath::ProjectToScreen(ViewProjectionMatrix, OldWorldTarget, true);
+	TOptional<FVector2d> NewScreenTarget = FCameraPoseMath::ProjectToScreen(ViewProjectionMatrix, NewWorldTarget, true);
 	if (!OldScreenTarget.IsSet() || !NewScreenTarget.IsSet())
 	{
 		return State.TargetScreenSpaceSpeed;
@@ -520,7 +519,7 @@ FFramingZone FBaseFramingCameraNodeEvaluator::ComputeEffectiveDeadZone()
 	return EffectiveDeadZone;
 }
 
-FFramingZone FBaseFramingCameraNodeEvaluator::ComputeScreenTargetBounds(const FCameraPose& CameraPose, float AspectRatio, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds)
+FFramingZone FBaseFramingCameraNodeEvaluator::ComputeScreenTargetBounds(const FMatrix& ViewProjectionMatrix, const FTransform3d& TargetTransform, const FBoxSphereBounds3d& LocalBounds)
 {
 	const FVector3d BoxExtent = LocalBounds.BoxExtent;
 	FVector3d BoxCorners[8];
@@ -536,7 +535,7 @@ FFramingZone FBaseFramingCameraNodeEvaluator::ComputeScreenTargetBounds(const FC
 	FVector2d ScreenBoxCorners[8];
 	for (int32 Index = 0; Index < 8; ++Index)
 	{
-		TOptional<FVector2d> ScreenCorner = FCameraPoseMath::ProjectWorldToScreen(CameraPose, AspectRatio, BoxCorners[Index], true);
+		TOptional<FVector2d> ScreenCorner = FCameraPoseMath::ProjectToScreen(ViewProjectionMatrix, BoxCorners[Index], true);
 		ScreenBoxCorners[Index] = ScreenCorner.GetValue();
 	}
 
@@ -779,6 +778,7 @@ void FBaseFramingCameraNodeEvaluator::FState::Serialize(FArchive& Ar)
 	Ar << DisengageTime;
 	Ar << ToggleEngageTimeLeft;
 	Ar << ToggleEngageAlpha;
+	Ar << TargetMovementAnticipationTime;
 	Ar << DeadZone;
 	Ar << SoftZone;
 
@@ -788,7 +788,9 @@ void FBaseFramingCameraNodeEvaluator::FState::Serialize(FArchive& Ar)
 	Ar << EffectiveDeadZone;
 
 	Ar << TargetFramingState;
+	Ar << TargetScreenSpaceSpeed;
 	Ar << bIsReframingTarget;
+
 	Ar << ReframeDamper;
 }
 
