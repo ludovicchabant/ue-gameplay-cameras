@@ -37,11 +37,15 @@ public:
 
 	/** The tolerance within which we can consider the aiming to be locked on target. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Common, meta=(ExposeOnSpawn=true))
-	float LockOnAngleTolerance = 0.01f;
+	float LockOnAngleTolerance = 0.05f;
 
 	/** The lock-on policy. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Common, meta=(ExposeOnSpawn=true))
 	EAimAtCameraActionLockOnPolicy LockOnPolicy = EAimAtCameraActionLockOnPolicy::Disengage;
+
+	/** Where to aim the target in screen-space. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Aiming, meta=(ExposeOnSpawn=true))
+	FVector2D TargetFraming = { 0.5, 0.5 };
 
 protected:
 
