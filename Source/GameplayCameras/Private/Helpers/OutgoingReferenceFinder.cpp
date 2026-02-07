@@ -25,6 +25,9 @@ FOutgoingReferenceFinder::FOutgoingReferenceFinder(UObject* InRootObject, TArray
 
 void FOutgoingReferenceFinder::Initialize(UObject* InRootObject)
 {
+	// Skip packages that correspond to C++ modules and other compiled things.
+	ExcludePackageFlags |= PKG_CompiledIn;
+
 	RootObject = InRootObject;
 	PackageScope = InRootObject->GetOutermost();
 
@@ -36,13 +39,10 @@ void FOutgoingReferenceFinder::Initialize(UObject* InRootObject)
 	ArShouldSkipBulkData = true;
 }
 
-void FOutgoingReferenceFinder::SetMaxDistance(int32 InMaxDistance)
-{
-	MaxDistance = FMath::Clamp(InMaxDistance, 0, 5);
-}
-
 void FOutgoingReferenceFinder::CollectReferences()
 {
+	ValidMaxDistance = FMath::Clamp(MaxDistance, 0, 5);
+
 	ObjectsToVisit.Reset();
 	VisitedObjects.Reset();
 
@@ -54,7 +54,7 @@ void FOutgoingReferenceFinder::CollectReferences()
 		{
 			VisitedObjects.Add(CurObj.Obj);
 
-			SerializeState = { CurObj.Package, CurObj.Distance };
+			SerializeState = { CurObj.Obj, CurObj.Package, CurObj.Distance };
 			CurObj.Obj->Serialize(*this);
 			SerializeState = FSerializeState();
 		}
@@ -93,8 +93,11 @@ FArchive& FOutgoingReferenceFinder::operator<<(UObject*& ObjRef)
 			// has a lower distance. But that's OK. Either we queue a visit of ObjRef right now, and we'll ignore the
 			// duplicate with the shorter distance, or the current distance is over the threshold and we skip visiting
 			// it now, but we'll visit it when we encounter it again with a distance under the threshold.
-			const int32 ObjRefDistance = SerializeState.CurrentDistance + (ObjRefPackage == SerializeState.CurrentPackage ? 0 : 1);
-			if (ObjRefDistance <= MaxDistance)
+			const int32 AddOneDistance = (ObjRefPackage == SerializeState.CurrentPackage ? 0 : 1);
+			const int32 ObjRefDistance = SerializeState.CurrentDistance + AddOneDistance;
+			const bool bExcludePackage = ((ObjRefPackage->GetPackageFlags() & ExcludePackageFlags) != 0);
+			const bool bExcludeObject = IsIgnoredClass(ObjClass);
+			if (ObjRefDistance <= ValidMaxDistance && !bExcludePackage && !bExcludeObject)
 			{
 				ObjectsToVisit.Add({ ObjRef, ObjRefPackage, ObjRefDistance });
 			}
@@ -114,6 +117,15 @@ bool FOutgoingReferenceFinder::MatchesAnyTargetClass(UClass* InObjClass) const
 	}
 
 	return false;
+}
+
+bool FOutgoingReferenceFinder::IsIgnoredClass(UClass* InObjClass) const
+{
+	return ExcludeClasses.ContainsByPredicate(
+			[InObjClass](UClass* ExcludeClass)
+			{
+				return ExcludeClass ? InObjClass->IsChildOf(ExcludeClass) : false;
+			});
 }
 
 }  // namespace UE::Cameras

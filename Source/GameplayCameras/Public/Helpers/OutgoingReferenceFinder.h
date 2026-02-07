@@ -7,6 +7,7 @@
 #include "Containers/Set.h"
 #include "CoreTypes.h"
 #include "Serialization/ArchiveUObject.h"
+#include "UObject/Class.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
 
@@ -21,23 +22,32 @@ class FOutgoingReferenceFinder : public FArchiveUObject
 {
 public:
 
-	/** Creates a new instance of the reference finder. */
-	UE_API FOutgoingReferenceFinder(UObject* InRootObject, UClass* InReferencedObjectClass);
-
-	/** Creates a new instance of the reference finder. */
-	UE_API FOutgoingReferenceFinder(UObject* InRootObject, TArrayView<UClass*> InReferencedObjectClasses);
-
 	/**
-	 * Sets the maximum distance (in number of packages) to search for references.
+	 * The maximum distance (in number of packages) to search for references.
 	 * Zero means only search the root object package.
 	 * One means search directly referenced packages.
 	 * Higher distances exponentially grow the number of objects to search, so the maximum
 	 * value settable is 5.
 	 */
-	UE_API void SetMaxDistance(int32 InMaxDistance);
+	int32 MaxDistance = 1;
 
-	/** Gets the maximum distance (in number of packages) to search for references. */
-	int32 GetMaxDistance() const { return MaxDistance; }
+	/**
+	 * EPackageFlags that determine what packages to skip.
+	 */
+	uint32 ExcludePackageFlags = 0;
+
+	/**
+	 * Classes to not inspect for outgoing references.
+	 */
+	TArray<UClass*> ExcludeClasses;
+
+public:
+
+	/** Creates a new instance of the reference finder. */
+	UE_API FOutgoingReferenceFinder(UObject* InRootObject, UClass* InReferencedObjectClass);
+
+	/** Creates a new instance of the reference finder. */
+	UE_API FOutgoingReferenceFinder(UObject* InRootObject, TArrayView<UClass*> InReferencedObjectClasses);
 
 	/** Runs the reference finding. */
 	UE_API void CollectReferences();
@@ -56,9 +66,10 @@ protected:
 
 private:
 
-	UE_API void Initialize(UObject* InRootObject);
+	void Initialize(UObject* InRootObject);
 
-	UE_API bool MatchesAnyTargetClass(UClass* InObjClass) const;
+	bool MatchesAnyTargetClass(UClass* InObjClass) const;
+	bool IsIgnoredClass(UClass* InObjClass) const;
 
 private:
 
@@ -71,13 +82,14 @@ private:
 
 	struct FSerializeState
 	{
+		UObject* CurrentObject = nullptr;
 		UPackage* CurrentPackage = nullptr;
 		int32 CurrentDistance = 0;
 	};
 
 	UObject* RootObject;
 	UPackage* PackageScope;
-	int32 MaxDistance = 1;
+	int32 ValidMaxDistance = 1;
 
 	TSet<UClass*> TargetObjectClasses;
 
@@ -91,15 +103,20 @@ private:
 template<typename ObjectClass>
 bool FOutgoingReferenceFinder::GetReferencesOfClass(TArray<ObjectClass*>& OutReferencedObjects) const
 {
-	if (const TSet<UObject*>* ReferencesOfClass = ReferencedObjects.Find(ObjectClass::StaticClass()))
+	bool bHadAny = false;
+	UClass* ObjectClassClass = ObjectClass::StaticClass();
+	for (const auto& Pair : ReferencedObjects)
 	{
-		for (UObject* Obj : (*ReferencesOfClass))
+		if (Pair.Key->IsChildOf(ObjectClassClass))
 		{
-			OutReferencedObjects.Add(CastChecked<ObjectClass>(Obj));
+			bHadAny |= (Pair.Value.Num() > 0);
+			for (UObject* Obj : Pair.Value)
+			{
+				OutReferencedObjects.Add(CastChecked<ObjectClass>(Obj));
+			}
 		}
-		return !ReferencesOfClass->IsEmpty();
 	}
-	return false;
+	return bHadAny;
 }
 
 }  // namespace UE::Cameras

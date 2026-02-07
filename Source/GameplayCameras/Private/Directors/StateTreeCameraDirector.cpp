@@ -251,7 +251,10 @@ void UStateTreeCameraDirector::OnGatherRigUsageInfo(FCameraDirectorRigUsageInfo&
 
 	TArray<UClass*> RefClasses { UCameraRigAsset::StaticClass(), UCameraRigProxyAsset::StaticClass() };
 	FOutgoingReferenceFinder ReferenceFinder(const_cast<UStateTree*>(StateTree), RefClasses);
-	ReferenceFinder.SetMaxDistance(GetDefault<UGameplayCamerasSettings>()->MaxUsageSearchDistance);
+	ReferenceFinder.MaxDistance = GetDefault<UGameplayCamerasSettings>()->MaxUsageSearchDistance;
+	// Find camera rigs and proxies, but don't look at *their* outgoing references, otherwise we might pick rig prefabs,
+	// or rigs referenced in transition conditions.
+	ReferenceFinder.ExcludeClasses = RefClasses;
 	ReferenceFinder.CollectReferences();
 	ReferenceFinder.GetReferencesOfClass<UCameraRigAsset>(UsageInfo.CameraRigs);
 	ReferenceFinder.GetReferencesOfClass<UCameraRigProxyAsset>(UsageInfo.CameraRigProxies);
