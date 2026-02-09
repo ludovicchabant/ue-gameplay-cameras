@@ -92,11 +92,6 @@ private:
 
 	FVector3d TargetLocation;
 	FVector2d TargetFraming = { 0.5, 0.5 };
-	FVector3d TargetFramingAim;
-
-	FCameraPose LastCameraPose;
-	FVector3d LastContextLocation;
-	FVector3d LastPivotLocation;
 
 	bool bIsLockedOn = false;
 
@@ -104,6 +99,7 @@ private:
 	float DebugElapsedTime = 0.f;
 	FRotator3d DebugCorrectionLeft;
 	FRotator3d DebugCurrentCorrection;
+	FVector3d DebugTargetFramingAim;
 	FVector3d DebugCameraLocation;
 	FVector3d DebugCameraAim;
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG

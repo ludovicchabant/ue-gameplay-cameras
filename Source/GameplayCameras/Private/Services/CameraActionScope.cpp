@@ -27,7 +27,6 @@ FCameraActionInstanceID FCameraActionScope::StartAction(const UCameraAction* InC
 			FActionInfo& NewAction = Actions.Emplace_GetRef();
 			NewAction.Evaluator = Evaluator;
 			NewAction.InstanceID = FCameraActionInstanceID(NextActionID++);
-			NewAction.State = EActionState::Uninitialized;
 			return NewAction.InstanceID;
 		}
 	}
@@ -64,16 +63,24 @@ bool FCameraActionScope::StopAction(const FCameraActionInstanceID InInstanceID)
 	if (Index != INDEX_NONE)
 	{
 		FActionInfo& ActionInfo = Actions[Index];
-		if (ActionInfo.State == EActionState::Running)
-		{
-			FCameraActionEvaluatorTeardownParams Params;
-			Params.Scope = SharedThis(this);
-			ActionInfo.Evaluator->Teardown(Params);
-		}
+		StopAction(ActionInfo);
 		Actions.RemoveAt(Index);
 		return true;
 	}
 	return false;
+}
+
+void FCameraActionScope::StopAction(FActionInfo& ActionInfo)
+{
+	// Only teardown the evaluator if it was initialized in the first place.
+	if (ActionInfo.State == EActionState::Running && ActionInfo.Evaluator.IsValid())
+	{
+		FCameraActionEvaluatorTeardownParams Params;
+		Params.Scope = SharedThis(this);
+		ActionInfo.Evaluator->Teardown(Params);
+	}
+	ActionInfo.Evaluator.Reset();
+	ActionInfo.State = EActionState::Finished;
 }
 
 void FCameraActionScope::Initialize(const FCameraRigEvaluationInfo& CameraRigInfo)
@@ -119,6 +126,16 @@ void FCameraActionScope::PreScopeRun(const FCameraNodeEvaluationParams& Params, 
 		FCameraActionEvaluationResult ActionResult(OutResult);
 		if (!PrepareActionForRun(ActionInfo, ActionResult))
 		{
+			StopAction(ActionInfo);
+			It.RemoveCurrent();
+			continue;
+		}
+
+		// Only check for time-out on pre-scope since we don't want to update ElapsedTime twice in a frame.
+		if (HasActionTimedOut(Params.DeltaTime, ActionInfo))
+		{
+			StopAction(ActionInfo);
+			It.RemoveCurrent();
 			continue;
 		}
 
@@ -144,6 +161,8 @@ void FCameraActionScope::PostScopeRun(const FCameraNodeEvaluationParams& Params,
 		FCameraActionEvaluationResult ActionResult(OutResult);
 		if (!PrepareActionForRun(ActionInfo, ActionResult))
 		{
+			StopAction(ActionInfo);
+			It.RemoveCurrent();
 			continue;
 		}
 
@@ -175,6 +194,17 @@ bool FCameraActionScope::PrepareActionForRun(FActionInfo& ActionInfo, FCameraAct
 	}
 
 	return ActionInfo.State == EActionState::Running;
+}
+
+bool FCameraActionScope::HasActionTimedOut(float DeltaTime, FActionInfo& ActionInfo)
+{
+	ActionInfo.ElapsedTime += DeltaTime;
+	const UCameraAction* ActionData = ActionInfo.Evaluator->GetCameraAction();
+	if (ensure(ActionData))
+	{
+		return (ActionData->TimeOut > 0.f && ActionInfo.ElapsedTime >= ActionData->TimeOut);
+	}
+	return true;
 }
 
 void FCameraActionScope::Serialize(const FCameraActionEvaluatorSerializeParams& Params, FArchive& Ar)

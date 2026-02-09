@@ -93,6 +93,8 @@ private:
 	struct FActionInfo;
 
 	bool PrepareActionForRun(FActionInfo& ActionInfo, FCameraActionEvaluationResult& OutResult);
+	bool HasActionTimedOut(float DeltaTime, FActionInfo& ActionInfo);
+	void StopAction(FActionInfo& ActionInfo);
 
 private:
 
@@ -107,6 +109,7 @@ private:
 	{
 		TSharedPtr<FCameraActionEvaluator> Evaluator;
 		FCameraActionInstanceID InstanceID;
+		float ElapsedTime = 0.f;
 		EActionState State = EActionState::Uninitialized;
 	};
 

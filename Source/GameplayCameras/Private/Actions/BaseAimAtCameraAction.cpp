@@ -141,6 +141,7 @@ bool FBaseAimAtCameraActionEvaluator::ComputeDesiredCorrection(const FCameraActi
 
 	static const FVector2d CenterFraming(0.5, 0.5);
 	const bool bNeedsTargetFraming = (TargetFraming != CenterFraming);
+	FVector3d TargetFramingAim = ScratchResult.CameraPose.GetAimDir();
 	if (bNeedsTargetFraming)
 	{
 		TSharedPtr<const FCameraEvaluationContext> EvaluationContext = Params.Scope->GetEvaluationContext();
@@ -148,12 +149,9 @@ bool FBaseAimAtCameraActionEvaluator::ComputeDesiredCorrection(const FCameraActi
 				ScratchResult.CameraPose, EvaluationContext, TargetFraming);
 		TargetFramingAim = TargetRay.Direction;
 	}
-	else
-	{
-		TargetFramingAim = ScratchResult.CameraPose.GetAimDir();
-	}
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
+	DebugTargetFramingAim = TargetFramingAim;
 	DebugCameraLocation = ScratchResult.CameraPose.GetLocation();
 	DebugCameraAim = ScratchResult.CameraPose.GetAimDir();
 #endif
@@ -308,13 +306,11 @@ void FBaseAimAtCameraActionEvaluator::OnSerialize(const FCameraActionEvaluatorSe
 		Interpolator->Serialize(InterpolatorParams, Ar);
 	}
 
-	Ar << TargetLocation;
-
-	LastCameraPose.SerializeWithFlags(Ar);
-	Ar << LastContextLocation;
-	Ar << LastPivotLocation;
-
 	Ar << bIsLockedOn;
+
+	// Other fields don't need to be serialized since they are either recomputed on action clone and then never change
+	// (e.g. ChildHierarchy), or recomputed every frame (e.g. TargetLocation, TargetFraming, and the stuff for running
+	// the temporary IK evaluation).
 }
 
 #if UE_GAMEPLAY_CAMERAS_DEBUG
@@ -337,7 +333,7 @@ void FBaseAimAtCameraActionEvaluator::OnBuildDebugBlocks(const FCameraDebugBlock
 	DebugBlock.CorrectionLeft = DebugCorrectionLeft;
 	DebugBlock.CurrentCorrection = DebugCurrentCorrection;
 	DebugBlock.TargetFraming = TargetFraming;
-	DebugBlock.TargetFramingAim = TargetFramingAim;
+	DebugBlock.TargetFramingAim = DebugTargetFramingAim;
 	DebugBlock.CameraLocation = DebugCameraLocation;
 	DebugBlock.CameraAim = DebugCameraAim;
 	DebugBlock.bIsLockedOn = bIsLockedOn;

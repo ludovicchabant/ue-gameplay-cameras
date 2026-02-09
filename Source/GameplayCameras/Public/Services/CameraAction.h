@@ -33,6 +33,13 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Common, meta=(ExposeOnSpawn=true))
 	bool bPropagateToNewCameraRigs = false;
+
+	/**
+	 * The time, in seconds, after which the action should be automatically stopped. Zero or negative time means that
+	 * this action never times out (it either completes on its own, or gets stopped by the user).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Common, meta=(ExposeOnSpawn=true))
+	float TimeOut = 0.f;
 	
 public:
 
