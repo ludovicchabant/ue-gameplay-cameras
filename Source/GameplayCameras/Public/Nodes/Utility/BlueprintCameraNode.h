@@ -200,6 +200,10 @@ private:
 	UPROPERTY()
 	FCustomCameraNodeParameters CameraNodeEvaluatorOverrides;
 
+	/** Whether this camera node should run in the editor. */
+	UPROPERTY(EditAnywhere, Category=Common)
+	bool bRunInEditor = false;
+
 	// Deprecated.
 	
 	UPROPERTY()

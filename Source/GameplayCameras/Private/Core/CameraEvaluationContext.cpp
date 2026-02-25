@@ -205,25 +205,48 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 
 void FCameraEvaluationContext::AutoCreateEditorPreviewDirectorEvaluator(const FCameraEvaluationContextActivateParams& Params)
 {
-	if (DirectorEvaluator == nullptr &&
-			ensure(Params.Evaluator) && 
-			Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	// If a sub-class already created an evaluator, just use that.
+	if (DirectorEvaluator)
 	{
-		FCameraDirectorRigUsageInfo UsageInfo;
-
-		if (CameraAsset && CameraAsset->GetCameraDirector())
-		{
-			UCameraDirector* CameraDirector = CameraAsset->GetCameraDirector();
-			CameraDirector->GatherRigUsageInfo(UsageInfo);
-		}
-
-		FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
-		DirectorEvaluator = DirectorBuilder.BuildEvaluator<FEditorPreviewCameraDirectorEvaluator>(UsageInfo.CameraRigs);
-
-		FCameraDirectorInitializeParams InitParams;
-		InitParams.OwnerContext = SharedThis(this);
-		DirectorEvaluator->Initialize(InitParams);
+		return;
 	}
+
+	// If we're not meant for an editor preview, bail out.
+	if (!ensure(Params.Evaluator))
+	{
+		return;
+	}
+	if (Params.Evaluator->GetRole() != ECameraSystemEvaluatorRole::EditorPreview)
+	{
+		return;
+	}
+
+	// Find the camera director to use. If it is OK to run in the editor, bail out and let AutoCreateDirectorEvaluator
+	// create it.
+	UCameraDirector* CameraDirector = nullptr;
+	if (CameraAsset && CameraAsset->GetCameraDirector())
+	{
+		CameraDirector = CameraAsset->GetCameraDirector();
+	}
+	
+	if (CameraDirector && CameraDirector->bRunInEditor)
+	{
+		return;
+	}
+
+	// Create a simple preview director evaluator that just lets the user switch between the known rigs.
+	FCameraDirectorRigUsageInfo UsageInfo;
+	if (CameraDirector)
+	{
+		CameraDirector->GatherRigUsageInfo(UsageInfo);
+	}
+
+	FCameraDirectorEvaluatorBuilder DirectorBuilder(DirectorEvaluatorStorage);
+	DirectorEvaluator = DirectorBuilder.BuildEvaluator<FEditorPreviewCameraDirectorEvaluator>(UsageInfo.CameraRigs);
+
+	FCameraDirectorInitializeParams InitParams;
+	InitParams.OwnerContext = SharedThis(this);
+	DirectorEvaluator->Initialize(InitParams);
 }
 
 void FCameraEvaluationContext::SetEditorPreviewCameraRigIndex(int32 Index)

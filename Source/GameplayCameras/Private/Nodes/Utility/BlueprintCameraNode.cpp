@@ -73,7 +73,7 @@ void FBlueprintCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 	}
 
 #if WITH_EDITOR
-	if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
+	if (!BlueprintNode->bRunInEditor && Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::EditorPreview)
 	{
 		return;
 	}

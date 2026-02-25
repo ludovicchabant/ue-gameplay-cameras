@@ -102,6 +102,12 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evaluation")
 	FCameraRigProxyRedirectTable CameraRigProxyRedirectTable;
 
+	/**
+	 * Whether this camera director should run in the editor. 
+	 */
+	UPROPERTY(EditAnywhere, Category="Evaluation");
+	bool bRunInEditor = false;
+
 private:
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
