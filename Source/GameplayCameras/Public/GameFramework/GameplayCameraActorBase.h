@@ -24,7 +24,7 @@ class AGameplayCameraActorBase : public AActor
 
 public:
 
-	AGameplayCameraActorBase(const FObjectInitializer& ObjectInit);
+	GAMEPLAYCAMERAS_API AGameplayCameraActorBase(const FObjectInitializer& ObjectInit);
 
 public:
 
