@@ -53,6 +53,7 @@ private:
 	TSharedPtr<FCameraSystemRewindDebuggerTrackTimelineData> TimelineData;
 };
 
+#if WITH_ENGINE
 /**
  * Factory class that creates the rewind debugger track for the camera system evaluation trace.
  */
@@ -69,6 +70,7 @@ protected:
 	virtual TSharedPtr<RewindDebugger::FRewindDebuggerTrack> CreateTrackInternal(uint64 InObjectId) const override;
 #endif
 };
+#endif // WITH_ENGINE
 
 }  // namespace UE::Cameras
 

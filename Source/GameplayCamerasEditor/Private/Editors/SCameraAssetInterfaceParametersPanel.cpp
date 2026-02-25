@@ -497,7 +497,7 @@ void SCameraAssetInterfaceParametersPanel::Construct(const FArguments& Args, FCa
 					SNew(SButton)
 					.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 					.ContentPadding(FMargin(1, 0))
-					.ToolTipText(LOCTEXT("AddParameterToolTip", "Removes the selected parameter(s)"))
+					.ToolTipText(LOCTEXT("RemoveParameterToolTip", "Removes the selected parameter(s)"))
 					.OnClicked(this, &SCameraAssetInterfaceParametersPanel::OnDeleteSelectedInterfaceParameter)
 					[
 						SNew(SImage)

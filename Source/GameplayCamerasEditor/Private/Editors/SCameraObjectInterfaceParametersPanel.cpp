@@ -507,7 +507,7 @@ void SCameraObjectInterfaceParametersPanel::Construct(const FArguments& Args, FC
 						SNew(SButton)
 						.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 						.ContentPadding(FMargin(1, 0))
-						.ToolTipText(LOCTEXT("AddBlendableToolTip", "Removes the selected blendable parameter(s)"))
+						.ToolTipText(LOCTEXT("RemoveBlendableToolTip", "Removes the selected blendable parameter(s)"))
 						.OnClicked(this, &SCameraObjectInterfaceParametersPanel::OnDeleteSelectedBlendableParameter)
 						[
 							SNew(SImage)

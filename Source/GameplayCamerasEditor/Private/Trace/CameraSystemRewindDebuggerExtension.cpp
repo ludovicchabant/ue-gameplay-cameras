@@ -13,6 +13,7 @@
 #include "Modules/ModuleManager.h"
 #include "SLevelViewport.h"
 #include "Trace/CameraSystemTraceProvider.h"
+#include "TraceServices/Model/Frames.h"
 
 #if UE_GAMEPLAY_CAMERAS_TRACE
 

@@ -152,6 +152,11 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(LensFlareBokehSize);
 		UE_DRAW_PP(LensFlareThreshold);
 		UE_DRAW_PP(VignetteIntensity);
+		UE_DRAW_PP(VignetteType);
+		UE_DRAW_PP(VignetteCenter);
+		UE_DRAW_PP(VignetteColor);
+		UE_DRAW_PP(VignetteSize);
+		UE_DRAW_PP(VignetteSoftness);
 		UE_DRAW_PP(Sharpen);
 		UE_DRAW_PP(FilmGrainIntensity);
 		UE_DRAW_PP(FilmGrainIntensityShadows);

@@ -117,6 +117,12 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(LensFlareBokehSize);
 		UE_SET_PP(LensFlareThreshold);
 		UE_SET_PP(VignetteIntensity);
+		UE_SET_PP(VignetteType);
+		UE_SET_PP(VignetteCenter);
+		UE_SET_PP(VignetteColor);
+		UE_SET_PP(VignetteSize);
+		UE_SET_PP(VignetteSoftness);
+		UE_SET_PP(VignetteTexture);
 		UE_SET_PP(Sharpen);
 		UE_SET_PP(FilmGrainIntensity);
 		UE_SET_PP(FilmGrainIntensityShadows);
@@ -401,6 +407,12 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 		UE_LERP_PP(LensFlareBokehSize);
 		UE_LERP_PP(LensFlareThreshold);
 		UE_LERP_PP(VignetteIntensity);
+		UE_SET_PP(VignetteType);
+		UE_LERP_PP(VignetteCenter);
+		UE_LERP_PP(VignetteColor);
+		UE_LERP_PP(VignetteSize);
+		UE_LERP_PP(VignetteSoftness);
+		UE_SET_PP(VignetteTexture);
 		UE_LERP_PP(Sharpen);
 		UE_LERP_PP(FilmGrainIntensity);
 		UE_LERP_PP(FilmGrainIntensityShadows);

@@ -167,7 +167,7 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 	// We need our evaluation context to run anything.
 	if (!ensureMsgf(
 				EvaluationContext.IsValid(),
-				TEXT("Can't activate Gameplay Camera component '{0}.{1}': failed to create evaluation context!"),
+				TEXT("Can't activate Gameplay Camera component '%s.%s': failed to create evaluation context!"),
 				*GetNameSafe(GetOwner()), *GetNameSafe(this)))
 	{
 		return false;
@@ -178,7 +178,7 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 	// yet, and we'll activate it now.
 	if (!ensureMsgf(
 				bHadCameraSystem || !EvaluationContext->IsActive(),
-				TEXT("Can't activate Gameplay Camera component '{0}.{1}': it is already active!"),
+				TEXT("Can't activate Gameplay Camera component '%s.%s': it is already active!"),
 				*GetNameSafe(GetOwner()), *GetNameSafe(this)))
 	{
 		return false;
@@ -199,7 +199,7 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 
 		ensureMsgf(
 				EvaluationContext->GetCameraSystemEvaluator() == HostedEvaluator,
-				TEXT("Gameplay Camera Component '{0}.{1}' has a mismatch between evaluation context and camera system!"),
+				TEXT("Gameplay Camera Component '%s.%s' has a mismatch between evaluation context and camera system!"),
 				*GetNameSafe(GetOwner()), *GetNameSafe(this));
 	}
 
