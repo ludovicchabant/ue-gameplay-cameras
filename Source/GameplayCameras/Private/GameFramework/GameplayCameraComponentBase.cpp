@@ -866,6 +866,26 @@ void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 			OutputCameraComponent->PostProcessSettings = Result.PostProcessSettings.Get();
 			OutputCameraComponent->PostProcessBlendWeight = 1.f;
 
+			if (Result.CameraPose.GetEnableFirstPerson())
+			{
+				const float FirstPersonFieldOfView = Result.CameraPose.GetFirstPersonFieldOfView();
+				const float FirstPersonScale = Result.CameraPose.GetFirstPersonScale();
+
+				OutputCameraComponent->bEnableFirstPersonFieldOfView = (FirstPersonFieldOfView > 0.f);
+				OutputCameraComponent->bEnableFirstPersonScale = (FirstPersonScale > 0.f);
+				OutputCameraComponent->FirstPersonFieldOfView = (
+						FirstPersonFieldOfView > 0.f ? FirstPersonFieldOfView : OutputCameraComponent->FieldOfView);
+				OutputCameraComponent->FirstPersonScale = (
+						FirstPersonScale > 0.f ? FirstPersonScale : 1.f);
+			}
+			else
+			{
+				OutputCameraComponent->bEnableFirstPersonFieldOfView = false;
+				OutputCameraComponent->bEnableFirstPersonScale = false;
+				OutputCameraComponent->FirstPersonFieldOfView = OutputCameraComponent->FieldOfView;
+				OutputCameraComponent->FirstPersonScale = 1.f;
+			}
+			
 			bGotValidTransform = true;
 		}
 	}

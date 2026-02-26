@@ -50,6 +50,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
 	float FocalLength = 35.f;
 
+	/** The horizontal field of view (in degrees) used for primitives tagged as "IsFirstPerson" */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float FirstPersonFieldOfView = 90.f;
+
+	/** The scale to apply to primitives tagged as "IsFirstPerson" */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Camera")
+	float FirstPersonScale = 1.f;
+
 	/** The desired width (in world units) of the orthographic view (ignored in Perspective mode) */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Camera")
 	float OrthographicWidth = DEFAULT_ORTHOWIDTH;
@@ -109,6 +117,10 @@ public:
 	/** Internal weight for physical camera post-process settings. */
 	UPROPERTY()
 	float PhysicalCameraBlendWeight = 0.f;
+	
+	/** Whether to enable first-person parameters (FOV, scale) for primitives tagged as "IsFirstPerson" */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Camera")
+	bool EnableFirstPerson = false;
 
 	/** 
 	 * Whether to setup post-process settings based on physical camera properties such as Aperture,

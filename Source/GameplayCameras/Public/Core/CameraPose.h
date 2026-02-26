@@ -37,13 +37,16 @@ enum EAspectRatioAxisConstraint : int;
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  PhysicalCameraBlendWeight)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  NearClippingPlane)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float,  FarClippingPlane)\
-	UE_CAMERA_POSE_FOR_PROPERTY(float,  OrthographicWidth)
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  OrthographicWidth)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  FirstPersonFieldOfView)\
+	UE_CAMERA_POSE_FOR_PROPERTY(float,  FirstPersonScale)
 
 #define UE_CAMERA_POSE_FOR_FOV_PROPERTIES()\
 	UE_CAMERA_POSE_FOR_PROPERTY(float, FieldOfView)\
 	UE_CAMERA_POSE_FOR_PROPERTY(float, FocalLength)
 
 #define UE_CAMERA_POSE_FOR_FLIPPING_PROPERTIES()\
+	UE_CAMERA_POSE_FOR_PROPERTY(bool, EnableFirstPerson)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, EnablePhysicalCamera)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, ConstrainAspectRatio)\
 	UE_CAMERA_POSE_FOR_PROPERTY(bool, OverrideAspectRatioAxisConstraint)\
@@ -274,9 +277,15 @@ private:
 	UPROPERTY()
 	float FocalLength = 35.f;
 
-	/**
-	 * The desired width (in world units) of the orthographic view (ignored in Perspective mode) 
-	 */
+	/** The horizontal field of view (in degrees) used for primitives tagged as "IsFirstPerson" */
+	UPROPERTY()
+	float FirstPersonFieldOfView = -1.f;
+
+	/** The scale to apply to primitives tagged as "IsFirstPerson" */
+	UPROPERTY()
+	float FirstPersonScale = 1.f;
+	
+	/** The desired width (in world units) of the orthographic view (ignored in Perspective mode) */
 	UPROPERTY()
 	float OrthographicWidth = DEFAULT_ORTHOWIDTH;
 
@@ -338,6 +347,10 @@ private:
 	 */
 	UPROPERTY()
 	float PhysicalCameraBlendWeight = 0.f;
+
+	/** Whether to enable first-person parameters (FOV, scale) for primitives tagged as "IsFirstPerson" */
+	UPROPERTY()
+	bool EnableFirstPerson = false;
 
 	/** 
 	 * Whether to setup post-process settings based on physical camera properties such as Aperture,

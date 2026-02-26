@@ -267,6 +267,18 @@ void FCameraPose::GetViewInfo(FMinimalViewInfo& OutViewInfo) const
 
 	OutViewInfo.PerspectiveNearClipPlane = NearClippingPlane > 0.0f ? NearClippingPlane : GNearClippingPlane;
 
+	OutViewInfo.bUseFirstPersonParameters = EnableFirstPerson;
+	if (EnableFirstPerson)
+	{
+		OutViewInfo.FirstPersonFOV = FirstPersonFieldOfView >= 0 ? FirstPersonFieldOfView : OutViewInfo.FOV;
+		OutViewInfo.FirstPersonScale = FirstPersonScale >= 0 ? FirstPersonScale : 1.f;
+	}
+	else
+	{
+		OutViewInfo.FirstPersonFOV = OutViewInfo.FOV;
+		OutViewInfo.FirstPersonScale = 1.f;
+	}
+
 	OutViewInfo.OffCenterProjectionOffset.X = GetHorizontalProjectionOffset();
 	OutViewInfo.OffCenterProjectionOffset.Y = GetVerticalProjectionOffset();
 
