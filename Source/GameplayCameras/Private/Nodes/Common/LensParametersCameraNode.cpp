@@ -2,9 +2,8 @@
 
 #include "Nodes/Common/LensParametersCameraNode.h"
 
-#include "Core/CameraEvaluationContext.h"
 #include "Core/CameraParameterReader.h"
-#include "GameplayCameras.h"
+#include "GameplayCamerasCustomVersion.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(LensParametersCameraNode)
 
@@ -24,8 +23,8 @@ protected:
 private:
 
 	TCameraParameterReader<float> FocalLengthReader;
-	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<float> ApertureReader;
+	TCameraParameterReader<float> FocusDistanceReader;
 	TCameraParameterReader<bool> EnablePhysicalCameraReader;
 };
 
@@ -37,30 +36,31 @@ void FLensParametersCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluator
 
 	const ULensParametersCameraNode* LensParametersNode = GetCameraNodeAs<ULensParametersCameraNode>();
 	FocalLengthReader.Initialize(LensParametersNode->FocalLength);
-	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	ApertureReader.Initialize(LensParametersNode->Aperture);
+	FocusDistanceReader.Initialize(LensParametersNode->FocusDistance);
 	EnablePhysicalCameraReader.Initialize(LensParametersNode->EnablePhysicalCamera);
 }
 
 void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& Params, FCameraNodeEvaluationResult& OutResult)
 {
+	const ULensParametersCameraNode* LensParametersNode = GetCameraNodeAs<ULensParametersCameraNode>();
 	FCameraPose& OutPose = OutResult.CameraPose;
 
 	float FocalLength = FocalLengthReader.Get(OutResult.VariableTable);
-	if (FocalLength > 0)
+	if (LensParametersNode->bEnableFocalLength && FocalLength > 0)
 	{
 		OutPose.SetFocalLength(FocalLength);
 		OutPose.SetFieldOfView(-1);
 	}
-	float FocusDistance = FocusDistanceReader.Get(OutResult.VariableTable);
-	if (FocusDistance > 0)
-	{
-		OutPose.SetFocusDistance(FocusDistance);
-	}
 	float Aperture = ApertureReader.Get(OutResult.VariableTable);
-	if (Aperture > 0)
+	if (LensParametersNode->bEnableAperture && Aperture > 0)
 	{
 		OutPose.SetAperture(Aperture);
+	}
+	float FocusDistance = FocusDistanceReader.Get(OutResult.VariableTable);
+	if (LensParametersNode->bEnableFocusDistance && FocusDistance > 0)
+	{
+		OutPose.SetFocusDistance(FocusDistance);
 	}
 
 	const bool bEnablePhysicalCamera = EnablePhysicalCameraReader.Get(OutResult.VariableTable);
@@ -69,6 +69,51 @@ void FLensParametersCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams
 }
 
 }  // namespace UE::Cameras
+
+void ULensParametersCameraNode::Serialize(FArchive& Ar)
+{
+	Ar.UsingCustomVersion(FGameplayCamerasCustomVersion::GUID);
+
+	// If this node was saved before the parameter flags were added, set the properties to their old default values,
+	// then do the serialization, which will give us the non-zero values.
+	const bool bUpgradeParameterFlags = (
+			Ar.IsLoading() &&
+			Ar.CustomVer(FGameplayCamerasCustomVersion::GUID) < FGameplayCamerasCustomVersion::AddLensNodeParameterFlags);
+	if (bUpgradeParameterFlags)
+	{
+		FocalLength.Value = 0;
+		Aperture.Value = 0;
+		FocusDistance.Value = 0;
+
+		bEnableFocalLength = false;
+		bEnableAperture = false;
+		bEnableFocusDistance = false;
+	}
+
+	Super::Serialize(Ar);
+
+	// Now that we have the non-zero values, auto-set the appropriate flags, and restore the new defaults.
+	// These defaults should match the ones in the header file!
+	if (bUpgradeParameterFlags)
+	{
+		bEnableFocalLength = FocalLength.Value > 0.f || FocalLength.Variable || FocalLength.VariableID;
+		bEnableAperture = Aperture.Value > 0.f || Aperture.Variable || Aperture.VariableID;
+		bEnableFocusDistance = FocusDistance.Value > 0.f || FocusDistance.Variable || FocusDistance.VariableID;
+
+		if (FocalLength.Value <= 0.f)
+		{
+			FocalLength.Value = 35.f;
+		}
+		if (Aperture.Value <= 0.f)
+		{
+			Aperture.Value = 16.f;
+		}
+		if (FocusDistance.Value <= 0.f)
+		{
+			FocusDistance.Value = 1000.f;
+		}
+	}
+}
 
 FCameraNodeEvaluatorPtr ULensParametersCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const
 {
