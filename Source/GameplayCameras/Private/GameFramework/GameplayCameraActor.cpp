@@ -2,6 +2,7 @@
 
 #include "GameFramework/GameplayCameraActor.h"
 
+#include "CineCameraComponent.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "GameFramework/GameplayCameraComponent.h"
@@ -16,6 +17,9 @@ AGameplayCameraActor::AGameplayCameraActor(const FObjectInitializer& ObjectInit)
 {
 	CameraComponent = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("CameraComponent"));
 	RootComponent = CameraComponent;
+
+	OutputCameraComponent = CreateDefaultSubobject<UCineCameraComponent>(TEXT("OutputCameraComponent"), true);
+	OutputCameraComponent->SetupAttachment(CameraComponent);
 }
 
 USceneComponent* AGameplayCameraActor::GetDefaultAttachComponent() const

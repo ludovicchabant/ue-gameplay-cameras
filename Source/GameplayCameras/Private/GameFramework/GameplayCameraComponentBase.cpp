@@ -203,11 +203,6 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 				*GetNameSafe(GetOwner()), *GetNameSafe(this));
 	}
 
-	if (ensure(OutputCameraComponent))
-	{
-		OutputCameraComponent->Activate();
-	}
-
 	return true;
 }
 
@@ -217,7 +212,6 @@ void UGameplayCameraComponentBase::DestroyCameraSystemHost()
 	if (OutputCameraComponent)
 	{
 		OutputCameraComponent->SetRelativeTransform(FTransform());
-		OutputCameraComponent->Deactivate();
 	}
 
 	DestroyCameraSystem();
@@ -511,15 +505,6 @@ void UGameplayCameraComponentBase::OnRegister()
 
 	Super::OnRegister();
 
-	if (OutputCameraComponent == nullptr)
-	{
-		OutputCameraComponent = NewObject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), RF_Transient | RF_TextExportTransient);
-		OutputCameraComponent->SetAutoActivate(false);
-		OutputCameraComponent->SetupAttachment(this);
-		OutputCameraComponent->CreationMethod = CreationMethod;
-		OutputCameraComponent->RegisterComponentWithWorld(GetWorld());
-	}
-
 #if WITH_EDITOR
 
 	UWorld* World = GetWorld();
@@ -567,7 +552,7 @@ void UGameplayCameraComponentBase::EndPlay(const EEndPlayReason::Type EndPlayRea
 
 void UGameplayCameraComponentBase::OnComponentDestroyed(bool bDestroyingHierarchy)
 {
-	if (OutputCameraComponent)
+	if (OutputCameraComponent && bIsOwnedOutputCameraComponent)
 	{
 		OutputCameraComponent->DestroyComponent();
 	}
@@ -587,6 +572,11 @@ void UGameplayCameraComponentBase::Activate(bool bReset)
 	{
 		EnsureEvaluationContext(nullptr);
 		EnsureCameraSystemHostIfNeeded();
+
+		if (OutputCameraComponent && bIsOwnedOutputCameraComponent)
+		{
+			OutputCameraComponent->Activate(bReset);
+		}
 	}
 }
 
@@ -594,6 +584,11 @@ void UGameplayCameraComponentBase::Deactivate()
 {
 	DestroyCameraSystemHost();
 	DestroyEvaluationContext();
+
+	if (OutputCameraComponent && bIsOwnedOutputCameraComponent)
+	{
+		OutputCameraComponent->Deactivate();
+	}
 
 	Super::Deactivate();
 }
@@ -819,9 +814,56 @@ void UGameplayCameraComponentBase::RecreateEditorWorldEvaluationContext()
 
 #endif  // WITH_EDITOR
 
+void UGameplayCameraComponentBase::EnsureOutputCameraComponent()
+{
+	if (OutputCameraComponent)
+	{
+		return;
+	}
+
+	// If our parent actor has put a camera component under us, we can use it. This is useful for making that camera
+	// component "visible" to the user in the editor.
+	for (USceneComponent* AttachChild : GetAttachChildren())
+	{
+		if (UCineCameraComponent* ChildCamera = Cast<UCineCameraComponent>(AttachChild))
+		{
+			OutputCameraComponent = ChildCamera;
+			bIsOwnedOutputCameraComponent = false;
+			break;
+		}
+	}
+
+	// If we didn't find any child camera component to use, we need to create one ourselves. A component cannot create 
+	// an editor-friendly child component that is visible, so we leave that one hidden (i.e. held in a non-visible 
+	// property)
+	if (OutputCameraComponent == nullptr)
+	{
+		OutputCameraComponent = NewObject<UCineCameraComponent>(this, TEXT("OutputCameraComponent"), RF_Transient);
+		OutputCameraComponent->SetAutoActivate(false);
+		OutputCameraComponent->SetupAttachment(this);
+		OutputCameraComponent->CreationMethod = CreationMethod;
+		OutputCameraComponent->RegisterComponentWithWorld(GetWorld());
+
+		bIsOwnedOutputCameraComponent = true;
+	}
+
+	// Make sure the component is active, otherwise it won't be picked up as a valid view by the engine.
+	if (ensure(OutputCameraComponent))
+	{
+		OutputCameraComponent->Activate();
+	}
+}
+
 void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 {
 	using namespace UE::Cameras;
+
+	// Make sure we have a camera component to write to.
+	//
+	// Ideally this would be done once in OnRegister() but we don't know at that time about our attached children.
+	// The next best place would be in BeginPlay(), but that's not called in editor contexts.
+	// So we lazily do it here instead.
+	EnsureOutputCameraComponent();
 
 	if (!OutputCameraComponent)
 	{

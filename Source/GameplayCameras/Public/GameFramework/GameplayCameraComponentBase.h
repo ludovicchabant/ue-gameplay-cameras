@@ -242,6 +242,7 @@ private:
 	void EnsureEvaluationContext(APlayerController* PlayerController);
 	void DestroyEvaluationContext();
 
+	void EnsureOutputCameraComponent();
 	void UpdateOutputCameraComponent();
 
 #if WITH_EDITOR
@@ -296,6 +297,10 @@ private:
 	 */
 	UPROPERTY(Transient)
 	TObjectPtr<UCineCameraComponent> OutputCameraComponent;
+
+	/** Whether the output camera component was auto-created, or obtained from the parent actor. */
+	UPROPERTY()
+	bool bIsOwnedOutputCameraComponent = false;
 
 private:
 

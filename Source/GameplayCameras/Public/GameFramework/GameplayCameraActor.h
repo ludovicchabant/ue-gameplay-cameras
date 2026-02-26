@@ -6,12 +6,13 @@
 
 #include "GameplayCameraActor.generated.h"
 
+class UCineCameraComponent;
 class UGameplayCameraComponent;
 
 /**
  * An actor that can run a camera asset.
  */
-UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera, HideCategories=(Input, Rendering))
+UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera, HideCategories=(OutputCamera))
 class AGameplayCameraActor : public AGameplayCameraActorBase
 {
 	GENERATED_BODY()
@@ -26,6 +27,10 @@ public:
 	UFUNCTION(BlueprintGetter, Category=Camera)
 	UGameplayCameraComponent* GetCameraComponent() const { return CameraComponent; }
 
+	/** Gets the output camera component. */
+	UFUNCTION(BlueprintGetter, Category=Camera)
+	UCineCameraComponent* GetOutputCameraComponent() const { return OutputCameraComponent; }
+
 public:
 
 	// AActor interface.
@@ -38,7 +43,10 @@ protected:
 
 private:
 
-	UPROPERTY(VisibleAnywhere, Category=Camera, BlueprintGetter="GetCameraComponent", meta=(ExposeFunctionCategories="Camera"))
+	UPROPERTY(VisibleAnywhere, Category=GameplayCamera, BlueprintGetter="GetCameraComponent", meta=(ExposeFunctionCategories="Camera"))
 	TObjectPtr<UGameplayCameraComponent> CameraComponent;
+
+	UPROPERTY(Transient, VisibleAnywhere, Category=OutputCamera, BlueprintGetter="GetOutputCameraComponent")
+	TObjectPtr<UCineCameraComponent> OutputCameraComponent;
 };
 
