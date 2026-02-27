@@ -45,10 +45,10 @@ void UGameplayCameraRigComponent::OnRegister()
 	Super::OnRegister();
 
 #if WITH_EDITOR
-
 	FGameplayCamerasDelegates::OnCameraRigAssetBuilt().AddUObject(this, &UGameplayCameraRigComponent::OnCameraRigAssetBuilt);
 
-#endif
+	Super::CreateCameraSpriteComponent(TEXT("/GameplayCameras/Textures/S_GameplayCameraRig.S_GameplayCameraRig"));
+#endif  // WITH_EDITOR
 }
 
 void UGameplayCameraRigComponent::OnUnregister()
@@ -56,9 +56,7 @@ void UGameplayCameraRigComponent::OnUnregister()
 	using namespace UE::Cameras;
 
 #if WITH_EDITOR
-
 	FGameplayCamerasDelegates::OnCameraRigAssetBuilt().RemoveAll(this);
-
 #endif  // WITH_EDITOR
 
 	Super::OnUnregister();

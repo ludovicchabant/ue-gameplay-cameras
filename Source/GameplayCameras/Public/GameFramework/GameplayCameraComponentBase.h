@@ -37,9 +37,9 @@ class FGameplayCameraComponentEvaluationContext;
 /**
  * A component that can run a camera asset inside its own camera evaluation context.
  */
-UCLASS(Blueprintable, MinimalAPI, Abstract,
-		ClassGroup=Camera, 
-		HideCategories=(Mobility, Rendering, LOD), 
+UCLASS(Blueprintable, MinimalAPI, Abstract, ClassGroup=Camera,
+		HideCategories=(Object, ActorComponent, Physics, Rendering, Mobility, LOD),
+		PrioritizeCategories=(Camera, EditorCamera, Activation),
 		meta=(BlueprintSpawnableComponent))
 class UGameplayCameraComponentBase 
 	: public USceneComponent
@@ -231,6 +231,8 @@ protected:
 			const FCameraVariableTableAllocationInfo& VariableTableAllocationInfo,
 			const FCameraContextDataTableAllocationInfo& ContextDataTableAllocationInfo);
 	void RecreateEditorWorldEvaluationContext();
+
+	void CreateCameraSpriteComponent(const FString& SpriteTexturePath);
 #endif  // WITH_EDITOR
 
 private:
@@ -248,6 +250,7 @@ private:
 #if WITH_EDITOR
 	void AutoManageEditorPreviewEvaluator();
 	void OnEditorPreviewCameraRigIndexChanged();
+	void UpdateCameraSpriteComponent();
 #endif  // WITH_EDITOR
 
 public:
@@ -280,12 +283,19 @@ public:
 #if WITH_EDITORONLY_DATA
 
 	/** Whether to run this camera in editor. */
-	UPROPERTY(EditAnywhere, Category=Camera)
+	UPROPERTY(EditAnywhere, Category=EditorCamera)
 	bool bRunInEditor = true;
 
 	/** The camera rig to run in the editor. */
-	UPROPERTY(EditAnywhere, Category=Camera, meta=(EditCondition="bRunInEditor"))
+	UPROPERTY(EditAnywhere, Category=EditorCamera, meta=(EditCondition="bRunInEditor"))
 	int32 EditorPreviewCameraRigIndex = 0;
+
+	/**
+	 * When the output camera's location is within this distance of the root, hide the editor sprite.
+	 * Set this value to zero or negative to never hide the editor sprite.
+	 */
+	UPROPERTY(EditAnywhere, Category=EditorCamera)
+	float EditorSpriteHiddenWhenOutputCameraWithinDistance = 100.f;
 
 #endif  // WITH_EDITORONLY_DATA
 

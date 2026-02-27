@@ -3,6 +3,7 @@
 #include "GameFramework/GameplayCameraComponentBase.h"
 
 #include "CineCameraComponent.h"
+#include "Components/BillboardComponent.h"
 #include "Core/CameraAsset.h"
 #include "Core/CameraEvaluationContextStack.h"
 #include "Core/CameraRigAsset.h"
@@ -21,6 +22,7 @@
 #include "Misc/EngineVersionComparison.h"
 #include "SceneView.h"
 #include "ShowFlags.h"
+#include "UObject/ICookInfo.h"
 
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 #include "PrimitiveDrawInterface.h"
@@ -516,6 +518,31 @@ void UGameplayCameraComponentBase::OnRegister()
 #endif  // WITH_EDITOR
 }
 
+#if WITH_EDITOR
+
+void UGameplayCameraComponentBase::CreateCameraSpriteComponent(const FString& SpriteTexturePath)
+{
+	UTexture2D* EditorSpriteTexture = nullptr;
+	{
+		FCookLoadScope EditorOnlyScope(ECookLoadType::EditorOnly);
+		EditorSpriteTexture = LoadObject<UTexture2D>(nullptr, SpriteTexturePath);
+	}
+
+	if (EditorSpriteTexture)
+	{
+		bVisualizeComponent = true;
+		CreateSpriteComponent(EditorSpriteTexture);
+	}
+
+	if (SpriteComponent)
+	{
+		SpriteComponent->SpriteInfo.Category = TEXT("Cameras");
+		SpriteComponent->SpriteInfo.DisplayName = NSLOCTEXT("SpriteCategory", "Cameras", "Cameras");
+	}
+}
+
+#endif  // WITH_EDITOR
+
 void UGameplayCameraComponentBase::BeginPlay()
 {
 	using namespace UE::Cameras;
@@ -600,16 +627,13 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 #if WITH_EDITOR
-
 	// Make sure things are setup (or not) if we want to run the camera logic in editor (or not).
 	AutoManageEditorPreviewEvaluator();
-
 #endif  // WITH_EDITOR
 
 	UpdateEvaluationContext(false);
 
 #if WITH_EDITOR
-
 	if (bIsEditorWorld)
 	{
 		UpdateCameraSystemForEditorPreview(DeltaTime);
@@ -619,18 +643,19 @@ void UGameplayCameraComponentBase::TickComponent(float DeltaTime, ELevelTick Tic
 		UpdateCameraSystem(DeltaTime);
 		UpdateControlRotationIfNeeded();
 	}
-
 #else
-
 	if (bRunStandaloneCameraSystem)
 	{
 		UpdateCameraSystem(DeltaTime);
 		UpdateControlRotationIfNeeded();
 	}
-
 #endif  // WITH_EDITOR
 
 	UpdateOutputCameraComponent();
+
+#if WITH_EDITOR
+	UpdateCameraSpriteComponent();
+#endif  // WITH_EDITOR
 }
 
 void UGameplayCameraComponentBase::UpdateEvaluationContext(bool bForceApplyParameterOverrides)
@@ -655,9 +680,7 @@ void UGameplayCameraComponentBase::UpdateEvaluationContext(bool bForceApplyParam
 		OnUpdateEvaluationContext(bForceApplyParameterOverrides);
 
 #if WITH_EDITOR
-
 		EvaluationContext->UpdateForEditorPreview();
-
 #endif  // WITH_EDITOR
 	}
 }
@@ -937,6 +960,30 @@ void UGameplayCameraComponentBase::UpdateOutputCameraComponent()
 		OutputCameraComponent->SetRelativeTransform(FTransform());
 	}
 }
+
+#if WITH_EDITOR
+
+void UGameplayCameraComponentBase::UpdateCameraSpriteComponent()
+{
+	if (SpriteComponent)
+	{
+		if (OutputCameraComponent)
+		{
+			const FVector3d RootLocation = GetComponentLocation();
+			const FVector3d OutputLocation = OutputCameraComponent->GetComponentLocation();
+			const double RootToOutputDistance = FVector3d::Distance(RootLocation, OutputLocation);
+
+			const bool bShouldBeVisible = (RootToOutputDistance > EditorSpriteHiddenWhenOutputCameraWithinDistance);
+			SpriteComponent->SetIsTemporarilyHiddenInEditor(!bShouldBeVisible);
+		}
+		else
+		{
+			SpriteComponent->SetIsTemporarilyHiddenInEditor(false);
+		}
+	}
+}
+
+#endif  // WITH_EDITOR
 
 void UGameplayCameraComponentBase::OnUpdateTransform(EUpdateTransformFlags UpdateTransformFlags, ETeleportType Teleport)
 {

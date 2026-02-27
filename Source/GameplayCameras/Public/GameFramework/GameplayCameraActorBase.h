@@ -17,7 +17,7 @@ class UGameplayCameraSystemHost;
  * a private instance of the camera system. It does this if no camera system was found attached
  * under the player controller.
  */
-UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera, HideCategories=(Input, Rendering))
+UCLASS(BlueprintType, MinimalAPI, ClassGroup=Camera)
 class AGameplayCameraActorBase : public AActor
 {
 	GENERATED_BODY()
