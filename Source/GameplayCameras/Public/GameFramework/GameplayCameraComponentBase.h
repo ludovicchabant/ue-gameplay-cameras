@@ -280,6 +280,14 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera, meta=(EditCondition="bRunStandaloneCameraSystem"))
 	bool bSetControlRotationWhenViewTarget = false;
 
+	/**
+	 * Enables or disables playback mode, which turns of any standalone camera system evaluation
+	 * and lets the output camera component be manipulated externally. This is useful when the
+	 * evaluated camera was recorded (e.g. with Take Recorder) and turned into keyframed animation.
+	 */
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Camera)
+	bool bPlaybackMode = false;
+
 #if WITH_EDITORONLY_DATA
 
 	/** Whether to run this camera in editor. */
