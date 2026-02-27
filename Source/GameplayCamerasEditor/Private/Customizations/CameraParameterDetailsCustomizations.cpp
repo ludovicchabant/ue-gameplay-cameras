@@ -34,6 +34,16 @@
 namespace UE::Cameras
 {
 
+static TArrayView<FName> GetCameraParameterMetaDataToCopy()
+{
+	static TArray<FName> MetaDataKeys{ 
+		TEXT("UIMin"), TEXT("UIMax"),
+		TEXT("ClampMin"), TEXT("ClampMax"),
+		TEXT("Units"), TEXT("ForceUnits")
+	};
+	return MetaDataKeys;
+}
+
 void FCameraParameterDetailsCustomization::Register(FPropertyEditorModule& PropertyEditorModule)
 {
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
@@ -67,6 +77,16 @@ void FCameraParameterDetailsCustomization::CustomizeHeader(TSharedRef<IPropertyH
 	ValueProperty = PropertyHandle->GetChildHandle("Value");
 	VariableProperty = PropertyHandle->GetChildHandle("Variable");
 	ensure(ValueProperty && VariableProperty);
+
+	// Copy select details-view-related metadata from the camera parameter struct onto the property handle.
+	for (const FName Key : GetCameraParameterMetaDataToCopy())
+	{
+		const FString& MetaDataValue = StructProperty->GetMetaData(Key);
+		if (!MetaDataValue.IsEmpty())
+		{
+			ValueProperty->SetInstanceMetaData(Key, MetaDataValue);
+		}
+	}
 
 	// Get the type of camera variable we need for this camera parameter (bool variable, float variable, etc.)
 	VariableClass = nullptr;
