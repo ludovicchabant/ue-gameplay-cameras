@@ -89,13 +89,6 @@ void FDrivenControlRotationHelperService::AddMonitoredContext(TSharedPtr<const F
 		NewEntry.CachedControlRotation = PlayerController->GetControlRotation();
 		NewEntry.MonitoringRequests = 1;
 	}
-	else
-	{
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Can't monitor control rotation for camera context owned by '%s', it is running without "
-					 "any association to a player controller."),
-				*GetNameSafe(InContext->GetOwner()));
-	}
 }
 
 void FDrivenControlRotationHelperService::RemoveMonitoredContext(TSharedPtr<const FCameraEvaluationContext> InContext)

@@ -48,8 +48,11 @@ void FAttachToPlayerPawnCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 	APlayerController* PlayerController = Params.EvaluationContext->GetPlayerController();
 	if (!PlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't run AttatchToPlayerPawn camera node because no player controller was found on the context."));
+		if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::Game)
+		{
+			UE_LOG(LogCameraSystem, Error, 
+					TEXT("Can't run AttatchToPlayerPawn camera node because no player controller was found on the context."));
+		}
 		bHasValidPlayerController = false;
 		return;
 	}
