@@ -7,6 +7,7 @@
 #include "Core/CameraEvaluationContext.h"
 #include "Core/CameraRigInstanceID.h"
 #include "Core/CameraShakeInstanceID.h"
+#include "Engine/EngineTypes.h"
 #include "GameFramework/BlueprintCameraEvaluationDataRef.h"
 #include "GameFramework/IGameplayCameraSystemHost.h"
 #include "Services/CameraActionInstanceID.h"
@@ -256,15 +257,18 @@ private:
 public:
 
 	/**
-	 * If AutoActivate is set, auto-activates this component's camera for the given player.
-	 * This is equivalent to calling ActivateCameraForPlayerIndex on BeginPlay.
+	 * The player controller to bind to by default.
+	 *
+	 * Auto-activation and explicit calls to Activate will use this player, if valid. Calls to 
+	 * ActivateCameraForPlayerIndex and ActivateCameraForPlayerController will use their given player, 
+	 * but fall back to this player if they are given an invalid parameter.
 	 */
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation, meta=(EditCondition="bAutoActivate"))
-	TEnumAsByte<EAutoReceiveInput::Type> AutoActivateForPlayer;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category=Activation)
+	TEnumAsByte<EAutoReceiveInput::Type> DefaultPlayer = EAutoReceiveInput::Player0;
 
 	/**
 	 * When enabled, this camera component runs its own camera system when activated, which
-	 * makes it posisble for it to run independently. When disabled, this camera component
+	 * makes it possible for it to run independently. When disabled, this camera component
 	 * only creates an evaluation context that must be run with an external camera system,
 	 * such as the Gameplay Cameras Player Camera Manager.
 	 */

@@ -94,6 +94,12 @@ void UGameplayCameraComponentBase::ActivateCameraForPlayerController(APlayerCont
 	// our private camera system.
 	Super::Activate(false);
 
+	if (!PlayerController && DefaultPlayer != EAutoReceiveInput::Disabled)
+	{
+		const int32 PlayerIndex = DefaultPlayer.GetIntValue() - 1;
+		PlayerController = UGameplayStatics::GetPlayerController(this, PlayerIndex);
+	}
+
 	EnsureEvaluationContext(PlayerController);
 	EnsureCameraSystemHostIfNeeded();
 
@@ -559,17 +565,9 @@ void UGameplayCameraComponentBase::BeginPlay()
 	// However, it can happen that some BP construction script already called ActivateCameraForXyz()
 	// before we got to start play (e.g. from a parent actor) and so in this case, let's skip
 	// re-activating for nothing.
-	if (IsActive() && !EvaluationContext)
+	if (IsActive() && !EvaluationContext && GetNetMode() != NM_DedicatedServer)
 	{
-		if (AutoActivateForPlayer != EAutoReceiveInput::Disabled && GetNetMode() != NM_DedicatedServer)
-		{
-			const int32 PlayerIndex = AutoActivateForPlayer.GetIntValue() - 1;
-			ActivateCameraForPlayerIndex(PlayerIndex);
-		}
-		else
-		{
-			ActivateCameraForPlayerController(nullptr, false);
-		}
+		ActivateCameraForPlayerController(nullptr, false);
 	}
 }
 
