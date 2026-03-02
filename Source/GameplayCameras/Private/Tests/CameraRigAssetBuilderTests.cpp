@@ -7,7 +7,7 @@
 #include "Nodes/Common/CameraRigCameraNode.h"
 #include "Nodes/Common/LensParametersCameraNode.h"
 #include "Nodes/Common/OffsetCameraNode.h"
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 
 #define LOCTEXT_NAMESPACE "CameraRigAssetBuilderTests"
 
@@ -27,9 +27,10 @@ void BuildCameraRigAsIfCooking(UCameraRigAsset* CameraRig)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderNullTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.Null", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraRigAssetBuilderNullTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
-	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("EmptyTest")).Get();
+	UCameraRigAsset* CameraRig = FCameraRigAssetAssembler(TEXT("EmptyTest")).Get();
 	UTEST_EQUAL("Dirty status", CameraRig->BuildStatus, ECameraBuildStatus::Dirty);
 
 	UE::Cameras::Test::BuildCameraRigAsIfCooking(CameraRig);
@@ -44,7 +45,7 @@ bool FCameraRigAssetBuilderSimpleAllocationTest::RunTest(const FString& Paramete
 	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
-	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder()
+	UCameraRigAsset* CameraRig = FCameraRigAssetAssembler()
 		.MakeRootNode<UArrayCameraNode>()
 			.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children).Done()
 			.Done()
@@ -64,10 +65,11 @@ bool FCameraRigAssetBuilderSimpleAllocationTest::RunTest(const FString& Paramete
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderSimpleParameterTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.SimpleParameter", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
 	UOffsetCameraNode* OffsetNode = nullptr;
-	UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("SimpleTest"))
+	UCameraRigAsset* CameraRig = FCameraRigAssetAssembler(TEXT("SimpleTest"))
 		.MakeRootNode<UArrayCameraNode>()
 			.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children)
 				.Pin(OffsetNode)
@@ -89,13 +91,14 @@ bool FCameraRigAssetBuilderSimpleParameterTest::RunTest(const FString& Parameter
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraRigAssetBuilderDrivenOverridesTest, "System.Engine.GameplayCameras.CameraRigAssetBuilder.DrivenOverrides", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
 	TSharedRef<FNamedObjectRegistry> Registry = MakeShared<FNamedObjectRegistry>();
 
 	// Make a camera rig with an offset node (10, 20, 30) and a focal length node (20). Expose both parameters
 	// as interface parameters.
-	UCameraRigAsset* InnerCameraRig = FCameraRigAssetTestBuilder(Registry, TEXT("InnerCameraRig"))
+	UCameraRigAsset* InnerCameraRig = FCameraRigAssetAssembler(Registry, TEXT("InnerCameraRig"))
 		.MakeArrayRootNode()
 			.AddArrayChild<UOffsetCameraNode>().Named(TEXT("Offset"))
 				.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d(10, 20, 30))
@@ -114,7 +117,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 	// and the focal length (now 25). Expose the offset further up as an interface parameter.
 	UCameraRigCameraNode* MiddlePrefabNode = nullptr;
 
-	UCameraRigAsset* MiddleCameraRig = FCameraRigAssetTestBuilder(Registry, TEXT("MiddleCameraRig"))
+	UCameraRigAsset* MiddleCameraRig = FCameraRigAssetAssembler(Registry, TEXT("MiddleCameraRig"))
 		.MakeRootNode<UCameraRigCameraNode>()
 			.Pin(MiddlePrefabNode)
 			.Setup([InnerCameraRig](UCameraRigCameraNode* Node, FNamedObjectRegistry* Registry)
@@ -145,7 +148,7 @@ bool FCameraRigAssetBuilderDrivenOverridesTest::RunTest(const FString& Parameter
 	// This level overrides the offset parameter some more (now 20, 50, 70).
 	UCameraRigCameraNode* OuterPrefabNode = nullptr;
 
-	UCameraRigAsset* OuterCameraRig = FCameraRigAssetTestBuilder(Registry, TEXT("OuterCameraRig"))
+	UCameraRigAsset* OuterCameraRig = FCameraRigAssetAssembler(Registry, TEXT("OuterCameraRig"))
 		.MakeRootNode<UCameraRigCameraNode>()
 			.Pin(OuterPrefabNode)
 			.Setup([MiddleCameraRig](UCameraRigCameraNode* Node, FNamedObjectRegistry* Registry)

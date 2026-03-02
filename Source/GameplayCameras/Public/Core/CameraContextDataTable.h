@@ -12,6 +12,8 @@
 #include "Templates/PointerIsConvertibleFromTo.h"
 #include <type_traits>
 
+#define UE_API GAMEPLAYCAMERAS_API
+
 struct FCameraContextDataDefinition;
 struct FCameraContextDataTableAllocationInfo;
 
@@ -155,50 +157,50 @@ public:
 	using FEntryScriptArray = FScriptArray;
 
 	// Low-level API.
-	const uint8* GetData(
+	UE_API const uint8* GetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			bool bOnlyIfWritten = true) const;
 
-	const uint8* TryGetData(
+	UE_API const uint8* TryGetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			bool bOnlyIfWritten = true) const;
 
-	const FEntryScriptArray* TryGetArrayData(
+	UE_API const FEntryScriptArray* TryGetArrayData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			bool bOnlyIfWritten = true) const;
 
-	const uint8* TryGetRawDataPtr(
+	UE_API const uint8* TryGetRawDataPtr(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			bool bOnlyIfWritten = true) const;
 
-	void SetData(
+	UE_API void SetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			const uint8* InRawDataPtr,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool TrySetData(
+	UE_API bool TrySetData(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
 			const uint8* InRawDataPtr,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool TrySetArrayDataNum(
+	UE_API bool TrySetArrayDataNum(
 			FCameraContextDataID DataID, 
 			int32 Count,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool TrySetArrayData(
+	UE_API bool TrySetArrayData(
 			FCameraContextDataID DataID, 
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
@@ -206,7 +208,7 @@ public:
 			const uint8* InRawDataPtr,
 			bool bMarkAsWrittenThisFrame = true);
 
-	uint8* TryGetMutableRawDataPtr(
+	UE_API uint8* TryGetMutableRawDataPtr(
 			FCameraContextDataID DataID,
 			ECameraContextDataType ExpectedDataType,
 			const UObject* ExpectedDataTypeObject,
@@ -571,3 +573,4 @@ const UObject* TCameraContextDataTraits<DataType>::GetDataTypeObject()
 
 }  // namespace UE::Cameras
 
+#undef UE_API 

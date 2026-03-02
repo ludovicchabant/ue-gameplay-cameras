@@ -1,21 +1,21 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 
-namespace UE::Cameras::Test
+namespace UE::Cameras
 {
 
-FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(FName Name, UObject* Outer)
-	: TCameraRigAssetTestBuilderBase<FCameraRigAssetTestBuilder>(nullptr, Name, Outer)
-{
-}
-
-FCameraRigAssetTestBuilder::FCameraRigAssetTestBuilder(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer)
-	: TCameraRigAssetTestBuilderBase<FCameraRigAssetTestBuilder>(InNamedObjectRegistry, Name, Outer)
+FCameraRigAssetAssembler::FCameraRigAssetAssembler(FName Name, UObject* Outer)
+	: TCameraRigAssetAssemblerBase<FCameraRigAssetAssembler>(nullptr, Name, Outer)
 {
 }
 
-FCameraAssetTestBuilder::FCameraAssetTestBuilder(UObject* Owner)
+FCameraRigAssetAssembler::FCameraRigAssetAssembler(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name, UObject* Outer)
+	: TCameraRigAssetAssemblerBase<FCameraRigAssetAssembler>(InNamedObjectRegistry, Name, Outer)
+{
+}
+
+FCameraAssetAssembler::FCameraAssetAssembler(UObject* Owner)
 {
 	if (Owner == nullptr)
 	{
@@ -29,7 +29,7 @@ FCameraAssetTestBuilder::FCameraAssetTestBuilder(UObject* Owner)
 	NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
 }
 
-FCameraEvaluationContextTestBuilder::FCameraEvaluationContextTestBuilder(UObject* Owner)
+FCameraEvaluationContextAssembler::FCameraEvaluationContextAssembler(UObject* Owner)
 {
 	if (Owner == nullptr)
 	{
@@ -48,5 +48,5 @@ FCameraEvaluationContextTestBuilder::FCameraEvaluationContextTestBuilder(UObject
 	NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
 }
 
-}  // namespace UE::Cameras::Test
+}  // namespace UE::Cameras
 

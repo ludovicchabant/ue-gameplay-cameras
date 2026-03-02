@@ -8,7 +8,7 @@
 #include "Nodes/Common/LensParametersCameraNode.h"
 #include "Nodes/Common/OffsetCameraNode.h"
 #include "StructUtils/PropertyBag.h"
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 #include "Tests/GameplayCamerasTestObjects.h"
 
 #define LOCTEXT_NAMESPACE "CameraAssetBuilderTests"
@@ -33,9 +33,10 @@ bool CheckDefaultParameter(const FInstancedPropertyBag& PropertyBag, const FName
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraAssetBuilderDefaultParametersTest, "System.Engine.GameplayCameras.CameraAssetBuilder.DefaultParameters", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
-	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
+	UCameraRigAsset* CameraRigOne = FCameraRigAssetAssembler(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
 			.Done()
 		.AddBlendableParameter(TEXT("TranslationOffset"), ECameraVariableType::Vector3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
@@ -43,7 +44,7 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
 
-	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
+	UCameraRigAsset* CameraRigTwo = FCameraRigAssetAssembler(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
 			.Done()
 		.AddBlendableParameter(TEXT("FocalLength"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
@@ -52,7 +53,7 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 		.Get();
 
 	UFixedTestCameraDirector* CameraDirector = nullptr;
-	UCameraAsset* Camera = FCameraAssetTestBuilder()
+	UCameraAsset* Camera = FCameraAssetAssembler()
 		.MakeDirector<UFixedTestCameraDirector>()
 			.Pin(CameraDirector)
 			.Done()
@@ -83,9 +84,10 @@ bool FCameraAssetBuilderDefaultParametersTest::RunTest(const FString& Parameters
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCameraAssetBuilderDefaultParametersCollisionTest, "System.Engine.GameplayCameras.CameraAssetBuilder.DefaultParametersCollision", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& Parameters)
 {
+	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
-	UCameraRigAsset* CameraRigOne = FCameraRigAssetTestBuilder(TEXT("One"))
+	UCameraRigAsset* CameraRigOne = FCameraRigAssetAssembler(TEXT("One"))
 		.MakeRootNode<UOffsetCameraNode>().Named(TEXT("Offset"))
 			.Done()
 		.AddBlendableParameter(TEXT("TranslationOffset"), ECameraVariableType::Vector3d, TEXT("Offset"), GET_MEMBER_NAME_CHECKED(UOffsetCameraNode, TranslationOffset))
@@ -94,7 +96,7 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.SetDefaultParameterValue<FVector3d>(TEXT("TranslationOffset"), FVector3d(10.0, 20.0, 0.0))
 		.Get();
 
-	UCameraRigAsset* CameraRigTwo = FCameraRigAssetTestBuilder(TEXT("Two"))
+	UCameraRigAsset* CameraRigTwo = FCameraRigAssetAssembler(TEXT("Two"))
 		.MakeRootNode<ULensParametersCameraNode>().Named(TEXT("Lens"))
 			.Done()
 		.AddBlendableParameter(TEXT("FocalLength"), ECameraVariableType::Float, TEXT("Lens"), GET_MEMBER_NAME_CHECKED(ULensParametersCameraNode, FocalLength))
@@ -103,7 +105,7 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.SetDefaultParameterValue<float>(TEXT("FocalLength"), 55.0f)
 		.Get();
 
-	UCameraRigAsset* CameraRigThree = FCameraRigAssetTestBuilder(TEXT("Three"))
+	UCameraRigAsset* CameraRigThree = FCameraRigAssetAssembler(TEXT("Three"))
 		.MakeArrayRootNode()
 			.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children).Named(TEXT("Offset2"))
 				.Done()
@@ -118,7 +120,7 @@ bool FCameraAssetBuilderDefaultParametersCollisionTest::RunTest(const FString& P
 		.Get();
 
 	UFixedTestCameraDirector* CameraDirector = nullptr;
-	UCameraAsset* Camera = FCameraAssetTestBuilder()
+	UCameraAsset* Camera = FCameraAssetAssembler()
 		.MakeDirector<UFixedTestCameraDirector>()
 			.Pin(CameraDirector)
 			.Done()

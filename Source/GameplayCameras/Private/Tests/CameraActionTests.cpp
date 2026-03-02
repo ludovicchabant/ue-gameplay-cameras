@@ -6,7 +6,7 @@
 #include "Nodes/Blends/LinearBlendCameraNode.h"
 #include "Nodes/Common/OffsetCameraNode.h"
 #include "Services/CameraActionService.h"
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 #include "Tests/GameplayCamerasTestObjects.h"
 
 namespace UE::Cameras::Test
@@ -35,7 +35,7 @@ namespace UE::Cameras::Test
 		TestData.Evaluator = MakeShared<FCameraSystemEvaluator>();
 		TestData.Evaluator->Initialize();
 
-		TestData.TestEvaluationContext = FCameraEvaluationContextTestBuilder()
+		TestData.TestEvaluationContext = FCameraEvaluationContextAssembler()
 			.CreateCameraRig(TEXT("TestRig"))
 				.MakeRootNode<UOffsetCameraNode>()
 					.Done()

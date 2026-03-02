@@ -246,6 +246,7 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(LumenMaxTraceDistance);
 
 		UE_DRAW_PP(LumenDiffuseColorBoost);
+		UE_DRAW_PP(LumenAmbientOcclusionIntensity);
 		UE_DRAW_PP(LumenSkylightLeaking);
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UE_DRAW_PP(LumenSkylightLeakingTint);

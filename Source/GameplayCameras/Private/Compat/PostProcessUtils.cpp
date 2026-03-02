@@ -193,6 +193,7 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(LumenMaxTraceDistance);
 
 		UE_SET_PP(LumenDiffuseColorBoost);
+		UE_SET_PP(LumenAmbientOcclusionIntensity);
 		UE_SET_PP(LumenSkylightLeaking);
 		UE_SET_PP(LumenFullSkylightLeakingDistance);
 
@@ -492,6 +493,7 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 		UE_SET_PP(LumenMaxTraceDistance);
 
 		UE_LERP_PP(LumenDiffuseColorBoost);
+		UE_LERP_PP(LumenAmbientOcclusionIntensity);
 		UE_LERP_PP(LumenSkylightLeaking);
 		UE_LERP_PP(LumenFullSkylightLeakingDistance);
 

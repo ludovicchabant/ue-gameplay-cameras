@@ -21,13 +21,15 @@
 
 #include <type_traits>
 
-namespace UE::Cameras::Test
+#define UE_API GAMEPLAYCAMERAS_API
+
+namespace UE::Cameras
 {
 
-class FCameraEvaluationContextTestBuilder;
+class FCameraEvaluationContextAssembler;
 
 /**
- * Template mix-in for adding "go back to parent" support to a builder class.
+ * Template mix-in for adding "go back to parent" support to an assembler class.
  */
 template<typename ParentType>
 struct TScopedConstruction
@@ -36,7 +38,7 @@ struct TScopedConstruction
 		: Parent(InParent)
 	{}
 
-	/** Return the parent builder instance. */
+	/** Return the parent assembler instance. */
 	ParentType& Done() { return Parent; }
 
 protected:
@@ -91,8 +93,10 @@ public:
 	/** Adds an object to the repository. */
 	void Register(UObject* InObject, const FString& InName)
 	{
-		ensure(InObject && !InName.IsEmpty());
-		NamedObjects.Add(InName, InObject);
+		if (ensure(InObject && !InName.IsEmpty()))
+		{
+			NamedObjects.Add(InName, InObject);
+		}		
 	}
 
 	/** Gets an object from the repository. */
@@ -128,24 +132,24 @@ struct IHasNamedObjectRegistry
 };
 
 /**
- * A builder class for camera nodes.
+ * An assembler class for camera nodes.
  */
 template<
 	typename ParentType,
 	typename NodeType,
 	typename V = std::enable_if_t<TPointerIsConvertibleFromTo<NodeType, UCameraNode>::Value>
 	>
-class TCameraNodeTestBuilder 
+class TCameraNodeAssembler 
 	: public TScopedConstruction<ParentType>
 	, public TCameraObjectInitializer<NodeType>
 	, public IHasNamedObjectRegistry
 {
 public:
 
-	using ThisType = TCameraNodeTestBuilder<ParentType, NodeType, V>;
+	using ThisType = TCameraNodeAssembler<ParentType, NodeType, V>;
 
-	/** Creates a new instance of this builder class. */
-	TCameraNodeTestBuilder(ParentType& InParent, UObject* Outer = nullptr)
+	/** Creates a new instance of this assembler class. */
+	TCameraNodeAssembler(ParentType& InParent, UObject* Outer = nullptr)
 		: TScopedConstruction<ParentType>(InParent)
 	{
 		if (Outer == nullptr)
@@ -206,21 +210,21 @@ public:
 
 	/**
 	 * Adds a child camera node via a public array member field on the camera node.
-	 * Returns a builder for the child. You can go back to the current builder by
-	 * calling Done() on the child builder.
+	 * Returns an assembler for the child. You can go back to the current assembler by
+	 * calling Done() on the child assembler.
 	 */
 	template<
 		typename ChildNodeType, 
 		typename ArrayItemType,
 		typename = std::enable_if_t<TPointerIsConvertibleFromTo<ChildNodeType, ArrayItemType>::Value>
 		>
-	TCameraNodeTestBuilder<ThisType, ChildNodeType>
+	TCameraNodeAssembler<ThisType, ChildNodeType>
 	AddChild(TArray<TObjectPtr<ArrayItemType>> NodeType::*ArrayField)
 	{
-		TCameraNodeTestBuilder<ThisType, ChildNodeType> ChildBuilder(*this, CameraNode->GetOuter());
+		TCameraNodeAssembler<ThisType, ChildNodeType> ChildAssembler(*this, CameraNode->GetOuter());
 		TArray<TObjectPtr<ArrayItemType>>& ArrayRef = (CameraNode->*ArrayField);
-		ArrayRef.Add(ChildBuilder.Get());
-		return ChildBuilder;
+		ArrayRef.Add(ChildAssembler.Get());
+		return ChildAssembler;
 	}
 
 	/**
@@ -232,16 +236,16 @@ public:
 			TPointerIsConvertibleFromTo<NodeType, UArrayCameraNode>::Value &&
 			TPointerIsConvertibleFromTo<ChildNodeType, UCameraNode>::Value>
 		>
-	TCameraNodeTestBuilder<ThisType, ChildNodeType>
+	TCameraNodeAssembler<ThisType, ChildNodeType>
 	AddArrayChild()
 	{
-		TCameraNodeTestBuilder<ThisType, ChildNodeType> ChildBuilder(*this, CameraNode->GetOuter());
-		CastChecked<UArrayCameraNode>(CameraNode)->Children.Add(ChildBuilder.Get());
-		return ChildBuilder;
+		TCameraNodeAssembler<ThisType, ChildNodeType> ChildAssembler(*this, CameraNode->GetOuter());
+		CastChecked<UArrayCameraNode>(CameraNode)->Children.Add(ChildAssembler.Get());
+		return ChildAssembler;
 	}
 
 	/** 
-	 * Casting operator that returns a builder for the same camera node, but typed
+	 * Casting operator that returns an assembler for the same camera node, but typed
 	 * around a parent class of the camera node's class. Mostly useful for implicit casting
 	 * when using AddChild().
 	 */
@@ -249,9 +253,9 @@ public:
 		typename OtherNodeType,
 		typename = std::enable_if_t<TPointerIsConvertibleFromTo<NodeType, OtherNodeType>::Value>
 		>
-	operator TCameraNodeTestBuilder<ParentType, OtherNodeType>() const
+	operator TCameraNodeAssembler<ParentType, OtherNodeType>() const
 	{
-		return TCameraNodeTestBuilder<ParentType, OtherNodeType>(
+		return TCameraNodeAssembler<ParentType, OtherNodeType>(
 				EForceReuseCameraNode::Yes, 
 				TScopedConstruction<ParentType>::Parent, 
 				CameraNode);
@@ -274,7 +278,7 @@ private:
 
 	enum class EForceReuseCameraNode { Yes };
 
-	TCameraNodeTestBuilder(EForceReuseCameraNode ForceReuse, ParentType& InParent, NodeType* ExistingCameraNode)
+	TCameraNodeAssembler(EForceReuseCameraNode ForceReuse, ParentType& InParent, NodeType* ExistingCameraNode)
 		: TScopedConstruction<ParentType>(InParent)
 		, CameraNode(ExistingCameraNode)
 	{
@@ -287,20 +291,20 @@ private:
 };
 
 /**
- * Builder class for camera rig transitions.
+ * Assembler class for camera rig transitions.
  */
 template<typename ParentType>
-class TCameraRigTransitionTestBuilder 
+class TCameraRigTransitionAssembler 
 	: public TScopedConstruction<ParentType>
 	, public TCameraObjectInitializer<UCameraRigTransition>
 	, public IHasNamedObjectRegistry
 {
 public:
 
-	using ThisType = TCameraRigTransitionTestBuilder<ParentType>;
+	using ThisType = TCameraRigTransitionAssembler<ParentType>;
 
-	/** Creates a new instance of this builder class. */
-	TCameraRigTransitionTestBuilder(ParentType& InParent, UObject* Outer = nullptr)
+	/** Creates a new instance of this assembler class. */
+	TCameraRigTransitionAssembler(ParentType& InParent, UObject* Outer = nullptr)
 		: TScopedConstruction<ParentType>(InParent)
 	{
 		if (Outer == nullptr)
@@ -331,18 +335,18 @@ public:
 	}
 
 	/** 
-	 * Creates a blend node of the given type, and returns a builder for it.
-	 * You can go back to this transition builder by calling Done() on the blend builder.
+	 * Creates a blend node of the given type, and returns an assembler for it.
+	 * You can go back to this transition assembler by calling Done() on the blend assembler.
 	 */
 	template<
 		typename BlendType,
 		typename = std::enable_if_t<TPointerIsConvertibleFromTo<BlendType, UBlendCameraNode>::Value>
 		>
-	TCameraNodeTestBuilder<ThisType, BlendType> MakeBlend()
+	TCameraNodeAssembler<ThisType, BlendType> MakeBlend()
 	{
-		TCameraNodeTestBuilder<ThisType, BlendType> BlendBuilder(*this, Transition->GetOuter());
-		Transition->Blend = BlendBuilder.Get();
-		return BlendBuilder;
+		TCameraNodeAssembler<ThisType, BlendType> BlendAssembler(*this, Transition->GetOuter());
+		Transition->Blend = BlendAssembler.Get();
+		return BlendAssembler;
 	}
 
 	/** Adds a transition condition. */
@@ -389,12 +393,12 @@ private:
 };
 
 /**
- * The root builder class for building a camera rig. Follow the fluent interface to construct the
+ * The root assembler class for building a camera rig. Follow the fluent interface to construct the
  * hierarchy of camera nodes, add transitions, etc.
  *
  * For instance:
  *
- *		UCameraRigAsset* CameraRig = FCameraRigAssetTestBuilder(TEXT("SimpleTest"))
+ *		UCameraRigAsset* CameraRig = FCameraRigAssetAssembler(TEXT("SimpleTest"))
  *			.MakeRootNode<UArrayCameraNode>()
  *				.AddChild<UOffsetCameraNode>(&UArrayCameraNode::Children)
  *					.SetParameter(&UOffsetCameraNode::TranslationOffset, FVector3d{ 1, 0, 0 })
@@ -409,7 +413,7 @@ private:
  *			.Get();
  */
 template<typename ThisType>
-class TCameraRigAssetTestBuilderBase 
+class TCameraRigAssetAssemblerBase 
 	: public TCameraObjectInitializer<UCameraRigAsset>
 	, public IHasNamedObjectRegistry
 {
@@ -437,51 +441,51 @@ public:
 
 	/**
 	 * Creates a new camera node and sets it as the root node of the rig.
-	 * Returns the builder for the root camera node. You can come back to the rig builder
-	 * by calling Done() on the node builder.
+	 * Returns the assembler for the root camera node. You can come back to the rig assembler
+	 * by calling Done() on the node assembler.
 	 */
 	template<typename NodeType>
-	TCameraNodeTestBuilder<ThisType, NodeType> MakeRootNode()
+	TCameraNodeAssembler<ThisType, NodeType> MakeRootNode()
 	{
 		ThisType* ActualThis = static_cast<ThisType*>(this);
-		TCameraNodeTestBuilder<ThisType, NodeType> NodeBuilder(*ActualThis, CameraRig);
-		CameraRig->RootNode = NodeBuilder.Get();
-		return NodeBuilder;
+		TCameraNodeAssembler<ThisType, NodeType> NodeAssembler(*ActualThis, CameraRig);
+		CameraRig->RootNode = NodeAssembler.Get();
+		return NodeAssembler;
 	}
 
 	/**
 	 * A convenience method that calls MakeRootNode with a UArrayCameraNode.
 	 */
-	TCameraNodeTestBuilder<ThisType, UArrayCameraNode> MakeArrayRootNode()
+	TCameraNodeAssembler<ThisType, UArrayCameraNode> MakeArrayRootNode()
 	{
 		return MakeRootNode<UArrayCameraNode>();
 	}
 
 	/**
-	 * Adds a new enter transition and returns a builder for it. You can come back to the
-	 * rig builder by calling Done() on the transition builder.
+	 * Adds a new enter transition and returns an assembler for it. You can come back to the
+	 * rig assembler by calling Done() on the transition assembler.
 	 */
-	TCameraRigTransitionTestBuilder<ThisType> AddEnterTransition()
+	TCameraRigTransitionAssembler<ThisType> AddEnterTransition()
 	{
-		TCameraRigTransitionTestBuilder<ThisType> TransitionBuilder(*this, CameraRig);
-		CameraRig->EnterTransitions.Add(TransitionBuilder.Get());
-		return TransitionBuilder;
+		TCameraRigTransitionAssembler<ThisType> TransitionAssembler(*this, CameraRig);
+		CameraRig->EnterTransitions.Add(TransitionAssembler.Get());
+		return TransitionAssembler;
 	}
 
 	/**
-	 * Adds a new exit transition and returns a builder for it. You can come back to the
-	 * rig builder by calling Done() on the transition builder.
+	 * Adds a new exit transition and returns an assembler for it. You can come back to the
+	 * rig assembler by calling Done() on the transition assembler.
 	 */
-	TCameraRigTransitionTestBuilder<ThisType> AddExitTransition()
+	TCameraRigTransitionAssembler<ThisType> AddExitTransition()
 	{
-		TCameraRigTransitionTestBuilder<ThisType> TransitionBuilder(*this, CameraRig);
-		CameraRig->ExitTransitions.Add(TransitionBuilder.Get());
-		return TransitionBuilder;
+		TCameraRigTransitionAssembler<ThisType> TransitionAssembler(*this, CameraRig);
+		CameraRig->ExitTransitions.Add(TransitionAssembler.Get());
+		return TransitionAssembler;
 	}
 
 	/**
 	 * Creates a new exposed rig parameter and hooks it up to the given camera node's property.
-	 * When building the node hierarchy, you can use the Pin() method on the node builders to
+	 * When building the node hierarchy, you can use the Pin() method on the node assemblers to
 	 * save a pointer to nodes you need for ExposeParameter().
 	 *
 	 * The created parameter is automatically stored in the named object registry under its name.
@@ -513,6 +517,82 @@ public:
 		UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
 		ensure(Target);
 		return AddBlendableParameter(ParameterName, ParameterType, Target, TargetPropertyName);
+	}
+
+	/**
+	 * Creates a new exposed rig parameter and hooks it up to the given camera node's property.
+	 * When building the node hierarchy, you can use the Pin() method on the node assemblers to
+	 * save a pointer to nodes you need for ExposeParameter().
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
+	 */
+	ThisType& AddDataParameter(const FString& ParameterName, TSubclassOf<UObject> ObjectClass, UCameraNode* Target, FName TargetPropertyName)
+	{
+		UCameraObjectInterfaceDataParameter* DataParameter = NewObject<UCameraObjectInterfaceDataParameter>(CameraRig);
+		DataParameter->DataType = ECameraContextDataType::Object;
+		DataParameter->DataContainerType = ECameraContextDataContainerType::None;
+		DataParameter->DataTypeObject = ObjectClass.Get();
+		DataParameter->InterfaceParameterName = ParameterName;
+
+		NamedObjectRegistry->Register(DataParameter, ParameterName);
+		CameraRig->Interface.DataParameters.Add(DataParameter);
+
+		UCameraObjectInterfaceParameterGetter* Getter = NewObject<UCameraObjectInterfaceParameterGetter>(CameraRig);
+		Getter->ParameterGuid = DataParameter->GetGuid();
+		ensure(Getter->ParameterGuid.IsValid());
+		CameraRig->Connections.Add(Getter, NAME_None, Target, TargetPropertyName);
+
+		return *static_cast<ThisType*>(this);
+	}
+
+	/**
+	 * Creates a new exposed rig parameter and hooks it up to the given camera node's property.
+	 * When building the node hierarchy, you can use the Pin() method on the node assemblers to
+	 * save a pointer to nodes you need for ExposeParameter().
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
+	 */
+	ThisType& AddDataParameter(const FString& ParameterName, const UScriptStruct* InScriptStruct, UCameraNode* Target, FName TargetPropertyName)
+	{
+		UCameraObjectInterfaceDataParameter* DataParameter = NewObject<UCameraObjectInterfaceDataParameter>(CameraRig);
+		DataParameter->DataType = ECameraContextDataType::Struct;
+		DataParameter->DataContainerType = ECameraContextDataContainerType::None;
+		DataParameter->DataTypeObject = InScriptStruct;
+		DataParameter->InterfaceParameterName = ParameterName;
+
+		NamedObjectRegistry->Register(DataParameter, ParameterName);
+		CameraRig->Interface.DataParameters.Add(DataParameter);
+
+		UCameraObjectInterfaceParameterGetter* Getter = NewObject<UCameraObjectInterfaceParameterGetter>(CameraRig);
+		Getter->ParameterGuid = DataParameter->GetGuid();
+		ensure(Getter->ParameterGuid.IsValid());
+		CameraRig->Connections.Add(Getter, NAME_None, Target, TargetPropertyName);
+
+		return *static_cast<ThisType*>(this);
+	}
+
+	/**
+	 * A variant of AddDataParameter that retrieves the target node from the named registry.
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
+	 */
+	ThisType& AddDataParameter(const FString& ParameterName, TSubclassOf<UObject> ObjectClass, const FString& TargetName, FName TargetPropertyName)
+	{
+		UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
+		ensure(Target);
+		return AddDataParameter(ParameterName, ObjectClass, Target, TargetPropertyName);
+	}
+
+	/**
+	 * A variant of AddDataParameter that retrieves the target node from the named registry.
+	 *
+	 * The created parameter is automatically stored in the named object registry under its name.
+	 */
+	ThisType& AddDataParameter(const FString& ParameterName, const UScriptStruct* InScriptStruct, const FString& TargetName, FName TargetPropertyName)
+	{
+		UCameraNode* Target = NamedObjectRegistry->Get<UCameraNode>(TargetName);
+		ensure(Target);
+		return AddDataParameter(ParameterName, InScriptStruct, Target, TargetPropertyName);
 	}
 
 	/** Runs arbitrary setup logic on the camera rig. */
@@ -572,21 +652,35 @@ public:
 		void* TargetAddress = RawParameters + PropertyDesc->CachedProperty->GetOffset_ForInternal();
 		const void* SourceAddress = &ParameterValue;
 
-		if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+		if constexpr (IsSupportedBlendableParameterType<ValueType>())
 		{
-			if (ParameterDefinition->VariableType == ECameraVariableType::BlendableStruct)
+			if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Blendable)
+			{
+				if (ParameterDefinition->VariableType == ECameraVariableType::BlendableStruct)
+				{
+					PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
+				}
+				else
+				{
+					SetDefaultBlendableParameterValue(*ParameterDefinition, TargetAddress, ParameterValue);
+				}
+			}
+			else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
 			{
 				PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
 			}
-			else
-			{
-				SetDefaultBlendableParameterValue(*ParameterDefinition, TargetAddress, ParameterValue);
-			}
 		}
-		else if (ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data)
+		// If the data type is not a supported blendable parameter type
+		// then we need a version of this function that doesn't use SetDefaultBlendableParameterValue at all
+		// otherwise we will have a compile failure due to SetDefaultBlendableParameterValue not being implemented
+		// for that data type
+		else
 		{
-			PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
-		}
+			if (ensure(ParameterDefinition->ParameterType == ECameraObjectInterfaceParameterType::Data))
+			{
+				PropertyDesc->CachedProperty->CopyCompleteValue(TargetAddress, SourceAddress);
+			}
+		}		
 
 		return *static_cast<ThisType*>(this);
 	}
@@ -599,7 +693,7 @@ public:
 
 protected:
 
-	TCameraRigAssetTestBuilderBase(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr)
+	TCameraRigAssetAssemblerBase(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr)
 	{
 		Initialize(InNamedObjectRegistry, Name, Outer);
 	}
@@ -644,66 +738,78 @@ private:
 
 private:
 
+	template <typename ValueType>
+	static constexpr bool IsSupportedBlendableParameterType() { return false; }
+
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+	template<>\
+	constexpr bool IsSupportedBlendableParameterType<ValueType>()\
+	{\
+		return true;\
+	}
+	UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+
 	UCameraRigAsset* CameraRig;
 
 	TSharedPtr<FNamedObjectRegistry> NamedObjectRegistry;
 };
 
 /**
- * Default version of the camera rig asset builder.
+ * Default version of the camera rig asset assembler.
  */
-class FCameraRigAssetTestBuilder 
-	: public TCameraRigAssetTestBuilderBase<FCameraRigAssetTestBuilder>
+class FCameraRigAssetAssembler 
+	: public TCameraRigAssetAssemblerBase<FCameraRigAssetAssembler>
 {
 public:
 
-	FCameraRigAssetTestBuilder(FName Name = NAME_None, UObject* Outer = nullptr);
-	FCameraRigAssetTestBuilder(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr);
+	UE_API FCameraRigAssetAssembler(FName Name = NAME_None, UObject* Outer = nullptr);
+	UE_API FCameraRigAssetAssembler(TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr);
 };
 
 /**
- * Version of the camera rig asset builder that has a scoped parent, with a Done() method exposed
+ * Version of the camera rig asset assembler that has a scoped parent, with a Done() method exposed
  * to go back to it.
  */
 template<typename ParentType>
-class TScopedCameraRigAssetTestBuilder
+class TScopedCameraRigAssetAssembler
 	: public TScopedConstruction<ParentType>
-	, public TCameraRigAssetTestBuilderBase<TScopedCameraRigAssetTestBuilder<ParentType>>
+	, public TCameraRigAssetAssemblerBase<TScopedCameraRigAssetAssembler<ParentType>>
 {
 public:
 
-	TScopedCameraRigAssetTestBuilder(ParentType& InParent, FName Name = NAME_None, UObject* Outer = nullptr)
+	TScopedCameraRigAssetAssembler(ParentType& InParent, FName Name = NAME_None, UObject* Outer = nullptr)
 		: TScopedConstruction<ParentType>(InParent)
-		, TCameraRigAssetTestBuilderBase<TScopedCameraRigAssetTestBuilder<ParentType>>(Name, Outer)
+		, TCameraRigAssetAssemblerBase<TScopedCameraRigAssetAssembler<ParentType>>(Name, Outer)
 	{
 	}
 
-	TScopedCameraRigAssetTestBuilder(ParentType& InParent, TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr)
+	TScopedCameraRigAssetAssembler(ParentType& InParent, TSharedPtr<FNamedObjectRegistry> InNamedObjectRegistry, FName Name = NAME_None, UObject* Outer = nullptr)
 		: TScopedConstruction<ParentType>(InParent)
-		, TCameraRigAssetTestBuilderBase<TScopedCameraRigAssetTestBuilder<ParentType>>(InNamedObjectRegistry, Name, Outer)
+		, TCameraRigAssetAssemblerBase<TScopedCameraRigAssetAssembler<ParentType>>(InNamedObjectRegistry, Name, Outer)
 	{
 	}
 };
 
 /**
- * Builder class for a camera director.
+ * Assembler class for a camera director.
  */
 template<
 	typename ParentType,
 	typename DirectorType,
 	typename V = std::enable_if_t<TPointerIsConvertibleFromTo<DirectorType, UCameraDirector>::Value>
 	>
-class TCameraDirectorTestBuilder
+class TCameraDirectorAssembler
 	: public TScopedConstruction<ParentType>
 	, public TCameraObjectInitializer<DirectorType>
 	, public IHasNamedObjectRegistry
 {
 public:
 
-	using ThisType = TCameraDirectorTestBuilder<ParentType, DirectorType, V>;
+	using ThisType = TCameraDirectorAssembler<ParentType, DirectorType, V>;
 
-	/** Creates a new instance of this builder class. */
-	TCameraDirectorTestBuilder(ParentType& InParent, UObject* Outer = nullptr)
+	/** Creates a new instance of this assembler class. */
+	TCameraDirectorAssembler(ParentType& InParent, UObject* Outer = nullptr)
 		: TScopedConstruction<ParentType>(InParent)
 	{
 		if (Outer == nullptr)
@@ -777,29 +883,29 @@ private:
 };
 
 /**
- * Builder class for a camera asset.
+ * Assembler class for a camera asset.
  */
-class FCameraAssetTestBuilder
+class FCameraAssetAssembler
 	: public TCameraObjectInitializer<UCameraAsset>
 	, public IHasNamedObjectRegistry
 {
 public:
 
-	using ThisType = FCameraAssetTestBuilder;
+	using ThisType = FCameraAssetAssembler;
 
-	/** Create a new instance of this builder class. */
-	FCameraAssetTestBuilder(UObject* Owner = nullptr);
+	/** Create a new instance of this assembler class. */
+	UE_API FCameraAssetAssembler(UObject* Owner = nullptr);
 
 	/** Gets the created camera asset. */
 	UCameraAsset* Get() const { return CameraAsset; }
 
-	/** Builds a new camera director of the given type and returns a builder object for its. */
+	/** Builds a new camera director of the given type and returns an assembler object for its. */
 	template<typename DirectorType>
-	TCameraDirectorTestBuilder<ThisType, DirectorType> MakeDirector()
+	TCameraDirectorAssembler<ThisType, DirectorType> MakeDirector()
 	{
-		TCameraDirectorTestBuilder<ThisType, DirectorType> DirectorBuilder(*this, CameraAsset);
-		CameraAsset->SetCameraDirector(DirectorBuilder.Get());
-		return DirectorBuilder;
+		TCameraDirectorAssembler<ThisType, DirectorType> DirectorAssembler(*this, CameraAsset);
+		CameraAsset->SetCameraDirector(DirectorAssembler.Get());
+		return DirectorAssembler;
 	}
 
 	/**
@@ -854,18 +960,18 @@ private:
 };
 
 /**
- * Builder class for a camera evaluation context and its camera asset.
+ * Assembler class for a camera evaluation context and its camera asset.
  */
-class FCameraEvaluationContextTestBuilder
+class FCameraEvaluationContextAssembler
 	: public TCameraObjectInitializer<FCameraEvaluationContext>
 	, public IHasNamedObjectRegistry
 {
 public:
 
-	using ThisType = FCameraEvaluationContextTestBuilder;
+	using ThisType = FCameraEvaluationContextAssembler;
 
-	/** Creates a new instance of this builder class. */
-	FCameraEvaluationContextTestBuilder(UObject* Owner = nullptr);
+	/** Creates a new instance of this assembler class. */
+	UE_API FCameraEvaluationContextAssembler(UObject* Owner = nullptr);
 
 	/** Gets the created evaluation context. */
 	TSharedRef<FCameraEvaluationContext> Get() const { return EvaluationContext.ToSharedRef(); }
@@ -876,50 +982,50 @@ public:
 	/** Builds the camera asset. */
 	ThisType& BuildCameraAsset() { CameraAsset->BuildCamera(); return *this; }
 
-	/** Builds a new camera director of the given type and returns a builder object for its. */
+	/** Builds a new camera director of the given type and returns an assembler object for its. */
 	template<typename DirectorType>
-	TCameraDirectorTestBuilder<ThisType, DirectorType> MakeDirector()
+	TCameraDirectorAssembler<ThisType, DirectorType> MakeDirector()
 	{
-		TCameraDirectorTestBuilder<ThisType, DirectorType> DirectorBuilder(*this, EvaluationContext->GetOwner());
-		CameraAsset->SetCameraDirector(DirectorBuilder.Get());
-		return DirectorBuilder;
+		TCameraDirectorAssembler<ThisType, DirectorType> DirectorAssembler(*this, EvaluationContext->GetOwner());
+		CameraAsset->SetCameraDirector(DirectorAssembler.Get());
+		return DirectorAssembler;
 	}
 
-	/** Builds a new single camera director and returns a builder object for its. */
-	TCameraDirectorTestBuilder<ThisType, USingleCameraDirector> MakeSingleDirector()
+	/** Builds a new single camera director and returns an assembler object for its. */
+	TCameraDirectorAssembler<ThisType, USingleCameraDirector> MakeSingleDirector()
 	{
 		return MakeDirector<USingleCameraDirector>();
 	}
 
-	/** Builds a new single camera director, set its camera rig, and returns a builder object for its. */
-	TCameraDirectorTestBuilder<ThisType, USingleCameraDirector> MakeSingleDirector(UCameraRigAsset* InCameraRig)
+	/** Builds a new single camera director, set its camera rig, and returns an assembler object for its. */
+	TCameraDirectorAssembler<ThisType, USingleCameraDirector> MakeSingleDirector(UCameraRigAsset* InCameraRig)
 	{
-		auto DirectorBuilder = MakeDirector<USingleCameraDirector>();
-		DirectorBuilder.Setup([InCameraRig](USingleCameraDirector* Director)
+		auto DirectorAssembler = MakeDirector<USingleCameraDirector>();
+		DirectorAssembler.Setup([InCameraRig](USingleCameraDirector* Director)
 				{
 					Director->CameraRig = InCameraRig;
 				});
-		return DirectorBuilder;
+		return DirectorAssembler;
 	}
 
-	/** Builds a new single camera director, set its camera rig to the named object, and returns a builder object for its. */
-	TCameraDirectorTestBuilder<ThisType, USingleCameraDirector> MakeSingleDirector(const FString& InCameraRigName)
+	/** Builds a new single camera director, set its camera rig to the named object, and returns an assembler object for its. */
+	TCameraDirectorAssembler<ThisType, USingleCameraDirector> MakeSingleDirector(const FString& InCameraRigName)
 	{
 		UCameraRigAsset* CameraRig = NamedObjectRegistry->Get<UCameraRigAsset>(InCameraRigName);
 
-		auto DirectorBuilder = MakeDirector<USingleCameraDirector>();
-		DirectorBuilder.Setup([CameraRig](USingleCameraDirector* Director)
+		auto DirectorAssembler = MakeDirector<USingleCameraDirector>();
+		DirectorAssembler.Setup([CameraRig](USingleCameraDirector* Director)
 				{
 					Director->CameraRig = CameraRig;
 				});
-		return DirectorBuilder;
+		return DirectorAssembler;
 	}
 
-	/** Creates a new camera rig asset builder and gives it a name to be recalled later.*/
-	TScopedCameraRigAssetTestBuilder<ThisType> CreateCameraRig(FName Name = NAME_None)
+	/** Creates a new camera rig asset assembler and gives it a name to be recalled later.*/
+	TScopedCameraRigAssetAssembler<ThisType> CreateCameraRig(FName Name = NAME_None)
 	{
-		TScopedCameraRigAssetTestBuilder<ThisType> CameraRigBuilder(*this, GetNamedObjectRegistry(), Name, CameraAsset);
-		return CameraRigBuilder;
+		TScopedCameraRigAssetAssembler<ThisType> CameraRigAssembler(*this, GetNamedObjectRegistry(), Name, CameraAsset);
+		return CameraRigAssembler;
 	}
 
 	/** Runs arbitrary setup logic on the evaluation context. */
@@ -953,9 +1059,9 @@ private:
 };
 
 /**
- * Builder class for a camera system evaluator.
+ * Assembler class for a camera system evaluator.
  */
-class FCameraSystemEvaluatorBuilder
+class FCameraSystemEvaluatorAssembler
 {
 public:
 
@@ -968,5 +1074,6 @@ public:
 	}
 };
 
-}  // namespace UE::Cameras::Test
+}  // namespace UE::Cameras::Build
 
+#undef UE_API

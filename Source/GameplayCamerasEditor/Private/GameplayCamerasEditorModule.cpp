@@ -99,7 +99,7 @@ public:
 		}
 		else
 		{
-			FCoreDelegates::OnPostEngineInit.AddRaw(this, &FGameplayCamerasEditorModule::OnPostEngineInit);
+			FCoreDelegates::GetOnPostEngineInit().AddRaw(this, &FGameplayCamerasEditorModule::OnPostEngineInit);
 		}
 
 		FCoreDelegates::OnEnginePreExit.AddRaw(this, &FGameplayCamerasEditorModule::OnPreExit);
@@ -144,7 +144,7 @@ public:
 
 		TeardownLiveEditManager();
 
-		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
+		FCoreDelegates::GetOnPostEngineInit().RemoveAll(this);
 		FCoreDelegates::OnEnginePreExit.RemoveAll(this);
 
 		FEditorDelegates::OnPreForceDeleteObjects.RemoveAll(this);

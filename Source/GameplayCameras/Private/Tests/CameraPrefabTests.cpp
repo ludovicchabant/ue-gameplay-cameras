@@ -8,7 +8,7 @@
 #include "Misc/AutomationTest.h"
 #include "Nodes/Common/CameraRigCameraNode.h"
 #include "Nodes/Common/LensParametersCameraNode.h"
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 #include "Tests/GameplayCamerasTestObjects.h"
 
 #define LOCTEXT_NAMESPACE "CameraPrefabTests"
@@ -16,14 +16,14 @@
 namespace UE::Cameras::Test
 {
 
-TSharedRef<FNamedObjectRegistry> CreatePrefabTestCameraRigs()
+TSharedRef<UE::Cameras::FNamedObjectRegistry> CreatePrefabTestCameraRigs()
 {
 	TSharedRef<FNamedObjectRegistry> NamedObjectRegistry = MakeShared<FNamedObjectRegistry>();
 
 	// A camera rig with a lens parameter node.
 	// That node has FocalLength, Aperture, and FocusDistance exposed as rig parameters.
 	// Default values are 22, 3, and 500 respectively.
-	UCameraRigAsset* InnerRig = FCameraRigAssetTestBuilder(NamedObjectRegistry, TEXT("InnerRig"))
+	UCameraRigAsset* InnerRig = FCameraRigAssetAssembler(NamedObjectRegistry, TEXT("InnerRig"))
 		.MakeRootNode<ULensParametersCameraNode>()
 			.Named(TEXT("InnerLensNode"))
 			.Done()
@@ -47,7 +47,7 @@ TSharedRef<FNamedObjectRegistry> CreatePrefabTestCameraRigs()
 	// It forwards FocalLength and Aperture as rig parameters.
 	// It changes their default values to 18 and 4.5 respectively.
 	// It overrides FocusDistance to 600.
-	UCameraRigAsset* FirstLevelRig = FCameraRigAssetTestBuilder(NamedObjectRegistry, TEXT("FirstLevelRig"))
+	UCameraRigAsset* FirstLevelRig = FCameraRigAssetAssembler(NamedObjectRegistry, TEXT("FirstLevelRig"))
 		.MakeRootNode<UCameraRigCameraNode>()
 			.Named(TEXT("FirstLevelPrefabNode"))
 			.Setup([InnerRig](UCameraRigCameraNode* Node)
@@ -76,7 +76,7 @@ TSharedRef<FNamedObjectRegistry> CreatePrefabTestCameraRigs()
 
 	// A rig that uses the previous rig as a prefab.
 	// It overrides FocalLenth to 16.
-	FCameraRigAssetTestBuilder(NamedObjectRegistry, TEXT("SecondLevelRig"))
+	FCameraRigAssetAssembler(NamedObjectRegistry, TEXT("SecondLevelRig"))
 		.MakeRootNode<UCameraRigCameraNode>()
 			.Named(TEXT("SecondLevelPrefabNode"))
 			.Setup([FirstLevelRig](UCameraRigCameraNode* Node)
@@ -100,13 +100,13 @@ TSharedRef<FNamedObjectRegistry> CreatePrefabTestCameraRigs()
 
 void RunCameraRig(UCameraRigAsset* InCameraRig, FCameraPose& OutCameraPose)
 {
-	TSharedRef<FCameraEvaluationContext> EvaluationContext = FCameraEvaluationContextTestBuilder()
+	TSharedRef<FCameraEvaluationContext> EvaluationContext = FCameraEvaluationContextAssembler()
 		.MakeSingleDirector(InCameraRig)
 			.Done()
 		.BuildCameraAsset()
 		.Get();
 
-	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorBuilder::Build();
+	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorAssembler::Build();
 	Evaluator->PushEvaluationContext(EvaluationContext);
 
 	EvaluationContext->GetInitialResult().bIsValid = true;

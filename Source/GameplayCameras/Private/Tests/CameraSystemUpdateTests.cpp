@@ -4,7 +4,7 @@
 #include "Core/CameraSystemEvaluator.h"
 #include "Core/RootCameraNode.h"
 #include "Misc/AutomationTest.h"
-#include "Tests/GameplayCamerasTestBuilder.h"
+#include "Build/CameraAssetAssembleUtils.h"
 #include "Tests/GameplayCamerasTestObjects.h"
 
 #define LOCTEXT_NAMESPACE "CameraSystemUpdateTests"
@@ -15,7 +15,7 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 	using namespace UE::Cameras;
 	using namespace UE::Cameras::Test;
 
-	TSharedRef<FCameraEvaluationContext> EvaluationContext = FCameraEvaluationContextTestBuilder()
+	TSharedRef<FCameraEvaluationContext> EvaluationContext = FCameraEvaluationContextAssembler()
 		.CreateCameraRig(TEXT("TestRig"))
 			.MakeRootNode<UUpdateTrackerCameraNode>()
 				.Done()
@@ -29,7 +29,7 @@ bool FCameraSystemFrameFlagsTest::RunTest(const FString& Parameters)
 		.BuildCameraAsset()
 		.Get();
 
-	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorBuilder::Build();
+	TSharedRef<FCameraSystemEvaluator> Evaluator = FCameraSystemEvaluatorAssembler::Build();
 	Evaluator->PushEvaluationContext(EvaluationContext);
 
 	EvaluationContext->GetInitialResult().bIsValid = true;
