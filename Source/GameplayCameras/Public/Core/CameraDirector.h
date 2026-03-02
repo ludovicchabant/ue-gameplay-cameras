@@ -105,7 +105,7 @@ public:
 	/**
 	 * Whether this camera director should run in the editor. 
 	 */
-	UPROPERTY(EditAnywhere, Category="Evaluation");
+	UPROPERTY(EditAnywhere, Category="Evaluation")
 	bool bRunInEditor = false;
 
 private:

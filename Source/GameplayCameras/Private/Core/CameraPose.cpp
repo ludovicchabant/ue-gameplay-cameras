@@ -270,8 +270,8 @@ void FCameraPose::GetViewInfo(FMinimalViewInfo& OutViewInfo) const
 	OutViewInfo.bUseFirstPersonParameters = EnableFirstPerson;
 	if (EnableFirstPerson)
 	{
-		OutViewInfo.FirstPersonFOV = FirstPersonFieldOfView >= 0 ? FirstPersonFieldOfView : OutViewInfo.FOV;
-		OutViewInfo.FirstPersonScale = FirstPersonScale >= 0 ? FirstPersonScale : 1.f;
+		OutViewInfo.FirstPersonFOV = FirstPersonFieldOfView > 0 ? FirstPersonFieldOfView : OutViewInfo.FOV;
+		OutViewInfo.FirstPersonScale = FirstPersonScale > 0 ? FirstPersonScale : 1.f;
 	}
 	else
 	{

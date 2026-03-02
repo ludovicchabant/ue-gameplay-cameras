@@ -13,6 +13,7 @@
 #include "Directors/SingleCameraDirector.h"
 #include "Engine/Canvas.h"
 #include "Engine/EngineTypes.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "IGameplayCamerasLiveEditManager.h"
 #include "IGameplayCamerasModule.h"
