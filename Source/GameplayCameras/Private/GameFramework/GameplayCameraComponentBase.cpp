@@ -126,21 +126,17 @@ bool UGameplayCameraComponentBase::CanRunCameraSystem() const
 {
 	using namespace UE::Cameras;
 
-	if (!bPlaybackMode)
-	{
 #if WITH_EDITOR
-		IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
-		if (TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager())
-		{
-			const bool bCanRunInEditor = bRunInEditor && GameplayCamerasModule.GetLiveEditManager()->CanRunInEditor();
-			return (!bIsEditorWorld || bCanRunInEditor);
-		}
-		return !bIsEditorWorld;
-#else
-		return true;
-#endif  // WITH_EDITOR
+	IGameplayCamerasModule& GameplayCamerasModule = IGameplayCamerasModule::Get();
+	if (TSharedPtr<IGameplayCamerasLiveEditManager> LiveEditManager = GameplayCamerasModule.GetLiveEditManager())
+	{
+		const bool bCanRunInEditor = bRunInEditor && GameplayCamerasModule.GetLiveEditManager()->CanRunInEditor();
+		return (!bIsEditorWorld || bCanRunInEditor);
 	}
-	return false;
+	return !bIsEditorWorld;
+#else
+	return true;
+#endif  // WITH_EDITOR
 }
 
 bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
