@@ -32,6 +32,9 @@ void FCameraVariableCollectionEditorCommands::RegisterCommands()
 			EUserInterfaceActionType::Button, FInputChord(EKeys::F2));
 	UI_COMMAND(DeleteVariable, "Delete Variable", "Removes a camera variable from the collection",
 			EUserInterfaceActionType::Button, FInputChord(EKeys::Delete));
+
+	UI_COMMAND(GoToVariable, "Go to Variable", "Navigates to the camera variable",
+			EUserInterfaceActionType::Button, FInputChord());
 }
 
 }  // namespace UE::Cameras

@@ -9,8 +9,9 @@
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 const ValueType* F##ValueName##CameraVariableReference::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
 {\
-	if (VariableID)\
+	if (Variable)\
 	{\
+		const FCameraVariableID VariableID = Variable->GetVariableID();\
 		if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableID))\
 		{\
 			return ActualValue;\

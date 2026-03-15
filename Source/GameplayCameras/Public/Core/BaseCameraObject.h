@@ -120,6 +120,8 @@ public:
 
 	UE_API void Add(UObject* InSource, FName InSourcePropertyName, UObject* InTarget, FName InTargetPropertyName);
 
+	UE_API void Append(const FCameraObjectConnections& OtherConnections);
+
 	UE_API FCameraObjectConnection* FindBySource(UObject* InSource);
 	UE_API FCameraObjectConnection* FindBySource(UObject* InSource, FName InSourcePropertyName);
 	UE_API FCameraObjectConnection* FindByTarget(UObject* InTarget);
@@ -189,8 +191,9 @@ public:
 protected:
 
 #if WITH_EDITORONLY_DATA
-	// Utility method to be called on PostLoad by subclasses that need upgrading old data.
+	// Utility methods to be called on PostLoad by subclasses that need upgrading old data.
 	void UpgradeInterfaceConnections(IObjectTreeGraphRootObject* RootObject, FName DefaultGraphName);
+	void UpgradeCameraParameters(TArray<TObjectPtr<UObject>>& AllGraphObjects);
 #endif
 
 private:

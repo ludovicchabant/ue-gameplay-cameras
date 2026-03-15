@@ -52,7 +52,7 @@ public:
 		else
 		{
 			DefaultValue = DefaultValueIfNoReference;
-			VariableID = Reference.VariableID;
+			VariableID = FCameraVariableID();
 		}
 	}
 
@@ -91,10 +91,13 @@ public:
 	/**
 	 * Returns whether his reference points to a variable.
 	 */
-	bool IsDriven() const
+	bool IsValid() const
 	{
 		return VariableID.IsValid();
 	}
+
+	UE_DEPRECATED(5.8, "Please use IsValid()")
+	bool IsDriven() const { return IsValid(); }
 
 private:
 

@@ -3,7 +3,6 @@
 #include "Nodes/Common/AutoFocusCameraNode.h"
 
 #include "Core/CameraParameterReader.h"
-#include "Core/CameraVariableReferenceReader.h"
 #include "Debug/CameraDebugBlock.h"
 #include "Debug/CameraDebugBlockBuilder.h"
 #include "Debug/CameraDebugRenderer.h"
@@ -32,7 +31,7 @@ protected:
 
 private:
 
-	TCameraVariableReferenceReader<bool> EnableAutoFocusReader;
+	TCameraParameterReader<bool> EnableAutoFocusReader;
 	TCameraParameterReader<float> AutoFocusDampingFactorReader;
 
 	FCriticalDamper AutoFocusDamper;

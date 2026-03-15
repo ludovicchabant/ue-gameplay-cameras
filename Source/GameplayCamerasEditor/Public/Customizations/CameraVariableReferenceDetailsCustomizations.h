@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableReferences.h"
 #include "IPropertyTypeCustomization.h"
 
@@ -33,7 +34,6 @@ public:
 
 protected:
 
-	virtual bool HasNonUserOverride(void* InRawData) const = 0;
 	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
 private:
@@ -67,7 +67,6 @@ protected:
 class F##ValueName##CameraVariableReferenceDetailsCustomization : public FCameraVariableReferenceDetailsCustomization\
 {\
 protected:\
-	virtual bool HasNonUserOverride(void* InRawData) const override;\
 	virtual void SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -75,4 +74,3 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 
 }  // namespace UE::Cameras
  
-

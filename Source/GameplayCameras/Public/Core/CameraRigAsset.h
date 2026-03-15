@@ -143,7 +143,7 @@ protected:
 #endif
 
 	// IObjectTreeGraphRootObject interface.
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 	virtual void GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const override;
 	virtual void AddConnectableObject(FName InGraphName, UObject* InObject) override;
 	virtual void RemoveConnectableObject(FName InGraphName, UObject* InObject) override;

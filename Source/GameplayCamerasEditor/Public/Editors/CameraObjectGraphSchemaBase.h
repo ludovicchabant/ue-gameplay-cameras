@@ -5,6 +5,7 @@
 #include "Compat/EditorCompat.h"
 #include "Core/CameraObjectInterface.h"
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
+#include "Core/CameraVariableCollection.h"
 #include "EdGraph/EdGraphPin.h"
 #include "Editors/CameraNodeGraphPinColors.h"
 #include "Editors/ObjectTreeGraphSchema.h"
@@ -25,7 +26,6 @@ class UCameraObjectGraphSchemaBase : public UObjectTreeGraphSchema
 public:
 
 	static const FName PC_CameraParameter;			// A camera parameter pin.
-	static const FName PC_CameraVariableReference;	// A variable reference pin.
 	static const FName PC_CameraContextData;		// A context data pin.
 
 	UCameraObjectGraphSchemaBase(const FObjectInitializer& ObjInit);
@@ -109,6 +109,33 @@ public:
 
 	// FEdGraphSchemaAction interface.
 	static FName StaticGetTypeId() { static FName Type("FCameraObjectGraphSchemaAction_AddInterfaceParameterGetterNode"); return Type; }
+	virtual FName GetTypeId() const override { return StaticGetTypeId(); }
+	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, FPerformGraphActionLocation Location, bool bSelectNewNode = true) override;
+};
+
+/**
+ * Graph editor action for adding a new getter node for a camera variable.
+ */
+USTRUCT()
+struct FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode : public FEdGraphSchemaAction
+{
+	GENERATED_BODY()
+	
+public:
+
+	/** The camera variable to add a getter node for. */
+	UPROPERTY()
+	FSoftCameraVariablePtr SoftVariable;
+
+public:
+	
+	FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode();
+	FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping = 0, FText InKeywords = FText());
+
+public:
+
+	// FEdGraphSchemaAction interface.
+	static FName StaticGetTypeId() { static FName Type("FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode"); return Type; }
 	virtual FName GetTypeId() const override { return StaticGetTypeId(); }
 	virtual UEdGraphNode* PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, FPerformGraphActionLocation Location, bool bSelectNewNode = true) override;
 };

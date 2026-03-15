@@ -10,6 +10,7 @@
 #include "AssetTools/CameraShakeAssetEditor.h"
 #include "AssetTools/CameraVariableCollectionEditor.h"
 #include "Commands/CameraAssetEditorCommands.h"
+#include "Commands/CameraObjectInterfaceParametersEditorCommands.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
 #include "Commands/CameraRigTransitionEditorCommands.h"
 #include "Commands/CameraShakeAssetEditorCommands.h"
@@ -131,6 +132,7 @@ public:
 		UToolMenus::UnRegisterStartupCallback(this);
 
 		FCameraAssetEditorCommands::Unregister();
+		FCameraObjectInterfaceParametersEditorCommands::Unregister();
 		FCameraRigAssetEditorCommands::Unregister();
 		FCameraRigTransitionEditorCommands::Unregister();
 		FCameraShakeAssetEditorCommands::Unregister();
@@ -435,6 +437,7 @@ private:
 		using namespace UE::Cameras;
 
 		FCameraAssetEditorCommands::Register();
+		FCameraObjectInterfaceParametersEditorCommands::Register();
 		FCameraRigAssetEditorCommands::Register();	
 		FCameraRigTransitionEditorCommands::Register();
 		FCameraShakeAssetEditorCommands::Register();	

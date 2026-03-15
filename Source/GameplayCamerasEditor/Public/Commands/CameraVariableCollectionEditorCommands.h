@@ -25,6 +25,8 @@ public:
 	TSharedPtr<FUICommandInfo> CreateVariable;
 	TSharedPtr<FUICommandInfo> RenameVariable;
 	TSharedPtr<FUICommandInfo> DeleteVariable;
+
+	TSharedPtr<FUICommandInfo> GoToVariable;
 };
 
 }  // namespace UE::Cameras

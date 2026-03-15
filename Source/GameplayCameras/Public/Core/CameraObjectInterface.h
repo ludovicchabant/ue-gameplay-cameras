@@ -216,7 +216,7 @@ private:
 };
 
 /**
- * Getter object for adding a camera parameter to a camera node graph.
+ * Getter object for adding a camera rig parameter reference to a camera node graph.
  */
 UCLASS(MinimalAPI, meta=(ObjectTreeGraphSelfPinDirection="Output"))
 class UCameraObjectInterfaceParameterGetter

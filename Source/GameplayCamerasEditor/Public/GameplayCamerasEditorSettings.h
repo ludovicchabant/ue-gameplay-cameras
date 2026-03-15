@@ -50,6 +50,14 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
 	FLinearColor CameraBlendNodeTitleColor;
 
+	/** Title color for a camera parameter getter node. */
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraRigParameterGetterNodeTitleColor;
+
+	/** Title color for a camera variable getter node. */
+	UPROPERTY(EditAnywhere, Config, Category=NodeTitleColors)
+	FLinearColor CameraVariableGetterNodeTitleColor;
+
 public:
 
 	/** Camera asset mode to restore on open (director, shared transitions, etc.) */

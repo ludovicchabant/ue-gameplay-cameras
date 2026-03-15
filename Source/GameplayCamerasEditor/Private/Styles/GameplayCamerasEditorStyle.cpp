@@ -147,16 +147,16 @@ FGameplayCamerasEditorStyle::FGameplayCamerasEditorStyle()
 	Set("DebugCategory.Viewfinder.Icon", new IMAGE_BRUSH_SVG("Icons/DebugCategory-Viewfinder", Icon16x16));
 
 	// Graph editor brushes.
-	Set("Graph.CameraRigParameterNode.Body", new BOX_BRUSH("Graph/CameraRigParameterNode_Body", FMargin(16.f/64.f, 12.f/28.f)));
-	Set("Graph.CameraRigParameterNode.ColorSpill", new IMAGE_BRUSH("Graph/CameraRigParameterNode_ColorSpill", FVector2D(132,28)));
-	Set("Graph.CameraRigParameterNode.Gloss", new BOX_BRUSH("Graph/CameraRigParameterNode_Gloss", FMargin(16.f/64.f, 16.f/28.f, 16.f/64.f, 4.f/28.f)));
-	Set("Graph.CameraRigParameterNode.Shadow", new BOX_BRUSH("Graph/CameraRigParameterNode_Shadow", FMargin(26.0f/64.0f)));
-	Set("Graph.CameraRigParameterNode.ShadowSelected", new BOX_BRUSH("Graph/CameraRigParameterNode_ShadowSelected", FMargin(26.0f/64.0f)));
-	Set("Graph.CameraRigParameterNode.DiffHighlight", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlight", FMargin(18.0f/64.0f)));
-	Set("Graph.CameraRigParameterNode.DiffHighlightShading", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlightShading", FMargin(18.0f/64.0f)));
+	Set("Graph.ParameterGetterNode.Body", new BOX_BRUSH("Graph/CameraRigParameterNode_Body", FMargin(16.f/64.f, 12.f/28.f)));
+	Set("Graph.ParameterGetterNode.ColorSpill", new IMAGE_BRUSH("Graph/CameraRigParameterNode_ColorSpill", FVector2D(132,28)));
+	Set("Graph.ParameterGetterNode.Gloss", new BOX_BRUSH("Graph/CameraRigParameterNode_Gloss", FMargin(16.f/64.f, 16.f/28.f, 16.f/64.f, 4.f/28.f)));
+	Set("Graph.ParameterGetterNode.Shadow", new BOX_BRUSH("Graph/CameraRigParameterNode_Shadow", FMargin(26.0f/64.0f)));
+	Set("Graph.ParameterGetterNode.ShadowSelected", new BOX_BRUSH("Graph/CameraRigParameterNode_ShadowSelected", FMargin(26.0f/64.0f)));
+	Set("Graph.ParameterGetterNode.DiffHighlight", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlight", FMargin(18.0f/64.0f)));
+	Set("Graph.ParameterGetterNode.DiffHighlightShading", new BOX_BRUSH("Graph/CameraRigParameterNode_DiffHighlightShading", FMargin(18.0f/64.0f)));
 
-	Set("Graph.CameraRigParameterPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Connected", Icon16x16));
-	Set("Graph.CameraRigParameterPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Disconnected", Icon16x16));
+	Set("Graph.ParameterGetterPin.Connected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Connected", Icon16x16));
+	Set("Graph.ParameterGetterPin.Disconnected", new IMAGE_BRUSH("Graph/ObjectTreeGraphNode_DiamondPin_Disconnected", Icon16x16));
 
 	// Family icons.
 	Set("Family.CameraAsset", new IMAGE_BRUSH_SVG("Icons/ContentBrowser-CameraKit", Icon20x20));

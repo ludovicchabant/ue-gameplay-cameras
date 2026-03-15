@@ -47,10 +47,6 @@ void ApplyBlendableParameterOverride(
 		{
 			VariableTable.SetValue<ValueType>(ParameterVariableID, OverrideValue);
 		}
-		else if (ParameterValue.Variable)
-		{
-			VariableTable.SetValue<ValueType>(ParameterVariableID, ParameterValue.Variable->GetDefaultValue());
-		}
 		else
 		{
 			VariableTable.SetValue<ValueType>(ParameterVariableID, ParameterValue.Value);
@@ -524,6 +520,18 @@ void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterDefaults(const
 				}
 				return true;
 			});
+
+	if (VariableTable)
+	{
+		const FCameraVariableTableAllocationInfo& VariableTableInfo = CameraObject->AllocationInfo.VariableTableInfo;
+		for (TSoftObjectPtr<UCameraVariableAsset> SoftVariable : VariableTableInfo.VariableInitializers)
+		{
+			if (UCameraVariableAsset* Variable = SoftVariable.Get())
+			{
+				VariableTable->SetDefaultValue(Variable, true);
+			}
+		}
+	}
 }
 
 void FCameraObjectInterfaceParameterOverrideHelper::ApplyParameterValue(

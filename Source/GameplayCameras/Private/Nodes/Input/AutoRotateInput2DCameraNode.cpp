@@ -188,7 +188,7 @@ void FAutoRotateInput2DCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationPar
 	bool bHasAutoRotateDir = false;
 	const FVector3d ContextAimDir = InitialResult.CameraPose.GetAimDir();
 	FVector3d AutoRotateDir = ContextAimDir;
-	if (DirectionVectorReader.IsDriven())
+	if (DirectionVectorReader.IsValid())
 	{
 		bHasAutoRotateDir = DirectionVectorReader.TryGet(OutResult.VariableTable, AutoRotateDir);
 	}

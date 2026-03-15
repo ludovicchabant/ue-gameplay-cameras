@@ -4,19 +4,19 @@
 
 #include "Editors/SCameraParameterGetterGraphNodeBase.h"
 
-class UCameraObjectInterfaceParameterGraphNode;
+class UCameraVariableAssetGraphNode;
 
 /**
  * Custom graph editor node widget for a camera rig parameter getter node.
  */
-class SCameraObjectInterfaceParameterGraphNode : public SCameraParameterGetterGraphNodeBase
+class SCameraVariableAssetGraphNode : public SCameraParameterGetterGraphNodeBase
 {
 public:
 
-	SLATE_BEGIN_ARGS(SCameraObjectInterfaceParameterGraphNode)
+	SLATE_BEGIN_ARGS(SCameraVariableAssetGraphNode)
 		: _GraphNode(nullptr)
 	{}
-		SLATE_ARGUMENT(UCameraObjectInterfaceParameterGraphNode*, GraphNode)
+		SLATE_ARGUMENT(UCameraVariableAssetGraphNode*, GraphNode)
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);

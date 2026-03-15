@@ -172,18 +172,7 @@ TSharedRef<SWidget> FCameraVariableReferenceDetailsCustomization::BuildCameraVar
 
 bool FCameraVariableReferenceDetailsCustomization::IsCameraVariableBrowserEnabled() const
 {
-	TArray<void*> RawData;
-	StructProperty->AccessRawData(RawData);
-
-	for (int32 ValueIndex = 0; ValueIndex < RawData.Num(); ++ValueIndex)
-	{
-		if (HasNonUserOverride(RawData[ValueIndex]))
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return StructProperty->IsEditable();
 }
 
 FText FCameraVariableReferenceDetailsCustomization::GetVariableName() const
@@ -264,16 +253,10 @@ void FCameraVariableReferenceDetailsCustomization::OnResetToDefault()
 }
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-bool F##ValueName##CameraVariableReferenceDetailsCustomization::HasNonUserOverride(void* InRawData) const\
-{\
-	F##ValueName##CameraVariableReference* TypedData = reinterpret_cast<F##ValueName##CameraVariableReference*>(InRawData);\
-	return TypedData->HasNonUserOverride();\
-}\
 void F##ValueName##CameraVariableReferenceDetailsCustomization::SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable)\
 {\
 	F##ValueName##CameraVariableReference* TypedData = reinterpret_cast<F##ValueName##CameraVariableReference*>(InRawData);\
 	TypedData->Variable = CastChecked<U##ValueName##CameraVariable>(InVariable, ECastCheckedType::NullAllowed);\
-	TypedData->VariableID = InVariable ? InVariable->GetVariableID() : FCameraVariableID();\
 }
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE

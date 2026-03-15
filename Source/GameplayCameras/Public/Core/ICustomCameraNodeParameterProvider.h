@@ -10,6 +10,7 @@
 #include "ICustomCameraNodeParameterProvider.generated.h"
 
 class UCameraNode;
+struct FCameraObjectConnections;
 
 namespace UE::Cameras
 {
@@ -27,7 +28,6 @@ struct FCameraNodeBlendableParameterInfo
 	const UScriptStruct* BlendableStructType = nullptr;
 	const uint8* DefaultValue = nullptr;
 	FCameraVariableID* OverrideVariableID = nullptr;
-	UCameraVariableAsset* OverrideVariable = nullptr;
 };
 
 /** Information about a data parameter on a camera node. */
@@ -61,8 +61,7 @@ public:
 			ECameraVariableType VariableType, 
 			const UScriptStruct* BlendableStructType,
 			const uint8* DefaultValue,
-			FCameraVariableID* OverrideVariableID,
-			UCameraVariableAsset* OverrideVariable = nullptr);
+			FCameraVariableID* OverrideVariableID);
 
 	GAMEPLAYCAMERAS_API void AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue);
 
@@ -139,9 +138,10 @@ struct FCustomCameraNodeBlendableParameter
 	UPROPERTY()
 	FCameraVariableID OverrideVariableID;
 
-	/** An optional user-defined camera variable for dynamically driving the parameter's value. */
+	// Deprecated.
+
 	UPROPERTY()
-	TObjectPtr<UCameraVariableAsset> OverrideVariable;
+	TObjectPtr<UCameraVariableAsset> OverrideVariable_DEPRECATED;
 
 	bool operator==(const FCustomCameraNodeBlendableParameter& Other) const = default;
 };
@@ -199,6 +199,11 @@ struct FCustomCameraNodeParameters
 	void Reset() { BlendableParameters.Reset(); DataParameters.Reset(); }
 
 	bool operator==(const FCustomCameraNodeParameters& Other) const = default;
+
+public:
+
+	/** Replace old camera variable references with new variable "getter" nodes. */
+	void UpgradeOverrideVariables(UCameraNode* Owner, TArray<UObject*>& OutAddedNodes, FCameraObjectConnections& OutAddedConnections);
 };
 
 UINTERFACE(MinimalAPI)

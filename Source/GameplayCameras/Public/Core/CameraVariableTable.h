@@ -13,6 +13,8 @@
 
 #define UE_API GAMEPLAYCAMERAS_API
 
+class UCameraVariableAsset;
+
 namespace UE::Cameras
 {
 
@@ -141,6 +143,8 @@ public:
 			const VariableAssetType* VariableAsset, 
 			typename TCallTraits<typename VariableAssetType::ValueType>::ParamType Value, 
 			bool bCreateIfMissing = false);
+
+	void SetDefaultValue(const UCameraVariableAsset* VariableAsset, bool bCreateIfMissing);
 
 public:
 

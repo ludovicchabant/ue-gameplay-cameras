@@ -12,7 +12,7 @@
 class FAssetEditorToolkit;
 class IDetailsView;
 class SBox;
-class SObjectTreeGraphEditor;
+class SCameraNodeGraphEditor;
 class UCameraRigAsset;
 class UEdGraphNode;
 class UObjectTreeGraph;
@@ -67,7 +67,11 @@ public:
 
 	/** Gets both the node hierarchy and transition graphs. */
 	void GetGraphs(TArray<UEdGraph*>& OutGraphs) const;
+	/** Gets both the node hierarchy and transition graph editors. */
+	void GetGraphEditors(TArray<TSharedPtr<SCameraNodeGraphEditor>>& OutGraphEditors) const;
 
+	/** Gets the graph editor for the current mode. */
+	TSharedPtr<SCameraNodeGraphEditor> GetFocusedGraphEditor() const;
 	/** Gets the graph for the current mode. */
 	UEdGraph* GetFocusedGraph() const;
 	/** Gets the graph configuration for the current mode. */
@@ -117,12 +121,12 @@ private:
 	/** The node hierarchy graph */
 	TObjectPtr<UObjectTreeGraph> NodeGraph;
 	/** The node hierarchy graph editor */
-	TSharedPtr<SObjectTreeGraphEditor> NodeGraphEditor;
+	TSharedPtr<SCameraNodeGraphEditor> NodeGraphEditor;
 
 	/** The transition graph */
 	TObjectPtr<UObjectTreeGraph> TransitionGraph;
 	/** The transition graph editor */
-	TSharedPtr<SObjectTreeGraphEditor> TransitionGraphEditor;
+	TSharedPtr<SCameraNodeGraphEditor> TransitionGraphEditor;
 
 	/** Box panel holding either the node hierarchy or transition graph editor */
 	TSharedPtr<SBox> BoxPanel;

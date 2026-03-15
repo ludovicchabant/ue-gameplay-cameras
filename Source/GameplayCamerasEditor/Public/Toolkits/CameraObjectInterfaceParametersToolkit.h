@@ -11,6 +11,7 @@ class FUICommandList;
 class SBox;
 class SWidget;
 class UBaseCameraObject;
+class SCameraNodeGraphEditor;
 class UCameraObjectInterfaceParameterBase;
 
 namespace UE::Cameras
@@ -18,6 +19,7 @@ namespace UE::Cameras
 
 class SCameraObjectInterfaceParametersPanel;
 
+DECLARE_DELEGATE_RetVal(TSharedPtr<SCameraNodeGraphEditor>, FOnGetFocusedCameraNodeGraphEditor);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCameraObjectInterfaceParameterEvent, UCameraObjectInterfaceParameterBase*);
 
 /**
@@ -32,6 +34,9 @@ public:
 	FCameraObjectInterfaceParametersToolkit();
 	~FCameraObjectInterfaceParametersToolkit();
 
+	/** Initialize this toolkit with a way to get the current graph editor. */
+	void Initialize(FOnGetFocusedCameraNodeGraphEditor&& InDelegate);
+
 	/** Gets the camera object asset to edit. */
 	UBaseCameraObject* GetCameraObject() const { return CameraObject; }
 	/** Sets the camera object to edit. This re-creates the panel widget. */
@@ -42,11 +47,17 @@ public:
 
 public:
 
+	/** Binds specific commands to another toolkit. */
+	void BindCommands(TSharedRef<FUICommandList> CommandList);
+
 	/** Rename the selected parameter in the focused panel. */
 	void RenameSelectedParameter();
 
 	/** Delete the selected parameter in the focused panel. */
 	void DeleteSelectedParameter();
+
+	/** Selects the parameter that corresponds to the current graph editor selection. */
+	void SelectParameterFromGraphEditorSelection();
 
 public:
 
@@ -63,6 +74,8 @@ protected:
 	virtual void PostRedo(bool bSuccess) override;
 
 private:
+
+	FOnGetFocusedCameraNodeGraphEditor GetFocusedCameraNodeGraphEditor;
 
 	TObjectPtr<UBaseCameraObject> CameraObject;
 

@@ -106,6 +106,10 @@ struct FCameraVariableTableAllocationInfo
 	UPROPERTY()
 	TArray<FCameraVariableDefinition> VariableDefinitions;
 
+	/** The list of variables to initialize with default values in a table. */
+	UPROPERTY()
+	TArray<TSoftObjectPtr<UCameraVariableAsset>> VariableInitializers;
+
 	/**Combines the given allocation info with this one. */
 	GAMEPLAYCAMERAS_API void Combine(const FCameraVariableTableAllocationInfo& OtherInfo);
 

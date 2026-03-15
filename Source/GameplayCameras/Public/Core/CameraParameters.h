@@ -20,8 +20,6 @@ namespace UE::Cameras
 		: Value(InValue)\
 	{}\
 	bool HasOverride() const { return VariableID.IsValid(); }\
-	bool HasUserOverride() const { return Variable != nullptr; }\
-	bool HasNonUserOverride() const { return VariableID.IsValid() && (!Variable || Variable->GetVariableID() != VariableID); }\
 	ParameterClass::ValueType GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const;\
 	void PostSerialize(const FArchive& Ar);
 
@@ -32,12 +30,8 @@ namespace UE::Cameras
 // All camera parameters have:
 //
 // - Value: a value for the user to tweak. This is the "default" value.
-// - Variable: a variable chosen by the user to drive this parameter. 
-// - VariableID: the ID of the variable driving this parameter.
+// - VariableID: the ID of the variable driving this parameter, if any.
 //
-// When Variable is set, VariableID is the ID of that variable.
-// When Variable is not set, VariableID is the ID of something else
-// driving the parameter, such as a camera rig parameter override.
 
 /** Boolean camera parameter. */
 USTRUCT(BlueprintType)
@@ -54,8 +48,8 @@ struct FBooleanCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UBooleanCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UBooleanCameraVariable> Variable_DEPRECATED;
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -77,8 +71,8 @@ struct FInteger32CameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UInteger32CameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UInteger32CameraVariable> Variable_DEPRECATED;
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -100,8 +94,8 @@ struct FFloatCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UFloatCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UFloatCameraVariable> Variable_DEPRECATED;
 
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -123,8 +117,8 @@ struct FDoubleCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UDoubleCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UDoubleCameraVariable> Variable_DEPRECATED;
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -146,8 +140,8 @@ struct FVector2fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector2fCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector2fCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector2fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -170,8 +164,8 @@ struct FVector2dCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector2dCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector2dCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector2dCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -194,8 +188,8 @@ struct FVector3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector3fCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector3fCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector3fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -218,8 +212,8 @@ struct FVector3dCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector3dCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector3dCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector3dCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -242,8 +236,8 @@ struct FVector4fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector4fCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector4fCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector4fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -266,8 +260,8 @@ struct FVector4dCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UVector4dCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UVector4dCameraVariable> Variable_DEPRECATED;
 
 	UE_API FVector4dCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -290,8 +284,8 @@ struct FRotator3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<URotator3fCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<URotator3fCameraVariable> Variable_DEPRECATED;
 
 	UE_API FRotator3fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -314,8 +308,8 @@ struct FRotator3dCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<URotator3dCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<URotator3dCameraVariable> Variable_DEPRECATED;
 
 	UE_API FRotator3dCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -338,8 +332,8 @@ struct FTransform3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UTransform3fCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UTransform3fCameraVariable> Variable_DEPRECATED;
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -361,8 +355,8 @@ struct FTransform3dCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
-	UPROPERTY(EditAnywhere, Category=Common)
-	TObjectPtr<UTransform3dCameraVariable> Variable;
+	UPROPERTY()
+	TObjectPtr<UTransform3dCameraVariable> Variable_DEPRECATED;
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -405,3 +399,4 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 
 #undef UE_API
+

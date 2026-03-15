@@ -2,6 +2,7 @@
 
 #include "Core/CameraVariableTable.h"
 
+#include "Core/CameraVariableAssets.h"
 #include "HAL/UnrealMemory.h"
 #include "IGameplayCamerasModule.h"
 #include "Math/UnrealMath.h"
@@ -331,6 +332,38 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 bool FCameraVariableTable::ContainsValue(FCameraVariableID VariableID) const
 {
 	return EntryLookup.Contains(VariableID);
+}
+
+void FCameraVariableTable::SetDefaultValue(const UCameraVariableAsset* VariableAsset, bool bCreateIfMissing)
+{
+	if (ensure(VariableAsset))
+	{
+		const FCameraVariableDefinition VariableDefinition = VariableAsset->GetVariableDefinition();
+		const uint8* DefaultValuePtr = VariableAsset->GetDefaultValuePtr();
+		if (ensure(DefaultValuePtr))
+		{
+			const bool bDidSet = TrySetValue(
+					VariableDefinition.VariableID, 
+					VariableDefinition.VariableType, 
+					VariableDefinition.BlendableStructType, 
+					DefaultValuePtr);
+			ensureMsgf(
+					bDidSet || bCreateIfMissing, 
+					TEXT("Can't set camera variable '%s' (ID '%d') because it doesn't exist in the table."),
+					*GetNameSafe(VariableAsset), VariableDefinition.VariableID.GetValue());
+			if (bDidSet)
+			{
+				return;
+			}
+
+			AddVariable(VariableDefinition);
+			SetValue(
+					VariableDefinition.VariableID, 
+					VariableDefinition.VariableType, 
+					VariableDefinition.BlendableStructType, 
+					DefaultValuePtr);
+		}
+	}
 }
 
 const uint8* FCameraVariableTable::GetValue(

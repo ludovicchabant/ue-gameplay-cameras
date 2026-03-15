@@ -17,6 +17,7 @@
 #include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "Toolkits/ToolkitManager.h"
 #include "ToolMenus.h"
 #include "UObject/UObjectIterator.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -373,6 +374,31 @@ void FCameraVariableCollectionEditorToolkit::AddReferencedObjects(FReferenceColl
 FString FCameraVariableCollectionEditorToolkit::GetReferencerName() const
 {
 	return TEXT("FCameraVariableCollectionEditorToolkit");
+}
+
+void FCameraVariableCollectionEditorToolkit::ExecuteGoToVariableCommand(UCameraVariableAsset* Variable)
+{
+	if (!Variable)
+	{
+		return;
+	}
+
+	UCameraVariableCollection* VariableCollection = Variable->GetTypedOuter<UCameraVariableCollection>();
+	if (!VariableCollection)
+	{
+		return;
+	}
+
+	UAssetEditorSubsystem* AssetEditorSubsystem = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+	AssetEditorSubsystem->OpenEditorForAsset(VariableCollection);
+
+	TSharedPtr<IToolkit> FoundAssetEditor = FToolkitManager::Get().FindEditorForAsset(VariableCollection);
+	if (FoundAssetEditor)
+	{
+		TSharedRef<FCameraVariableCollectionEditorToolkit> ThisToolkit = 
+			StaticCastSharedRef<FCameraVariableCollectionEditorToolkit>(FoundAssetEditor.ToSharedRef());
+		ThisToolkit->FocusWindow(Variable);
+	}
 }
 
 }  // namespace UE::Cameras

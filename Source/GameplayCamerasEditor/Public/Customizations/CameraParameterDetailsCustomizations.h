@@ -2,11 +2,9 @@
 
 #pragma once
 
-#include "Core/CameraParameters.h"
+#include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "IPropertyTypeCustomization.h"
-#include "Layout/Visibility.h"
 #include "TickableEditorObject.h"
-#include "Types/SlateStructs.h"
 
 class FPropertyEditorModule;
 class IDetailLayoutBuilder;
@@ -46,81 +44,37 @@ public:
 protected:
 
 	virtual bool HasOverride(void* InRawData) = 0;
-	virtual bool HasNonUserOverride(void* InRawData) = 0;
-	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) = 0;
 
 private:
 
-	enum class ECameraVariableValue
-	{
-		NotSet,
-		Set,
-		MultipleSet,
-		Invalid
-	};
-
-	struct FCameraVariableInfo
-	{
-		UCameraVariableAsset* CommonVariable = nullptr;
-		ECameraVariableValue VariableValue = ECameraVariableValue::NotSet;
-		bool bHasNonUserOverride = false;
-		bool bHasOverride = false;
-
-		FText InfoText;
-		FText ErrorText;
-	};
-
-	void UpdateVariableInfo();
-
-	TSharedRef<SWidget> BuildCameraVariableBrowser();
+	void UpdateCachedInfo();
 
 	bool IsValueEditorEnabled() const;
-	bool IsCameraVariableBrowserEnabled() const;
-	FText GetCameraVariableBrowserToolTip() const;
-
-	FText GetVariableInfoText() const;
-	EVisibility GetVariableInfoTextVisibility() const;
-	FOptionalSize GetVariableInfoTextMaxWidth() const;
-
-	FText GetVariableErrorText() const;
-	EVisibility GetVariableErrorTextVisibility() const;
-	FOptionalSize GetVariableErrorTextMaxWidth() const;
-
-	bool CanGoToVariable() const;
-	void OnGoToVariable();
-
-	bool CanClearVariable() const;
-	void OnClearVariable();
-
-	void OnSetVariable(UCameraVariableAsset* InVariable);
 
 	bool IsResetToDefaultVisible(TSharedPtr<IPropertyHandle> InPropertyHandle) const;
 	void OnResetToDefault(TSharedPtr<IPropertyHandle> InPropertyHandle);
 
 protected:
 
-	UClass* VariableClass = nullptr;
-
-	FCameraVariableInfo VariableInfo;
-
 	TSharedPtr<IPropertyUtilities> PropertyUtilities;
 
 	TSharedPtr<IPropertyHandle> StructProperty;
 	TSharedPtr<IPropertyHandle> ValueProperty;
-	TSharedPtr<IPropertyHandle> VariableProperty;
 
-	TSharedPtr<SHorizontalBox> LayoutBox;
-	TSharedPtr<SComboButton> VariableBrowserButton;
+private:
+
+	struct FCachedInfo
+	{
+		bool bHasOverride = false;
+	};
+	FCachedInfo CachedInfo;
 };
 
 // Create all the individual classes.
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 class F##ValueName##CameraParameterDetailsCustomization : public FCameraParameterDetailsCustomization\
 {\
-protected:\
 	virtual bool HasOverride(void* InRawData) override;\
-	virtual bool HasNonUserOverride(void* InRawData) override;\
-	virtual void SetParameterVariable(void* InRawData, UCameraVariableAsset* InVariable) override;\
 };
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE

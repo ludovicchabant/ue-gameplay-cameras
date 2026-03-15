@@ -31,6 +31,10 @@ enum class ECameraAutoRotateDirection
 	 * Re-align towards the zero direction.
 	 */
 	Zero,
+	/**
+	 * Use a custom direction vector provided via a camera variable.
+	 */
+	Custom
 };
 
 /**
@@ -49,7 +53,7 @@ public:
 	ECameraAutoRotateDirection Direction;
 
 	/** An override for the direction to re-align towards. */
-	UPROPERTY(EditAnywhere, Category="Auto-Rotate")
+	UPROPERTY(EditAnywhere, Category="Auto-Rotate", meta=(EditCondition="Direction == ECameraAutoRotateDirection::Custom"))
 	FVector3dCameraVariableReference DirectionVector;
 
 	/** The time, in seconds, to wait before re-aligning. */

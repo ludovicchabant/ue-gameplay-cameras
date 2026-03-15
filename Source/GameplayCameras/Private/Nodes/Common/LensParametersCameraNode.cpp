@@ -96,9 +96,9 @@ void ULensParametersCameraNode::Serialize(FArchive& Ar)
 	// These defaults should match the ones in the header file!
 	if (bUpgradeParameterFlags)
 	{
-		bEnableFocalLength = FocalLength.Value > 0.f || FocalLength.Variable || FocalLength.VariableID;
-		bEnableAperture = Aperture.Value > 0.f || Aperture.Variable || Aperture.VariableID;
-		bEnableFocusDistance = FocusDistance.Value > 0.f || FocusDistance.Variable || FocusDistance.VariableID;
+		bEnableFocalLength = FocalLength.Value > 0.f || FocalLength.VariableID;
+		bEnableAperture = Aperture.Value > 0.f || Aperture.VariableID;
+		bEnableFocusDistance = FocusDistance.Value > 0.f || FocusDistance.VariableID;
 
 		if (FocalLength.Value <= 0.f)
 		{

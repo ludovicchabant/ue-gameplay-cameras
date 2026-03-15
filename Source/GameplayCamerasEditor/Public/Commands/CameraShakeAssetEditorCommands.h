@@ -27,9 +27,6 @@ public:
 	TSharedPtr<FUICommandInfo> ShowMessages;
 	TSharedPtr<FUICommandInfo> FindInCameraShake;
 	TSharedPtr<FUICommandInfo> FocusHome;
-
-	TSharedPtr<FUICommandInfo> RenameInterfaceParameter;
-	TSharedPtr<FUICommandInfo> DeleteInterfaceParameter;
 };
 
 }  // namespace UE::Cameras

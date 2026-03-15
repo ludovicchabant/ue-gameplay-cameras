@@ -70,6 +70,7 @@ private:
 
 	void OnBuild();
 	void OnFindInCameraRig();
+	void OnGoToCameraVariable();
 
 	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
 	void OnJumpToNode(UEdGraphNode* Node, FName PinName);

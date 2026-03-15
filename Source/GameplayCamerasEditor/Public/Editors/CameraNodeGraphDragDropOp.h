@@ -7,6 +7,7 @@
 
 class SGraphEditor;
 class UCameraObjectInterfaceParameterBase;
+class UCameraVariableAsset;
 
 class FCameraNodeGraphInterfaceParameterDragDropOp : public FDecoratedDragDropOp
 {
@@ -21,6 +22,22 @@ public:
 
 private:
 
-	UCameraObjectInterfaceParameterBase* InterfaceParameter;
+	UCameraObjectInterfaceParameterBase* InterfaceParameter = nullptr;
+};
+
+class FCameraVariableAssetDragDropOp : public FDecoratedDragDropOp
+{
+public:
+
+	DRAG_DROP_OPERATOR_TYPE(FCameraVariableAssetDragDropOp, FDecoratedDragDropOp)
+
+	static TSharedRef<FCameraVariableAssetDragDropOp> New(UCameraVariableAsset* InVariable);
+
+	FReply ExecuteDragOver(TSharedPtr<SGraphEditor> GraphEditor);
+	FReply ExecuteDrop(TSharedPtr<SGraphEditor> GraphEditor, const FSlateCompatVector2f& NewLocation);
+
+private:
+
+	UCameraVariableAsset* Variable = nullptr;
 };
 

@@ -13,19 +13,15 @@ struct FCameraNodeGraphPinColors
 {
 	void Initialize();
 
-	FLinearColor GetPinColor(const FName& TypeName) const;
+	FLinearColor GetPinColor(const FName& VariableTypeName) const;
 	FLinearColor GetContextDataPinColor(const FName& DataTypeName) const;
 
 private:
 
-	TMap<FName, FLinearColor> PinColors;
+	TMap<FName, FLinearColor> VariablePinColors;
+	TMap<FName, FLinearColor> DataPinColors;
+
 	FLinearColor DefaultPinColor;
-	FLinearColor NamePinColor;
-	FLinearColor StringPinColor;
-	FLinearColor EnumPinColor;
-	FLinearColor StructPinColor;
-	FLinearColor ObjectPinColor;
-	FLinearColor ClassPinColor;
 };
 
 }  // namespace UE::Cameras

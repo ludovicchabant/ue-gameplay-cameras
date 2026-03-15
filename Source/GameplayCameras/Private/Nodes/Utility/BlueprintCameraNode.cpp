@@ -18,6 +18,7 @@
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameplayCameras.h"
+#include "GameplayCamerasCustomVersion.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
 #include "Misc/AssertionMacros.h"
 #include "UObject/Object.h"
@@ -346,6 +347,33 @@ void UBlueprintCameraNode::PostLoad()
 
 		CameraNodeEvaluatorClass_DEPRECATED = nullptr;
 	}
+
+	for (FCustomCameraNodeBlendableParameter& BlendableParameter : CameraNodeEvaluatorOverrides.BlendableParameters)
+	{
+		UCameraVariableAsset* Variable = BlendableParameter.OverrideVariable_DEPRECATED;
+		if (Variable && Variable->GetOuter()->IsA<UCameraRigAsset>())
+		{
+			BlendableParameter.OverrideVariable_DEPRECATED = nullptr;
+		}
+	}
+
+	if (GetLinkerCustomVersion(FGameplayCamerasCustomVersion::GUID) < FGameplayCamerasCustomVersion::DeprecateCameraParameterVariables)
+	{
+		UCameraRigAsset* Owner = GetTypedOuter<UCameraRigAsset>();
+		if (ensure(Owner))
+		{
+			TArray<UObject*> NewNodes;
+			FCameraObjectConnections NewConnections;
+			CameraNodeEvaluatorOverrides.UpgradeOverrideVariables(this, NewNodes, NewConnections);
+
+			const FName NodeTreeGraphName(UCameraRigAsset::NodeTreeGraphName);
+			for (UObject* NewNode : NewNodes)
+			{
+				((IObjectTreeGraphRootObject*)Owner)->AddConnectableObject(NodeTreeGraphName, NewNode);
+			}
+			Owner->Connections.Append(NewConnections);
+		}
+	}
 }
 
 void UBlueprintCameraNode::BeginDestroy()
@@ -374,14 +402,9 @@ void UBlueprintCameraNode::RebuildOverrides()
 	}
 
 	// Remember the overrides already present on parameters.
-	TMap<FName, UCameraVariableAsset*> OldOverrideVariableMap;
 	TMap<FName, FCameraVariableID> OldOverrideVariableIDMap;
 	for (const FCustomCameraNodeBlendableParameter& OldOverride : CameraNodeEvaluatorOverrides.BlendableParameters)
 	{
-		if (OldOverride.OverrideVariable)
-		{
-			OldOverrideVariableMap.Add(OldOverride.ParameterName, OldOverride.OverrideVariable);
-		}
 		if (OldOverride.OverrideVariableID)
 		{
 			OldOverrideVariableIDMap.Add(OldOverride.ParameterName, OldOverride.OverrideVariableID);
@@ -543,12 +566,6 @@ void UBlueprintCameraNode::RebuildOverrides()
 
 			// If this blendable parameter existed before and had an overriding variable set,
 			// preserve that override.
-			UCameraVariableAsset* OldOverrideVariable = nullptr;
-			OldOverrideVariableMap.RemoveAndCopyValue(NewOverride.ParameterName, OldOverrideVariable);
-			if (OldOverrideVariable && OldOverrideVariable->GetVariableType() == BlendablePropertyType)
-			{
-				NewOverride.OverrideVariable = OldOverrideVariable;
-			}
 			FCameraVariableID OldOverrideVariableID;
 			OldOverrideVariableIDMap.RemoveAndCopyValue(NewOverride.ParameterName, OldOverrideVariableID);
 			if (OldOverrideVariableID)

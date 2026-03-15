@@ -28,6 +28,8 @@ class FCameraVariableCollectionEditorToolkit
 {
 public:
 
+	static void ExecuteGoToVariableCommand(UCameraVariableAsset* Variable);
+
 	FCameraVariableCollectionEditorToolkit(UCameraVariableCollectionEditor* InOwningAssetEditor);
 	~FCameraVariableCollectionEditorToolkit();
 

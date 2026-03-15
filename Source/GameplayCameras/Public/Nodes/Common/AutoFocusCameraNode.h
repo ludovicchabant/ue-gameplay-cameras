@@ -4,7 +4,6 @@
 
 #include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
-#include "Core/CameraVariableReferences.h"
 
 #include "AutoFocusCameraNode.generated.h"
 
@@ -29,7 +28,7 @@ public:
 
 	/** Whether auto-focus should be enabled. */
 	UPROPERTY(EditAnywhere, Category="Auto-Focus")
-	FBooleanCameraVariableReference EnableAutoFocus;
+	FBooleanCameraParameter EnableAutoFocus;
 
 	/**
 	 * The damping factor for how fast the focus distance follows the target distance.

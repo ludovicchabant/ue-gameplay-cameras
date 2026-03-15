@@ -124,7 +124,7 @@ private:
 
 private:
 
-	TCameraVariableReferenceReader<bool> EnableCollisionReader;
+	TCameraParameterReader<bool> EnableCollisionReader;
 	TCameraVariableReferenceReader<FVector3d> CustomSafePositionReader;
 
 	TCameraParameterReader<float> CollisionSphereRadiusReader;
@@ -190,11 +190,11 @@ public:
 	 * and PullInterpolator.
 	 */
 	UPROPERTY(EditAnywhere, Category="Collision")
-	FBooleanCameraVariableReference EnableCollision;
+	FBooleanCameraParameter EnableCollision = { true };
 
 	/** Radius of the sphere used for collision testing. */
 	UPROPERTY(EditAnywhere, Category="Collision")
-	FFloatCameraParameter CollisionSphereRadius;
+	FFloatCameraParameter CollisionSphereRadius = { 10.f };
 
 	/** Collision channel to use for the line trace. */
 	UPROPERTY(EditAnywhere, Category="Collision")

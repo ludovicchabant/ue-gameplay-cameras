@@ -19,7 +19,7 @@ class IObjectTreeGraphRootObject
 
 public:
 
-#if WITH_EDITOR
+#if WITH_EDITORONLY_DATA
 
 	virtual void GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const {}
 	virtual void AddConnectableObject(FName InGraphName, UObject* InObject) {}

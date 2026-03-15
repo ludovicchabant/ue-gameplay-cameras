@@ -4,12 +4,17 @@
 
 #include "Containers/UnrealString.h"
 #include "Core/CameraVariableTableAllocationInfo.h"
+#include "Core/ObjectTreeGraphObject.h"
 #include "CoreTypes.h"
 #include "Math/MathFwd.h"
 
 #include "CameraVariableAssets.generated.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
+
+class UCameraVariableAsset;
+class UCameraVariableCollection;
+struct FSoftCameraVariablePtr;
 
 /**
  * The base asset class for all camera variables.
@@ -41,6 +46,8 @@ public:
 
 	virtual FString FormatDefaultValue() const PURE_VIRTUAL(UCameraVariableAsset::FormatDefaultValue, return FString(););
 #endif  // WITH_EDITOR
+
+	UE_API FSoftCameraVariablePtr GetSoftPointer() const;
 
 public:
 
@@ -445,4 +452,42 @@ public:
 	FTransform3d DefaultValue;
 };
 
+/**
+ * Getter object for adding a camera variable reference to a camera node graph.
+ */
+UCLASS(MinimalAPI, meta=(ObjectTreeGraphSelfPinDirection="Output"))
+class UCameraVariableAssetGetter
+	: public UObject
+	, public IObjectTreeGraphObject
+{
+	GENERATED_BODY()
+
+public:
+
+	/** The variable asset to get. */
+	UPROPERTY()
+	TObjectPtr<UCameraVariableAsset> Variable;
+
+	/** The location of this node in the graph. */
+	UPROPERTY()
+	FIntVector2 GraphNodePos = FIntVector2::ZeroValue;
+
+#if WITH_EDITORONLY_DATA
+	UE_API FString GetVariableDisplayName() const;
+#endif  // WITH_EDITORONLY_DATA
+
+#if WITH_EDITOR
+	UE_API FText GetVariableAssetDisplayText() const;
+#endif  // WITH_EDITOR
+	
+protected:
+
+	// IObjectTreeGraphObject interface.
+#if WITH_EDITOR
+	virtual void GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const override;
+	virtual void OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty) override;
+#endif  // WITH_EDITOR
+};
+
 #undef UE_API
+

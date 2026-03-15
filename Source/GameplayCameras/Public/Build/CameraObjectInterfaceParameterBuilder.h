@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Build/CameraBuildContext.h"
 #include "Containers/Array.h"
 
 #define UE_API GAMEPLAYCAMERAS_API
@@ -24,7 +25,7 @@ class FCameraObjectInterfaceParameterBuilder
 {
 public:
 
-	UE_API FCameraObjectInterfaceParameterBuilder();
+	UE_API FCameraObjectInterfaceParameterBuilder(FCameraBuildContext& InBuildContext);
 
 	UE_API void BuildParameters(UBaseCameraObject* InCameraObject);
 
@@ -41,10 +42,13 @@ private:
 
 	void BuildParametersImpl();
 
+	void BuildInterfaceParameters();
 	void BuildParameterDefinitions();
 	void BuildDefaultParameters();
 
 private:
+
+	FCameraBuildContext BuildContext;
 
 	UBaseCameraObject* CameraObject = nullptr;
 };

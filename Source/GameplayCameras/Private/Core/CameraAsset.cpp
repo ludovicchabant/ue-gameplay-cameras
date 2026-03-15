@@ -312,6 +312,10 @@ void UCameraAsset::OnUpdateGraphNodeCommentText(FName InGraphName, const FString
 	TransitionGraphNodeComment = NewComment;
 }
 
+#endif  // WITH_EDIOR
+
+#if WITH_EDITORONLY_DATA
+
 void UCameraAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const
 {
 	OutObjects.Append(AllSharedTransitionsObjects);
@@ -333,5 +337,5 @@ void UCameraAsset::RemoveConnectableObject(FName InGraphName, UObject* InObject)
 	ensure(NumRemoved == 1);
 }
 
-#endif  // WITH_EDITOR
+#endif  // WITH_EDITORONLY_DATA
 

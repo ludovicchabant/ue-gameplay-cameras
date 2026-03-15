@@ -133,7 +133,7 @@ void UCameraRigInput1DSlot::OnBuild(FCameraObjectBuildContext& BuildContext)
 	{
 		VariableDefinition = FBuiltInCameraVariables::Get().GetDefinition(BuiltInVariable);
 	}
-	else if (CustomVariable.HasVariable())
+	else if (CustomVariable.IsValid())
 	{
 		VariableDefinition = CustomVariable.Variable->GetVariableDefinition();
 	}

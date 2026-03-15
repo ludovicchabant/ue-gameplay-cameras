@@ -6,14 +6,18 @@
 #include "Build/CameraBuildLog.h"
 #include "Build/CameraRigAssetBuilder.h"
 #include "Commands/CameraRigAssetEditorCommands.h"
+#include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Core/CameraRigAsset.h"
 #include "Customizations/RichCurveDetailsCustomizations.h"
 #include "Editors/CameraRigCameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
+#include "Editors/CameraVariableAssetGraphNode.h"
+#include "Editors/SCameraNodeGraphEditor.h"
 #include "Editors/SCameraRigAssetEditor.h"
 #include "Editors/SFindInObjectTreeGraph.h"
 #include "Framework/Docking/LayoutExtender.h"
 #include "Framework/Docking/TabManager.h"
+#include "GraphEditor.h"
 #include "Helpers/AssetTypeMenuOverlayHelper.h"
 #include "IGameplayCamerasEditorModule.h"
 #include "IGameplayCamerasFamily.h"
@@ -26,6 +30,7 @@
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraObjectInterfaceParametersToolkit.h"
 #include "Toolkits/CameraRigAssetEditorToolkitBase.h"
+#include "Toolkits/CameraVariableCollectionEditorToolkit.h"
 #include "Toolkits/CurveEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -224,8 +229,13 @@ void FCameraRigAssetEditorToolkit::CreateWidgets()
 	BuildLogToolkit->Initialize("CameraRigAssetBuildMessages");
 
 	// Hook-up interface parameters events.
-	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
-	InterfaceParametersToolkit->OnSearchInterfaceParameterNodes().AddSP(this, &FCameraRigAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes);
+	InterfaceParametersToolkit->Initialize(
+			FOnGetFocusedCameraNodeGraphEditor::CreateSPLambda(
+				this, [this]() { return Impl->GetCameraRigAssetEditor()->GetFocusedGraphEditor(); }));
+	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(
+			this, &FCameraRigAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
+	InterfaceParametersToolkit->OnSearchInterfaceParameterNodes().AddSP(
+			this, &FCameraRigAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes);
 }
 
 void FCameraRigAssetEditorToolkit::RegisterToolbar()
@@ -289,15 +299,25 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 {
 	Impl->BindCommands(ToolkitCommands);
 
-	const FCameraRigAssetEditorCommands& Commands = FCameraRigAssetEditorCommands::Get();
+	const FCameraRigAssetEditorCommands& CameraRigCommands = FCameraRigAssetEditorCommands::Get();
+	const FCameraVariableCollectionEditorCommands& VariableCollectionCommands = FCameraVariableCollectionEditorCommands::Get();
 
 	ToolkitCommands->MapAction(
-		Commands.Build,
+		CameraRigCommands.Build,
 		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkit::OnBuild));
 
 	ToolkitCommands->MapAction(
-		Commands.FindInCameraRig,
+		CameraRigCommands.FindInCameraRig,
 		FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkit::OnFindInCameraRig));
+
+	TArray<TSharedPtr<SCameraNodeGraphEditor>> GraphEditors;
+	Impl->GetCameraRigAssetEditor()->GetGraphEditors(GraphEditors);
+	for (TSharedPtr<SCameraNodeGraphEditor> GraphEditor : GraphEditors)
+	{
+		GraphEditor->GetCommandList()->MapAction(
+				VariableCollectionCommands.GoToVariable,
+				FExecuteAction::CreateSP(this, &FCameraRigAssetEditorToolkit::OnGoToCameraVariable));
+	}
 
 	BuildLogToolkit->OnRequestJumpToObject().BindSPLambda(this, [this](UObject* Object)
 		{
@@ -305,19 +325,7 @@ void FCameraRigAssetEditorToolkit::PostInitAssetEditor()
 			CameraRigEditorWidget->FindAndJumpToObjectNode(Object);
 		});
 
-	ToolkitCommands->MapAction(
-			Commands.RenameInterfaceParameter,
-			FExecuteAction::CreateSPLambda(this, [this]()
-				{
-					InterfaceParametersToolkit->RenameSelectedParameter();
-				}));
-
-	ToolkitCommands->MapAction(
-			Commands.DeleteInterfaceParameter,
-			FExecuteAction::CreateSPLambda(this, [this]()
-				{
-					InterfaceParametersToolkit->DeleteSelectedParameter();
-				}));
+	InterfaceParametersToolkit->BindCommands(ToolkitCommands);
 
 	IGameplayCamerasModule& GameplayCamerasModule = FModuleManager::GetModuleChecked<IGameplayCamerasModule>("GameplayCameras");
 	LiveEditManager = GameplayCamerasModule.GetLiveEditManager();
@@ -398,6 +406,28 @@ void FCameraRigAssetEditorToolkit::OnFindInCameraRig()
 {
 	TabManager->TryInvokeTab(SearchTabId);
 	SearchWidget->FocusSearchEditBox();
+}
+
+void FCameraRigAssetEditorToolkit::OnGoToCameraVariable()
+{
+	UCameraVariableAsset* Variable = nullptr;
+	TSharedPtr<SCameraNodeGraphEditor> GraphEditor = Impl->GetCameraRigAssetEditor()->GetFocusedGraphEditor();
+	for (UObject* GraphNode : GraphEditor->GetGraphEditor()->GetSelectedNodes())
+	{
+		if (UCameraVariableAssetGraphNode* VariableGetter = Cast<UCameraVariableAssetGraphNode>(GraphNode))
+		{
+			Variable = VariableGetter->GetVariableAsset();
+			if (Variable)
+			{
+				break;
+			}
+		}
+	}
+
+	if (Variable)
+	{
+		FCameraVariableCollectionEditorToolkit::ExecuteGoToVariableCommand(Variable);
+	}
 }
 
 void FCameraRigAssetEditorToolkit::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)

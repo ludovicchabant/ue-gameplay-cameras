@@ -65,16 +65,13 @@ void SObjectTreeGraphEditor::Construct(const FArguments& InArgs)
 
 	InitializeBuiltInCommands();
 
-	TSharedPtr<FUICommandList> AdditionalCommands = BuiltInCommands;
 	if (InArgs._AdditionalCommands)
 	{
-		AdditionalCommands = MakeShared<FUICommandList>();
-		AdditionalCommands->Append(BuiltInCommands.ToSharedRef());
-		AdditionalCommands->Append(InArgs._AdditionalCommands.ToSharedRef());
+		BuiltInCommands->Append(InArgs._AdditionalCommands.ToSharedRef());
 	}
 
 	GraphEditor = SNew(SGraphEditor)
-		.AdditionalCommands(AdditionalCommands)
+		.AdditionalCommands(BuiltInCommands)
 		.Appearance(InArgs._Appearance)
 		.TitleBar(GraphTitleBar)
 		.GraphToEdit(InArgs._GraphToEdit)

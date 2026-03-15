@@ -4,25 +4,25 @@
 
 #include "Editors/CameraParameterGetterGraphNodeBase.h"
 
-#include "CameraObjectInterfaceParameterGraphNode.generated.h"
+#include "CameraVariableAssetGraphNode.generated.h"
 
-class UCameraObjectInterfaceParameterBase;
+class UCameraVariableAsset;
 
 /**
  * Custom graph editor node for a camera rig parameter getter.
  */
 UCLASS()
-class UCameraObjectInterfaceParameterGraphNode : public UCameraParameterGetterGraphNodeBase
+class UCameraVariableAssetGraphNode : public UCameraParameterGetterGraphNodeBase
 {
 	GENERATED_BODY()
 
 public:
 
 	/** Creates a new graph node. */
-	UCameraObjectInterfaceParameterGraphNode(const FObjectInitializer& ObjInit);
+	UCameraVariableAssetGraphNode(const FObjectInitializer& ObjInit);
 
-	/** Finds the camera interface parameter. */
-	UCameraObjectInterfaceParameterBase* GetInterfaceParameter() const;
+	/** Gets the referenced variable asset. */
+	UCameraVariableAsset* GetVariableAsset() const;
 
 public:
 

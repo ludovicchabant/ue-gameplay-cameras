@@ -22,11 +22,10 @@ TSharedPtr<SGraphPin> SCameraNodeGraphNode::CreatePinWidget(UEdGraphPin* InPin) 
 	{
 		TSharedRef<FGameplayCamerasEditorStyle> GraphStyle = FGameplayCamerasEditorStyle::Get();
 
-		if (InPin->PinType.PinCategory == UCameraObjectGraphSchemaBase::PC_CameraParameter ||
-				InPin->PinType.PinCategory == UCameraObjectGraphSchemaBase::PC_CameraVariableReference)
+		if (InPin->PinType.PinCategory == UCameraObjectGraphSchemaBase::PC_CameraParameter)
 		{
-			const FSlateBrush* ConnectedBrush = GraphStyle->GetBrush("Graph.CameraRigParameterPin.Connected");
-			const FSlateBrush* DisconnectedBrush = GraphStyle->GetBrush("Graph.CameraRigParameterPin.Disconnected");
+			const FSlateBrush* ConnectedBrush = GraphStyle->GetBrush("Graph.ParameterGetterPin.Connected");
+			const FSlateBrush* DisconnectedBrush = GraphStyle->GetBrush("Graph.ParameterGetterPin.Disconnected");
 			PinWidget->SetCustomPinIcon(ConnectedBrush, DisconnectedBrush);
 		}
 	}

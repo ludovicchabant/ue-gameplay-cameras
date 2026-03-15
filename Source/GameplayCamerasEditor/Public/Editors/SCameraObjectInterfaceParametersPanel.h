@@ -49,6 +49,9 @@ public:
 	/** Delete the selected parameter in the focused panel. */
 	void DeleteSelectedParameter();
 
+	/** Request that the given parameter be selected in the panel. */
+	void SelectParameter(UCameraObjectInterfaceParameterBase* Parameter);
+
 protected:
 
 	// SWidget interface.

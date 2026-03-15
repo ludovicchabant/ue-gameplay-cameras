@@ -1,10 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Editors/SCameraObjectInterfaceParameterGraphNode.h"
+#include "Editors/SCameraVariableAssetGraphNode.h"
 
-#include "Editors/CameraObjectInterfaceParameterGraphNode.h"
+#include "Editors/CameraVariableAssetGraphNode.h"
 
-void SCameraObjectInterfaceParameterGraphNode::Construct(const FArguments& InArgs)
+void SCameraVariableAssetGraphNode::Construct(const FArguments& InArgs)
 {
 	SCameraParameterGetterGraphNodeBase::FArguments SuperArgs;
 	SuperArgs

@@ -8,6 +8,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/IAssetReferenceCameraNode.h"
+#include "GameplayCamerasCustomVersion.h"
 #include "Misc/EngineVersionComparison.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
@@ -70,8 +71,14 @@ void UCameraRigAsset::PostLoad()
 	}
 
 #if WITH_EDITORONLY_DATA
-	// Upgrade the old parameter connections.
-	UpgradeInterfaceConnections(this, NodeTreeGraphName);
+	if (GetLinkerCustomVersion(FGameplayCamerasCustomVersion::GUID) < FGameplayCamerasCustomVersion::DeprecateCameraParameterVariables)
+	{
+		// Upgrade the old parameter connections.
+		UpgradeInterfaceConnections(this, NodeTreeGraphName);
+
+		UpgradeCameraParameters(AllNodeTreeObjects);
+		UpgradeCameraParameters(AllTransitionsObjects);
+	}
 #endif
 }
 
@@ -224,6 +231,10 @@ void UCameraRigAsset::GetGraphNodeName(FName InGraphName, FText& OutName) const
 	OutName = FText::FromString(GetName());
 }
 
+#endif  // WITH_EDITOR
+
+#if WITH_EDITORONLY_DATA
+
 void UCameraRigAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const
 {
 	if (InGraphName == NodeTreeGraphName)
@@ -276,7 +287,7 @@ void UCameraRigAsset::RemoveConnectableObject(FName InGraphName, UObject* InObje
 	}
 }
 
-#endif  // WITH_EDITOR
+#endif  // WITH_EDITORONLY_DATA
 
 void UCameraRigAsset::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
 {

@@ -61,6 +61,8 @@ public:
 
 	TSharedPtr<SGraphEditor> GetGraphEditor() { return GraphEditor; }
 
+	TSharedPtr<FUICommandList> GetCommandList() { return BuiltInCommands; }
+
 protected:
 
 	// SWidget interface.

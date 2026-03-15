@@ -11,8 +11,8 @@
 
 #include "CameraShakeAssetEditorToolkit.generated.h"
 
+class SCameraNodeGraphEditor;
 class SFindInObjectTreeGraph;
-class SObjectTreeGraphEditor;
 class SObjectTreeGraphToolbox;
 class UCameraShakeAsset;
 struct FEdGraphEditAction;
@@ -79,9 +79,11 @@ private:
 	bool IsGraphEditorEnabled() const;
 
 	void OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object);
+	void OnSearchCameraObjectInterfaceParameterNodes(UCameraObjectInterfaceParameterBase* Object);
 
 	void OnBuild();
 	void OnFindInCameraShake();
+	void OnGoToCameraVariable();
 
 	void OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources);
 	void OnJumpToNode(UEdGraphNode* Node, FName PinName);
@@ -113,7 +115,7 @@ private:
 	/** The node hierarchy graph */
 	TObjectPtr<UObjectTreeGraph> NodeGraph;
 	/** The node hierarchy graph editor */
-	TSharedPtr<SObjectTreeGraphEditor> NodeGraphEditor;
+	TSharedPtr<SCameraNodeGraphEditor> NodeGraphEditor;
 
 	/** The build button */
 	TSharedPtr<FBuildButtonToolkit> BuildButtonToolkit;

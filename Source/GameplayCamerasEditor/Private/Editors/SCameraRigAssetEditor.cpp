@@ -4,7 +4,6 @@
 
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraRigTransition.h"
-#include "Editors/CameraObjectInterfaceParameterGraphNode.h"
 #include "Editors/CameraRigCameraNodeGraphSchema.h"
 #include "Editors/CameraRigTransitionGraphSchema.h"
 #include "Editors/ObjectTreeGraph.h"
@@ -108,7 +107,7 @@ void SCameraRigAssetEditor::CreateTransitionGraphEditor()
 	FGraphAppearanceInfo Appearance;
 	Appearance.CornerText = LOCTEXT("TransitionGraphText", "TRANSITIONS");
 
-	TransitionGraphEditor = SNew(SObjectTreeGraphEditor)
+	TransitionGraphEditor = SNew(SCameraNodeGraphEditor)
 		.Appearance(Appearance)
 		.DetailsView(DetailsView)
 		.GraphTitle(this, &SCameraRigAssetEditor::GetCameraRigAssetName, TransitionGraph.Get())
@@ -191,6 +190,26 @@ void SCameraRigAssetEditor::GetGraphs(TArray<UEdGraph*>& OutGraphs) const
 {
 	OutGraphs.Add(NodeGraph);
 	OutGraphs.Add(TransitionGraph);
+}
+
+void SCameraRigAssetEditor::GetGraphEditors(TArray<TSharedPtr<SCameraNodeGraphEditor>>& OutGraphEditors) const
+{
+	OutGraphEditors.Add(NodeGraphEditor);
+	OutGraphEditors.Add(TransitionGraphEditor);
+}
+
+TSharedPtr<SCameraNodeGraphEditor> SCameraRigAssetEditor::GetFocusedGraphEditor() const
+{
+	switch (CurrentMode)
+	{
+		case ECameraRigAssetEditorMode::NodeGraph:
+			return NodeGraphEditor;
+		case ECameraRigAssetEditorMode::TransitionGraph:
+			return TransitionGraphEditor;
+		default:
+			ensure(false);
+			return nullptr;
+	}
 }
 
 UEdGraph* SCameraRigAssetEditor::GetFocusedGraph() const

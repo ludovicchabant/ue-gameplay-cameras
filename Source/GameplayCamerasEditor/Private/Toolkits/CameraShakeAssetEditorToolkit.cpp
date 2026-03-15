@@ -5,8 +5,10 @@
 #include "Build/CameraBuildLog.h"
 #include "Build/CameraShakeAssetBuilder.h"
 #include "Commands/CameraShakeAssetEditorCommands.h"
+#include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Core/CameraShakeAsset.h"
 #include "Editors/CameraShakeCameraNodeGraphSchema.h"
+#include "Editors/CameraVariableAssetGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphNode.h"
 #include "Editors/SCameraNodeGraphEditor.h"
@@ -24,6 +26,7 @@
 #include "Toolkits/BuildButtonToolkit.h"
 #include "Toolkits/CameraBuildLogToolkit.h"
 #include "Toolkits/CameraObjectInterfaceParametersToolkit.h"
+#include "Toolkits/CameraVariableCollectionEditorToolkit.h"
 #include "Toolkits/StandardToolkitLayout.h"
 #include "Widgets/Docking/SDockTab.h"
 
@@ -78,7 +81,7 @@ void FCameraShakeAssetEditorToolkit::AddReferencedObjects(FReferenceCollector& C
 
 FString FCameraShakeAssetEditorToolkit::GetReferencerName() const
 {
-	return TEXT("FCameraRigAssetEditorToolkitBase");
+	return TEXT("FCameraShakeAssetEditorToolkit");
 }
 
 void FCameraShakeAssetEditorToolkit::SetCameraShakeAsset(UCameraShakeAsset* InCameraShake)
@@ -255,7 +258,13 @@ void FCameraShakeAssetEditorToolkit::CreateWidgets()
 	BuildLogToolkit->Initialize("CameraShakeAssetBuildMessages");
 
 	// Hook-up the selection of interface parameters.
-	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(this, &FCameraShakeAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
+	InterfaceParametersToolkit->Initialize(
+			FOnGetFocusedCameraNodeGraphEditor::CreateSPLambda(
+				this, [this]() { return NodeGraphEditor; }));
+	InterfaceParametersToolkit->OnInterfaceParameterSelected().AddSP(
+			this, &FCameraShakeAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected);
+	InterfaceParametersToolkit->OnSearchInterfaceParameterNodes().AddSP(
+			this, &FCameraShakeAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes);
 }
 
 void FCameraShakeAssetEditorToolkit::CreateNodeGraphEditor()
@@ -337,6 +346,7 @@ void FCameraShakeAssetEditorToolkit::InitToolMenuContext(FToolMenuContext& MenuC
 void FCameraShakeAssetEditorToolkit::PostInitAssetEditor()
 {
 	const FCameraShakeAssetEditorCommands& Commands = FCameraShakeAssetEditorCommands::Get();
+	const FCameraVariableCollectionEditorCommands& VariableCollectionCommands = FCameraVariableCollectionEditorCommands::Get();
 
 	ToolkitCommands->MapAction(
 		Commands.Build,
@@ -350,24 +360,16 @@ void FCameraShakeAssetEditorToolkit::PostInitAssetEditor()
 		Commands.FindInCameraShake,
 		FExecuteAction::CreateSP(this, &FCameraShakeAssetEditorToolkit::OnFindInCameraShake));
 
+	NodeGraphEditor->GetCommandList()->MapAction(
+			VariableCollectionCommands.GoToVariable,
+			FExecuteAction::CreateSP(this, &FCameraShakeAssetEditorToolkit::OnGoToCameraVariable));
+
 	BuildLogToolkit->OnRequestJumpToObject().BindSPLambda(this, [this](UObject* Object)
 		{
 			OnJumpToObject(Object, NAME_None);
 		});
 
-	ToolkitCommands->MapAction(
-			Commands.RenameInterfaceParameter,
-			FExecuteAction::CreateSPLambda(this, [this]()
-				{
-					InterfaceParametersToolkit->RenameSelectedParameter();
-				}));
-
-	ToolkitCommands->MapAction(
-			Commands.DeleteInterfaceParameter,
-			FExecuteAction::CreateSPLambda(this, [this]()
-				{
-					InterfaceParametersToolkit->DeleteSelectedParameter();
-				}));
+	InterfaceParametersToolkit->BindCommands(ToolkitCommands);
 
 	RegenerateMenusAndToolbars();
 }
@@ -388,7 +390,14 @@ void FCameraShakeAssetEditorToolkit::NotifyPostChange(const FPropertyChangedEven
 
 void FCameraShakeAssetEditorToolkit::OnCameraObjectInterfaceParameterSelected(UCameraObjectInterfaceParameterBase* Object)
 {
-	OnJumpToObject(Object, NAME_None);
+	DetailsView->SetObject(Object);
+}
+
+void FCameraShakeAssetEditorToolkit::OnSearchCameraObjectInterfaceParameterNodes(UCameraObjectInterfaceParameterBase* Object)
+{
+	TabManager->TryInvokeTab(SearchTabId);
+
+	SearchWidget->Search(Object->InterfaceParameterName);
 }
 
 void FCameraShakeAssetEditorToolkit::OnBuild()
@@ -417,6 +426,27 @@ void FCameraShakeAssetEditorToolkit::OnFindInCameraShake()
 {
 	TabManager->TryInvokeTab(SearchTabId);
 	SearchWidget->FocusSearchEditBox();
+}
+
+void FCameraShakeAssetEditorToolkit::OnGoToCameraVariable()
+{
+	UCameraVariableAsset* Variable = nullptr;
+	for (UObject* GraphNode : NodeGraphEditor->GetGraphEditor()->GetSelectedNodes())
+	{
+		if (UCameraVariableAssetGraphNode* VariableGetter = Cast<UCameraVariableAssetGraphNode>(GraphNode))
+		{
+			Variable = VariableGetter->GetVariableAsset();
+			if (Variable)
+			{
+				break;
+			}
+		}
+	}
+
+	if (Variable)
+	{
+		FCameraVariableCollectionEditorToolkit::ExecuteGoToVariableCommand(Variable);
+	}
 }
 
 void FCameraShakeAssetEditorToolkit::OnGetGraphsToSearch(TArray<FFindInObjectTreeGraphSource>& OutSources)

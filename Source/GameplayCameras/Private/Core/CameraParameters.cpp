@@ -213,9 +213,9 @@ void F##ValueName##CameraParameter::PostSerialize(const FArchive& Ar)\
 {\
 	if (Ar.IsLoading())\
 	{\
-		if (Variable && Variable->GetOuter()->IsA<UCameraRigAsset>())\
+		if (Variable_DEPRECATED && Variable_DEPRECATED->GetOuter()->template IsA<UCameraRigAsset>())\
 		{\
-			Variable = nullptr;\
+			Variable_DEPRECATED = nullptr;\
 		}\
 	}\
 }\

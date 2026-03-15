@@ -2,9 +2,12 @@
 
 #include "Core/CameraVariableCollection.h"
 
+#include "AssetRegistry/AssetData.h"
 #include "Core/CameraVariableAssets.h"
 #include "GameplayCameras.h"
+#include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectRedirector.h"
+#include "UObject/ObjectSaveContext.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableCollection)
 
@@ -29,6 +32,77 @@ void UCameraVariableCollection::PostLoad()
 
 	CleanUpStrayObjects();
 #endif  // WITH_EDITOR
+}
+
+void UCameraVariableCollection::GetAssetRegistryTags(FAssetRegistryTagsContext Context) const
+{
+	Context.AddTag(FAssetRegistryTag(
+				TEXT("NumVariables"), 
+				FString::FromInt(Variables.Num()),
+				FAssetRegistryTag::TT_Numerical));
+
+	const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
+	for (int32 Index = 0; Index < Variables.Num(); ++Index)
+	{
+		UCameraVariableAsset* Variable = Variables[Index];
+		if (Variable)
+		{
+			Context.AddTag(FAssetRegistryTag(
+						FName(FString::Printf(TEXT("VariableName%d"), Index)),
+						Variable->DisplayName,
+						FAssetRegistryTag::TT_Hidden));
+			Context.AddTag(FAssetRegistryTag(
+						FName(FString::Printf(TEXT("VariableGuid%d"), Index)),
+						Variable->GetGuid().ToString(EGuidFormats::Digits),
+						FAssetRegistryTag::TT_Hidden));
+			Context.AddTag(FAssetRegistryTag(
+						FName(FString::Printf(TEXT("VariableType%d"), Index)),
+						VariableTypeEnum->GetNameStringByValue((int64)Variable->GetVariableType()),
+						FAssetRegistryTag::TT_Hidden));
+		}
+	}
+
+	Super::GetAssetRegistryTags(Context);
+}
+
+void UCameraVariableCollection::GetVariablesForType(const FAssetData& AssetData, ECameraVariableType DesiredType, TArray<FSoftCameraVariablePtr>& OutVariables)
+{
+	TSoftObjectPtr<UCameraVariableCollection> SoftVariableCollection(AssetData.GetSoftObjectPath());
+
+	int32 NumVariables = 0;
+	if (AssetData.GetTagValue<int32>(TEXT("NumVariables"), NumVariables))
+	{
+		const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
+
+		for (int32 Index = 0; Index < NumVariables; ++Index)
+		{
+			FString VariableTypeStr;
+			bool bMatchesDesiredType = false;
+			if (AssetData.GetTagValue<FString>(FName(FString::Printf(TEXT("VariableType%d"), Index)), VariableTypeStr))
+			{
+				ECameraVariableType VariableType = (ECameraVariableType)VariableTypeEnum->GetValueByNameString(VariableTypeStr);
+				bMatchesDesiredType = (VariableType == DesiredType);
+			}
+
+			if (bMatchesDesiredType)
+			{
+				const FGuid VariableGuid = AssetData.GetTagValueRef<FGuid>(FName(FString::Printf(TEXT("VariableGuid%d"), Index)));
+				const FString VariableName = AssetData.GetTagValueRef<FString>(FName(FString::Printf(TEXT("VariableName%d"), Index)));
+				OutVariables.Add(FSoftCameraVariablePtr{ SoftVariableCollection, VariableGuid, VariableName });
+			}
+		}
+	}
+	else if (UCameraVariableCollection* LoadedAsset = Cast<UCameraVariableCollection>(AssetData.GetAsset()))
+	{
+		for (UCameraVariableAsset* Variable : LoadedAsset->Variables)
+		{
+			const bool bMatchesDesiredType = (Variable->GetVariableType() == DesiredType);
+			if (bMatchesDesiredType)
+			{
+				OutVariables.Add(FSoftCameraVariablePtr{ SoftVariableCollection, Variable->GetGuid(), Variable->DisplayName });
+			}
+		}
+	}
 }
 
 #if WITH_EDITOR
@@ -84,3 +158,21 @@ void UCameraVariableCollection::CleanUpStrayObjects()
 }
 
 #endif  // WITH_EDITOR
+
+UCameraVariableAsset* FSoftCameraVariablePtr::Get() const
+{
+	if (UCameraVariableCollection* ActualVariableCollection = VariableCollection.Get())
+	{
+		TObjectPtr<UCameraVariableAsset>* FoundItem = ActualVariableCollection->Variables.FindByPredicate(
+				[this](UCameraVariableAsset* Item)
+				{
+					return Item && Item->GetGuid() == VariableGuid;
+				});
+		if (FoundItem)
+		{
+			return FoundItem->Get();
+		}
+	}
+	return nullptr;
+}
+

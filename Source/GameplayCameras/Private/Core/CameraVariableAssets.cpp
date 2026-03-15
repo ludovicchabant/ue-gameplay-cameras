@@ -2,6 +2,8 @@
 
 #include "Core/CameraVariableAssets.h"
 
+#include "Core/CameraVariableCollection.h"
+
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableAssets)
 
 UCameraVariableAsset::UCameraVariableAsset(const FObjectInitializer& ObjectInit)
@@ -27,6 +29,16 @@ FCameraVariableDefinition UCameraVariableAsset::GetVariableDefinition() const
 	VariableDefinition.VariableName = GetDisplayName();
 #endif
 	return VariableDefinition;
+}
+
+FSoftCameraVariablePtr UCameraVariableAsset::GetSoftPointer() const
+{
+	UCameraVariableCollection* Outer = GetTypedOuter<UCameraVariableCollection>();
+	if (ensure(Outer))
+	{
+		return FSoftCameraVariablePtr{ TSoftObjectPtr<UCameraVariableCollection>(Outer), Guid, DisplayName };
+	}
+	return FSoftCameraVariablePtr();
 }
 
 void UCameraVariableAsset::PostLoad()
@@ -71,6 +83,15 @@ FString UCameraVariableAsset::GetDisplayName() const
 	return GetName();
 }
 
+FString UCameraVariableAssetGetter::GetVariableDisplayName() const
+{
+	if (Variable)
+	{
+		return Variable->GetDisplayName();
+	}
+	return FString();
+}
+
 #endif  // WITH_EDITORONLY_DATA
 
 #if WITH_EDITOR
@@ -82,6 +103,29 @@ FText UCameraVariableAsset::GetDisplayText() const
 		return FText::FromString(DisplayName);
 	}
 	return FText::FromName(GetFName());
+}
+
+FText UCameraVariableAssetGetter::GetVariableAssetDisplayText() const
+{
+	if (Variable)
+	{
+		return Variable->GetDisplayText();
+	}
+	return FText::GetEmpty();
+}
+
+void UCameraVariableAssetGetter::GetGraphNodePosition(FName InGraphName, int32& NodePosX, int32& NodePosY) const
+{
+	NodePosX = GraphNodePos.X;
+	NodePosY = GraphNodePos.Y;
+}
+
+void UCameraVariableAssetGetter::OnGraphNodeMoved(FName InGraphName, int32 NodePosX, int32 NodePosY, bool bMarkDirty)
+{
+	Modify(bMarkDirty);
+
+	GraphNodePos.X = NodePosX;
+	GraphNodePos.Y = NodePosY;
 }
 
 #endif  // WITH_EDITOR

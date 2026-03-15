@@ -649,6 +649,20 @@ void SCameraObjectInterfaceParametersPanel::DeleteSelectedParameter()
 	}
 }
 
+void SCameraObjectInterfaceParametersPanel::SelectParameter(UCameraObjectInterfaceParameterBase* Parameter)
+{
+	if (UCameraObjectInterfaceBlendableParameter* BlendableParameter = Cast<UCameraObjectInterfaceBlendableParameter>(Parameter))
+	{
+		BlendableParametersListView->SetSelection(BlendableParameter);
+		BlendableParametersListView->RequestScrollIntoView(BlendableParameter);
+	}
+	else if (UCameraObjectInterfaceDataParameter* DataParameter = Cast<UCameraObjectInterfaceDataParameter>(Parameter))
+	{
+		DataParametersListView->SetSelection(DataParameter);
+		DataParametersListView->RequestScrollIntoView(DataParameter);
+	}
+}
+
 void SCameraObjectInterfaceParametersPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
 {
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);

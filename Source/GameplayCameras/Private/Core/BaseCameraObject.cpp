@@ -4,6 +4,7 @@
 
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraNode.h"
+#include "Core/CameraParameters.h"
 #include "Core/ObjectTreeGraphRootObject.h"
 #include "Misc/EngineVersionComparison.h"
 #include "StructUtils/OverridablePropertyBag.h"
@@ -31,6 +32,11 @@ void FCameraObjectConnections::Add(UObject* InSource, FName InSourcePropertyName
 	NewConnection.Target = InTarget;
 	NewConnection.TargetPropertyName = InTargetPropertyName;
 	Connections.Add(NewConnection);
+}
+
+void FCameraObjectConnections::Append(const FCameraObjectConnections& OtherConnections)
+{
+	Connections.Append(OtherConnections.Connections);
 }
 
 FCameraObjectConnection* FCameraObjectConnections::FindBySource(UObject* InSource)
@@ -196,6 +202,82 @@ void UBaseCameraObject::UpgradeInterfaceConnections(IObjectTreeGraphRootObject* 
 			Parameter->TargetPropertyName_DEPRECATED = NAME_None;
 		}
 	}
+}
+
+namespace UE::Cameras::Internal
+{
+
+template<typename ParameterType>
+UObject* UpgradeCameraParameterImpl(UCameraNode* CameraNode, FStructProperty* StructProperty, int32 GetterNodeIndex)
+{
+	ensure(StructProperty->Struct == ParameterType::StaticStruct());
+	ParameterType* CameraParameter = StructProperty->ContainerPtrToValuePtr<ParameterType>(CameraNode);
+	if (ensure(CameraParameter))
+	{
+		UCameraVariableAsset* UserVariable = CameraParameter->Variable_DEPRECATED;
+		if (UserVariable)
+		{
+			ensure(UserVariable->HasAnyFlags(RF_Public));
+
+			// Clear the old variable reference.
+			CameraParameter->Variable_DEPRECATED = nullptr;
+
+			// Create the getter node in front of the camera node (X - 200), and space multiple getter nodes
+			// by 30 units vertically.
+			const FIntVector2 GetterNodeOffset(-200, 30 * (GetterNodeIndex + 1));
+
+			UCameraVariableAssetGetter* GetterNode = NewObject<UCameraVariableAssetGetter>(CameraNode->GetOuter());
+			GetterNode->Variable = UserVariable;
+			GetterNode->GraphNodePos = CameraNode->GraphNodePos + GetterNodeOffset;
+			return GetterNode;
+		}
+	}
+	return nullptr;
+}
+
+}  // namespace UE::Cameras::Internal
+
+void UBaseCameraObject::UpgradeCameraParameters(TArray<TObjectPtr<UObject>>& AllGraphObjects)
+{
+	using namespace UE::Cameras::Internal;
+
+	TArray<UObject*> NewNodes;
+	for (UObject* Object : AllGraphObjects)
+	{
+		UCameraNode* CameraNode = Cast<UCameraNode>(Object);
+		if (!CameraNode)
+		{
+			continue;
+		}
+
+		int32 GetterNodeIndex = 0;
+		const UClass* ObjectClass = CameraNode->GetClass();
+		for (TFieldIterator<FProperty> PropertyIt(ObjectClass); PropertyIt; ++PropertyIt)
+		{
+			if (FStructProperty* StructProperty = CastField<FStructProperty>(*PropertyIt))
+			{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+				if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
+				{\
+					if (UObject* NewNode = UpgradeCameraParameterImpl<F##ValueName##CameraParameter>(\
+								CameraNode, StructProperty, GetterNodeIndex))\
+					{\
+						NewNodes.Add(NewNode);\
+						++GetterNodeIndex;\
+						Connections.Add(NewNode, NAME_None, CameraNode, StructProperty->GetFName());\
+					}\
+				}\
+				else
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+				{
+					// Some other struct property...
+				}
+			}
+		}
+	}
+
+	AllGraphObjects.Append(NewNodes);
 }
 
 #endif  // WITH_EDITORONLY_DATA

@@ -3,7 +3,7 @@
 #include "Build/CameraRigAssetBuilder.h"
 
 #include "Build/CameraNodeHierarchyBuilder.h"
-#include "Build/CameraObjectInterfaceBuilder.h"
+#include "Build/CameraObjectConnectionsBuilder.h"
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraRigAsset.h"
 #include "GameplayCamerasDelegates.h"
@@ -43,16 +43,16 @@ void FCameraRigAssetBuilder::BuildCameraRig(UCameraRigAsset* InCameraRig)
 
 void FCameraRigAssetBuilder::BuildCameraRigImpl()
 {
+	FCameraObjectInterfaceParameterBuilder ParameterBuilder(BuildContext);
+	ParameterBuilder.BuildParameters(CameraRig);
+
 	FCameraNodeHierarchyBuilder NodeBuilder(BuildContext, CameraRig);
 	NodeBuilder.PreBuild();
 
-	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildContext);
-	InterfaceBuilder.BuildInterface(CameraRig, NodeBuilder.GetHierarchy(), true);
+	FCameraObjectConnectionsBuilder ConnectionsBuilder(BuildContext);
+	ConnectionsBuilder.BuildConnections(CameraRig, NodeBuilder.GetHierarchy(), true);
 
 	NodeBuilder.Build();
-
-	FCameraObjectInterfaceParameterBuilder ParameterBuilder;
-	ParameterBuilder.BuildParameters(CameraRig);
 }
 
 void FCameraRigAssetBuilder::UpdateBuildStatus()

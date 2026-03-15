@@ -1,17 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Build/CameraObjectInterfaceBuilder.h"
+#include "Build/CameraObjectConnectionsBuilder.h"
 
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeHierarchy.h"
 #include "Core/CameraObjectInterface.h"
-#include "Core/CameraParameters.h"
-#include "Core/CameraVariableReferences.h"
+#include "Core/CameraVariableAssets.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "GameplayCameras.h"
 
-#define LOCTEXT_NAMESPACE "CameraObjectInterfaceBuilder"
+#define LOCTEXT_NAMESPACE "CameraObjectConnectionsBuilder"
 
 namespace UE::Cameras
 {
@@ -24,7 +23,7 @@ struct FInterfaceParameterBindingBuilder
 	UBaseCameraObject* CameraObject;
 	TMap<const UCameraNode*, FCameraNodeParameterInfos> BuiltCameraNodeParameters;
 
-	FInterfaceParameterBindingBuilder(FCameraObjectInterfaceBuilder& InOwner)
+	FInterfaceParameterBindingBuilder(FCameraObjectConnectionsBuilder& InOwner)
 		: Owner(InOwner)
 	{
 		CameraObject = Owner.CameraObject;
@@ -41,7 +40,7 @@ struct FInterfaceParameterBindingBuilder
 	}
 
 	void SetParameterOverride(
-			UCameraObjectInterfaceBlendableParameter* SourceParameter,
+			const FCameraVariableDefinition& VariableDefinition,
 			UCameraNode* TargetNode,
 			FName TargetNodeParameterName)
 	{
@@ -58,8 +57,8 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		if (TargetParameterInfo->VariableType != SourceParameter->VariableType ||
-				TargetParameterInfo->BlendableStructType != SourceParameter->BlendableStructType)
+		if (TargetParameterInfo->VariableType != VariableDefinition.VariableType ||
+				TargetParameterInfo->BlendableStructType != VariableDefinition.BlendableStructType)
 		{
 			ReportError(
 					TargetNode,
@@ -68,7 +67,7 @@ struct FInterfaceParameterBindingBuilder
 							"Invalid connection to property '{0}' on '{1}', expected type '{2}' but is '{3}'."),
 						FText::FromName(TargetNodeParameterName),
 						FText::FromName(TargetNode->GetFName()),
-						UEnum::GetDisplayValueAsText(SourceParameter->VariableType),
+						UEnum::GetDisplayValueAsText(VariableDefinition.VariableType),
 						UEnum::GetDisplayValueAsText(TargetParameterInfo->VariableType)));
 			return;
 		}
@@ -97,17 +96,17 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		ensure(SourceParameter->PrivateVariableID.IsValid());
+		ensure(VariableDefinition.VariableID.IsValid());
 		FCameraVariableID PreviousVariableID = FindOldDrivingVariableID(TargetNode, TargetNodeParameterName);
-		if (PreviousVariableID != SourceParameter->PrivateVariableID)
+		if (PreviousVariableID != VariableDefinition.VariableID)
 		{
 			TargetNode->Modify();
 		}
-		*TargetParameterInfo->OverrideVariableID = SourceParameter->PrivateVariableID;
+		*TargetParameterInfo->OverrideVariableID = VariableDefinition.VariableID;
 	}
 
 	void SetParameterOverride(
-			UCameraObjectInterfaceDataParameter* SourceParameter,
+			const FCameraContextDataDefinition& DataDefinition,
 			UCameraNode* TargetNode,
 			FName TargetNodeParameterName)
 	{
@@ -124,9 +123,9 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		if (TargetParameterInfo->DataType != SourceParameter->DataType ||
-				TargetParameterInfo->DataContainerType != SourceParameter->DataContainerType ||
-				TargetParameterInfo->DataTypeObject != SourceParameter->DataTypeObject)
+		if (TargetParameterInfo->DataType != DataDefinition.DataType ||
+				TargetParameterInfo->DataContainerType != DataDefinition.DataContainerType ||
+				TargetParameterInfo->DataTypeObject != DataDefinition.DataTypeObject)
 		{
 			ReportError(
 					TargetNode,
@@ -135,7 +134,7 @@ struct FInterfaceParameterBindingBuilder
 							"Invalid connection to property '{0}' on '{1}', expected type '{2}' but is '{3}'."),
 						FText::FromName(TargetNodeParameterName),
 						FText::FromName(TargetNode->GetFName()),
-						UEnum::GetDisplayValueAsText(SourceParameter->DataType),
+						UEnum::GetDisplayValueAsText(DataDefinition.DataType),
 						UEnum::GetDisplayValueAsText(TargetParameterInfo->DataType)));
 			return;
 		}
@@ -164,13 +163,13 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		ensure(SourceParameter->PrivateDataID.IsValid());
+		ensure(DataDefinition.DataID.IsValid());
 		FCameraContextDataID PreviousDataID = FindOldDrivingDataID(TargetNode, TargetNodeParameterName);
-		if (PreviousDataID != SourceParameter->PrivateDataID)
+		if (PreviousDataID != DataDefinition.DataID)
 		{
 			TargetNode->Modify();
 		}
-		*TargetParameterInfo->OverrideDataID = SourceParameter->PrivateDataID;
+		*TargetParameterInfo->OverrideDataID = DataDefinition.DataID;
 	}
 
 private:
@@ -204,7 +203,7 @@ private:
 
 	FCameraVariableID FindOldDrivingVariableID(UObject* ForObject, FName ForParameterName)
 	{
-		using FDrivenParameterKey = FCameraObjectInterfaceBuilder::FDrivenParameterKey;
+		using FDrivenParameterKey = FCameraObjectConnectionsBuilder::FDrivenParameterKey;
 
 		FDrivenParameterKey ParameterKey{ ForObject, ForParameterName };
 		FCameraVariableID ReusedVariableID;
@@ -214,7 +213,7 @@ private:
 
 	FCameraContextDataID FindOldDrivingDataID(UObject* ForObject, FName ForParameterName)
 	{
-		using FDrivenParameterKey = FCameraObjectInterfaceBuilder::FDrivenParameterKey;
+		using FDrivenParameterKey = FCameraObjectConnectionsBuilder::FDrivenParameterKey;
 
 		FDrivenParameterKey ParameterKey{ ForObject, ForParameterName };
 		FCameraContextDataID ReusedDataID;
@@ -224,17 +223,17 @@ private:
 
 private:
 
-	FCameraObjectInterfaceBuilder& Owner;
+	FCameraObjectConnectionsBuilder& Owner;
 };
 
 }  // namespace Internal
 
-FCameraObjectInterfaceBuilder::FCameraObjectInterfaceBuilder(FCameraBuildContext& InBuildContext)
+FCameraObjectConnectionsBuilder::FCameraObjectConnectionsBuilder(FCameraBuildContext& InBuildContext)
 	: BuildContext(InBuildContext)
 {
 }
 
-void FCameraObjectInterfaceBuilder::BuildInterface(UBaseCameraObject* InCameraObject, const FCameraNodeHierarchy& InHierarchy, bool bCollectStrayNodes)
+void FCameraObjectConnectionsBuilder::BuildConnections(UBaseCameraObject* InCameraObject, const FCameraNodeHierarchy& InHierarchy, bool bCollectStrayNodes)
 {
 	TSet<UCameraNode*> CameraNodesToGather(InHierarchy.GetFlattenedHierarchy());
 
@@ -259,10 +258,10 @@ void FCameraObjectInterfaceBuilder::BuildInterface(UBaseCameraObject* InCameraOb
 		}
 	}
 
-	BuildInterface(InCameraObject, CameraNodesToGather.Array());
+	BuildConnections(InCameraObject, CameraNodesToGather.Array());
 }
 
-void FCameraObjectInterfaceBuilder::BuildInterface(UBaseCameraObject* InCameraObject, TArrayView<UCameraNode*> InCameraObjectNodes)
+void FCameraObjectConnectionsBuilder::BuildConnections(UBaseCameraObject* InCameraObject, TArrayView<UCameraNode*> InCameraObjectNodes)
 {
 	if (!ensure(InCameraObject))
 	{
@@ -272,21 +271,15 @@ void FCameraObjectInterfaceBuilder::BuildInterface(UBaseCameraObject* InCameraOb
 	CameraObject = InCameraObject;
 	CameraObjectNodes = InCameraObjectNodes;
 	{
-		BuildInterfaceImpl();
+		GatherOldDrivenParameters();
+		BuildConnectionsImpl();
+		DiscardUnusedParameters();
 	}
 	CameraObject = nullptr;
 	CameraObjectNodes.Reset();
 }
 
-void FCameraObjectInterfaceBuilder::BuildInterfaceImpl()
-{
-	GatherOldDrivenParameters();
-	BuildInterfaceParameters();
-	BuildInterfaceParameterBindings();
-	DiscardUnusedParameters();
-}
-
-void FCameraObjectInterfaceBuilder::GatherOldDrivenParameters()
+void FCameraObjectConnectionsBuilder::GatherOldDrivenParameters()
 {
 	// Keep track of which blendable/data parameters were previously overriden with private IDs.
 	// Then clear those private IDs. This is because it's easier to rebuild all this from a blank 
@@ -308,10 +301,7 @@ void FCameraObjectInterfaceBuilder::GatherOldDrivenParameters()
 
 		for (const FCameraNodeBlendableParameterInfo& BlendableParameter : CameraNodeParameters.GetBlendableParameters())
 		{
-			if (BlendableParameter.OverrideVariableID &&
-					BlendableParameter.OverrideVariableID->IsValid() && 
-					// Don't touch user-defined variable overrides.
-					!BlendableParameter.OverrideVariable)
+			if (BlendableParameter.OverrideVariableID && BlendableParameter.OverrideVariableID->IsValid())
 			{
 				OldDrivenBlendableParameters.Add(
 						FDrivenParameterKey{ CameraNode, BlendableParameter.ParameterName },
@@ -322,8 +312,7 @@ void FCameraObjectInterfaceBuilder::GatherOldDrivenParameters()
 
 		for (const FCameraNodeDataParameterInfo& DataParameter : CameraNodeParameters.GetDataParameters())
 		{
-			if (DataParameter.OverrideDataID && 
-					DataParameter.OverrideDataID->IsValid())
+			if (DataParameter.OverrideDataID && DataParameter.OverrideDataID->IsValid())
 			{
 				OldDrivenDataParameters.Add(
 						FDrivenParameterKey{ CameraNode, DataParameter.ParameterName },
@@ -334,93 +323,10 @@ void FCameraObjectInterfaceBuilder::GatherOldDrivenParameters()
 	}
 }
 
-void FCameraObjectInterfaceBuilder::BuildInterfaceParameters()
+void FCameraObjectConnectionsBuilder::BuildConnectionsImpl()
 {
-	// Here we simply validate all blendable/data interface parameters and create IDs for their entries in the
-	// variable and context data tables.
-
-	using namespace Internal;
-
-	for (auto It = CameraObject->Interface.BlendableParameters.CreateIterator(); It; ++It)
-	{
-		UCameraObjectInterfaceBlendableParameter* BlendableParameter(*It);
-
-		// Basic validations.
-		if (!BlendableParameter)
-		{
-			BuildContext.BuildLog.AddMessage(EMessageSeverity::Warning,
-					CameraObject,
-					LOCTEXT("InvalidBlendableParameter", "Invalid interface parameter was found and removed."));
-
-			CameraObject->Modify();
-			It.RemoveCurrent();
-
-			continue;
-		}
-
-		if (BlendableParameter->InterfaceParameterName.IsEmpty())
-		{
-			BuildContext.BuildLog.AddMessage(EMessageSeverity::Error,
-					BlendableParameter,
-					LOCTEXT(
-						"InvalidBlendableParameterName",
-						"Invalid interface parameter name."));
-			continue;
-		}
-
-		// Create a new private variable ID for this interface parameter. Flag the parameter as changed if
-		// the ID is different, generally when it's a new parameter.
-		FCameraVariableID VariableID = FCameraVariableID::FromHashValue(GetTypeHash(BlendableParameter->GetGuid()));
-		if (BlendableParameter->PrivateVariableID != VariableID)
-		{
-			BlendableParameter->Modify();
-			BlendableParameter->PrivateVariableID = VariableID;
-		}
-	}
-
-	for (auto It = CameraObject->Interface.DataParameters.CreateIterator(); It; ++It)
-	{
-		UCameraObjectInterfaceDataParameter* DataParameter(*It);
-
-		// Basic validations.
-		if (!DataParameter)
-		{
-			BuildContext.BuildLog.AddMessage(EMessageSeverity::Warning,
-					CameraObject,
-					LOCTEXT("InvalidDataParameter", "Invalid interface parameter was found and removed."));
-
-			CameraObject->Modify();
-			It.RemoveCurrent();
-
-			continue;
-		}
-
-		if (DataParameter->InterfaceParameterName.IsEmpty())
-		{
-			BuildContext.BuildLog.AddMessage(EMessageSeverity::Error,
-					DataParameter,
-					LOCTEXT(
-						"InvalidDataParameterName",
-						"Invalid interface parameter name."));
-			continue;
-		}
-
-		// Create a new private data ID for this interface parameter. Flag the parameter as changed if
-		// the ID is different, generally when it's a new parameter.
-		FCameraContextDataID DataID = FCameraContextDataID::FromHashValue(GetTypeHash(DataParameter->GetGuid()));
-		if (DataParameter->PrivateDataID != DataID)
-		{
-			DataParameter->Modify();
-			DataParameter->PrivateDataID = DataID;
-		}
-	}
-}
-
-void FCameraObjectInterfaceBuilder::BuildInterfaceParameterBindings()
-{
-	// Now we connect the interface parameters to whatever node property they are supposed to drive.
-	// Each time we need to check for either a custom property (via ICustomCameraNodeParameterProvider),
-	// or a UObject property found with reflection.
+	// Now we process all the connections that pass a variable or context data from one thing (source) to another thing
+	// (destination) through the variable/data tables.
 
 	const FString CameraObjectName = CameraObject->GetName();
 	const FString CameraObjectPathName = CameraObject->GetPathName();
@@ -434,31 +340,42 @@ void FCameraObjectInterfaceBuilder::BuildInterfaceParameterBindings()
 			continue;
 		}
 
-		// For now limit ourselves to connections from interface parameters to camera nodes.
-		const UCameraObjectInterfaceParameterGetter* ParameterGetter = Cast<UCameraObjectInterfaceParameterGetter>(Connection.Source);
-		if (!ParameterGetter || !ParameterGetter->ParameterGuid.IsValid())
-		{
-			continue;
-		}
-
 		UCameraNode* TargetNode = Cast<UCameraNode>(Connection.Target);
 		if (!TargetNode)
 		{
 			continue;
 		}
 
-		if (UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraObject->Interface.FindBlendableParameterByGuid(ParameterGetter->ParameterGuid))
+		if (const UCameraObjectInterfaceParameterGetter* ParameterGetter = Cast<UCameraObjectInterfaceParameterGetter>(Connection.Source))
 		{
-			Builder.SetParameterOverride(BlendableParameter, TargetNode, Connection.TargetPropertyName);
+			const FGuid& ParameterGuid = ParameterGetter->ParameterGuid;
+			if (ParameterGuid.IsValid())
+			{
+				if (UCameraObjectInterfaceBlendableParameter* BlendableParameter = CameraObject->Interface.FindBlendableParameterByGuid(ParameterGuid))
+				{
+					const FCameraVariableDefinition VariableDefinition = BlendableParameter->GetVariableDefinition();
+					Builder.SetParameterOverride(VariableDefinition, TargetNode, Connection.TargetPropertyName);
+				}
+				else if (UCameraObjectInterfaceDataParameter* DataParameter = CameraObject->Interface.FindDataParameterByGuid(ParameterGuid))
+				{
+					const FCameraContextDataDefinition DataDefinition = DataParameter->GetDataDefinition();
+					Builder.SetParameterOverride(DataDefinition, TargetNode, Connection.TargetPropertyName);
+				}
+			}
 		}
-		else if (UCameraObjectInterfaceDataParameter* DataParameter = CameraObject->Interface.FindDataParameterByGuid(ParameterGetter->ParameterGuid))
+		else if (const UCameraVariableAssetGetter* VariableGetter = Cast<UCameraVariableAssetGetter>(Connection.Source))
 		{
-			Builder.SetParameterOverride(DataParameter, TargetNode, Connection.TargetPropertyName);
+			const UCameraVariableAsset* Variable = VariableGetter->Variable;
+			if (Variable)
+			{
+				const FCameraVariableDefinition VariableDefinition = Variable->GetVariableDefinition();
+				Builder.SetParameterOverride(VariableDefinition, TargetNode, Connection.TargetPropertyName);
+			}
 		}
 	}
 }
 
-void FCameraObjectInterfaceBuilder::DiscardUnusedParameters()
+void FCameraObjectConnectionsBuilder::DiscardUnusedParameters()
 {
 	// Now that we've rebuilt all exposed parameters, anything left from the old list 
 	// must be discarded. These are nodes and properties that used to be driven by

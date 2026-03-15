@@ -5,6 +5,7 @@
 #include "Build/CameraBuildContext.h"
 #include "Build/CameraShakeAssetBuilder.h"
 #include "Core/ShakeCameraNode.h"  // IWYU pragma: keep
+#include "GameplayCamerasCustomVersion.h"
 #include "Misc/EngineVersionComparison.h"
 #include "UObject/AssetRegistryTagsContext.h"
 #include "UObject/ObjectSaveContext.h"
@@ -44,8 +45,13 @@ void UCameraShakeAsset::PostLoad()
 	Super::PostLoad();
 
 #if WITH_EDITORONLY_DATA
-	// Upgrade the old parameter connections.
-	UpgradeInterfaceConnections(this, NAME_None);
+	if (GetLinkerCustomVersion(FGameplayCamerasCustomVersion::GUID) < FGameplayCamerasCustomVersion::DeprecateCameraParameterVariables)
+	{
+		// Upgrade the old parameter connections.
+		UpgradeInterfaceConnections(this, NAME_None);
+
+		UpgradeCameraParameters(AllNodeObjects);
+	}
 #endif
 }
 
@@ -108,6 +114,10 @@ void UCameraShakeAsset::GetGraphNodeName(FName InGraphName, FText& OutName) cons
 	OutName = FText::FromString(GetName());
 }
 
+#endif  // WITH_EDITOR
+
+#if WITH_EDITORONLY_DATA
+
 void UCameraShakeAsset::GetConnectableObjects(FName InGraphName, TSet<UObject*>& OutObjects) const
 {
 	OutObjects.Append(AllNodeObjects);
@@ -133,5 +143,5 @@ void UCameraShakeAsset::RemoveConnectableObject(FName InGraphName, UObject* InOb
 	ensure(NumRemoved == 1);
 }
 
-#endif  // WITH_EDITOR
+#endif  // WITH_EDITORONLY_DATA
 

@@ -36,7 +36,8 @@ public:
 private:
 
 	UE_API void CallBuild(FCameraObjectBuildContext& BuildContext, UCameraNode* CameraNode);
-	UE_API void BuildParametersAllocationInfo(FCameraObjectBuildContext& BuildContext);
+	UE_API void BuildParametersAllocationInfo(FCameraObjectBuildContext& ObjectBuildContext);
+	UE_API void BuildVariablesAllocationInfo(FCameraObjectBuildContext& ObjectBuildContext);
 
 private:
 

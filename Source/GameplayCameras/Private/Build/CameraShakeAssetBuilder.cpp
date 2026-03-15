@@ -3,7 +3,7 @@
 #include "Build/CameraShakeAssetBuilder.h"
 
 #include "Build/CameraNodeHierarchyBuilder.h"
-#include "Build/CameraObjectInterfaceBuilder.h"
+#include "Build/CameraObjectConnectionsBuilder.h"
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/CameraShakeAsset.h"
 #include "GameplayCamerasDelegates.h"
@@ -41,16 +41,16 @@ void FCameraShakeAssetBuilder::BuildCameraShake(UCameraShakeAsset* InCameraShake
 
 void FCameraShakeAssetBuilder::BuildCameraShakeImpl()
 {
+	FCameraObjectInterfaceParameterBuilder ParameterBuilder(BuildContext);
+	ParameterBuilder.BuildParameters(CameraShake);
+
 	FCameraNodeHierarchyBuilder NodeBuilder(BuildContext, CameraShake);
 	NodeBuilder.PreBuild();
 
-	FCameraObjectInterfaceBuilder InterfaceBuilder(BuildContext);
-	InterfaceBuilder.BuildInterface(CameraShake, NodeBuilder.GetHierarchy(), true);
+	FCameraObjectConnectionsBuilder ConnectionsBuilder(BuildContext);
+	ConnectionsBuilder.BuildConnections(CameraShake, NodeBuilder.GetHierarchy(), true);
 
 	NodeBuilder.Build();
-
-	FCameraObjectInterfaceParameterBuilder ParameterBuilder;
-	ParameterBuilder.BuildParameters(CameraShake);
 }
 
 void FCameraShakeAssetBuilder::UpdateBuildStatus()

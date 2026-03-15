@@ -48,7 +48,7 @@ void FCollisionPushCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorI
 
 	const UCollisionPushCameraNode* CollisionPushNode = GetCameraNodeAs<UCollisionPushCameraNode>();
 
-	EnableCollisionReader.Initialize(CollisionPushNode->EnableCollision, true);
+	EnableCollisionReader.Initialize(CollisionPushNode->EnableCollision);
 	CustomSafePositionReader.Initialize(CollisionPushNode->CustomSafePosition);
 
 	CollisionSphereRadiusReader.Initialize(CollisionPushNode->CollisionSphereRadius);
@@ -540,7 +540,6 @@ void FCollisionPushCameraDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 UCollisionPushCameraNode::UCollisionPushCameraNode(const FObjectInitializer& ObjectInit)
 	: Super(ObjectInit)
 {
-	CollisionSphereRadius.Value = 10.f;
 }
 
 FCameraNodeEvaluatorPtr UCollisionPushCameraNode::OnBuildEvaluator(FCameraNodeEvaluatorBuilder& Builder) const

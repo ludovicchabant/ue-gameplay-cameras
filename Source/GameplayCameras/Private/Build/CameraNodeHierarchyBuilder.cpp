@@ -6,7 +6,7 @@
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
-#include "Core/CameraParameters.h"
+#include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
@@ -24,6 +24,8 @@ void AddVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVariable
 	{
 		FCameraVariableDefinition VariableDefinition = Variable->GetVariableDefinition();
 		AllocationInfo.VariableDefinitions.Add(VariableDefinition);
+
+		AllocationInfo.VariableInitializers.Add(Variable);
 	}
 }
 
@@ -82,8 +84,9 @@ void FCameraNodeHierarchyBuilder::Build()
 		CallBuild(ObjectBuildContext, CameraNode);
 	}
 
-	// Add parameters to the allocation info.
+	// Add parameters and variables to the allocation info.
 	BuildParametersAllocationInfo(ObjectBuildContext);
+	BuildVariablesAllocationInfo(ObjectBuildContext);
 
 	// Set the final allocation info on the camera rig asset.
 	if (CameraObject->AllocationInfo != ObjectBuildContext.AllocationInfo)
@@ -117,9 +120,7 @@ void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& ObjectBui
 {
 	using namespace UE::Cameras::Internal;
 
-	// Look for properties that are camera parameters, and gather what camera variables they reference. 
-	// This is only for user-defined variable overrides. We will do the same for exposed camera rig
-	// parameters later, in BuildParametersAllocationInfo.
+	// Auto-add camera variable references to the allocation info.
 	UClass* CameraNodeClass = CameraNode->GetClass();
 	FCameraObjectAllocationInfo& AllocationInfo = ObjectBuildContext.AllocationInfo;
 	for (TFieldIterator<FProperty> It(CameraNodeClass); It; ++It)
@@ -131,12 +132,7 @@ void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& ObjectBui
 		}
 
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-		if (StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct())\
-		{\
-			auto* CameraParameterPtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraParameter>(CameraNode);\
-			AddVariableToAllocationInfo(CameraParameterPtr->Variable, AllocationInfo.VariableTableInfo);\
-		}\
-		else if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
+		if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 		{\
 			auto* CameraVariableReferencePtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(CameraNode);\
 			AddVariableToAllocationInfo(CameraVariableReferencePtr->Variable, AllocationInfo.VariableTableInfo);\
@@ -149,26 +145,13 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 		}
 	}
 
-	// Now do the same with custom parameters handled by the node itself.
-	if (ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNode))
-	{
-		FCameraNodeParameterInfos CameraNodeParameters;
-		CustomParameterProvider->GetCustomCameraNodeParameters(CameraNodeParameters);
-
-		for (const FCameraNodeBlendableParameterInfo& BlendableParameter : CameraNodeParameters.BlendableParameters)
-		{
-			AddVariableToAllocationInfo(BlendableParameter.OverrideVariable, AllocationInfo.VariableTableInfo);
-		}
-	}
-
 	// Let the camera node add any custom variables or extra memory.
 	CameraNode->Build(ObjectBuildContext);
 }
 
 void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBuildContext& ObjectBuildContext)
 {
-	// The variables and context data definitions should have already been added by the camera nodes
-	// who have override variable IDs and data IDs set on them. 
+	// Add the camera object's interface parameters to the allocation info.
 
 	for (const UCameraObjectInterfaceBlendableParameter* BlendableParameter : CameraObject->Interface.BlendableParameters)
 	{
@@ -190,6 +173,23 @@ void FCameraNodeHierarchyBuilder::BuildParametersAllocationInfo(FCameraObjectBui
 
 		FCameraContextDataDefinition Definition = DataParameter->GetDataDefinition();
 		ObjectBuildContext.AllocationInfo.ContextDataTableInfo.DataDefinitions.Add(Definition);
+	}
+}
+
+void FCameraNodeHierarchyBuilder::BuildVariablesAllocationInfo(FCameraObjectBuildContext& ObjectBuildContext)
+{
+	// Any node-graph references to camera variables are added to the allocation info.
+
+	using namespace UE::Cameras::Internal;
+
+	FCameraObjectAllocationInfo& AllocationInfo = ObjectBuildContext.AllocationInfo;
+	for (const FCameraObjectConnection& Connection : CameraObject->Connections.Connections)
+	{
+		const UCameraVariableAssetGetter* VariableGetter = Cast<UCameraVariableAssetGetter>(Connection.Source);
+		if (VariableGetter)
+		{
+			AddVariableToAllocationInfo(VariableGetter->Variable, AllocationInfo.VariableTableInfo);
+		}
 	}
 }
 

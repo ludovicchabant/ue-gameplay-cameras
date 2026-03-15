@@ -2,10 +2,10 @@
 
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
+#include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
 #include "Core/CameraParameters.h"
 #include "Core/CameraVariableAssets.h"
-#include "Core/CameraVariableReferences.h"
 #include "GameplayCamerasDelegates.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(ICustomCameraNodeParameterProvider)
@@ -18,10 +18,9 @@ void FCameraNodeParameterInfos::AddBlendableParameter(
 		ECameraVariableType VariableType, 
 		const UScriptStruct* BlendableStructType,
 		const uint8* DefaultValue,
-		FCameraVariableID* OverrideVariableID,
-		UCameraVariableAsset* OverrideVariable)
+		FCameraVariableID* OverrideVariableID)
 {
-	BlendableParameters.Add({ ParameterName, VariableType, BlendableStructType, DefaultValue, OverrideVariableID, OverrideVariable });
+	BlendableParameters.Add({ ParameterName, VariableType, BlendableStructType, DefaultValue, OverrideVariableID });
 }
 
 void FCameraNodeParameterInfos::AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue)
@@ -31,8 +30,7 @@ void FCameraNodeParameterInfos::AddBlendableParameter(FCustomCameraNodeBlendable
 			Parameter.VariableType,
 			Parameter.BlendableStructType,
 			DefaultValue,
-			&Parameter.OverrideVariableID,
-			Parameter.OverrideVariable);
+			&Parameter.OverrideVariableID);
 }
 
 void FCameraNodeParameterInfos::AddDataParameter(
@@ -115,19 +113,7 @@ void FCameraNodeParameterInfos::BuildFrom(UCameraNode* InCameraNode)
 						ECameraVariableType::ValueName,\
 						nullptr,\
 						reinterpret_cast<uint8*>(&CameraParameterPtr->Value),\
-						&CameraParameterPtr->VariableID,\
-						CameraParameterPtr->Variable);\
-			}\
-			else if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
-			{\
-				auto* VariableReferencePtr = StructProperty->ContainerPtrToValuePtr<F##ValueName##CameraVariableReference>(InCameraNode);\
-				AddBlendableParameter(\
-						StructProperty->GetFName(),\
-						ECameraVariableType::ValueName,\
-						nullptr,\
-						nullptr,\
-						&VariableReferencePtr->VariableID,\
-						VariableReferencePtr->Variable);\
+						&CameraParameterPtr->VariableID);\
 			}\
 			else
 			UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
@@ -230,8 +216,7 @@ void FCameraNodeParameterInfos::BuildFrom(UCameraNode* InCameraNode)
 						VariableType,
 						VariableTypeObject,
 						static_cast<uint8*>(DefaultValue),
-						BlendableID,
-						nullptr);
+						BlendableID);
 				continue;
 			}
 		}
@@ -313,6 +298,46 @@ void FCameraNodeParameterInfos::BuildFrom(UCameraNode* InCameraNode)
 }
 
 }  // namespace UE::Cameras
+
+void FCustomCameraNodeParameters::UpgradeOverrideVariables(UCameraNode* Owner, TArray<UObject*>& OutAddedNodes, FCameraObjectConnections& OutAddedConnections)
+{
+	if (!ensure(Owner))
+	{
+		return;
+	}
+
+	UBaseCameraObject* CameraObject = Owner->GetTypedOuter<UBaseCameraObject>();
+	if (!ensure(CameraObject))
+	{
+		return;
+	}
+
+	int32 GetterNodeIndex = 0;
+	for (FCustomCameraNodeBlendableParameter& BlendableParameter : BlendableParameters)
+	{
+		UCameraVariableAsset* UserVariable = BlendableParameter.OverrideVariable_DEPRECATED;
+		if (UserVariable)
+		{
+			ensure(UserVariable->HasAnyFlags(RF_Public));
+
+			// Clear the old variable reference.
+			BlendableParameter.OverrideVariable_DEPRECATED = nullptr;
+
+			// Create the getter node in front of the camera node (X - 200), and space multiple getter nodes
+			// by 30 units vertically.
+			const FIntVector2 GetterNodeOffset(-200, 30 * (GetterNodeIndex + 1));
+
+			UCameraVariableAssetGetter* GetterNode = NewObject<UCameraVariableAssetGetter>(Owner->GetOuter());
+			GetterNode->Variable = UserVariable;
+			GetterNode->GraphNodePos = Owner->GraphNodePos + GetterNodeOffset;
+
+			OutAddedNodes.Add(GetterNode);
+			++GetterNodeIndex;
+
+			OutAddedConnections.Add(GetterNode, NAME_None, Owner, BlendableParameter.ParameterName);
+		}
+	}
+}
 
 void ICustomCameraNodeParameterProvider::OnCustomCameraNodeParametersChanged(const UCameraNode* ThisAsCameraNode) const
 {

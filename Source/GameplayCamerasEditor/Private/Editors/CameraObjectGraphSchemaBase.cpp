@@ -2,17 +2,22 @@
 
 #include "Editors/CameraObjectGraphSchemaBase.h"
 
-#include "Algo/Reverse.h"
+#include "AssetRegistry/ARFilter.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
 #include "Build/CameraObjectInterfaceParameterBuilder.h"
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraNode.h"
-#include "Core/CameraParameters.h"
-#include "Core/CameraVariableReferences.h"
+#include "Core/CameraParameters.h"  // IWYU pragma: keep
+#include "Core/CameraVariableAssets.h"
+#include "Core/CameraVariableCollection.h"
+#include "Core/CameraVariableReferences.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphSchema_K2.h"
 #include "Editors/CameraNodeGraphNode.h"
 #include "Editors/CameraObjectInterfaceParameterGraphNode.h"
+#include "Editors/CameraVariableAssetGraphNode.h"
 #include "Editors/ObjectTreeGraph.h"
 #include "Editors/ObjectTreeGraphConfig.h"
 #include "Editors/ObjectTreeGraphNode.h"
@@ -24,7 +29,6 @@
 #define LOCTEXT_NAMESPACE "CameraObjectGraphSchemaBase"
 
 const FName UCameraObjectGraphSchemaBase::PC_CameraParameter("CameraParameter");
-const FName UCameraObjectGraphSchemaBase::PC_CameraVariableReference("CameraVariableReference");
 const FName UCameraObjectGraphSchemaBase::PC_CameraContextData("CameraContextData");
 
 UCameraObjectGraphSchemaBase::UCameraObjectGraphSchemaBase(const FObjectInitializer& ObjInit)
@@ -41,8 +45,15 @@ FObjectTreeGraphConfig UCameraObjectGraphSchemaBase::BuildGraphConfig() const
 
 	GraphConfig.DefaultSelfPinName = NAME_None;
 	GraphConfig.ConnectableObjectClasses.Add(UCameraObjectInterfaceParameterGetter::StaticClass());
+	GraphConfig.ConnectableObjectClasses.Add(UCameraVariableAssetGetter::StaticClass());
 	GraphConfig.ObjectClassConfigs.Emplace(UCameraObjectInterfaceParameterGetter::StaticClass())
+		.CanCreateNew(false)  // Only created via a new connection or drag and drop.
+		.NodeTitleColor(Settings->CameraRigParameterGetterNodeTitleColor)
 		.GraphNodeClass(UCameraObjectInterfaceParameterGraphNode::StaticClass());
+	GraphConfig.ObjectClassConfigs.Emplace(UCameraVariableAssetGetter::StaticClass())
+		.CanCreateNew(false)  // Only created via a new connection or drag and drop.
+		.NodeTitleColor(Settings->CameraVariableGetterNodeTitleColor)
+		.GraphNodeClass(UCameraVariableAssetGraphNode::StaticClass());
 
 	OnBuildGraphConfig(GraphConfig);
 
@@ -131,7 +142,6 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 		UCameraNodeGraphNode* CameraNodeNode = Cast<UCameraNodeGraphNode>(DraggedPin->GetOwningNode());
 
 		if (DraggedPin->PinType.PinCategory == PC_CameraParameter ||
-				DraggedPin->PinType.PinCategory == PC_CameraVariableReference ||
 				DraggedPin->PinType.PinCategory == PC_CameraContextData)
 		{
 			ensure(DraggedPin->PinName != NAME_None);
@@ -142,136 +152,87 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 				return;
 			}
 
-			// Find the property being dragged, so we know what kind of parameter to create.
-			const UClass* CameraNodeClass = CameraNodeNode->GetObject()->GetClass();
-			FProperty* Property = CameraNodeClass->FindPropertyByName(DraggedPin->PinName);
-
+			// Get information about the pin being dragged. We need to build the whole camera node information.
 			FCameraNodeParameterInfos CameraNodeParameters;
-			ICustomCameraNodeParameterProvider* CustomParameterProvider = Cast<ICustomCameraNodeParameterProvider>(CameraNodeNode->GetObject());
-			if (CustomParameterProvider)
+			UCameraNode* CameraNode = CameraNodeNode->CastObject<UCameraNode>();
+			CameraNodeParameters.BuildFrom(CameraNode);
+
+			// If the pin corresponds to something that can be driven by a camera variable, add actions for creating
+			// a getter node for such a variable.
+			if (DraggedPin->PinType.PinCategory == PC_CameraParameter)
 			{
-				CustomParameterProvider->GetCustomCameraNodeParameters(CameraNodeParameters);
+				if (const FCameraNodeBlendableParameterInfo* BlendableParameter = CameraNodeParameters.FindBlendableParameter(DraggedPin->PinName))
+				{
+					FARFilter Filter;
+					Filter.ClassPaths.Add(UCameraVariableCollection::StaticClass()->GetClassPathName());
+
+					TArray<FAssetData> CameraVariableCollectionAssetDatas;
+					IAssetRegistry& AssetRegistry = FAssetRegistryModule::GetRegistry();
+					AssetRegistry.GetAssets(Filter, CameraVariableCollectionAssetDatas);
+
+					for (const FAssetData& CameraVariableCollectionAssetData : CameraVariableCollectionAssetDatas)
+					{
+						TArray<FSoftCameraVariablePtr> SoftVariables;
+						UCameraVariableCollection::GetVariablesForType(CameraVariableCollectionAssetData, BlendableParameter->VariableType, SoftVariables);
+
+						const FText CategoryText = FText::Format(
+								LOCTEXT("NewCameraVariableGetterActionCategory", "Get variable from {0}"),
+								FText::FromName(CameraVariableCollectionAssetData.AssetName));
+						for (const FSoftCameraVariablePtr& SoftVariable : SoftVariables)
+						{
+							TSharedRef<FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode> VariableGetterAction = 
+								MakeShared<FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode>(
+										CategoryText,
+										FText::FromString(SoftVariable.VariableDisplayName),
+										LOCTEXT("NewCameraVariableGetterActionToolTip", "Adds a getter node for the given camera variable"));
+							VariableGetterAction->SoftVariable = SoftVariable;
+							ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(VariableGetterAction.ToSharedPtr()));
+						}
+					}
+				}
 			}
 
-			TSharedRef<FCameraObjectGraphSchemaAction_NewInterfaceParameterNode> Action = 
+			// For all kinds of blendable and data pins, add an action for exposing the parameter as a camera rig
+			// interface parameter.
+			bool bAddExposeParameterAction = false;
+			TSharedRef<FCameraObjectGraphSchemaAction_NewInterfaceParameterNode> ExposeParameterAction = 
 				MakeShared<FCameraObjectGraphSchemaAction_NewInterfaceParameterNode>(
 						FText::GetEmpty(),
 						LOCTEXT("NewInterfaceParameterAction", "Camera Interface Parameter"),
 						LOCTEXT("NewInterfaceParameterActionToolTip", "Exposes this parameter on the camera object"));
 
-			if (DraggedPin->PinType.PinCategory == PC_CameraParameter ||
-				DraggedPin->PinType.PinCategory == PC_CameraVariableReference)
+			if (DraggedPin->PinType.PinCategory == PC_CameraParameter)
 			{
-				ECameraVariableType VariableType;
-				const UScriptStruct* BlendableStructType = nullptr;
-
 				if (const FCameraNodeBlendableParameterInfo* BlendableParameter = CameraNodeParameters.FindBlendableParameter(DraggedPin->PinName))
 				{
-					VariableType = BlendableParameter->VariableType;
-					BlendableStructType = BlendableParameter->BlendableStructType;
-				}
-				else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
-				{
-#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-					if ((StructProperty->Struct == F##ValueName##CameraParameter::StaticStruct()) ||\
-						(StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct()))\
-					{\
-						VariableType = ECameraVariableType::ValueName;\
-					}\
-					else
-					UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
-#undef UE_CAMERA_VARIABLE_FOR_TYPE
-					{
-						// Unexpected: if there was a camera parameter pin or a variable reference pin, we should
-						// have had a camera parameter property or variable reference property!
-						ensure(false);
-						return;
-					}
-				}
-				else
-				{
-					// Unexpected as per previous comments.
-					ensure(false);
-					return;
-				}
+					FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
+					NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
+					NewParameterDefinition.VariableType = BlendableParameter->VariableType;
+					NewParameterDefinition.BlendableStructType = BlendableParameter->BlendableStructType;
+					ExposeParameterAction->ParameterDefinition = NewParameterDefinition;
 
-				FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
-				NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Blendable;
-				NewParameterDefinition.VariableType = VariableType;
-				NewParameterDefinition.BlendableStructType = BlendableStructType;
-				Action->ParameterDefinition = NewParameterDefinition;
+					bAddExposeParameterAction = true;
+				}
 			}
 			else if (DraggedPin->PinType.PinCategory == PC_CameraContextData)
 			{
-				ECameraContextDataType DataType;
-				ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
-				const UObject* DataTypeObject = nullptr;
-				
 				if (const FCameraNodeDataParameterInfo* DataParameter = CameraNodeParameters.FindDataParameter(DraggedPin->PinName))
 				{
-					DataType = DataParameter->DataType;
-					DataContainerType = DataParameter->DataContainerType;
-					DataTypeObject = DataParameter->DataTypeObject;
-				}
-				else if (Property)
-				{
-					if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
-					{
-						DataContainerType = ECameraContextDataContainerType::Array;
-						Property = ArrayProperty->Inner;
-					}
+					FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
+					NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Data;
+					NewParameterDefinition.DataType = DataParameter->DataType;
+					NewParameterDefinition.DataContainerType = DataParameter->DataContainerType;
+					NewParameterDefinition.DataTypeObject = DataParameter->DataTypeObject;
+					ExposeParameterAction->ParameterDefinition = NewParameterDefinition;
 
-					if (FNameProperty* NameProperty = CastField<FNameProperty>(Property))
-					{
-						DataType = ECameraContextDataType::Name;
-					}
-					else if (FStrProperty* StringProperty = CastField<FStrProperty>(Property))
-					{
-						DataType = ECameraContextDataType::String;
-					}
-					else if (FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
-					{
-						DataType = ECameraContextDataType::Enum;
-						DataTypeObject = EnumProperty->GetEnum();
-					}
-					else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
-					{
-						DataType = ECameraContextDataType::Struct;
-						DataTypeObject = StructProperty->Struct;
-					}
-					else if (FClassProperty* ClassProperty = CastField<FClassProperty>(Property))
-					{
-						DataType = ECameraContextDataType::Class;
-						DataTypeObject = ClassProperty->PropertyClass;
-					}
-					else if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
-					{
-						DataType = ECameraContextDataType::Object;
-						DataTypeObject = ObjectProperty->PropertyClass;
-					}
-					else
-					{
-						// Unexpected as per previous comments.
-						ensure(false);
-						return;
-					}
+					bAddExposeParameterAction = true;
 				}
-				else
-				{
-					// Unexpected as per previous comments.
-					ensure(false);
-					return;
-				}
-
-				FCameraObjectInterfaceParameterDefinition NewParameterDefinition;
-				NewParameterDefinition.ParameterType = ECameraObjectInterfaceParameterType::Data;
-				NewParameterDefinition.DataType = DataType;
-				NewParameterDefinition.DataContainerType = DataContainerType;
-				NewParameterDefinition.DataTypeObject = DataTypeObject;
-				Action->ParameterDefinition = NewParameterDefinition;
 			}
 
-			ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(Action.ToSharedPtr()));
+			if (bAddExposeParameterAction)
+			{
+				ContextMenuBuilder.AddAction(StaticCastSharedPtr<FEdGraphSchemaAction>(ExposeParameterAction.ToSharedPtr()));
+			}
 
 			return;
 		}
@@ -283,53 +244,31 @@ void UCameraObjectGraphSchemaBase::GetGraphContextActions(FGraphContextMenuBuild
 const FPinConnectionResponse UCameraObjectGraphSchemaBase::CanCreateConnection(const UEdGraphPin* A, const UEdGraphPin* B) const
 {
 	// Check if we are connecting parameter pins of compatible types.
-	if ((A->PinType.PinCategory == PC_CameraParameter || 
-				A->PinType.PinCategory == PC_CameraVariableReference ||
-				A->PinType.PinCategory == PC_CameraContextData) && 
+	if ((A->PinType.PinCategory == PC_CameraParameter || A->PinType.PinCategory == PC_CameraContextData) && 
 			B->PinType.PinCategory == PC_Self &&
 			!A->bOrphanedPin)
 	{
-		UCameraObjectInterfaceParameterGraphNode* NodeB = Cast<UCameraObjectInterfaceParameterGraphNode>(B->GetOwningNode());
+		UCameraParameterGetterGraphNodeBase* NodeB = Cast<UCameraParameterGetterGraphNodeBase>(B->GetOwningNode());
 		if (NodeB)
 		{
-			UCameraObjectInterfaceParameterGetter* ParameterGetter = NodeB->CastObject<UCameraObjectInterfaceParameterGetter>();
-			UCameraObjectInterfaceParameterBase* Parameter = ParameterGetter->GetInterfaceParameter();
-			UCameraObjectInterfaceBlendableParameter* BlendableParameter = Cast<UCameraObjectInterfaceBlendableParameter>(Parameter);
-			if (BlendableParameter && 
-					A->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->VariableType))
-			{
-				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
-			}
-			UCameraObjectInterfaceDataParameter* DataParameter = Cast<UCameraObjectInterfaceDataParameter>(Parameter);
-			if (DataParameter && 
-					A->PinType.PinSubCategory == UEnum::GetValueAsName(DataParameter->DataType) &&
-					A->PinType.PinSubCategoryObject == DataParameter->DataTypeObject)
+			const FEdGraphPinType ParameterGetterPinType = NodeB->GetParameterPinType();
+			if (A->PinType.PinSubCategory == ParameterGetterPinType.PinSubCategory &&
+					A->PinType.PinSubCategoryObject == ParameterGetterPinType.PinSubCategoryObject)
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
 			}
 		}
 	}
 	else if (A->PinType.PinCategory == PC_Self && 
-			(B->PinType.PinCategory == PC_CameraParameter || 
-			 B->PinType.PinCategory == PC_CameraVariableReference ||
-			 B->PinType.PinCategory == PC_CameraContextData) &&
+			(B->PinType.PinCategory == PC_CameraParameter || B->PinType.PinCategory == PC_CameraContextData) &&
 			!B->bOrphanedPin)
 	{
-		UCameraObjectInterfaceParameterGraphNode* NodeA = Cast<UCameraObjectInterfaceParameterGraphNode>(A->GetOwningNode());
+		UCameraParameterGetterGraphNodeBase* NodeA = Cast<UCameraParameterGetterGraphNodeBase>(A->GetOwningNode());
 		if (NodeA)
 		{
-			UCameraObjectInterfaceParameterGetter* ParameterGetter = NodeA->CastObject<UCameraObjectInterfaceParameterGetter>();
-			UCameraObjectInterfaceParameterBase* Parameter = ParameterGetter->GetInterfaceParameter();
-			UCameraObjectInterfaceBlendableParameter* BlendableParameter = Cast<UCameraObjectInterfaceBlendableParameter>(Parameter);
-			if (BlendableParameter && 
-					B->PinType.PinSubCategory == UEnum::GetValueAsName(BlendableParameter->VariableType))
-			{
-				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
-			}
-			UCameraObjectInterfaceDataParameter* DataParameter = Cast<UCameraObjectInterfaceDataParameter>(Parameter);
-			if (DataParameter && 
-					B->PinType.PinSubCategory == UEnum::GetValueAsName(DataParameter->DataType) &&
-					B->PinType.PinSubCategoryObject == DataParameter->DataTypeObject)
+			const FEdGraphPinType ParameterGetterPinType = NodeA->GetParameterPinType();
+			if (B->PinType.PinSubCategory == ParameterGetterPinType.PinSubCategory &&
+					B->PinType.PinSubCategoryObject == ParameterGetterPinType.PinSubCategoryObject)
 			{
 				return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
 			}
@@ -379,12 +318,10 @@ bool UCameraObjectGraphSchemaBase::OnTryCreateCustomConnection(UEdGraphPin* A, U
 	}
 
 	// See if we are connecting a parameter getter to a camera node's input property.
-	if (UCameraObjectInterfaceParameterGraphNode* ParameterNode = Cast<UCameraObjectInterfaceParameterGraphNode>(SourceNode))
+	if (UCameraParameterGetterGraphNodeBase* ParameterNode = Cast<UCameraParameterGetterGraphNodeBase>(SourceNode))
 	{
 		if (SourcePin->PinType.PinCategory == PC_Self && 
-			(TargetPin->PinType.PinCategory == PC_CameraParameter || 
-			 TargetPin->PinType.PinCategory == PC_CameraVariableReference ||
-			 TargetPin->PinType.PinCategory == PC_CameraContextData))
+			(TargetPin->PinType.PinCategory == PC_CameraParameter || TargetPin->PinType.PinCategory == PC_CameraContextData))
 		{
 			CameraObject->Modify();
 
@@ -400,9 +337,7 @@ bool UCameraObjectGraphSchemaBase::OnTryCreateCustomConnection(UEdGraphPin* A, U
 
 	// See if we are connecting one node's output to another node's input.
 	bool bDoFlowConnection = false;
-	if (SourcePin->PinType.PinCategory == PC_CameraVariableReference &&
-			(TargetPin->PinType.PinCategory == PC_CameraParameter ||
-			 TargetPin->PinType.PinCategory == PC_CameraVariableReference))
+	if (SourcePin->PinType.PinCategory == PC_CameraParameter && TargetPin->PinType.PinCategory == PC_CameraParameter)
 	{
 		bDoFlowConnection = true;
 	}
@@ -522,7 +457,7 @@ bool UCameraObjectGraphSchemaBase::OnBreakSingleCustomPinLink(UEdGraphPin* Sourc
 
 FLinearColor UCameraObjectGraphSchemaBase::GetPinTypeColor(const FEdGraphPinType& PinType) const
 {
-	if (PinType.PinCategory == PC_CameraParameter || PinType.PinCategory == PC_CameraVariableReference)
+	if (PinType.PinCategory == PC_CameraParameter)
 	{
 		const FName TypeName = PinType.PinSubCategory;
 		return PinColors.GetPinColor(TypeName);
@@ -685,6 +620,60 @@ UEdGraphNode* FCameraObjectGraphSchemaAction_AddInterfaceParameterGetterNode::Pe
 	NewGetterNode->AutowireNewNode(FromPin);
 
 	CameraObject->EventHandlers.Notify(&UE::Cameras::ICameraObjectEventHandler::OnCameraObjectInterfaceChanged);
+
+	return NewGetterNode;
+}
+
+FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode::FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode()
+{
+}
+
+FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode::FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping, FText InKeywords)
+	: FEdGraphSchemaAction(InNodeCategory, InMenuDesc, InToolTip, InGrouping, InKeywords)
+{
+}
+
+UEdGraphNode* FCameraObjectGraphSchemaAction_AddVariableAssetGetterNode::PerformAction(UEdGraph* ParentGraph, UEdGraphPin* FromPin, FPerformGraphActionLocation Location, bool bSelectNewNode)
+{
+	UCameraVariableAsset* Variable = SoftVariable.Get();
+	if (!ensure(Variable))
+	{
+		return nullptr;
+	}
+
+	UObjectTreeGraph* ObjectTreeGraph = Cast<UObjectTreeGraph>(ParentGraph);
+	if (!ensure(ObjectTreeGraph))
+	{
+		return nullptr;
+	}
+
+	UBaseCameraObject* CameraObject = Cast<UBaseCameraObject>(ObjectTreeGraph->GetRootObject());
+	if (!ensure(CameraObject))
+	{
+		return nullptr;
+	}
+
+	const FScopedTransaction Transaction(LOCTEXT("CreateNewNodeAction", "Create New Node"));
+
+	const UCameraObjectGraphSchemaBase* Schema = CastChecked<UCameraObjectGraphSchemaBase>(ParentGraph->GetSchema());
+
+	CameraObject->Modify();
+
+	// Create a new getter for the given variable.
+	UCameraVariableAssetGetter* NewGetter = NewObject<UCameraVariableAssetGetter>(CameraObject, NAME_None, RF_Transactional);
+	NewGetter->Variable = Variable;
+
+	ParentGraph->Modify();
+	
+	UObjectTreeGraphNode* NewGetterNode = CastChecked<UObjectTreeGraphNode>(Schema->CreateObjectNode(ObjectTreeGraph, NewGetter));
+
+	Schema->AddConnectableObject(ObjectTreeGraph, NewGetter);
+
+	NewGetterNode->NodePosX = Location.X;
+	NewGetterNode->NodePosY = Location.Y;
+	NewGetterNode->OnGraphNodeMoved(false);
+
+	NewGetterNode->AutowireNewNode(FromPin);
 
 	return NewGetterNode;
 }

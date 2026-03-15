@@ -10,6 +10,7 @@ namespace FGameplayCamerasCustomVersion
 	{
 		BeforeCustomVersionWasAdded = 0,
 		AddLensNodeParameterFlags = 1,
+		DeprecateCameraParameterVariables = 2,
 
 		VersionPlusOne,
 		LatestVersion = VersionPlusOne - 1

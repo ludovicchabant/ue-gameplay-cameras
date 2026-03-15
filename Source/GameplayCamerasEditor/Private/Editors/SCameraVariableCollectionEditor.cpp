@@ -5,6 +5,7 @@
 #include "Commands/CameraVariableCollectionEditorCommands.h"
 #include "Core/CameraVariableAssets.h"
 #include "Core/CameraVariableCollection.h"
+#include "Editors/CameraNodeGraphDragDropOp.h"
 #include "IDetailsView.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
@@ -43,6 +44,7 @@ public:
 protected:
 
 	virtual TSharedRef<SWidget> GenerateWidgetForColumn(const FName& ColumnName) override;
+	virtual FReply OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override;
 
 private:
 
@@ -128,6 +130,15 @@ TSharedRef<SWidget> SCameraVariableCollectionListRow::GenerateWidgetForColumn(co
 			];
 	}
 	return SNullWidget::NullWidget;
+}
+
+FReply SCameraVariableCollectionListRow::OnDragDetected(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	if (MouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+	{
+		return FReply::Handled().BeginDragDrop(FCameraVariableAssetDragDropOp::New(CameraVariable));
+	}
+	return SMultiColumnTableRow<UCameraVariableAsset*>::OnDragDetected(MyGeometry, MouseEvent);
 }
 
 FText SCameraVariableCollectionListRow::GetVariableName() const
