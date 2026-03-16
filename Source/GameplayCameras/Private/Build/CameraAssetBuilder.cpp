@@ -9,6 +9,7 @@
 #include "Core/CameraDirector.h"
 #include "Core/CameraObjectInterfaceParameterDefinition.h"
 #include "Core/CameraRigAsset.h"
+#include "GameplayCamerasCustomVersion.h"
 #include "GameplayCamerasDelegates.h"
 #include "Logging/TokenizedMessage.h"
 
@@ -146,9 +147,9 @@ void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 		}
 	}
 
-	// If we have some old data, we may need to build a default interface for it, but don't dirty the asset unless we're cooking and
-	// want to save the proper data. In other contexts, we don't want to cause the user to be prompted with an asset to save without
-	// them knowing what changed and why.
+	// If we have some old data, we may need to build a default interface for it, but don't dirty the asset unless 
+	// we're cooking and want to save the proper data. In other contexts, we don't want to cause the user to be 
+	// prompted with an asset to save without them knowing what changed and why.
 	if (CameraAsset->bNeedsDefaultInterface)
 	{
 		if (BuildContext.IsCooking())
@@ -162,23 +163,48 @@ void FCameraAssetBuilder::BuildCameraImpl(bool bBuildReferencedAssets)
 	// Build the new parameter definitions, and then the new default parameters struct.
 	BuildParameters();
 
+	FCameraAssetAllocationInfo AllocationInfo;
+
 	// Accumulate all the camera rigs' allocation infos and store that on the asset.
 	// Only do this when cooking. In editor builds we don't want to mark the asset as modified just because someone
-	// changed some parameters on a camera rig, or whatever.
+	// changed some parameters on a camera rig, or whatever, so in that case the allocation info should always be
+	// empty.
 	if (BuildContext.IsCooking())
 	{
-		FCameraAssetAllocationInfo AllocationInfo;
 		for (const UCameraRigAsset* CameraRig : UsageInfo.CameraRigs)
 		{
 			AllocationInfo.VariableTableInfo.Combine(CameraRig->AllocationInfo.VariableTableInfo);
 			AllocationInfo.ContextDataTableInfo.Combine(CameraRig->AllocationInfo.ContextDataTableInfo);
 		}
+	}
 
-		if (AllocationInfo != CameraAsset->AllocationInfo)
+	// Set the final allocation info on the camera asset.
+	if (CameraAsset->AllocationInfo != AllocationInfo)
+	{
+		bool bShouldModify = true;
+		const bool bDoOldDataCheck = CameraAsset->GetLinkerCustomVersion(FGameplayCamerasCustomVersion::GUID) < 
+			FGameplayCamerasCustomVersion::DeprecateSinglePrecision;
+		if (bDoOldDataCheck)
+		{
+			// We used to do the accumulation even in the editor, so we have old assets with non-empty allocation 
+			// infos. Check if the new allocation info is a subset of the saved one, and if that's the case, don't 
+			// change it, so that we don't dirty these old assets for seemingly nothing.
+			if (!BuildContext.IsCooking())
+			{
+				bShouldModify = false;
+				const FCameraAssetAllocationInfo& CurInfo = CameraAsset->AllocationInfo;
+				if (!CurInfo.VariableTableInfo.Contains(AllocationInfo.VariableTableInfo) ||
+						!CurInfo.ContextDataTableInfo.Contains(AllocationInfo.ContextDataTableInfo))
+				{
+					bShouldModify = true;
+				}
+			}
+		}
+		if (bShouldModify)
 		{
 			CameraAsset->Modify();
-			CameraAsset->AllocationInfo = AllocationInfo;
 		}
+		CameraAsset->AllocationInfo = AllocationInfo;
 	}
 }
 

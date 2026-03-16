@@ -52,6 +52,11 @@ bool FCameraContextDataTableAllocationInfo::Contains(const FCameraContextDataTab
 		{
 			return false;
 		}
+
+		if (DataDefinitions[KnownIndex] != OtherDataDefinition)
+		{
+			return false;
+		}
 	}
 
 	return true;

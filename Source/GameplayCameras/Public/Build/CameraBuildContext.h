@@ -37,8 +37,10 @@ struct FCameraBuildContext
 
 public:
 
-	/** Whether the build reason is for cooking. */
+	/** Whether the build reason is cooking. */
 	bool IsCooking() const { return BuildReason == ECameraBuildReason::Cooking; }
+	/** Whether the build reason is a user action (like hitting the 'Build' button). */
+	bool IsUserAction() const { return BuildReason == ECameraBuildReason::UserAction; }
 
 private:
 

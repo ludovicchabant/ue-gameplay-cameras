@@ -10,6 +10,7 @@
 #include "Core/CameraVariableCollection.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "GameplayCamerasCustomVersion.h"
 
 #define LOCTEXT_NAMESPACE "CameraNodeHierarchyBuilder"
 
@@ -107,28 +108,32 @@ void FCameraNodeHierarchyBuilder::Build()
 	// Set the final allocation info on the camera rig asset.
 	if (CameraObject->AllocationInfo != ObjectBuildContext.AllocationInfo)
 	{
-		// Previously we would save the evaluator allocation info, and any referenced camera rigs' infos.
-		// Now not anymore (see above, and see UCameraRigCameraNode::OnBuild... we only do this when cooking now). 
-		// However, we don't want to make all camera rigs modified because this allocation info is now empty or 
-		// something.  So we do this extra check.
 		bool bShouldModify = true;
-		if (!BuildContext.IsCooking())
+		const bool bDoOldDataCheck = CameraObject->GetLinkerCustomVersion(FGameplayCamerasCustomVersion::GUID) < 
+			FGameplayCamerasCustomVersion::DeprecateSinglePrecision;
+		if (bDoOldDataCheck)
 		{
-			bShouldModify = false;
-			const FCameraObjectAllocationInfo& CurInfo = CameraObject->AllocationInfo;
-			const FCameraObjectAllocationInfo& NewInfo = ObjectBuildContext.AllocationInfo;
-			if (!CurInfo.VariableTableInfo.Contains(NewInfo.VariableTableInfo) ||
-					!CurInfo.ContextDataTableInfo.Contains(NewInfo.ContextDataTableInfo))
+			// Previously we would save the evaluator allocation info, and any referenced camera rigs' infos.
+			// Now not anymore (see above, and see UCameraRigCameraNode::OnBuild... we only do this when cooking now). 
+			// However, we don't want to make all camera rigs modified because this allocation info is now empty or 
+			// something. So we do this extra check.
+			if (!BuildContext.IsCooking())
 			{
-				bShouldModify = true;
+				bShouldModify = false;
+				const FCameraObjectAllocationInfo& CurInfo = CameraObject->AllocationInfo;
+				const FCameraObjectAllocationInfo& NewInfo = ObjectBuildContext.AllocationInfo;
+				if (!CurInfo.VariableTableInfo.Contains(NewInfo.VariableTableInfo) ||
+						!CurInfo.ContextDataTableInfo.Contains(NewInfo.ContextDataTableInfo))
+				{
+					bShouldModify = true;
+				}
 			}
 		}
-
 		if (bShouldModify)
 		{
 			CameraObject->Modify();
-			CameraObject->AllocationInfo = ObjectBuildContext.AllocationInfo;
 		}
+		CameraObject->AllocationInfo = ObjectBuildContext.AllocationInfo;
 	}
 }
 

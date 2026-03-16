@@ -52,6 +52,11 @@ bool FCameraVariableTableAllocationInfo::Contains(const FCameraVariableTableAllo
 		{
 			return false;
 		}
+
+		if (VariableDefinitions[KnownIndex] != OtherVariableDefinition)
+		{
+			return false;
+		}
 	}
 
 	return true;
