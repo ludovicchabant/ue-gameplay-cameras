@@ -9,6 +9,7 @@
 #include "IDetailsView.h"
 #include "ScopedTransaction.h"
 #include "Styles/GameplayCamerasEditorStyle.h"
+#include "Styling/StyleColors.h"
 #include "ToolMenus.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/Input/SSearchBox.h"
@@ -51,6 +52,9 @@ private:
 	FText GetVariableName() const;
 	FText GetVariableType() const;
 	FText GetDefaultValue() const;
+
+	EVisibility GetVariableTypeWarningIconVisibility() const;
+	FSlateColor GetVariableTypeColor() const;
 
 	bool OnVerifyVariableNameChanged(const FText& Text, FText& OutErrorMessage);
 	void OnVariableNameCommitted(const FText& Text, ETextCommit::Type CommitType);
@@ -110,10 +114,29 @@ TSharedRef<SWidget> SCameraVariableCollectionListRow::GenerateWidgetForColumn(co
 			.Padding(8.f)
 			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.TextStyle(CamerasEditorStyle, "CameraVariableCollectionEditor.Entry.Type")
-				.Text(this, &SCameraVariableCollectionListRow::GetVariableType)
-				.HighlightText(HighlightText)
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					SNew(SBox)
+					.Visibility(this, &SCameraVariableCollectionListRow::GetVariableTypeWarningIconVisibility)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush("Icons.WarningWithColor"))
+						.ToolTipText(LOCTEXT("DeprecatedVariableTypeWarningToolTip",
+									"Single-precision variables have been deprecated. Please replace this variable "
+									"with a supported type."))
+					]
+				]
+				+SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				[
+					SNew(STextBlock)
+					.TextStyle(CamerasEditorStyle, "CameraVariableCollectionEditor.Entry.Type")
+					.ColorAndOpacity(this, &SCameraVariableCollectionListRow::GetVariableTypeColor)
+					.Text(this, &SCameraVariableCollectionListRow::GetVariableType)
+					.HighlightText(HighlightText)
+				]
 			];
 	}
 	else if (ColumnName == TEXT("DefaultValue"))
@@ -158,6 +181,26 @@ FText SCameraVariableCollectionListRow::GetVariableType() const
 FText SCameraVariableCollectionListRow::GetDefaultValue() const
 {
 	return FText::FromString(CameraVariable->FormatDefaultValue());
+}
+
+EVisibility SCameraVariableCollectionListRow::GetVariableTypeWarningIconVisibility() const
+{
+	const UClass* CameraVariableClass = CameraVariable->GetClass();
+	if (CameraVariableClass->HasMetaData(TEXT("DeprecatedCameraVariable")))
+	{
+		return EVisibility::Visible;
+	}
+	return EVisibility::Collapsed;
+}
+
+FSlateColor SCameraVariableCollectionListRow::GetVariableTypeColor() const
+{
+	const UClass* CameraVariableClass = CameraVariable->GetClass();
+	if (CameraVariableClass->HasMetaData(TEXT("DeprecatedCameraVariable")))
+	{
+		return FStyleColors::Warning.GetSpecifiedColor();
+	}
+	return FSlateColor::UseForeground();
 }
 
 bool SCameraVariableCollectionListRow::OnVerifyVariableNameChanged(const FText& Text, FText& OutErrorMessage)

@@ -18,11 +18,10 @@ class UCameraVariableAsset;
 namespace UE::Cameras
 {
 
+struct FCameraVariableEntry;
+
 template<typename ValueType>
-struct TCameraVariableTraits
-{
-	static const ECameraVariableType Type = ECameraVariableType::BlendableStruct;
-};
+struct TCameraVariableTraits;
 
 template<typename ValueType>
 struct TCameraVariableInterpolation;
@@ -52,6 +51,17 @@ struct FCameraVariableTableFlags
 {
 	/** The list of processed variable IDs. */
 	TSet<FCameraVariableID> VariableIDs;
+};
+
+/**
+ * Base interface for camera variable traits.
+ */
+struct ICameraVariableTraits
+{
+	virtual ~ICameraVariableTraits() {}
+
+	virtual ECameraVariableType GetVariableType() const = 0;
+	virtual bool CanConvertFrom(ECameraVariableType InType) const = 0;
 };
 
 /**
@@ -119,6 +129,8 @@ public:
 
 	template<typename VariableAssetType>
 	bool TryGetValue(const VariableAssetType* VariableAsset, typename VariableAssetType::ValueType& OutValue) const;
+
+	bool FindEntry(FCameraVariableID VariableID, FCameraVariableEntry& OutEntry, bool bOnlyIfWritten = true) const;
 
 	UE_API bool ContainsValue(FCameraVariableID VariableID) const;
 
@@ -207,6 +219,22 @@ public:
 
 	UE_API void Serialize(FArchive& Ar);
 
+public:
+
+	template<typename ValueType>
+	static bool CheckVariableType(ECameraVariableType InType)
+	{
+		return ensure(TCameraVariableTraits<ValueType>::Type == InType);
+	}
+
+	template<typename ValueType>
+	static bool IsVariableType(ECameraVariableType InType)
+	{
+		return TCameraVariableTraits<ValueType>::Type == InType;
+	}
+
+	static TSharedPtr<const ICameraVariableTraits> GetVariableTraits(ECameraVariableType InType);
+
 private:
 
 	struct FEntry;
@@ -217,12 +245,6 @@ private:
 	static UE_API bool GetVariableTypeAllocationInfo(ECameraVariableType VariableType, const UScriptStruct* StructType, uint32& OutSizeOf, uint32& OutAlignOf);
 
 	static void CreateEntry(const FCameraVariableDefinition& VariableDefinition, FEntry& OutEntry);
-
-	template<typename ValueType>
-	static bool CheckVariableType(ECameraVariableType InType)
-	{
-		return ensure(TCameraVariableTraits<ValueType>::Type == InType);
-	}
 
 	UE_API void ReallocateBuffer(uint32 MinRequired = 0);
 
@@ -283,13 +305,54 @@ private:
 
 ENUM_CLASS_FLAGS(FCameraVariableTable::EEntryFlags)
 
+/**
+ * An entry in a camera variable table. It is only valid until the next time the table
+ * is modified.
+ */
+struct FCameraVariableEntry
+{
+	/** Pointer to the value. */
+	const uint8* RawValuePtr = nullptr;
+	/** ID of the variable. */
+	FCameraVariableID ID;
+	/** Type of the variable. */
+	ECameraVariableType Type = ECameraVariableType::Boolean;
+	/** The struct type if the variable is a BlendableStruct. */
+	const UScriptStruct* StructType = nullptr;
+	/** Whether this variable was ever written to. */
+	bool bIsWritten = false;
+
+	/** Returns whether this entry is pointing to a valid value. */
+	bool IsValid() const { return ID.IsValid() && RawValuePtr != nullptr; }
+
+	/** Returns whether this entry is pointing to a value of the given type. */
+	template<typename ValueType>
+	bool IsA() const
+	{
+		return FCameraVariableTable::IsVariableType<ValueType>(Type);
+	}
+
+	/**
+	 * Casts the pointed-to value to the given type.
+	 * Will assert if the given type doesn't match the variable type.
+	 */
+	template<typename ValueType>
+	const ValueType* GetValueAs() const
+	{
+		if (FCameraVariableTable::CheckVariableType<ValueType>(Type))
+		{
+			return reinterpret_cast<const ValueType*>(RawValuePtr);
+		}
+		return nullptr;
+	}
+};
+
 template<typename ValueType>
 const ValueType* FCameraVariableTable::FindValue(FCameraVariableID VariableID) const
 {
 	if (const FEntry* Entry = FindEntry(VariableID))
 	{
-		CheckVariableType<ValueType>(Entry->Type);
-		if (EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
+		if (CheckVariableType<ValueType>(Entry->Type) && EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written))
 		{
 			return reinterpret_cast<ValueType*>(Memory + Entry->Offset);
 		}
@@ -303,19 +366,21 @@ const ValueType& FCameraVariableTable::GetValue(FCameraVariableID VariableID) co
 	const FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't get camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
 	{
-		CheckVariableType<ValueType>(Entry->Type);
+		if (CheckVariableType<ValueType>(Entry->Type))
+		{
 #if WITH_EDITORONLY_DATA
-		checkf(
-				EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
-				TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
-				*Entry->DebugName);
+			checkf(
+					EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
+					TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+					*Entry->DebugName);
 #else
-		checkf(
-				EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
-				TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
-				*LexToString(VariableID.GetValue()));
+			checkf(
+					EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written),
+					TEXT("Variable '%s' has never been written to. GetValue() will return uninitialized memory!"),
+					*LexToString(VariableID.GetValue()));
 #endif
-		return *reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+			return *reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+		}
 	}
 
 	static ValueType DefaultValue = ValueType();
@@ -361,10 +426,12 @@ void FCameraVariableTable::SetValue(FCameraVariableID VariableID, typename TCall
 	FEntry* Entry = FindEntry(VariableID);
 	if (ensureMsgf(Entry, TEXT("Can't set camera variable (ID '%d') because it doesn't exist in the table."), VariableID.GetValue()))
 	{
-		CheckVariableType<ValueType>(Entry->Type);
-		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
-		*ValuePtr = Value;
-		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+		if (CheckVariableType<ValueType>(Entry->Type))
+		{
+			ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+			*ValuePtr = Value;
+			Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+		}
 	}
 }
 
@@ -373,11 +440,13 @@ bool FCameraVariableTable::TrySetValue(FCameraVariableID VariableID, typename TC
 {
 	if (FEntry* Entry = FindEntry(VariableID))
 	{
-		CheckVariableType<ValueType>(Entry->Type);
-		ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
-		*ValuePtr = Value;
-		Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
-		return true;
+		if (CheckVariableType<ValueType>(Entry->Type))
+		{
+			ValueType* ValuePtr = reinterpret_cast<ValueType*>(Memory + Entry->Offset);
+			*ValuePtr = Value;
+			Entry->Flags |= EEntryFlags::Written | EEntryFlags::WrittenThisFrame;
+			return true;
+		}
 	}
 	return false;
 }
@@ -439,14 +508,268 @@ void FCameraVariableTable::SetValue(
 	}
 }
 
+// Variable type traits.
+
+template<typename ValueType>
+struct TCameraVariableTraits : public ICameraVariableTraits
+{
+	static const ECameraVariableType Type = ECameraVariableType::BlendableStruct;
+	static bool ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, ValueType& OutValue)
+	{
+		return false;
+	}
+
+	virtual ECameraVariableType GetVariableType() const override { return Type; }
+	virtual bool CanConvertFrom(ECameraVariableType InType) const override { return false; }
+};
+
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 	template<>\
-	struct TCameraVariableTraits<ValueType>\
-	{\
+	struct TCameraVariableTraits<ValueType> : public ICameraVariableTraits\
+    {\
 		static const ECameraVariableType Type = ECameraVariableType::ValueName;\
+		static bool ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, ValueType& OutValue);\
+		virtual ECameraVariableType GetVariableType() const override { return Type; }\
+		virtual bool CanConvertFrom(ECameraVariableType InType) const override;\
 	};
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+
+inline bool TCameraVariableTraits<bool>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, bool& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Integer32:
+			OutValue = (*reinterpret_cast<const int32*>(InRawValue) != 0);
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<bool>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Integer32);
+}
+
+inline bool TCameraVariableTraits<int32>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, int32& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Boolean:
+			OutValue = (*reinterpret_cast<const bool*>(InRawValue)) ? 1 : 0;
+			return true;
+		case ECameraVariableType::Float:
+			OutValue = (int32)(*reinterpret_cast<const float*>(InRawValue));
+			return true;
+		case ECameraVariableType::Double:
+			OutValue = (int32)(*reinterpret_cast<const double*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<int32>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Boolean || InType == ECameraVariableType::Float || InType == ECameraVariableType::Double);
+}
+
+inline bool TCameraVariableTraits<float>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, float& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Integer32:
+			OutValue = (float)*reinterpret_cast<const int32*>(InRawValue);
+			return true;
+		case ECameraVariableType::Double:
+			OutValue = (float)*reinterpret_cast<const double*>(InRawValue);
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<float>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Integer32 || InType == ECameraVariableType::Double);
+}
+
+inline bool TCameraVariableTraits<double>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, double& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Integer32:
+			OutValue = (double)*reinterpret_cast<const int32*>(InRawValue);
+			return true;
+		case ECameraVariableType::Float:
+			OutValue = (double)*reinterpret_cast<const float*>(InRawValue);
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<double>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Integer32 || InType == ECameraVariableType::Float);
+}
+
+inline bool TCameraVariableTraits<FVector2f>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector2f& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector2d:
+			OutValue = FVector2f(*reinterpret_cast<const FVector2d*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector2f>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector2d);
+}
+
+inline bool TCameraVariableTraits<FVector2d>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector2d& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector2f:
+			OutValue = FVector2d(*reinterpret_cast<const FVector2f*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector2d>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector2f);
+}
+
+inline bool TCameraVariableTraits<FVector3f>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector3f& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector3d:
+			OutValue = FVector3f(*reinterpret_cast<const FVector3d*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector3f>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector3d);
+}
+
+inline bool TCameraVariableTraits<FVector3d>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector3d& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector3f:
+			OutValue = FVector3d(*reinterpret_cast<const FVector3f*>(InRawValue));
+			break;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector3d>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector3f);
+}
+
+inline bool TCameraVariableTraits<FVector4f>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector4f& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector4d:
+			OutValue = FVector4f(*reinterpret_cast<const FVector4d*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector4f>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector4d);
+}
+
+inline bool TCameraVariableTraits<FVector4d>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FVector4d& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Vector4f:
+			OutValue = FVector4d(*reinterpret_cast<const FVector4f*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FVector4d>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Vector4f);
+}
+
+inline bool TCameraVariableTraits<FRotator3f>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FRotator3f& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Rotator3d:
+			OutValue = FRotator3f(*reinterpret_cast<const FRotator3d*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FRotator3f>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Rotator3d);
+}
+
+inline bool TCameraVariableTraits<FRotator3d>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FRotator3d& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Rotator3f:
+			OutValue = FRotator3d(*reinterpret_cast<const FRotator3f*>(InRawValue));
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FRotator3d>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Rotator3f);
+}
+
+inline bool TCameraVariableTraits<FTransform3f>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FTransform3f& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Transform3d:
+			OutValue = FTransform3f(*reinterpret_cast<const FTransform3d*>(InRawValue));
+			return true;
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FTransform3f>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Transform3d);
+}
+
+inline bool TCameraVariableTraits<FTransform3d>::ConvertFrom(ECameraVariableType InType, const uint8* InRawValue, FTransform3d& OutValue)
+{
+	switch (InType)
+	{
+		case ECameraVariableType::Transform3f:
+			OutValue = FTransform3d(*reinterpret_cast<const FTransform3f*>(InRawValue));
+	}
+	return false;
+}
+
+inline bool TCameraVariableTraits<FTransform3d>::CanConvertFrom(ECameraVariableType InType) const
+{
+	return (InType == ECameraVariableType::Transform3f);
+}
+
+// Interpolation utilities for the supported types of the variable table.
 
 template<typename ValueType>
 struct TCameraVariableInterpolation
@@ -474,3 +797,4 @@ struct TCameraVariableInterpolation<UE::Math::TTransform<T>>
 }  // namespace UE::Cameras
 
 #undef UE_API
+

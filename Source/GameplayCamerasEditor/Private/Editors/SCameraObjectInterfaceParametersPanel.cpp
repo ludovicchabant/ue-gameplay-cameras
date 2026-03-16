@@ -62,11 +62,29 @@ protected:
 	{
 		if (InColumnName == SCameraObjectInterfaceParametersPanel::ParameterNameColumn)
 		{
-			return SAssignNew(NameTextBlock, SInlineEditableTextBlock)
-				.IsSelected(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::IsSelected)
-				.Text_Lambda([this]() { return FText::FromString(Item->InterfaceParameterName); })
-				.OnTextCommitted(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted)
-				.ToolTipText(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::GetParameterToolTip);
+			return SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					SNew(SBox)
+					.VAlign(VAlign_Center)
+					.Padding(4, 4, 14, 4)
+					.Visibility(this, &SCameraObjectInterfaceParameterTableRowBase::GetParameterIconVisibility)
+					[
+						SNew(SImage)
+						.Image(this, &SCameraObjectInterfaceParameterTableRowBase::GetParameterIcon)
+						.ToolTipText(this, &SCameraObjectInterfaceParameterTableRowBase::GetParameterIconToolTipText)
+					]
+				]
+				+SHorizontalBox::Slot()
+				.FillWidth(1.f)
+				[
+					SAssignNew(NameTextBlock, SInlineEditableTextBlock)
+					.IsSelected(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::IsSelected)
+					.Text_Lambda([this]() { return FText::FromString(Item->InterfaceParameterName); })
+					.OnTextCommitted(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::OnParameterNameTextCommitted)
+					.ToolTipText(this, &SCameraObjectInterfaceParameterTableRowBase<ParameterType>::GetParameterToolTip)
+				];
 		}
 
 		return SNullWidget::NullWidget;
@@ -89,6 +107,21 @@ protected:
 		Item->InterfaceParameterName = Text.ToString();
 	}
 
+	EVisibility GetParameterIconVisibility() const
+	{
+		return ParameterIcon ? EVisibility::Visible : EVisibility::Collapsed;
+	}
+
+	const FSlateBrush* GetParameterIcon() const
+	{
+		return ParameterIcon;
+	}
+
+	FText GetParameterIconToolTipText() const
+	{
+		return ParameterIconToolTipText;
+	}
+
 	FText GetParameterToolTip() const
 	{
 		const FGuid Guid = Item->GetGuid();
@@ -99,6 +132,9 @@ protected:
 
 	TObjectPtr<ParameterType> Item;
 	TSharedPtr<SInlineEditableTextBlock> NameTextBlock;
+
+	const FSlateBrush* ParameterIcon = nullptr;
+	FText ParameterIconToolTipText;
 };
 
 /**
@@ -111,6 +147,8 @@ public:
 	void Construct(const FArguments& Args, const TSharedRef<STableViewBase>& OwnerTable)
 	{
 		SCameraObjectInterfaceParameterTableRowBase<UCameraObjectInterfaceBlendableParameter>::Construct(Args, OwnerTable);
+
+		UpdateParameterIcon();
 	}
 
 protected:
@@ -155,19 +193,13 @@ protected:
 
 		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::GetCategoryText(UEdGraphSchema_K2::PC_Boolean, true), UEdGraphSchema_K2::PC_Boolean, K2Schema, LOCTEXT("BooleanType", "True or false value")));
 		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::GetCategoryText(UEdGraphSchema_K2::PC_Int, true), UEdGraphSchema_K2::PC_Int, K2Schema, LOCTEXT("IntegerType", "Integer number")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::GetCategoryText(UEdGraphSchema_K2::PC_Float, true), UEdGraphSchema_K2::PC_Float, K2Schema, LOCTEXT("FloatType", "Floating point number")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::GetCategoryText(UEdGraphSchema_K2::PC_Double, true), UEdGraphSchema_K2::PC_Double, K2Schema, LOCTEXT("DoubleType", "Double precision floating point number")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::GetCategoryText(UEdGraphSchema_K2::PC_Real, true), UEdGraphSchema_K2::PC_Real, K2Schema, LOCTEXT("RealType", "Floating point number")));
 
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FVector2f>::Get(), LOCTEXT("Vector2fType", "A 2D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector2D>::Get(), LOCTEXT("Vector2dType", "A double precision 2D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FVector3f>::Get(), LOCTEXT("Vector3fType", "A 3D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector>::Get(), LOCTEXT("Vector3dType", "A double precision 3D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FVector4f>::Get(), LOCTEXT("Vector4fType", "A 4D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector4>::Get(), LOCTEXT("Vector4dType", "A double precision 4D vector")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FRotator3f>::Get(), LOCTEXT("Rotator3fType", "A 3D rotation")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FRotator>::Get(), LOCTEXT("Rotator3dType", "A double precision 3D rotation")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TVariantStructure<FTransform3f>::Get(), LOCTEXT("Transform3fType", "A 3D transformation")));
-		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FTransform>::Get(), LOCTEXT("Transform3dType", "A double precision 3D transformation")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector2D>::Get(), LOCTEXT("Vector2dType", "A 2D vector")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector>::Get(), LOCTEXT("Vector3dType", "A 3D vector")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FVector4>::Get(), LOCTEXT("Vector4dType", "A 4D vector")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FRotator>::Get(), LOCTEXT("Rotator3dType", "A 3D rotation")));
+		TypeTree.Add(MakeShared<FPinTypeTreeInfo>(UEdGraphSchema_K2::PC_Struct, TBaseStructure<FTransform>::Get(), LOCTEXT("Transform3dType", "A 3D transformation")));
 
 		TSharedPtr<FPinTypeTreeInfo> Structs = MakeShared<FPinTypeTreeInfo>(
 				LOCTEXT("BlendableStructPinTypeLabel", "Blendable Structures"),
@@ -211,52 +243,28 @@ protected:
 		{
 			NewParameterType = ECameraVariableType::Integer32;
 		}
-		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Float)
-		{
-			NewParameterType = ECameraVariableType::Float;
-		}
-		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Double)
+		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Real)
 		{
 			NewParameterType = ECameraVariableType::Double;
 		}
 		else if (PinType.PinCategory == UEdGraphSchema_K2::PC_Struct)
 		{
 			const UObject* TypeObject = PinType.PinSubCategoryObject.Get();
-			if (TypeObject == TVariantStructure<FVector2f>::Get())
-			{
-				NewParameterType = ECameraVariableType::Vector2f;
-			}
-			else if (TypeObject == TBaseStructure<FVector2D>::Get())
+			if (TypeObject == TBaseStructure<FVector2D>::Get())
 			{
 				NewParameterType = ECameraVariableType::Vector2d;
-			}
-			else if (TypeObject == TVariantStructure<FVector3f>::Get())
-			{
-				NewParameterType = ECameraVariableType::Vector3f;
 			}
 			else if (TypeObject == TBaseStructure<FVector>::Get())
 			{
 				NewParameterType = ECameraVariableType::Vector3d;
 			}
-			else if (TypeObject == TVariantStructure<FVector4f>::Get())
-			{
-				NewParameterType = ECameraVariableType::Vector4f;
-			}
 			else if (TypeObject == TBaseStructure<FVector4>::Get())
 			{
 				NewParameterType = ECameraVariableType::Vector4d;
 			}
-			else if (TypeObject == TVariantStructure<FRotator3f>::Get())
-			{
-				NewParameterType = ECameraVariableType::Rotator3f;
-			}
 			else if (TypeObject == TBaseStructure<FRotator>::Get())
 			{
 				NewParameterType = ECameraVariableType::Rotator3d;
-			}
-			else if (TypeObject == TVariantStructure<FTransform3f>::Get())
-			{
-				NewParameterType = ECameraVariableType::Transform3f;
 			}
 			else if (TypeObject == TBaseStructure<FTransform>::Get())
 			{
@@ -279,11 +287,35 @@ protected:
 			Item->Modify();
 			Item->VariableType = NewParameterType;
 		}
+
+		UpdateParameterIcon();
 	}
 
 	bool IsPinTypeSelectorReadOnly() const
 	{
 		return !IsHovered();
+	}
+
+	void UpdateParameterIcon()
+	{
+		const bool bIsDeprecatedParameter = (
+				Item->VariableType == ECameraVariableType::Float ||
+				Item->VariableType == ECameraVariableType::Vector2f ||
+				Item->VariableType == ECameraVariableType::Vector3f ||
+				Item->VariableType == ECameraVariableType::Vector4f ||
+				Item->VariableType == ECameraVariableType::Rotator3f ||
+				Item->VariableType == ECameraVariableType::Transform3f);
+		if (bIsDeprecatedParameter)
+		{
+			ParameterIcon = FAppStyle::GetBrush("Icons.Warning.Solid");
+			ParameterIconToolTipText = LOCTEXT("DeprecatedVariableToolTip",
+					"Deprecated single-precision parameter, please replace it with a double-precision one");
+		}
+		else
+		{
+			ParameterIcon = nullptr;
+			ParameterIconToolTipText = FText::GetEmpty();
+		}
 	}
 };
 

@@ -27,6 +27,7 @@ namespace UE::Cameras
 
 void FCameraVariableReferenceDetailsCustomization::Register(FPropertyEditorModule& PropertyEditorModule)
 {
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(\
 			F##ValueName##CameraVariableReference::StaticStruct()->GetFName(),\
@@ -34,17 +35,20 @@ void FCameraVariableReferenceDetailsCustomization::Register(FPropertyEditorModul
 				[]{ return MakeShared<F##ValueName##CameraVariableReferenceDetailsCustomization>(); }));
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
 void FCameraVariableReferenceDetailsCustomization::Unregister(FPropertyEditorModule& PropertyEditorModule)
 {
 	if (UObjectInitialized())
 	{
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(\
 				F##ValueName##CameraVariableReference::StaticStruct()->GetFName());
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 	}
 }
 
@@ -252,6 +256,7 @@ void FCameraVariableReferenceDetailsCustomization::OnResetToDefault()
 	PropertyUtilities->RequestForceRefresh();
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 void F##ValueName##CameraVariableReferenceDetailsCustomization::SetReferenceVariable(void* InRawData, UCameraVariableAsset* InVariable)\
 {\
@@ -260,6 +265,7 @@ void F##ValueName##CameraVariableReferenceDetailsCustomization::SetReferenceVari
 }
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 }  // namespace UE::Cameras
 

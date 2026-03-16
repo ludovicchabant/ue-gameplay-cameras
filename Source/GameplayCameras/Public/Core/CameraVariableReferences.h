@@ -11,7 +11,16 @@ namespace UE::Cameras
 	class FCameraVariableTable;
 }
 
+// Deprecate single-precision variables.
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FFloatCameraVariableReference;
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FVector2fCameraVariableReference;
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FVector3fCameraVariableReference;
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FVector4fCameraVariableReference;
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FRotator3fCameraVariableReference;
+struct UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") FTransform3fCameraVariableReference;
+
 #define UE_DEFINE_CAMERA_VARIABLE_REFERENCE(ValueName)\
+	static const ECameraVariableType VariableType = VariableAssetType::VariableType;\
 	F##ValueName##CameraVariableReference() {}\
 	F##ValueName##CameraVariableReference(VariableAssetType* InVariable) : Variable(InVariable) {}\
 	bool IsValid() const { return Variable != nullptr; }\
@@ -53,6 +62,7 @@ struct FFloatCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = float;
 	using VariableAssetType = UFloatCameraVariable;
 
@@ -60,6 +70,7 @@ struct FFloatCameraVariableReference
 	TObjectPtr<UFloatCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Float)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()
@@ -81,6 +92,7 @@ struct FVector2fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = FVector2f;
 	using VariableAssetType = UVector2fCameraVariable;
 
@@ -88,6 +100,7 @@ struct FVector2fCameraVariableReference
 	TObjectPtr<UVector2fCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Vector2f)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()
@@ -109,6 +122,7 @@ struct FVector3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = FVector3f;
 	using VariableAssetType = UVector3fCameraVariable;
 
@@ -116,6 +130,7 @@ struct FVector3fCameraVariableReference
 	TObjectPtr<UVector3fCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Vector3f)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()
@@ -137,6 +152,7 @@ struct FVector4fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = FVector4f;
 	using VariableAssetType = UVector4fCameraVariable;
 
@@ -144,6 +160,7 @@ struct FVector4fCameraVariableReference
 	TObjectPtr<UVector4fCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Vector4f)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()
@@ -165,6 +182,7 @@ struct FRotator3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = FRotator3f;
 	using VariableAssetType = URotator3fCameraVariable;
 
@@ -172,6 +190,7 @@ struct FRotator3fCameraVariableReference
 	TObjectPtr<URotator3fCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Rotator3f)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()
@@ -193,6 +212,7 @@ struct FTransform3fCameraVariableReference
 {
 	GENERATED_BODY()
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using ValueType = FTransform3f;
 	using VariableAssetType = UTransform3fCameraVariable;
 
@@ -200,6 +220,7 @@ struct FTransform3fCameraVariableReference
 	TObjectPtr<UTransform3fCameraVariable> Variable;
 
 	UE_DEFINE_CAMERA_VARIABLE_REFERENCE(Transform3f)
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 };
 
 USTRUCT()

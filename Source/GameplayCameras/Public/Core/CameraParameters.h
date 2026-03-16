@@ -86,7 +86,9 @@ struct FFloatCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = float;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = UFloatCameraVariable;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	float Value = 0.f;
@@ -94,8 +96,10 @@ struct FFloatCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<UFloatCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 
@@ -132,7 +136,9 @@ struct FVector2fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector2f;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = UVector2fCameraVariable;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector2f Value;
@@ -140,8 +146,10 @@ struct FVector2fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<UVector2fCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UE_API FVector2fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -180,7 +188,9 @@ struct FVector3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector3f;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = UVector3fCameraVariable;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector3f Value;
@@ -188,8 +198,10 @@ struct FVector3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<UVector3fCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UE_API FVector3fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -228,7 +240,9 @@ struct FVector4fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FVector4f;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = UVector4fCameraVariable;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FVector4f Value;
@@ -236,8 +250,10 @@ struct FVector4fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<UVector4fCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UE_API FVector4fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -276,7 +292,9 @@ struct FRotator3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FRotator3f;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = URotator3fCameraVariable;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FRotator3f Value;
@@ -284,8 +302,10 @@ struct FRotator3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<URotator3fCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UE_API FRotator3fCameraParameter();
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
@@ -324,7 +344,9 @@ struct FTransform3fCameraParameter
 	GENERATED_BODY()
 
 	using ValueType = FTransform3f;
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	using VariableAssetType = UTransform3fCameraVariable;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UPROPERTY(EditAnywhere, Interp, Category=Common, meta=(SequencerUseParentPropertyName=true))
 	FTransform3f Value;
@@ -332,8 +354,10 @@ struct FTransform3fCameraParameter
 	UPROPERTY()
 	FCameraVariableID VariableID;
 
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
 	UPROPERTY()
 	TObjectPtr<UTransform3fCameraVariable> Variable_DEPRECATED;
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	UE_API bool SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot);
 

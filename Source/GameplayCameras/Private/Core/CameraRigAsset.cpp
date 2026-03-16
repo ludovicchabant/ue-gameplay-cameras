@@ -68,6 +68,10 @@ void UCameraRigAsset::PostLoad()
 				BlendableParameter->PrivateVariable_DEPRECATED = nullptr;
 			}
 		}
+		else if (BlendableParameter->PrivateVariable_DEPRECATED)
+		{
+			BlendableParameter->PrivateVariable_DEPRECATED = nullptr;
+		}
 	}
 
 #if WITH_EDITORONLY_DATA

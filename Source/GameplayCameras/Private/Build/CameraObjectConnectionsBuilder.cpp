@@ -57,14 +57,23 @@ struct FInterfaceParameterBindingBuilder
 			return;
 		}
 
-		if (TargetParameterInfo->VariableType != VariableDefinition.VariableType ||
-				TargetParameterInfo->BlendableStructType != VariableDefinition.BlendableStructType)
+		bool bCompatibleTypes = (VariableDefinition.VariableType == TargetParameterInfo->VariableType);
+		if (!bCompatibleTypes)
+		{
+			TSharedPtr<const ICameraVariableTraits> SourceTraits = FCameraVariableTable::GetVariableTraits(TargetParameterInfo->VariableType);
+			if (SourceTraits)
+			{
+				bCompatibleTypes = SourceTraits->CanConvertFrom(VariableDefinition.VariableType);
+			}
+		}
+		if (!bCompatibleTypes || TargetParameterInfo->BlendableStructType != VariableDefinition.BlendableStructType)
 		{
 			ReportError(
 					TargetNode,
 					FText::Format(LOCTEXT(
 							"ConnectionVariableTypeMismatch",
-							"Invalid connection to property '{0}' on '{1}', expected type '{2}' but is '{3}'."),
+							"Invalid connection to property '{0}' on '{1}', expected type '{2}' but is '{3}', "
+							"and no conversion is supported between the two."),
 						FText::FromName(TargetNodeParameterName),
 						FText::FromName(TargetNode->GetFName()),
 						UEnum::GetDisplayValueAsText(VariableDefinition.VariableType),

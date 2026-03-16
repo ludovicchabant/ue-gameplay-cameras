@@ -218,6 +218,31 @@ bool FCameraVariableTable::EnsureVariables(const FCameraVariableTableAllocationI
 	return bAllExist;
 }
 
+TSharedPtr<const ICameraVariableTraits> FCameraVariableTable::GetVariableTraits(ECameraVariableType InType)
+{
+	static TMap<ECameraVariableType, TSharedPtr<ICameraVariableTraits>> CachedTraits;
+
+	TSharedPtr<ICameraVariableTraits> Traits = CachedTraits.FindRef(InType);
+	if (Traits)
+	{
+		return Traits;
+	}
+
+	switch (InType)
+	{
+#define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
+		case ECameraVariableType::ValueName:\
+			Traits = MakeShared<TCameraVariableTraits<ValueType>>();\
+			break;
+UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
+#undef UE_CAMERA_VARIABLE_FOR_TYPE
+	}
+
+	CachedTraits.Add(InType, Traits);
+
+	return Traits;
+}
+
 void FCameraVariableTable::CacheBlendableStructs()
 {
 	if (bCachedBlendableStructs)
@@ -325,6 +350,24 @@ UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 				OutAlignOf = StructOps->GetAlignment();
 			}
 			return true;
+	}
+	return false;
+}
+
+bool FCameraVariableTable::FindEntry(FCameraVariableID VariableID, FCameraVariableEntry& OutEntry, bool bOnlyIfWritten) const
+{
+	if (const FEntry* Entry = FindEntry(VariableID))
+	{
+		const bool bIsWritten = EnumHasAnyFlags(Entry->Flags, EEntryFlags::Written);
+		if (!bOnlyIfWritten || bIsWritten)
+		{
+			OutEntry.RawValuePtr = Memory + Entry->Offset;
+			OutEntry.ID = Entry->ID;
+			OutEntry.Type = Entry->Type;
+			OutEntry.StructType = Entry->StructType;
+			OutEntry.bIsWritten = bIsWritten;
+			return true;
+		}
 	}
 	return false;
 }

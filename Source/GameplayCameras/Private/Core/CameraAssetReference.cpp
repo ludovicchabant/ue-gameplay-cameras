@@ -5,6 +5,7 @@
 #include "Core/CameraAsset.h"
 #include "Core/CameraNodeEvaluator.h"
 #include "Helpers/CameraObjectInterfaceParameterOverrideHelper.h"
+#include "Helpers/CameraParameterMigrationHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraAssetReference)
 
@@ -77,9 +78,11 @@ bool FCameraAssetReference::RebuildParametersIfNeeded()
 
 void FCameraAssetReference::RebuildParameters()
 {
+	using namespace UE::Cameras;
+
 	if (CameraAsset)
 	{
-		Parameters.MigrateToNewBagInstanceWithOverrides(CameraAsset->GetDefaultParameters());
+		FCameraParameterMigrationHelper::MigrateToNewBagInstanceWithOverrides(Parameters, CameraAsset->GetDefaultParameters());
 	}
 	else
 	{

@@ -5,6 +5,7 @@
 #include "Core/BaseCameraObject.h"
 #include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "Helpers/CameraParameterMigrationHelper.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(BaseCameraObjectReference)
 
@@ -72,11 +73,13 @@ bool FBaseCameraObjectReference::RebuildParametersIfNeeded()
 
 void FBaseCameraObjectReference::RebuildParameters()
 {
+	using namespace UE::Cameras;
+
 	const UBaseCameraObject* CameraObject = GetCameraObject();
 
 	if (CameraObject)
 	{
-		Parameters.MigrateToNewBagInstanceWithOverrides(CameraObject->GetDefaultParameters());
+		FCameraParameterMigrationHelper::MigrateToNewBagInstanceWithOverrides(Parameters, CameraObject->GetDefaultParameters());
 
 		if (const UPropertyBag* ParametersType = Parameters.GetPropertyBagStruct())
 		{

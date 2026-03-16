@@ -31,6 +31,57 @@
 const FName UCameraObjectGraphSchemaBase::PC_CameraParameter("CameraParameter");
 const FName UCameraObjectGraphSchemaBase::PC_CameraContextData("CameraContextData");
 
+const FName UCameraObjectGraphSchemaBase::PSC_Boolean("Boolean");
+const FName UCameraObjectGraphSchemaBase::PSC_Integer("Integer");
+const FName UCameraObjectGraphSchemaBase::PSC_Real("Real");
+const FName UCameraObjectGraphSchemaBase::PSC_Vector2("Vector2");
+const FName UCameraObjectGraphSchemaBase::PSC_Vector3("Vector3");
+const FName UCameraObjectGraphSchemaBase::PSC_Vector4("Vector4");
+const FName UCameraObjectGraphSchemaBase::PSC_Rotator("Rotator");
+const FName UCameraObjectGraphSchemaBase::PSC_Transform("Transform");
+const FName UCameraObjectGraphSchemaBase::PSC_BlendableStruct("BlendableStruct");
+
+FName UCameraObjectGraphSchemaBase::GetVariablePinSubCategory(ECameraVariableType VariableType)
+{
+	// Here we bundle together single- and double-precision types, so that they are connectable. This MUST be kept in
+	// sync with the camera variable type conversions! That is: variable types placed in the same pin sub-category
+	// below must be convertible to one another!
+	switch (VariableType)
+	{
+		case ECameraVariableType::Boolean:
+			return PSC_Boolean;
+		case ECameraVariableType::Integer32:
+			return PSC_Integer;
+		case ECameraVariableType::Float:
+		case ECameraVariableType::Double:
+			return PSC_Real;
+		case ECameraVariableType::Vector2f:
+		case ECameraVariableType::Vector2d:
+			return PSC_Vector2;
+		case ECameraVariableType::Vector3f:
+		case ECameraVariableType::Vector3d:
+			return PSC_Vector3;
+		case ECameraVariableType::Vector4f:
+		case ECameraVariableType::Vector4d:
+			return PSC_Vector4;
+		case ECameraVariableType::Rotator3f:
+		case ECameraVariableType::Rotator3d:
+			return PSC_Rotator;
+		case ECameraVariableType::Transform3f:
+		case ECameraVariableType::Transform3d:
+			return PSC_Transform;
+		case ECameraVariableType::BlendableStruct:
+			return PSC_BlendableStruct;
+	}
+	return NAME_None;
+}
+
+FName UCameraObjectGraphSchemaBase::GetDataPinSubCategory(ECameraContextDataType DataType)
+{
+	static UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
+	return DataTypeEnum->GetNameByValue((int64)DataType);
+}
+
 UCameraObjectGraphSchemaBase::UCameraObjectGraphSchemaBase(const FObjectInitializer& ObjInit)
 	: Super(ObjInit)
 {
@@ -460,7 +511,7 @@ FLinearColor UCameraObjectGraphSchemaBase::GetPinTypeColor(const FEdGraphPinType
 	if (PinType.PinCategory == PC_CameraParameter)
 	{
 		const FName TypeName = PinType.PinSubCategory;
-		return PinColors.GetPinColor(TypeName);
+		return PinColors.GetVariablePinColor(TypeName);
 	}
 	if (PinType.PinCategory == PC_CameraContextData)
 	{

@@ -63,7 +63,7 @@ FEdGraphPinType UCameraVariableAssetGraphNode::GetParameterPinType() const
 	{
 		FEdGraphPinType PinType;
 		PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_Self;
-		PinType.PinSubCategory = UEnum::GetValueAsName(VariableAsset->GetVariableType());
+		PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetVariablePinSubCategory(VariableAsset->GetVariableType());
 		return PinType;
 	}
 	return FEdGraphPinType();

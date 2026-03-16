@@ -28,6 +28,21 @@ public:
 	static const FName PC_CameraParameter;			// A camera parameter pin.
 	static const FName PC_CameraContextData;		// A context data pin.
 
+	static const FName PSC_Boolean;
+	static const FName PSC_Integer;
+	static const FName PSC_Real;
+	static const FName PSC_Vector2;
+	static const FName PSC_Vector3;
+	static const FName PSC_Vector4;
+	static const FName PSC_Rotator;
+	static const FName PSC_Transform;
+	static const FName PSC_BlendableStruct;
+
+	static FName GetVariablePinSubCategory(ECameraVariableType VariableType);
+	static FName GetDataPinSubCategory(ECameraContextDataType DataType);
+
+public:
+
 	UCameraObjectGraphSchemaBase(const FObjectInitializer& ObjInit);
 
 	/** Builds the config for a graph managed by this schema. */
@@ -55,6 +70,8 @@ private:
 
 	void CreateValueFlowConnections(UObjectTreeGraph* InGraph, const FCreatedNodes& InCreatedNodes) const;
 	UEdGraphPin* FindPinByType(UEdGraphNode* InNode, const FName& InPinCategory) const;
+
+private:
 
 	UE::Cameras::FCameraNodeGraphPinColors PinColors;
 };

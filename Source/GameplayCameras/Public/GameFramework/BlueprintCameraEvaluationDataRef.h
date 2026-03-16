@@ -107,11 +107,14 @@ public:
 	static int32 GetInteger32CameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UInteger32CameraVariable* Variable);
 
 	/** Gets a camera variable's value from the given table. */
-	UFUNCTION(BlueprintCallable, DisplayName="Get Float Variable", Category=Camera, meta=(CompactNodeTitle="Get Float Variable"))
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	UFUNCTION(BlueprintCallable, DisplayName="Get Float (Single-Precision) Variable", Category=Camera, 
+			meta=(CompactNodeTitle="Get Float Variable", DeprecatedFunction, DeprecatedMessage="Single-precision camera variables are deprecated. Please use the double-precision variants."))
 	static float GetFloatCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UFloatCameraVariable* Variable);
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/** Gets a camera variable's value from the given table. */
-	UFUNCTION(BlueprintCallable, DisplayName="Get Double Variable", Category=Camera, meta=(CompactNodeTitle="Get Double Variable"))
+	UFUNCTION(BlueprintCallable, DisplayName="Get Float Variable", Category=Camera, meta=(CompactNodeTitle="Get Float Variable"))
 	static double GetDoubleCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UDoubleCameraVariable* Variable);
 
 	/** Gets a camera variable's value from the given table. */
@@ -145,11 +148,14 @@ public:
 	static void SetInteger32CameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UInteger32CameraVariable* Variable, int32 Value);
 
 	/** Sets a camera variable's value in the given table. */
-	UFUNCTION(BlueprintCallable, DisplayName="Set Float Variable", Category=Camera)
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+	UFUNCTION(BlueprintCallable, DisplayName="Set Float (Single-Precision) Variable", Category=Camera,
+			meta=(DeprecatedFunction, DeprecatedMessage="Single-precision camera variables are deprecated. Please use the double-precision variants."))
 	static void SetFloatCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UFloatCameraVariable* Variable, float Value);
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 	/** Sets a camera variable's value in the given table. */
-	UFUNCTION(BlueprintCallable, DisplayName="Set Double Variable", Category=Camera)
+	UFUNCTION(BlueprintCallable, DisplayName="Set Float Variable", Category=Camera)
 	static void SetDoubleCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UDoubleCameraVariable* Variable, double Value);
 
 	/** Sets a camera variable's value in the given table. */

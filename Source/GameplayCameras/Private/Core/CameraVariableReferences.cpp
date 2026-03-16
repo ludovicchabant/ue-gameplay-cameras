@@ -6,6 +6,7 @@
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(CameraVariableReferences)
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 const ValueType* F##ValueName##CameraVariableReference::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
 {\
@@ -21,4 +22,5 @@ const ValueType* F##ValueName##CameraVariableReference::GetValue(const UE::Camer
 }
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 

@@ -113,10 +113,12 @@ int32 UBlueprintCameraVariableTableFunctionLibrary::GetInteger32CameraVariable(c
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_GET_VARIABLE(int32);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 float UBlueprintCameraVariableTableFunctionLibrary::GetFloatCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UFloatCameraVariable* Variable)
 {
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_GET_VARIABLE(float);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 double UBlueprintCameraVariableTableFunctionLibrary::GetDoubleCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UDoubleCameraVariable* Variable)
 {
@@ -158,10 +160,12 @@ void UBlueprintCameraVariableTableFunctionLibrary::SetInteger32CameraVariable(co
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_SET_VARIABLE(int32);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void UBlueprintCameraVariableTableFunctionLibrary::SetFloatCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UFloatCameraVariable* Variable, float Value)
 {
 	UE_PRIVATE_BLUEPRINT_CAMERA_VARIABLE_TABLE_SET_VARIABLE(float);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void UBlueprintCameraVariableTableFunctionLibrary::SetDoubleCameraVariable(const FBlueprintCameraEvaluationDataRef& CameraData, UDoubleCameraVariable* Variable, double Value)
 {

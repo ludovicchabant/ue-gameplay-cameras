@@ -7,6 +7,7 @@
 #include "Core/CameraNode.h"
 #include "Core/CameraNodeEvaluatorStorage.h"
 #include "Core/CameraVariableAssets.h"
+#include "Core/CameraVariableCollection.h"
 #include "Core/CameraVariableReferences.h"
 #include "Core/ICustomCameraNodeParameterProvider.h"
 
@@ -26,6 +27,21 @@ void AddVariableToAllocationInfo(UCameraVariableAsset* Variable, FCameraVariable
 		AllocationInfo.VariableDefinitions.Add(VariableDefinition);
 
 		AllocationInfo.VariableInitializers.Add(Variable);
+
+#if WITH_EDITORONLY_DATA
+		if (const UClass* VariableClass = Variable->GetClass())
+		{
+			if (VariableClass->HasMetaData(TEXT("DeprecatedCameraVariable")))
+			{
+				const UCameraVariableCollection* VariableCollection = Variable->GetTypedOuter<UCameraVariableCollection>();
+				UE_LOG(LogCameraSystem, Warning, 
+						TEXT("Camera variable '%s' is of a deprecated type. "
+							 "Please open '%s' change the variable to a supported type."),
+						*Variable->GetDisplayName(),
+						*GetNameSafe(VariableCollection));
+			}
+		}
+#endif
 	}
 }
 
@@ -131,6 +147,7 @@ void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& ObjectBui
 			continue;
 		}
 
+		PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
 		if (StructProperty->Struct == F##ValueName##CameraVariableReference::StaticStruct())\
 		{\
@@ -140,6 +157,7 @@ void FCameraNodeHierarchyBuilder::CallBuild(FCameraObjectBuildContext& ObjectBui
 		else
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
+		PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		{
 			// Another struct property...
 		}

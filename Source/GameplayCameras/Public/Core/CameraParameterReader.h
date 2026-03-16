@@ -9,6 +9,17 @@
 namespace UE::Cameras
 {
 
+namespace Internal
+{
+
+// Shared utility function for retrieving the value of a variable from a variable table, handling the case of having
+// to convert from one type to another, such as when accessing a double-precision value but returning a single-precision
+// conversion of it.
+template<typename ValueType>
+ValueType GetVariableTableValue(typename TCallTraits<ValueType>::ParamType DefaultValue, FCameraVariableID VariableID, const FCameraVariableTable& VariableTable);
+
+}  // namespace Internal
+
 /**
  * A utility class for reading the effective value of a camera parameter.
  */
@@ -44,23 +55,10 @@ public:
 	/**
 	 * Gets the actual value for the parameter.
 	 */
-	const ValueType& Get(const FCameraVariableTable& VariableTable) const
+	ValueType Get(const FCameraVariableTable& VariableTable) const
 	{
 		checkf(DefaultValuePtr, TEXT("Parameter reader has no value pointer!"));
-		if (!VariableID.IsValid())
-		{
-			// No variable is driving the parameter, just return the parameter value.
-			return *DefaultValuePtr;
-		}
-		else
-		{
-			// The parameter is driven by a variable. Find it in the variable table.
-			if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableID))
-			{
-				return *ActualValue;
-			}
-			return *DefaultValuePtr;
-		}
+		return Internal::GetVariableTableValue<ValueType>(*DefaultValuePtr, VariableID, VariableTable);
 	}
 
 	/**
@@ -78,6 +76,43 @@ private:
 	/** The ID of the variable driving the parameter, if any. */
 	FCameraVariableID VariableID;
 };
+
+namespace Internal
+{
+
+template<typename ValueType>
+ValueType GetVariableTableValue(typename TCallTraits<ValueType>::ParamType DefaultValue, FCameraVariableID VariableID, const FCameraVariableTable& VariableTable)
+{
+	if (!VariableID.IsValid())
+	{
+		// No variable is driving the parameter, just return the parameter value.
+		return DefaultValue;
+	}
+	else
+	{
+		// The parameter is driven by a variable. Find it in the variable table.
+		// Some types may have to be converted, such as a float parameter reader accessing a double value.
+		FCameraVariableEntry Entry;
+		if (VariableTable.FindEntry(VariableID, Entry))
+		{
+			if (Entry.IsA<ValueType>())
+			{
+				return *reinterpret_cast<const ValueType*>(Entry.RawValuePtr);
+			}
+
+			ValueType ReturnValue;
+			const bool bConverted = TCameraVariableTraits<ValueType>::ConvertFrom(Entry.Type, Entry.RawValuePtr, ReturnValue);
+			if (ensureMsgf(bConverted, TEXT("Found a valid entry for the requested variable, but couldn't convert it to the desired output type")))
+			{
+				return ReturnValue;
+			}
+		}
+
+		return DefaultValue;
+	}
+}
+
+}  // namespace Interal
 
 }  // namespace UE::Cameras
 

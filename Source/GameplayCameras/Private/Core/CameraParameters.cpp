@@ -2,6 +2,7 @@
 
 #include "Core/CameraParameters.h"
 
+#include "Core/CameraParameterReader.h"  // IWYU pragma: keep
 #include "Core/CameraRigAsset.h"
 #include "Core/CameraVariableTable.h"
 #include "Math/Rotator.h"
@@ -45,7 +46,6 @@ bool FFloatCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, 
 
 	return false;
 }
-
 
 bool FDoubleCameraParameter::SerializeFromMismatchedTag(const FPropertyTag& Tag, FStructuredArchive::FSlot Slot)
 {
@@ -208,32 +208,45 @@ bool FTransform3dCameraParameter::SerializeFromMismatchedTag(const FPropertyTag&
 	return false;
 }
 
+namespace UE::Cameras::Internal
+{
+
+template<typename ParameterType>
+struct TCameraParameterImpl
+{
+	using ValueType = typename ParameterType::ValueType;
+
+	static void PostSerializeImpl(ParameterType& Parameter, const FArchive& Ar)
+	{
+		if (Ar.IsLoading())
+		{
+			// Remove old "nested" camera variables created by the builders for rig parameters.
+			if (Parameter.Variable_DEPRECATED && Parameter.Variable_DEPRECATED->GetOuter()->template IsA<UCameraRigAsset>())
+			{
+				Parameter.Variable_DEPRECATED = nullptr;
+			}
+		}
+	}
+
+	static ParameterType::ValueType GetValueImpl(const ParameterType& Parameter, const FCameraVariableTable& VariableTable)
+	{
+		return GetVariableTableValue<ValueType>(Parameter.Value, Parameter.VariableID, VariableTable);
+	}
+};
+
+}  // namespace UE::Cameras::Internal
+
 #define UE_CAMERA_VARIABLE_FOR_TYPE(ValueType, ValueName)\
-void F##ValueName##CameraParameter::PostSerialize(const FArchive& Ar)\
-{\
-	if (Ar.IsLoading())\
+	void F##ValueName##CameraParameter::PostSerialize(const FArchive& Ar)\
 	{\
-		if (Variable_DEPRECATED && Variable_DEPRECATED->GetOuter()->template IsA<UCameraRigAsset>())\
-		{\
-			Variable_DEPRECATED = nullptr;\
-		}\
+		using namespace UE::Cameras::Internal;\
+		TCameraParameterImpl<F##ValueName##CameraParameter>::PostSerializeImpl(*this, Ar);\
 	}\
-}\
-ValueType F##ValueName##CameraParameter::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
-{\
-	if (!VariableID.IsValid())\
+	ValueType F##ValueName##CameraParameter::GetValue(const UE::Cameras::FCameraVariableTable& VariableTable) const\
 	{\
-		return Value;\
-	}\
-	else\
-	{\
-		if (const ValueType* ActualValue = VariableTable.FindValue<ValueType>(VariableID))\
-		{\
-			return *ActualValue;\
-		}\
-		return Value;\
-	}\
-}
+		using namespace UE::Cameras::Internal;\
+		return TCameraParameterImpl<F##ValueName##CameraParameter>::GetValueImpl(*this, VariableTable);\
+	}
 UE_CAMERA_VARIABLE_FOR_ALL_TYPES()
 #undef UE_CAMERA_VARIABLE_FOR_TYPE
 

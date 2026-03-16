@@ -13,7 +13,7 @@ struct FCameraNodeGraphPinColors
 {
 	void Initialize();
 
-	FLinearColor GetPinColor(const FName& VariableTypeName) const;
+	FLinearColor GetVariablePinColor(const FName& VariableTypeName) const;
 	FLinearColor GetContextDataPinColor(const FName& DataTypeName) const;
 
 private:

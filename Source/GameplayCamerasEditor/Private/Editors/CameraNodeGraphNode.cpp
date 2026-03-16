@@ -65,7 +65,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 	{
 		FEdGraphPinType PinType;
 		PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraParameter;
-		PinType.PinSubCategory = VariableTypeEnum->GetNameByValue((int64)BlendableParameter.VariableType);
+		PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetVariablePinSubCategory(BlendableParameter.VariableType);
 		PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableParameter.BlendableStructType);
 
 		UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, BlendableParameter.ParameterName);
@@ -83,7 +83,7 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 	{
 		FEdGraphPinType PinType;
 		PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_CameraContextData;
-		PinType.PinSubCategory = DataTypeEnum->GetNameByValue((int64)DataParameter.DataType);
+		PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetDataPinSubCategory(DataParameter.DataType);
 		PinType.PinSubCategoryObject = const_cast<UObject*>(DataParameter.DataTypeObject);
 
 		if (DataParameter.DataContainerType == ECameraContextDataContainerType::Array)

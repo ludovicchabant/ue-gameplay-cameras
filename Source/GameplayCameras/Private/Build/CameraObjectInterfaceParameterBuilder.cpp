@@ -8,6 +8,7 @@
 #include "Core/CameraParameters.h"  // IWYU pragma: keep
 #include "Core/CameraVariableReferences.h"  // IWYU pragma: keep
 #include "Core/ICustomCameraNodeParameterProvider.h"
+#include "Logging/TokenizedMessage.h"
 #include "Misc/EngineVersionComparison.h"
 #include "StructUtils/PropertyBag.h"
 #include "UObject/UnrealType.h"
@@ -70,6 +71,21 @@ void FCameraObjectInterfaceParameterBuilder::BuildInterfaceParameters()
 						"InvalidBlendableParameterName",
 						"Invalid interface parameter name."));
 			continue;
+		}
+
+		if (BlendableParameter->VariableType == ECameraVariableType::Float ||
+				BlendableParameter->VariableType == ECameraVariableType::Vector2f ||
+				BlendableParameter->VariableType == ECameraVariableType::Vector3f ||
+				BlendableParameter->VariableType == ECameraVariableType::Vector4f ||
+				BlendableParameter->VariableType == ECameraVariableType::Rotator3f ||
+				BlendableParameter->VariableType == ECameraVariableType::Transform3f)
+		{
+			BuildContext.BuildLog.AddMessage(EMessageSeverity::Warning,
+					BlendableParameter,
+					LOCTEXT(
+						"DeprecatedBlendableParameterType",
+						"Interface parameter has deprecated type. Please replace it with a supported type."));
+			// Don't skip this parameter, we just wanted to warn about the deprecation.
 		}
 
 		// Create a new private variable ID for this interface parameter. Flag the parameter as changed if

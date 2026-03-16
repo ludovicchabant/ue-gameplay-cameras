@@ -69,12 +69,12 @@ FEdGraphPinType UCameraObjectInterfaceParameterGraphNode::GetParameterPinType() 
 		PinType.PinCategory = UCameraObjectGraphSchemaBase::PC_Self;
 		if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Blendable)
 		{
-			PinType.PinSubCategory = UEnum::GetValueAsName(ParameterDefinition.VariableType);
+			PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetVariablePinSubCategory(ParameterDefinition.VariableType);
 			PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(ParameterDefinition.BlendableStructType.Get());
 		}
 		else if (ParameterDefinition.ParameterType == ECameraObjectInterfaceParameterType::Data)
 		{
-			PinType.PinSubCategory = UEnum::GetValueAsName(ParameterDefinition.DataType);
+			PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetDataPinSubCategory(ParameterDefinition.DataType);
 			PinType.PinSubCategoryObject = const_cast<UObject*>(ParameterDefinition.DataTypeObject.Get());
 		}
 		return PinType;

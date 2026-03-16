@@ -185,11 +185,14 @@ void FCameraVariableCollectionEditorToolkit::GenerateAddNewVariableMenu(UToolMen
 	const FCameraVariableCollectionEditorCommands& Commands = FCameraVariableCollectionEditorCommands::Get();
 	FToolMenuSection& VariableTypesSection = InMenu->AddSection("VariableTypes");
 
+	const FName DeprecatedVariableMetaData("DeprecatedCameraVariable");
+
 	for (TObjectIterator<UClass> It; It; ++It)
 	{
 		UClass* VariableClass = *It;
 		if (VariableClass->IsChildOf<UCameraVariableAsset>() &&
-				!VariableClass->HasAnyClassFlags(CLASS_Abstract))
+				!VariableClass->HasAnyClassFlags(CLASS_Abstract) &&
+				!VariableClass->HasMetaData(DeprecatedVariableMetaData))
 		{
 			const FText VariableTypeDisplayName(VariableClass->GetDisplayNameText());
 			VariableTypesSection.AddEntry(FToolMenuEntry::InitMenuEntry(

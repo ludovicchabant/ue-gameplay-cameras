@@ -16,6 +16,14 @@ class UCameraVariableAsset;
 class UCameraVariableCollection;
 struct FSoftCameraVariablePtr;
 
+// Deprecate single-precision variables.
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") UFloatCameraVariable;
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") UVector2fCameraVariable;
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") UVector3fCameraVariable;
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") UVector4fCameraVariable;
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") URotator3fCameraVariable;
+class UE_DEPRECATED(5.8, "Single-precision camera variables are deprecated. Please use the double precision variants.") UTransform3fCameraVariable;
+
 /**
  * The base asset class for all camera variables.
  */
@@ -98,6 +106,8 @@ public:
 
 	using ValueType = bool;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Boolean;
+
 	bool GetDefaultValue() const { return bDefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Boolean; }
@@ -124,6 +134,8 @@ public:
 
 	using ValueType = int32;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Integer32;
+
 	int32 GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Integer32; }
@@ -141,7 +153,7 @@ public:
 };
 
 /** Float camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class UFloatCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -149,6 +161,8 @@ class UFloatCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = float;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Float;
 
 	float GetDefaultValue() const { return DefaultValue; }
 
@@ -176,6 +190,8 @@ public:
 
 	using ValueType = double;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Double;
+
 	double GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Double; }
@@ -193,7 +209,7 @@ public:
 };
 
 /** Vector2f camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class UVector2fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -201,6 +217,8 @@ class UVector2fCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FVector2f;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector2f;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
@@ -228,6 +246,8 @@ public:
 
 	using ValueType = FVector2d;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector2d;
+
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector2d; }
@@ -245,7 +265,7 @@ public:
 };
 
 /** Vector3f camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class UVector3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -253,6 +273,8 @@ class UVector3fCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FVector3f;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector3f;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
@@ -280,6 +302,8 @@ public:
 
 	using ValueType = FVector3d;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector3d;
+
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector3d; }
@@ -297,7 +321,7 @@ public:
 };
 
 /** Vector4f camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class UVector4fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -305,6 +329,8 @@ class UVector4fCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FVector4f;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector4f;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
@@ -332,6 +358,8 @@ public:
 
 	using ValueType = FVector4d;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Vector4d;
+
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Vector4d; }
@@ -349,7 +377,7 @@ public:
 };
 
 /** Rotator3f camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class URotator3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -357,6 +385,8 @@ class URotator3fCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FRotator3f;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Rotator3f;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
@@ -384,6 +414,8 @@ public:
 
 	using ValueType = FRotator3d;
 
+	static const ECameraVariableType VariableType = ECameraVariableType::Rotator3d;
+
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
 	virtual ECameraVariableType GetVariableType() const override { return ECameraVariableType::Rotator3d; }
@@ -401,7 +433,7 @@ public:
 };
 
 /** Transform3f camera variable. */
-UCLASS(MinimalAPI)
+UCLASS(MinimalAPI, meta=(DeprecatedCameraVariable))
 class UTransform3fCameraVariable : public UCameraVariableAsset
 {
 	GENERATED_BODY()
@@ -409,6 +441,8 @@ class UTransform3fCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FTransform3f;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Transform3f;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 
@@ -435,6 +469,8 @@ class UTransform3dCameraVariable : public UCameraVariableAsset
 public:
 
 	using ValueType = FTransform3d;
+
+	static const ECameraVariableType VariableType = ECameraVariableType::Transform3d;
 
 	const ValueType& GetDefaultValue() const { return DefaultValue; }
 

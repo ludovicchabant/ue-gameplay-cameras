@@ -3,9 +3,8 @@
 #include "Editors/CameraNodeGraphPinColors.h"
 
 #include "Core/CameraContextDataTableFwd.h"
-#include "Core/CameraParameters.h"
-#include "Core/CameraVariableReferences.h"
 #include "Core/CameraVariableTableFwd.h"
+#include "Editors/CameraObjectGraphSchemaBase.h"
 #include "GraphEditorSettings.h"
 
 namespace UE::Cameras
@@ -21,21 +20,15 @@ void FCameraNodeGraphPinColors::Initialize()
 	DataPinColors.Reset();
 
 	const UEnum* VariableTypeEnum = StaticEnum<ECameraVariableType>();
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Boolean), Settings->BooleanPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Integer32), Settings->IntPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Float), Settings->FloatPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Double), Settings->DoublePinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector2f), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector2d), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector3f), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector3d), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector4f), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Vector4d), Settings->VectorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Rotator3f), Settings->RotatorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Rotator3d), Settings->RotatorPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Transform3f), Settings->TransformPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::Transform3d), Settings->TransformPinTypeColor);
-	VariablePinColors.Add(VariableTypeEnum->GetNameByValue((int64)ECameraVariableType::BlendableStruct), Settings->StructPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Boolean, Settings->BooleanPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Integer, Settings->IntPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Real, Settings->RealPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Vector2, Settings->StructPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Vector3, Settings->VectorPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Vector4, Settings->StructPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Rotator, Settings->RotatorPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_Transform, Settings->TransformPinTypeColor);
+	VariablePinColors.Add(UCameraObjectGraphSchemaBase::PSC_BlendableStruct, Settings->StructPinTypeColor);
 
 	const UEnum* DataTypeEnum = StaticEnum<ECameraContextDataType>();
 	DataPinColors.Add(DataTypeEnum->GetNameByValue((int64)ECameraContextDataType::Name), Settings->NamePinTypeColor);
@@ -46,7 +39,7 @@ void FCameraNodeGraphPinColors::Initialize()
 	DataPinColors.Add(DataTypeEnum->GetNameByValue((int64)ECameraContextDataType::Class), Settings->ClassPinTypeColor);
 }
 
-FLinearColor FCameraNodeGraphPinColors::GetPinColor(const FName& VariableTypeName) const
+FLinearColor FCameraNodeGraphPinColors::GetVariablePinColor(const FName& VariableTypeName) const
 {
 	return VariablePinColors.FindRef(VariableTypeName, DefaultPinColor);
 }
