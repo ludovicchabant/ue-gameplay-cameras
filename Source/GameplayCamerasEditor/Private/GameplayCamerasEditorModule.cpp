@@ -99,7 +99,11 @@ public:
 		}
 		else
 		{
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 			FCoreDelegates::GetOnPostEngineInit().AddRaw(this, &FGameplayCamerasEditorModule::OnPostEngineInit);
+#else
+			FCoreDelegates::OnPostEngineInit.AddRaw(this, &FGameplayCamerasEditorModule::OnPostEngineInit);
+#endif
 		}
 
 		FCoreDelegates::OnEnginePreExit.AddRaw(this, &FGameplayCamerasEditorModule::OnPreExit);
@@ -144,7 +148,11 @@ public:
 
 		TeardownLiveEditManager();
 
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 		FCoreDelegates::GetOnPostEngineInit().RemoveAll(this);
+#else
+		FCoreDelegates::OnPostEngineInit.RemoveAll(this);
+#endif
 		FCoreDelegates::OnEnginePreExit.RemoveAll(this);
 
 		FEditorDelegates::OnPreForceDeleteObjects.RemoveAll(this);

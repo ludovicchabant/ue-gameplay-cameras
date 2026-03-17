@@ -152,11 +152,13 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(LensFlareBokehSize);
 		UE_DRAW_PP(LensFlareThreshold);
 		UE_DRAW_PP(VignetteIntensity);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 		UE_DRAW_PP(VignetteType);
 		UE_DRAW_PP(VignetteCenter);
 		UE_DRAW_PP(VignetteColor);
 		UE_DRAW_PP(VignetteSize);
 		UE_DRAW_PP(VignetteSoftness);
+#endif
 		UE_DRAW_PP(Sharpen);
 		UE_DRAW_PP(FilmGrainIntensity);
 		UE_DRAW_PP(FilmGrainIntensityShadows);
@@ -245,7 +247,9 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(LumenMaxTraceDistance);
 
 		UE_DRAW_PP(LumenDiffuseColorBoost);
+#if UE_VERSION_NEWER_THAN_OR_EQUAL(5,8,0)
 		UE_DRAW_PP(LumenAmbientOcclusionIntensity);
+#endif
 		UE_DRAW_PP(LumenSkylightLeaking);
 #if UE_VERSION_NEWER_THAN_OR_EQUAL(5,6,0)
 		UE_DRAW_PP(LumenSkylightLeakingTint);
