@@ -88,7 +88,7 @@ public:
 	 * Gets the world in which this evaluation context runs. 
 	 * This is the owner's world.
 	 */
-	UWorld* GetWorld() const;
+	GAMEPLAYCAMERAS_API UWorld* GetWorld() const;
 
 	/**
 	 * Gets the player controller (if any) in control of the cameras running inside
