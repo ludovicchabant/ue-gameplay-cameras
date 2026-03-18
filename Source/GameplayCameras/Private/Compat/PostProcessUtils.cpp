@@ -131,7 +131,7 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(FilmGrainShadowsMax);
 		UE_SET_PP(FilmGrainHighlightsMin);
 		UE_SET_PP(FilmGrainHighlightsMax);
-		UE_SET_PP(FilmGrainTexelSize);
+		UE_SET_PP(FilmGrainScale);
 		UE_SET_PP(AmbientOcclusionIntensity);
 		UE_SET_PP(AmbientOcclusionStaticFraction);
 		UE_SET_PP(AmbientOcclusionRadius);
@@ -147,9 +147,8 @@ bool FPostProcessUtils::OverridePostProcessSettings(FPostProcessSettings& ThisFr
 		UE_SET_PP(AmbientOcclusionTemporalBlendWeight);
 		UE_SET_PP(IndirectLightingColor);
 		UE_SET_PP(IndirectLightingIntensity);
-
+		UE_SET_PP(DepthOfFieldEnabled);
 		UE_SET_PP(DepthOfFieldFocalDistance);
-
 		UE_SET_PP(DepthOfFieldFstop);
 		UE_SET_PP(DepthOfFieldMinFstop);
 		UE_SET_PP(DepthOfFieldSensorWidth);
@@ -422,7 +421,7 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 		UE_LERP_PP(FilmGrainShadowsMax);
 		UE_LERP_PP(FilmGrainHighlightsMin);
 		UE_LERP_PP(FilmGrainHighlightsMax);
-		UE_LERP_PP(FilmGrainTexelSize);
+		UE_LERP_PP(FilmGrainScale);
 		UE_LERP_PP(AmbientOcclusionIntensity);
 		UE_LERP_PP(AmbientOcclusionStaticFraction);
 		UE_LERP_PP(AmbientOcclusionRadius);
@@ -451,6 +450,7 @@ bool FPostProcessUtils::BlendPostProcessSettings(FPostProcessSettings& ThisFrom,
 			}
 			bAnyOverwritten = true;
 		}
+		UE_SET_PP(DepthOfFieldEnabled)
 		UE_LERP_PP(DepthOfFieldFstop);
 		UE_LERP_PP(DepthOfFieldMinFstop);
 		UE_LERP_PP(DepthOfFieldSensorWidth);

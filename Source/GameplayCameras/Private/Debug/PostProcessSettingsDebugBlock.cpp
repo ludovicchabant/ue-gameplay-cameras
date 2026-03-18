@@ -165,7 +165,7 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(FilmGrainShadowsMax);
 		UE_DRAW_PP(FilmGrainHighlightsMin);
 		UE_DRAW_PP(FilmGrainHighlightsMax);
-		UE_DRAW_PP(FilmGrainTexelSize);
+		UE_DRAW_PP(FilmGrainScale);
 		UE_DRAW_PP(AmbientOcclusionIntensity);
 		UE_DRAW_PP(AmbientOcclusionStaticFraction);
 		UE_DRAW_PP(AmbientOcclusionRadius);
@@ -181,9 +181,8 @@ void FPostProcessSettingsDebugBlock::OnDebugDraw(const FCameraDebugBlockDrawPara
 		UE_DRAW_PP(AmbientOcclusionTemporalBlendWeight);
 		UE_DRAW_PP(IndirectLightingColor);
 		UE_DRAW_PP(IndirectLightingIntensity);
-
+		UE_DRAW_PP(DepthOfFieldEnabled);
 		UE_DRAW_PP(DepthOfFieldFocalDistance);
-
 		UE_DRAW_PP(DepthOfFieldFstop);
 		UE_DRAW_PP(DepthOfFieldMinFstop);
 		UE_DRAW_PP(DepthOfFieldSensorWidth);
