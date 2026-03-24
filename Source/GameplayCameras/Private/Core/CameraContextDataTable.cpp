@@ -14,8 +14,45 @@ FCameraContextDataTable::FCameraContextDataTable()
 {
 }
 
+FCameraContextDataTable::FCameraContextDataTable(FCameraContextDataTable&& Other)
+	: Entries(MoveTemp(Other.Entries))
+	, EntryLookup(MoveTemp(Other.EntryLookup))
+	, Memory(Other.Memory)
+	, Capacity(Other.Capacity)
+	, Alignment(Other.Alignment)
+	, Used(Other.Used)
+{
+	Other.Memory = nullptr;
+	Other.Capacity = 0;
+	Other.Alignment = 0;
+	Other.Used = 0;
+}
+
+FCameraContextDataTable& FCameraContextDataTable::operator=(FCameraContextDataTable&& Other)
+{
+	Entries = MoveTemp(Other.Entries);
+	EntryLookup = MoveTemp(Other.EntryLookup);
+	Memory = Other.Memory;
+	Capacity = Other.Capacity;
+	Alignment = Other.Alignment;
+	Used = Other.Used;
+
+	Other.Memory = nullptr;
+	Other.Capacity = 0;
+	Other.Alignment = 0;
+	Other.Used = 0;
+
+	return *this;
+}
+
 FCameraContextDataTable::~FCameraContextDataTable()
 {
+	if (Memory)
+	{
+		FMemory::Free(Memory);
+		Memory = nullptr;
+		Capacity = Alignment = Used = 0;
+	}
 }
 
 void FCameraContextDataTable::AddReferencedObjects(FReferenceCollector& ReferenceCollector)
@@ -516,6 +553,11 @@ UClass* FCameraContextDataTable::GetClassData(FCameraContextDataID InID) const
 		return Value->Get();
 	}
 	return nullptr;
+}
+
+bool FCameraContextDataTable::ContainsData(FCameraContextDataID InID) const
+{
+	return EntryLookup.Contains(InID);
 }
 
 void FCameraContextDataTable::SetNameData(FCameraContextDataID InID, const FName& InData)

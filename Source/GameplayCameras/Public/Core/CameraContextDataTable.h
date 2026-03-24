@@ -55,32 +55,37 @@ class FCameraContextDataTable
 {
 public:
 
-	FCameraContextDataTable();
-	~FCameraContextDataTable();
+	UE_API FCameraContextDataTable();
+	UE_API FCameraContextDataTable(FCameraContextDataTable&& Other);
+	UE_API FCameraContextDataTable& operator=(FCameraContextDataTable&& Other);
+	UE_API ~FCameraContextDataTable();
+
+	FCameraContextDataTable(const FCameraContextDataTable&) = delete;
+	FCameraContextDataTable& operator=(const FCameraContextDataTable&) = delete;
 
 	/** Initializes the context data table so that it fits the provided allocation info. */
-	void Initialize(const FCameraContextDataTableAllocationInfo& AllocationInfo);
+	UE_API void Initialize(const FCameraContextDataTableAllocationInfo& AllocationInfo);
 
 	/**
 	 * Ensure that all the data referenced in the given allocation info exist in the table.
 	 * Returns false if some data had to be added.
 	 */
-	bool EnsureData(const FCameraContextDataTableAllocationInfo& AllocationInfo);
+	UE_API bool EnsureData(const FCameraContextDataTableAllocationInfo& AllocationInfo);
 
 	/** Adds a data entry to the table. */
-	void AddData(const FCameraContextDataDefinition& DataDefinition);
+	UE_API void AddData(const FCameraContextDataDefinition& DataDefinition);
 
 public:
 
 	// Getter methods.
 
-	const FName& GetNameData(FCameraContextDataID InID) const;
-	const FString& GetStringData(FCameraContextDataID InID) const;
-	uint32 GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const;
-	FConstStructView GetStructViewData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
-	FInstancedStruct GetInstancedStructData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
-	UObject* GetObjectData(FCameraContextDataID InID) const;
-	UClass* GetClassData(FCameraContextDataID InID) const;
+	UE_API const FName& GetNameData(FCameraContextDataID InID) const;
+	UE_API const FString& GetStringData(FCameraContextDataID InID) const;
+	UE_API uint32 GetEnumData(FCameraContextDataID InID, const UEnum* EnumType) const;
+	UE_API FConstStructView GetStructViewData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
+	UE_API FInstancedStruct GetInstancedStructData(FCameraContextDataID InID, const UScriptStruct* StructType) const;
+	UE_API UObject* GetObjectData(FCameraContextDataID InID) const;
+	UE_API UClass* GetClassData(FCameraContextDataID InID) const;
 	
 	template<typename EnumType>
 	EnumType GetEnumData(FCameraContextDataID InID) const;
@@ -106,13 +111,15 @@ public:
 	template<typename ValueType>
 	const ValueType* TryGetArrayData(FCameraContextDataID InID, int32 ArrayIndex) const;
 
+	UE_API bool ContainsData(FCameraContextDataID InID) const;
+
 	// Setter methods.
 
-	void SetNameData(FCameraContextDataID InID, const FName& InData);
-	void SetStringData(FCameraContextDataID InID, const FString& InData);
-	void SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint32 InData);
-	void SetObjectData(FCameraContextDataID InID, UObject* InData);
-	void SetClassData(FCameraContextDataID InID, UClass* InData);
+	UE_API void SetNameData(FCameraContextDataID InID, const FName& InData);
+	UE_API void SetStringData(FCameraContextDataID InID, const FString& InData);
+	UE_API void SetEnumData(FCameraContextDataID InID, const UEnum* EnumType, uint32 InData);
+	UE_API void SetObjectData(FCameraContextDataID InID, UObject* InData);
+	UE_API void SetClassData(FCameraContextDataID InID, UClass* InData);
 
 	template<typename EnumType>
 	void SetEnumData(FCameraContextDataID InID, EnumType InData);
@@ -120,14 +127,14 @@ public:
 	template<typename StructType>
 	void SetStructData(FCameraContextDataID InID, const StructType& InData);
 
-	void SetStructViewData(FCameraContextDataID InID, const FStructView& InData);
-	void SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData);
+	UE_API void SetStructViewData(FCameraContextDataID InID, const FStructView& InData);
+	UE_API void SetInstancedStructData(FCameraContextDataID InID, const FInstancedStruct& InData);
 
-	void SetNameArrayData(FCameraContextDataID InID, TConstArrayView<FName> InData);
-	void SetStringArrayData(FCameraContextDataID InID, TConstArrayView<FString> InData);
-	void SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint32> InData);
-	void SetObjectArrayData(FCameraContextDataID InID, TConstArrayView<UObject*> InData);
-	void SetClassArrayData(FCameraContextDataID InID, TConstArrayView<UClass*> InData);
+	UE_API void SetNameArrayData(FCameraContextDataID InID, TConstArrayView<FName> InData);
+	UE_API void SetStringArrayData(FCameraContextDataID InID, TConstArrayView<FString> InData);
+	UE_API void SetEnumArrayData(FCameraContextDataID InID, const UEnum* EnumType, TConstArrayView<uint32> InData);
+	UE_API void SetObjectArrayData(FCameraContextDataID InID, TConstArrayView<UObject*> InData);
+	UE_API void SetClassArrayData(FCameraContextDataID InID, TConstArrayView<UClass*> InData);
 
 	template<typename EnumType>
 	void SetEnumArrayData(FCameraContextDataID InID, TConstArrayView<EnumType> InData);
@@ -135,21 +142,21 @@ public:
 	template<typename StructType>
 	void SetStructArrayData(FCameraContextDataID InID, TConstArrayView<StructType> InData);
 
-	void SetStructViewArrayData(FCameraContextDataID InID, TConstArrayView<FStructView> InData);
-	void SetInstancedStructArrayData(FCameraContextDataID InID, TConstArrayView<FInstancedStruct> InData);
+	UE_API void SetStructViewArrayData(FCameraContextDataID InID, TConstArrayView<FStructView> InData);
+	UE_API void SetInstancedStructArrayData(FCameraContextDataID InID, TConstArrayView<FInstancedStruct> InData);
 
 public:
 
 	// Overriding.
 
-	void OverrideAll(const FCameraContextDataTable& OtherTable);
-	void OverrideKnown(const FCameraContextDataTable& OtherTable);
-	void Override(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter);
+	UE_API void OverrideAll(const FCameraContextDataTable& OtherTable);
+	UE_API void OverrideKnown(const FCameraContextDataTable& OtherTable);
+	UE_API void Override(const FCameraContextDataTable& OtherTable, ECameraContextDataTableFilter Filter);
 
 public:
 
 	/** Collects referenced objects. */
-	void AddReferencedObjects(FReferenceCollector& ReferenceCollector);
+	UE_API void AddReferencedObjects(FReferenceCollector& ReferenceCollector);
 
 public:
 
@@ -214,14 +221,14 @@ public:
 			const UObject* ExpectedDataTypeObject,
 			bool bMarkAsWrittenThisFrame = true);
 
-	bool IsValueWritten(FCameraContextDataID InID) const;
-	void UnsetValue(FCameraContextDataID InID);
-	void UnsetAllValues();
+	UE_API bool IsValueWritten(FCameraContextDataID InID) const;
+	UE_API void UnsetValue(FCameraContextDataID InID);
+	UE_API void UnsetAllValues();
 
-	bool IsValueWrittenThisFrame(FCameraContextDataID InID) const;
-	void ClearAllWrittenThisFrameFlags();
+	UE_API bool IsValueWrittenThisFrame(FCameraContextDataID InID) const;
+	UE_API void ClearAllWrittenThisFrameFlags();
 
-	void AutoResetValues();
+	UE_API void AutoResetValues();
 
 private:
 
