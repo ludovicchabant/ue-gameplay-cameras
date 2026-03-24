@@ -12,11 +12,13 @@ namespace UE::Cameras
 namespace Internal
 {
 
-// Shared utility function for retrieving the value of a variable from a variable table, handling the case of having
+// Shared utility functions for retrieving the value of a variable from a variable table, handling the case of having
 // to convert from one type to another, such as when accessing a double-precision value but returning a single-precision
 // conversion of it.
 template<typename ValueType>
 ValueType GetVariableTableValue(typename TCallTraits<ValueType>::ParamType DefaultValue, FCameraVariableID VariableID, const FCameraVariableTable& VariableTable);
+template<typename ValueType>
+bool TryGetVariableTableValue(FCameraVariableID VariableID, const FCameraVariableTable& VariableTable, ValueType& OutValue);
 
 }  // namespace Internal
 
@@ -83,10 +85,25 @@ namespace Internal
 template<typename ValueType>
 ValueType GetVariableTableValue(typename TCallTraits<ValueType>::ParamType DefaultValue, FCameraVariableID VariableID, const FCameraVariableTable& VariableTable)
 {
+	ValueType Value;
+	const bool bFoundValue = TryGetVariableTableValue<ValueType>(VariableID, VariableTable, Value);
+	if (bFoundValue)
+	{
+		return Value;
+	}
+	else
+	{
+		return DefaultValue;
+	}
+}
+
+template<typename ValueType>
+bool TryGetVariableTableValue(FCameraVariableID VariableID, const FCameraVariableTable& VariableTable, ValueType& OutValue)
+{
 	if (!VariableID.IsValid())
 	{
-		// No variable is driving the parameter, just return the parameter value.
-		return DefaultValue;
+		// No variable is driving the parameter.
+		return false;
 	}
 	else
 	{
@@ -97,18 +114,19 @@ ValueType GetVariableTableValue(typename TCallTraits<ValueType>::ParamType Defau
 		{
 			if (Entry.IsA<ValueType>())
 			{
-				return *reinterpret_cast<const ValueType*>(Entry.RawValuePtr);
+				OutValue = *reinterpret_cast<const ValueType*>(Entry.RawValuePtr);
+				return true;
 			}
 
-			ValueType ReturnValue;
-			const bool bConverted = TCameraVariableTraits<ValueType>::ConvertFrom(Entry.Type, Entry.RawValuePtr, ReturnValue);
+			const bool bConverted = TCameraVariableTraits<ValueType>::ConvertFrom(Entry.Type, Entry.RawValuePtr, OutValue);
 			if (ensureMsgf(bConverted, TEXT("Found a valid entry for the requested variable, but couldn't convert it to the desired output type")))
 			{
-				return ReturnValue;
+				return true;
 			}
 		}
 
-		return DefaultValue;
+		// Not found in the variable table, or was never written to.
+		return false;
 	}
 }
 

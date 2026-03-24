@@ -33,44 +33,23 @@ FString ToDebugString(const FieldType& FieldValue)
 		return LexToString(FieldValue);
 	}
 }
-template<typename EnumType>
-FString ToDebugString(TEnumAsByte<EnumType> EnumValue)
+template<>
+inline FString ToDebugString<float>(const float& FieldValue)
 {
-	const UEnum* EnumClass = StaticEnum<EnumType>();
-	return EnumClass->GetValueAsString(EnumValue);
+	return FString::Printf(TEXT("%.3f"), FieldValue);
 }
-template<typename T>
-FString ToDebugString(const UE::Math::TVector<T>& FieldValue)
+template<>
+inline FString ToDebugString<double>(const double& FieldValue)
 {
-	return FieldValue.ToString();
+	return FString::Printf(TEXT("%.3f"), FieldValue);
 }
-template<typename T>
-FString ToDebugString(const UE::Math::TVector2<T>& FieldValue)
-{
-	return FieldValue.ToString();
-}
-template<typename T>
-FString ToDebugString(const UE::Math::TVector4<T>& FieldValue)
-{
-	return FieldValue.ToString();
-}
-template<typename T>
-FString ToDebugString(const UE::Math::TRotator<T>& FieldValue)
-{
-	return FieldValue.ToString();
-}
-template<typename T>
-FString ToDebugString(const UE::Math::TTransform<T>& FieldValue)
+template<>
+inline FString ToDebugString<FLinearColor>(const FLinearColor& FieldValue)
 {
 	return FieldValue.ToString();
 }
 template<>
-inline FString ToDebugString(const FLinearColor& FieldValue)
-{
-	return FieldValue.ToString();
-}
-template<>
-inline FString ToDebugString(const EAspectRatioAxisConstraint& FieldValue)
+inline FString ToDebugString<EAspectRatioAxisConstraint>(const EAspectRatioAxisConstraint& FieldValue)
 {
 	switch (FieldValue)
 	{
@@ -81,7 +60,7 @@ inline FString ToDebugString(const EAspectRatioAxisConstraint& FieldValue)
 	return TEXT("Invalid");
 }
 template<>
-inline FString ToDebugString(const ECameraProjectionMode::Type& FieldValue)
+inline FString ToDebugString<ECameraProjectionMode::Type>(const ECameraProjectionMode::Type& FieldValue)
 {
 	switch (FieldValue)
 	{
@@ -89,6 +68,37 @@ inline FString ToDebugString(const ECameraProjectionMode::Type& FieldValue)
 	case ECameraProjectionMode::Orthographic: return TEXT("Orthographic");
 	}
 	return TEXT("Invalid");
+}
+template<typename EnumType>
+FString ToDebugString(TEnumAsByte<EnumType> EnumValue)
+{
+	const UEnum* EnumClass = StaticEnum<EnumType>();
+	return EnumClass->GetValueAsString(EnumValue);
+}
+template<typename T, typename V = std::enable_if_t<std::is_floating_point_v<T>>>
+FString ToDebugString(const UE::Math::TVector<T>& FieldValue)
+{
+	return FieldValue.ToString();
+}
+template<typename T, typename V = std::enable_if_t<std::is_floating_point_v<T>>>
+FString ToDebugString(const UE::Math::TVector2<T>& FieldValue)
+{
+	return FieldValue.ToString();
+}
+template<typename T, typename V = std::enable_if_t<std::is_floating_point_v<T>>>
+FString ToDebugString(const UE::Math::TVector4<T>& FieldValue)
+{
+	return FieldValue.ToString();
+}
+template<typename T, typename V = std::enable_if_t<std::is_floating_point_v<T>>>
+FString ToDebugString(const UE::Math::TRotator<T>& FieldValue)
+{
+	return FieldValue.ToString();
+}
+template<typename T, typename V = std::enable_if_t<std::is_floating_point_v<T>>>
+FString ToDebugString(const UE::Math::TTransform<T>& FieldValue)
+{
+	return FieldValue.ToString();
 }
 
 /** Command for drawing text on a canvas. */
