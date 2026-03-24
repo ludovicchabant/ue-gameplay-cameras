@@ -325,6 +325,17 @@ const FPinConnectionResponse UCameraObjectGraphSchemaBase::CanCreateConnection(c
 			}
 		}
 	}
+	else if (
+			((A->PinType.PinCategory == PC_CameraParameter && B->PinType.PinCategory == PC_CameraParameter) ||
+			 (A->PinType.PinCategory == PC_CameraContextData && B->PinType.PinCategory == PC_CameraContextData)) &&
+			(!A->bOrphanedPin && !B->bOrphanedPin))
+	{
+		if (A->PinType.PinSubCategory == B->PinType.PinSubCategory &&
+				A->PinType.PinSubCategoryObject == B->PinType.PinSubCategoryObject)
+		{
+			return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Compatible pin types"));
+		}
+	}
 
 	return Super::CanCreateConnection(A, B);
 }

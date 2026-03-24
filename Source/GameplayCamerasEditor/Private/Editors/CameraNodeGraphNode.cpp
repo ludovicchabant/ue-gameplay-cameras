@@ -68,7 +68,13 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 		PinType.PinSubCategory = UCameraObjectGraphSchemaBase::GetVariablePinSubCategory(BlendableParameter.VariableType);
 		PinType.PinSubCategoryObject = const_cast<UScriptStruct*>(BlendableParameter.BlendableStructType);
 
-		UEdGraphPin* ParameterPin = CreatePin(EGPD_Input, PinType, BlendableParameter.ParameterName);
+		EEdGraphPinDirection PinDirection = EGPD_Input;
+		if (BlendableParameter.Direction == ECameraParameterDirection::Output)
+		{
+			PinDirection = EGPD_Output;
+		}
+
+		UEdGraphPin* ParameterPin = CreatePin(PinDirection, PinType, BlendableParameter.ParameterName);
 		ParameterPin->PinFriendlyName = FText::FromName(BlendableParameter.ParameterName);
 
 		FString PinToolTip = VariableTypeEnum->GetNameStringByValue((int64)BlendableParameter.VariableType);
@@ -91,7 +97,13 @@ void UCameraNodeGraphNode::AllocateDefaultPins()
 			PinType.ContainerType = EPinContainerType::Array;
 		}
 
-		UEdGraphPin* ContextDataPin = CreatePin(EGPD_Input, PinType, DataParameter.ParameterName);
+		EEdGraphPinDirection PinDirection = EGPD_Input;
+		if (DataParameter.Direction == ECameraParameterDirection::Output)
+		{
+			PinDirection = EGPD_Output;
+		}
+
+		UEdGraphPin* ContextDataPin = CreatePin(PinDirection, PinType, DataParameter.ParameterName);
 		ContextDataPin->PinFriendlyName = FText::FromName(DataParameter.ParameterName);
 
 		FString PinToolTip = DataTypeEnum->GetNameStringByValue((int64)DataParameter.DataType);

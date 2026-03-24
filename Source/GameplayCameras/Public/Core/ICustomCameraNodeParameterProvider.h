@@ -20,10 +20,18 @@ class FCameraObjectInterfaceBuilder;
 class FCameraObjectInterfaceParameterBuilder;
 namespace Internal { struct FInterfaceParameterBindingBuilder; }
 
+/** Direction of a camera parameter. */
+enum class ECameraParameterDirection
+{
+	Input,
+	Output
+};
+
 /** Information about a blendable parameter on a camera node. */
 struct FCameraNodeBlendableParameterInfo
 {
 	FName ParameterName;
+	ECameraParameterDirection Direction = ECameraParameterDirection::Input;
 	ECameraVariableType VariableType = ECameraVariableType::Boolean;
 	const UScriptStruct* BlendableStructType = nullptr;
 	const uint8* DefaultValue = nullptr;
@@ -34,6 +42,7 @@ struct FCameraNodeBlendableParameterInfo
 struct FCameraNodeDataParameterInfo
 {
 	FName ParameterName;
+	ECameraParameterDirection Direction = ECameraParameterDirection::Input;
 	ECameraContextDataType DataType = ECameraContextDataType::Name;
 	ECameraContextDataContainerType DataContainerType = ECameraContextDataContainerType::None;
 	const UObject* DataTypeObject = nullptr;
@@ -63,6 +72,13 @@ public:
 			const uint8* DefaultValue,
 			FCameraVariableID* OverrideVariableID);
 
+	GAMEPLAYCAMERAS_API void AddBlendableOutputParameter(
+			FName ParameterName, 
+			ECameraVariableType VariableType, 
+			const UScriptStruct* BlendableStructType,
+			const uint8* DefaultValue,
+			FCameraVariableID* OverrideVariableID);
+
 	GAMEPLAYCAMERAS_API void AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue);
 
 	/** 
@@ -71,6 +87,14 @@ public:
 	 * by a camera rig parameter.
 	 */
 	GAMEPLAYCAMERAS_API void AddDataParameter(
+			FName ParameterName, 
+			ECameraContextDataType DataType,
+			ECameraContextDataContainerType DataContainerType,
+			const UObject* DataTypeObject,
+			const uint8* DefaultValue,
+			FCameraContextDataID* OverrideDataID);
+
+	GAMEPLAYCAMERAS_API void AddDataOutputParameter(
 			FName ParameterName, 
 			ECameraContextDataType DataType,
 			ECameraContextDataContainerType DataContainerType,

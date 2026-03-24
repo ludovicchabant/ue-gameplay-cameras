@@ -20,7 +20,29 @@ void FCameraNodeParameterInfos::AddBlendableParameter(
 		const uint8* DefaultValue,
 		FCameraVariableID* OverrideVariableID)
 {
-	BlendableParameters.Add({ ParameterName, VariableType, BlendableStructType, DefaultValue, OverrideVariableID });
+	BlendableParameters.Add({ 
+			ParameterName, 
+			ECameraParameterDirection::Input, 
+			VariableType,
+			BlendableStructType,
+			DefaultValue,
+			OverrideVariableID });
+}
+
+void FCameraNodeParameterInfos::AddBlendableOutputParameter(
+		FName ParameterName, 
+		ECameraVariableType VariableType, 
+		const UScriptStruct* BlendableStructType,
+		const uint8* DefaultValue,
+		FCameraVariableID* OverrideVariableID)
+{
+	BlendableParameters.Add({ 
+			ParameterName, 
+			ECameraParameterDirection::Output, 
+			VariableType,
+			BlendableStructType,
+			DefaultValue,
+			OverrideVariableID });
 }
 
 void FCameraNodeParameterInfos::AddBlendableParameter(FCustomCameraNodeBlendableParameter& Parameter, const uint8* DefaultValue)
@@ -41,7 +63,32 @@ void FCameraNodeParameterInfos::AddDataParameter(
 		const uint8* DefaultValue,
 		FCameraContextDataID* OverrideDataID)
 {
-	DataParameters.Add({ ParameterName, DataType, DataContainerType, DataTypeObject, DefaultValue, OverrideDataID });
+	DataParameters.Add({ 
+			ParameterName,
+			ECameraParameterDirection::Input,
+			DataType,
+			DataContainerType,
+			DataTypeObject,
+			DefaultValue,
+			OverrideDataID });
+}
+
+void FCameraNodeParameterInfos::AddDataOutputParameter(
+		FName ParameterName, 
+		ECameraContextDataType DataType,
+		ECameraContextDataContainerType DataContainerType,
+		const UObject* DataTypeObject,
+		const uint8* DefaultValue,
+		FCameraContextDataID* OverrideDataID)
+{
+	DataParameters.Add({ 
+			ParameterName,
+			ECameraParameterDirection::Output,
+			DataType,
+			DataContainerType,
+			DataTypeObject,
+			DefaultValue,
+			OverrideDataID });
 }
 
 void FCameraNodeParameterInfos::AddDataParameter(FCustomCameraNodeDataParameter& Parameter, const uint8* DefaultValue)
