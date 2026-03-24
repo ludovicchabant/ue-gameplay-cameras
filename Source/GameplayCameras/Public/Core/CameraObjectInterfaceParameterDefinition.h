@@ -7,6 +7,9 @@
 
 #include "CameraObjectInterfaceParameterDefinition.generated.h"
 
+struct FCameraContextDataDefinition;
+struct FCameraVariableDefinition;
+
 /**
  * The type of a camera parameter.
  */
@@ -82,6 +85,9 @@ struct FCameraObjectInterfaceParameterDefinition
 	TObjectPtr<const UObject> DataTypeObject;
 
 public:
+
+	GAMEPLAYCAMERAS_API bool GetVariableDefinition(FCameraVariableDefinition& OutVariableDefinition) const;
+	GAMEPLAYCAMERAS_API bool GetContextDataDefinition(FCameraContextDataDefinition& OutDataDefinition) const;
 
 	bool operator==(const FCameraObjectInterfaceParameterDefinition& Other) const = default;
 };

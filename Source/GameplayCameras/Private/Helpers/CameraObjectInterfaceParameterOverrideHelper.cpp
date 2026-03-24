@@ -28,6 +28,16 @@ void ApplyBlendableParameterOverride(
 	using ValueType = typename ParameterType::ValueType;
 
 	const FCameraVariableID ParameterVariableID(ParameterDefinition.VariableID);
+
+	// Add the variable if it doesn't exist yet. This happens mostly in uncooked builds, where we don't
+	// build the final complete allocation infos all the time.
+	if (!VariableTable.ContainsValue(ParameterVariableID))
+	{
+		FCameraVariableDefinition VariableDefinition;
+		ParameterDefinition.GetVariableDefinition(VariableDefinition);
+		VariableTable.AddVariable(VariableDefinition);
+	}
+
 	if (ParameterValue.VariableID.IsValid())
 	{
 		// The override is driven by a variable... read its value and set it as the value for the
@@ -206,6 +216,15 @@ void ApplyDataParameterSingleOverride(
 		const FPropertyBagPropertyDesc& PropertyBagPropertyDesc,
 		FCameraContextDataTable& ContextDataTable)
 {
+	// Add the data if it doesn't exist yet. This happens mostly in uncooked builds, where we don't
+	// build the final complete allocation infos all the time.
+	if (!ContextDataTable.ContainsData(ParameterDefinition.DataID))
+	{
+		FCameraContextDataDefinition DataDefinition;
+		ParameterDefinition.GetContextDataDefinition(DataDefinition);
+		ContextDataTable.AddData(DataDefinition);
+	}
+
 	switch (ParameterDefinition.DataType)
 	{
 		case ECameraContextDataType::Name:

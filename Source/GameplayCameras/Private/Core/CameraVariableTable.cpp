@@ -592,7 +592,9 @@ void FCameraVariableTable::InternalOverride(const FCameraVariableTable& OtherTab
 				// We already have the other table's variable in our table. Let's check
 				// that the types match, and then copy the memory.
 #if WITH_EDITORONLY_DATA
-				ensureMsgf(ThisEntry->DebugName == OtherEntry.DebugName,
+				ensureMsgf((ThisEntry->DebugName == OtherEntry.DebugName ||
+							ThisEntry->DebugName.IsEmpty() || 
+							OtherEntry.DebugName.IsEmpty()),
 						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
 						ThisEntry->ID.GetValue(), *ThisEntry->DebugName, *OtherEntry.DebugName);
 #endif
@@ -696,7 +698,9 @@ void FCameraVariableTable::InternalLerp(const FCameraVariableTable& ToTable, ECa
 				// We already have the other table's variable in our table. Let's check
 				// that the types match, and then interpolate the values.
 #if WITH_EDITORONLY_DATA
-				ensureMsgf(FromEntry->DebugName == ToEntry.DebugName,
+				ensureMsgf((FromEntry->DebugName == ToEntry.DebugName ||
+							FromEntry->DebugName.IsEmpty() || 
+							ToEntry.DebugName.IsEmpty()),
 						TEXT("Camera variable name collision! Expected variable '%d' to be named '%s', but other table has '%s'!"),
 						FromEntry->ID.GetValue(), *FromEntry->DebugName, *ToEntry.DebugName);
 #endif
