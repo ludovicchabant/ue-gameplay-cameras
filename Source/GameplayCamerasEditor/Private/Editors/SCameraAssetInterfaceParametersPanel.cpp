@@ -334,6 +334,14 @@ private:
 					SNew(SImage)
 						.Image(this, &SCameraAssetInterfaceParameterTableRow::GetTypeIcon)
 						.ColorAndOpacity(this, &SCameraAssetInterfaceParameterTableRow::GetTypeIconColor)
+				]
+				+SHorizontalBox::Slot()
+				.AutoWidth()
+				.VAlign(VAlign_Center)
+				.Padding(4.f, 2.f)
+				[
+					SNew(STextBlock)
+						.Text(this, &SCameraAssetInterfaceParameterTableRow::GetTypeDescription)
 				];
 		}
 		else if (InColumnName == SCameraAssetInterfaceParametersPanel::ParameterNameColumn)
@@ -385,6 +393,11 @@ private:
 		return PinTypeIconColor;
 	}
 
+	FText GetTypeDescription() const
+	{
+		return PinTypeDescription;
+	}
+
 	void EnsurePinTypeCached()
 	{
 		UCameraRigAsset* CameraRig = Item->SourceCameraRig.Get();
@@ -403,6 +416,7 @@ private:
 		{
 			PinTypeIcon = InvalidIcon;
 			PinTypeIconColor = DefaultIconColor;
+			PinTypeDescription = FText::GetEmpty();
 			return;
 		}
 
@@ -412,6 +426,7 @@ private:
 		{
 			PinTypeIcon = InvalidIcon;
 			PinTypeIconColor = DefaultIconColor;
+			PinTypeDescription = FText::GetEmpty();
 			return;
 		}
 
@@ -427,6 +442,7 @@ private:
 
 		PinTypeIcon = FBlueprintEditorUtils::GetIconFromPin(PinType);
 		PinTypeIconColor = GetDefault<UEdGraphSchema_K2>()->GetPinTypeColor(PinType);
+		PinTypeDescription = UEdGraphSchema_K2::GetCategoryText(PinType.PinCategory, PinType.PinSubCategory);
 	}
 
 protected:
@@ -439,6 +455,7 @@ protected:
 
 	const FSlateBrush* PinTypeIcon = nullptr;
 	FLinearColor PinTypeIconColor = FLinearColor::White;
+	FText PinTypeDescription;
 };
 
 const FName SCameraAssetInterfaceParametersPanel::ParameterTypeColumn(TEXT("ParameterType"));
