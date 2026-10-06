@@ -133,8 +133,8 @@ bool FBaseAimAtCameraActionEvaluator::ComputeDesiredCorrection(const FCameraActi
 	if (!PreviewPivot)
 	{
 		// If there's no pivot in the camera, we can't aim it.
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Can't aim camera rig '%s': it has no pivot joint."),
+		UE_LOGF(LogCameraSystem, Warning, 
+				"Can't aim camera rig '%ls': it has no pivot joint.",
 				*GetNameSafe(Params.Scope->GetCameraRig()));
 		return false;
 	}
@@ -166,8 +166,8 @@ bool FBaseAimAtCameraActionEvaluator::ComputeDesiredCorrection(const FCameraActi
 			TotalCorrection);
 	if (!bGotCorrection)
 	{
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Can't aim camera rig '%s': we can't solve an IK correction for the desired target."),
+		UE_LOGF(LogCameraSystem, Warning, 
+				"Can't aim camera rig '%ls': we can't solve an IK correction for the desired target.",
 				*GetNameSafe(Params.Scope->GetCameraRig()));
 		return false;
 	}
@@ -191,8 +191,8 @@ bool FBaseAimAtCameraActionEvaluator::ExecuteYawPitchCorrection(const FCameraAct
 
 	if (Operation.Yaw.HasValue() || Operation.Pitch.HasValue())
 	{
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Aborting aiming of camera rig '%s': not all corrections were consumed by the camera nodes."),
+		UE_LOGF(LogCameraSystem, Warning, 
+				"Aborting aiming of camera rig '%ls': not all corrections were consumed by the camera nodes.",
 				*GetNameSafe(Params.Scope->GetCameraRig()));
 		return false;
 	}

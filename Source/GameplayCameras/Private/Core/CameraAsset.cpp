@@ -183,8 +183,8 @@ void UCameraAsset::PostLoad()
 		EObjectFlags Flags = CameraDirector->GetFlags();
 		if (EnumHasAnyFlags(Flags, (RF_Public | RF_Standalone)))
 		{
-			UE_LOG(LogCameraSystem, Warning, 
-					TEXT("Removing incorrect object flags from camera director inside '%s', please re-save the asset."),
+			UE_LOGF(LogCameraSystem, Warning, 
+					"Removing incorrect object flags from camera director inside '%ls', please re-save the asset.",
 					*GetPathNameSafe(this));
 			CameraDirector->Modify();
 			CameraDirector->ClearFlags(RF_Public | RF_Standalone);

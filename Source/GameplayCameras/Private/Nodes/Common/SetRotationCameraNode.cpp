@@ -65,9 +65,9 @@ void FSetRotationCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams& P
 			}
 			else
 			{
-				UE_LOG(LogCameraSystem, Error, 
-						TEXT("SetRotationCameraNode: cannot offset in context space when there is "
-							 "no current context set."));
+				UE_LOGF(LogCameraSystem, Error, 
+						"SetRotationCameraNode: cannot offset in context space when there is "
+							 "no current context set.");
 				return;
 			}
 			break;

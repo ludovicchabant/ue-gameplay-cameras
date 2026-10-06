@@ -237,7 +237,7 @@ void SCameraFamilyAssetShortcut::HandleButtonClick(ECheckBoxState InState)
 		}
 		else
 		{
-			UE_LOG(LogCameraSystemEditor, Error, TEXT("Asset cannot be opened: %s"), *AssetData.GetObjectPathString());
+			UE_LOGF(LogCameraSystemEditor, Error, "Asset cannot be opened: %ls", *AssetData.GetObjectPathString());
 		}
 	}
 	else if (AssetDatas.Num() > 1)

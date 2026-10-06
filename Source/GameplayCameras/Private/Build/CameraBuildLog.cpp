@@ -26,7 +26,7 @@ FString FCameraBuildLogMessage::ToString() const
 void FCameraBuildLogMessage::SendToLogging(const FString& InLoggingPrefix) const
 {
 #define UE_LOG_FORWARD_CAMERA_RIG_BULID_LOG_MESSAGE(Verbosity)\
-	UE_LOG(LogCameraSystem, Verbosity, TEXT("%s%s"), *InLoggingPrefix, *ToString());
+	UE_LOGF(LogCameraSystem, Verbosity, "%ls%ls", *InLoggingPrefix, *ToString());
 
 	switch (Severity)
 	{

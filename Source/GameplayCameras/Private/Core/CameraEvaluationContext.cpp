@@ -89,8 +89,38 @@ void FCameraEvaluationContext::Initialize(const FCameraEvaluationContextInitiali
 	{
 		const FCameraAssetAllocationInfo& AllocationInfo = CameraAsset->GetAllocationInfo();
 
-		InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
-		InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+#if WITH_EDITOR
+		// In editor/PIE builds the camera asset's AllocationInfo is only populated when cooking,
+		// so it will be empty at runtime. Gather the allocation info transiently from the camera
+		// rigs instead, mirroring what CameraAssetBuilder does at cook time.
+		if (AllocationInfo.VariableTableInfo.VariableDefinitions.IsEmpty() &&
+				AllocationInfo.ContextDataTableInfo.DataDefinitions.IsEmpty())
+		{
+			FCameraDirectorRigUsageInfo UsageInfo;
+			if (UCameraDirector* Director = CameraAsset->GetCameraDirector())
+			{
+				Director->GatherRigUsageInfo(UsageInfo);
+			}
+
+			FCameraAssetAllocationInfo RuntimeAllocationInfo;
+			for (const UCameraRigAsset* Rig : UsageInfo.CameraRigs)
+			{
+				if (Rig)
+				{
+					RuntimeAllocationInfo.VariableTableInfo.Combine(Rig->AllocationInfo.VariableTableInfo);
+					RuntimeAllocationInfo.ContextDataTableInfo.Combine(Rig->AllocationInfo.ContextDataTableInfo);
+				}
+			}
+
+			InitialResult.VariableTable.Initialize(RuntimeAllocationInfo.VariableTableInfo);
+			InitialResult.ContextDataTable.Initialize(RuntimeAllocationInfo.ContextDataTableInfo);
+		}
+		else
+#endif  // WITH_EDITOR
+		{
+			InitialResult.VariableTable.Initialize(AllocationInfo.VariableTableInfo);
+			InitialResult.ContextDataTable.Initialize(AllocationInfo.ContextDataTableInfo);
+		}
 	}
 
 	bInitialized = true;
@@ -182,12 +212,12 @@ void FCameraEvaluationContext::AutoCreateDirectorEvaluator()
 	{
 		if (!CameraAsset)
 		{
-			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera!"));
+			UE_LOGF(LogCameraSystem, Error, "Activating an evaluation context without a camera!");
 			return;
 		}
 		if (!CameraAsset->GetCameraDirector())
 		{
-			UE_LOG(LogCameraSystem, Error, TEXT("Activating an evaluation context without a camera director!"));
+			UE_LOGF(LogCameraSystem, Error, "Activating an evaluation context without a camera director!");
 			return;
 		}
 
@@ -362,9 +392,9 @@ void FCameraEvaluationContext::ExecuteSetupAndTeardownRequests(FCameraDirectorEv
 			// which is possible but requries refactoring that away from FCameraSystemEvaluator, so leave that
 			// for later, especially since it's arguably wrong to try to activate main rigs in Activate/Deactivate.
 			UObject* RequestedCameraObject = Request.CameraRig ? (UObject*)Request.CameraRig : (UObject*)Request.CameraRigProxy;
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Main layer camera rigs can only be activated/deactivated during the director's normal update. "
-	 					 "Ignoring request to activate/deactivate '%s'."),
+			UE_LOGF(LogCameraSystem, Error, 
+					"Main layer camera rigs can only be activated/deactivated during the director's normal update. "
+	 					 "Ignoring request to activate/deactivate '%ls'.",
 					*GetNameSafe(RequestedCameraObject));
 			continue;
 		}

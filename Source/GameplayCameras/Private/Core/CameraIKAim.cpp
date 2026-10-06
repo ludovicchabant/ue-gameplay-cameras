@@ -91,7 +91,7 @@ bool FCameraIKAim::DoRun(const FCameraIKAimParams& Params, const FCameraRigEvalu
 		// Check that we are getting closer to a solution.
 		if (IterationInfo.ErrorAngle >= LastErrorAngle || IterationInfo.ErrorDistance >= LastErrorDistance)
 		{
-			UE_LOG(LogCameraSystem, Error, TEXT("Can't converge towards a solution while aiming camera rig '%s'. Aborting."), *CameraRigInfo.CameraRig->GetPathName());
+			UE_LOGF(LogCameraSystem, Error, "Can't converge towards a solution while aiming camera rig '%ls'. Aborting.", *CameraRigInfo.CameraRig->GetPathName());
 			IterationInfo.Result = EAimResult::Aborted;
 			break;
 		}
@@ -140,7 +140,7 @@ void FCameraIKAim::DoRunIteration(const FCameraIKAimParams& Params, const FCamer
 #endif  // UE_GAMEPLAY_CAMERAS_DEBUG
 	if (!FoundItem)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't figure out how to aim camera rig '%s'."), *CameraRigInfo.CameraRig->GetPathName());
+		UE_LOGF(LogCameraSystem, Error, "Can't figure out how to aim camera rig '%ls'.", *CameraRigInfo.CameraRig->GetPathName());
 		IterationInfo.Result = EAimResult::Failed;
 		return;
 	}
@@ -203,7 +203,7 @@ bool FCameraIKAim::CheckTolerance(const FCameraIKAimParams& Params, const FCamer
 
 	if (TargetDistance < Params.MinDistance || DistanceToDesiredTarget < Params.MinDistance)
 	{
-		UE_LOG(LogCameraSystem, Warning, TEXT("Aborting aiming of camera rig '%s': current target is %f away, minimium distance is %f"),
+		UE_LOGF(LogCameraSystem, Warning, "Aborting aiming of camera rig '%ls': current target is %f away, minimium distance is %f",
 				*CameraRigInfo.CameraRig->GetPathName(), TargetDistance, Params.MinDistance);
 		IterationInfo.Result = EAimResult::Aborted;
 		return false;
@@ -290,8 +290,8 @@ void FCameraIKAim::AimTwoBonesCameraRig(const FCameraIKAimParams& Params, const 
 
 	if (Operation.Yaw.HasValue() || Operation.Pitch.HasValue())
 	{
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Aborting aiming of camera rig '%s': not all corrections were consumed by the camera nodes."),
+		UE_LOGF(LogCameraSystem, Warning, 
+				"Aborting aiming of camera rig '%ls': not all corrections were consumed by the camera nodes.",
 				*CameraRigInfo.CameraRig->GetPathName());
 		IterationInfo.Result = EAimResult::Aborted;
 	}

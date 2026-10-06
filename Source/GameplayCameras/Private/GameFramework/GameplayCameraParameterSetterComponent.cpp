@@ -59,21 +59,21 @@ TSharedPtr<UE::Cameras::FCameraParameterSetterService> UGameplayCameraParameterS
 	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
 	if (!PlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no player controller found!"));
+		UE_LOGF(LogCameraSystem, Error, "Can't set camera parameters: no player controller found!");
 		return nullptr;
 	}
 
 	IGameplayCameraSystemHost* CameraSystemHost = IGameplayCameraSystemHost::FindActiveHost(PlayerController);
 	if (!CameraSystemHost)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no camera system found under the player controller!"));
+		UE_LOGF(LogCameraSystem, Error, "Can't set camera parameters: no camera system found under the player controller!");
 		return nullptr;
 	}
 
 	TSharedPtr<FCameraSystemEvaluator> SystemEvaluator = CameraSystemHost->GetCameraSystemEvaluator();
 	if (!SystemEvaluator)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't set camera parameters: no camera system is active!"));
+		UE_LOGF(LogCameraSystem, Error, "Can't set camera parameters: no camera system is active!");
 		return nullptr;
 	}
 

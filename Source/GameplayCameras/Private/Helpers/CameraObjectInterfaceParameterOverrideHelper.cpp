@@ -70,8 +70,8 @@ void ApplyBlendableParameterOverride(
 		// to apply.
 		// Outside of the editor, report this as an error.
 #if !WITH_EDITOR
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("Invalid blendable parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
+		UE_LOGF(LogCameraSystem, Error,
+				"Invalid blendable parameter override '%ls' in camera rig '%ls'. Was it built/cooked?",
 				*ParameterDefinition.ParameterName.ToString(),
 				*GetPathNameSafe(CameraObject));
 #endif
@@ -381,8 +381,8 @@ void ApplyDataParameterOverride(
 	if (!ParameterDefinition.DataID)
 	{
 #if !WITH_EDITOR
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("Invalid data parameter override '%s' in camera rig '%s'. Was it built/cooked?"),
+		UE_LOGF(LogCameraSystem, Error,
+				"Invalid data parameter override '%ls' in camera rig '%ls'. Was it built/cooked?",
 				*ParameterDefinition.ParameterName.ToString(),
 				*GetPathNameSafe(CameraObject));
 		return;

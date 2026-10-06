@@ -128,7 +128,7 @@ FString FCameraRigProxyAssetEditorToolkit::GetWorldCentricTabPrefix() const
 
 FLinearColor FCameraRigProxyAssetEditorToolkit::GetWorldCentricTabColorScale() const
 {
-	return FLinearColor(0.7, 0.0f, 0.0f, 0.5f);
+	return FLinearColor(0.7f, 0.0f, 0.0f, 0.5f);
 }
 
 }  // namespace UE::Cameras

@@ -209,9 +209,9 @@ void FDampenPositionCameraNodeEvaluator::ComputeAxisDampers(const FCameraNodeEva
 			}
 			else
 			{
-				UE_LOG(LogCameraSystem, Error,
-						TEXT("DampenPositionCameraNode: cannot dampen in context space when there is "
-							"no current context set."));
+				UE_LOGF(LogCameraSystem, Error,
+						"DampenPositionCameraNode: cannot dampen in context space when there is "
+							"no current context set.");
 			}
 			break;
 		case ECameraNodeSpace::World:

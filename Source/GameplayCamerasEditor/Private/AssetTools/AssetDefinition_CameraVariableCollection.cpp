@@ -13,7 +13,7 @@
 
 TConstArrayView<FAssetCategoryPath> UAssetDefinition_CameraVariableCollection::StaticMenuCategories()
 {
-	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay) };
+	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay, LOCTEXT("CameraVariableCollection_SubMenu", "Camera"), ECategoryMenuType::Section) };
 	return Categories;
 }
 

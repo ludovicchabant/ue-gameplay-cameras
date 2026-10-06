@@ -158,8 +158,8 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 	if (!bHadCameraSystem)
 	{
 		AActor* OwnerActor = GetOwner();
-		UE_LOG(LogCameraSystem, Log, 
-				TEXT("Creating camera system host for gameplay camera '%s'."),
+		UE_LOGF(LogCameraSystem, Log, 
+				"Creating camera system host for gameplay camera '%ls'.",
 				*GetNameSafe(OwnerActor));
 
 		FCameraSystemEvaluatorCreateParams Params;
@@ -198,8 +198,8 @@ bool UGameplayCameraComponentBase::EnsureCameraSystemHostIfNeeded()
 	{
 		if (!EvaluationContext->IsActive())
 		{
-			UE_LOG(LogCameraSystem, Log, 
-					TEXT("Activating gameplay camera '%s.%s' with its hosted camera system."),
+			UE_LOGF(LogCameraSystem, Log, 
+					"Activating gameplay camera '%ls.%ls' with its hosted camera system.",
 					*GetNameSafe(GetOwner()), *GetNameSafe(this));
 
 			FCameraEvaluationContextStack& ContextStack = HostedEvaluator->GetEvaluationContextStack();
@@ -254,8 +254,8 @@ void UGameplayCameraComponentBase::EnsureEvaluationContext(APlayerController* Pl
 		// If we have no camera asset specified, make a placeholder one and log a warning.
 		if (!CameraAsset)
 		{
-			UE_LOG(LogCameraSystem, Warning, 
-					TEXT("No camera asset specified on Gameplay Camera component '%s.%s', using a placeholder one."),
+			UE_LOGF(LogCameraSystem, Warning, 
+					"No camera asset specified on Gameplay Camera component '%ls.%ls', using a placeholder one.",
 					*GetNameSafe(this), *GetNameSafe(GetOwner()));
 
 			UCameraRigAsset* PlaceholderCameraRig = NewObject<UCameraRigAsset>();

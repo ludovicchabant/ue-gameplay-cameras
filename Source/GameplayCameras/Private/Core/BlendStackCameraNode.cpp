@@ -325,8 +325,8 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(const FCameraNodeEvaluationP
 #if UE_GAMEPLAY_CAMERAS_TRACE
 					if (Entry.Flags.bLogWarnings)
 					{
-						UE_LOG(LogCameraSystem, Warning,
-							TEXT("Freezing camera rig '%s' because its evaluation context isn't valid anymore."),
+						UE_LOGF(LogCameraSystem, Warning,
+							"Freezing camera rig '%ls' because its evaluation context isn't valid anymore.",
 							*GetNameSafe(Entry.CameraRig));
 						Entry.Flags.bLogWarnings = false;
 					}
@@ -343,8 +343,8 @@ void FBlendStackCameraNodeEvaluator::ResolveEntries(const FCameraNodeEvaluationP
 #if UE_GAMEPLAY_CAMERAS_TRACE
 				if (Entry.Flags.bLogWarnings)
 				{
-					UE_LOG(LogCameraSystem, Warning,
-							TEXT("Camera rig '%s' may experience a hitch because its initial result isn't valid."),
+					UE_LOGF(LogCameraSystem, Warning,
+							"Camera rig '%ls' may experience a hitch because its initial result isn't valid.",
 							*GetNameSafe(Entry.CameraRig));
 					Entry.Flags.bLogWarnings = false;
 				}

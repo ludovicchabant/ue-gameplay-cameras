@@ -73,9 +73,9 @@ void UActivateCameraRigFunctions::ActivateCameraRigImpl(UObject* WorldContextObj
 	}
 	else
 	{
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("Can't activate camera rig '%s' on layer '%s' because no camera system was found! "
-					 "Neither the player controller ('%s') or the current view target ('%s') have one."),
+		UE_LOGF(LogCameraSystem, Error,
+				"Can't activate camera rig '%ls' on layer '%ls' because no camera system was found! "
+					 "Neither the player controller ('%ls') or the current view target ('%ls') have one.",
 				*GetNameSafe(CameraRig),
 				*UEnum::GetValueAsString(EvaluationLayer),
 				*GetNameSafe(PlayerController),

@@ -48,7 +48,7 @@ void FInputAxisBindingHelpers::BindActionValues(
 	}
 	else if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::Game)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("No input component found on context owner '%s' for node '%s' in '%s'."),
+		UE_LOGF(LogCameraSystem, Error, "No input component found on context owner '%ls' for node '%ls' in '%ls'.",
 				*GetNameSafe(ContextOwner), 
 				*GetNameSafe(CameraNode),
 				*GetNameSafe(CameraNode ? CameraNode->GetOutermost() : nullptr));

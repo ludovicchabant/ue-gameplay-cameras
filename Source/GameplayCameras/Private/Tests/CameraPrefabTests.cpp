@@ -26,6 +26,13 @@ TSharedRef<UE::Cameras::FNamedObjectRegistry> CreatePrefabTestCameraRigs()
 	UCameraRigAsset* InnerRig = FCameraRigAssetAssembler(NamedObjectRegistry, TEXT("InnerRig"))
 		.MakeRootNode<ULensParametersCameraNode>()
 			.Named(TEXT("InnerLensNode"))
+			.Setup([](ULensParametersCameraNode* Node)
+			{
+				// Note: Only bEnableFocusDistance defaults to false, but set all of them to be explicit about the functionality we need.
+				Node->bEnableAperture = true;
+				Node->bEnableFocalLength = true;
+				Node->bEnableFocusDistance = true;
+			})
 			.Done()
 		.AddBlendableParameter(
 				TEXT("InnerFocalLength"), ECameraVariableType::Float, 

@@ -90,7 +90,7 @@ void FBlueprintCameraNodeEvaluator::OnInitialize(const FCameraNodeEvaluatorIniti
 	}
 	else
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("No Blueprint class set on camera node '%s'."), *GetNameSafe(BlueprintNode));
+		UE_LOGF(LogCameraSystem, Error, "No Blueprint class set on camera node '%ls'.", *GetNameSafe(BlueprintNode));
 	}
 }
 
@@ -578,10 +578,10 @@ void UBlueprintCameraNode::RebuildOverrides()
 		}
 		else
 		{
-			UE_LOG(
+			UE_LOGF(
 					LogCameraSystem, Warning, 
-					TEXT("Property '%s' on Blueprint camera node evaluator class '%s' cannot be exposed as "
-						 "neither a blendable or data parameter. The property type is not (yet) supported."),
+					"Property '%ls' on Blueprint camera node evaluator class '%ls' cannot be exposed as "
+						 "neither a blendable or data parameter. The property type is not (yet) supported.",
 					*Property->GetName(),
 					*CameraNodeEvaluatorTemplate->GetClass()->GetName());
 		}

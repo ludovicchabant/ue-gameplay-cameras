@@ -13,7 +13,7 @@
 
 FText UAssetDefinition_CameraRigAsset::GetAssetDisplayName() const
 {
-	return LOCTEXT("AssetDisplayName", "Camera Rig");
+	return LOCTEXT("CameraRigAsset_DisplayName", "Camera Rig Prefab");
 }
 
 FLinearColor UAssetDefinition_CameraRigAsset::GetAssetColor() const
@@ -28,7 +28,7 @@ TSoftClassPtr<UObject> UAssetDefinition_CameraRigAsset::GetAssetClass() const
 
 TConstArrayView<FAssetCategoryPath> UAssetDefinition_CameraRigAsset::GetAssetCategories() const
 {
-	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay) };
+	static const auto Categories = { FAssetCategoryPath(EAssetCategoryPaths::Gameplay, LOCTEXT("CameraRigAsset_SubMenu", "Camera"), ECategoryMenuType::Section) };
 	return Categories;
 }
 

@@ -363,9 +363,9 @@ void FCameraSystemEvaluator::GetCombinedCameraRigRequest(TConstArrayView<FCamera
 	const UGameplayCamerasSettings* Settings = GetDefault<UGameplayCamerasSettings>();
 	if (Requests.Num() > Settings->CombinedCameraRigNumThreshold)
 	{
-		UE_LOG(LogCameraSystem, Warning, 
-				TEXT("Activating %d camera rigs combined! Is the camera director doing this on purpose? "
-					"If so, raise the CombinedCameraRigNumThreshold setting to remove this warning."),
+		UE_LOGF(LogCameraSystem, Warning, 
+				"Activating %d camera rigs combined! Is the camera director doing this on purpose? "
+					"If so, raise the CombinedCameraRigNumThreshold setting to remove this warning.",
 				Requests.Num());
 	}
 #endif

@@ -50,8 +50,8 @@ void FAttachToPlayerPawnCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 	{
 		if (Params.Evaluator->GetRole() == ECameraSystemEvaluatorRole::Game)
 		{
-			UE_LOG(LogCameraSystem, Error, 
-					TEXT("Can't run AttatchToPlayerPawn camera node because no player controller was found on the context."));
+			UE_LOGF(LogCameraSystem, Error, 
+					"Can't run AttatchToPlayerPawn camera node because no player controller was found on the context.");
 		}
 		bHasValidPlayerController = false;
 		return;
@@ -60,8 +60,8 @@ void FAttachToPlayerPawnCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalu
 	APawn* Pawn = PlayerController->GetPawnOrSpectator();
 	if (!Pawn)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't run AttatchToPlayerPawn camera node because the player controller has no pawn."));
+		UE_LOGF(LogCameraSystem, Error, 
+				"Can't run AttatchToPlayerPawn camera node because the player controller has no pawn.");
 		bHasValidPlayerController = false;
 		return;
 	}

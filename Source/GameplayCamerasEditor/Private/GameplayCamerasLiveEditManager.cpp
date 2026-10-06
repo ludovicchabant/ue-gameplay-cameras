@@ -280,15 +280,15 @@ void FGameplayCamerasLiveEditManager::OnBeginPIE(const bool bSimulate)
 		TCameraObjectBuilderUtil<UCameraAsset>::Build(CamerasToBuild);
 
 		const double BuildEndTime = FPlatformTime::Seconds();
-		UE_LOG(LogCameraSystemEditor, Log, 
-				TEXT("Built %d/%d camera objects in %d ms"),
+		UE_LOGF(LogCameraSystemEditor, Log, 
+				"Built %d/%d camera objects in %d ms",
 				NumCameraObjectsToBuild, NumCameraObjects,
 				(int32)((BuildEndTime - BuildStartTime) * 1000));
 	}
 	else
 	{
-		UE_LOG(LogCameraSystemEditor, Log, 
-				TEXT("No camera objects needed building (inspected %d objects)"),
+		UE_LOGF(LogCameraSystemEditor, Log, 
+				"No camera objects needed building (inspected %d objects)",
 				NumCameraObjects);
 	}
 }

@@ -97,7 +97,7 @@ void FPlayerControlRotationEvaluationService::MonitorActiveContext(TSharedPtr<co
 
 void FPlayerControlRotationEvaluationService::BindActionValues(UEnhancedInputComponent* InputComponent)
 {
-	UE_LOG(LogCameraSystem, Verbose, TEXT("FPlayerControlRotationEvaluationService: binding to input actions on '%s'"), *GetNameSafe(InputComponent));
+	UE_LOGF(LogCameraSystem, Verbose, "FPlayerControlRotationEvaluationService: binding to input actions on '%ls'", *GetNameSafe(InputComponent));
 
 	WeakInputComponent = InputComponent;
 
@@ -112,7 +112,7 @@ void FPlayerControlRotationEvaluationService::BindActionValues(UEnhancedInputCom
 
 void FPlayerControlRotationEvaluationService::UnbindActionValues()
 {
-	UE_LOG(LogCameraSystem, Verbose, TEXT("FPlayerControlRotationEvaluationService: unbinding from input actions"));
+	UE_LOGF(LogCameraSystem, Verbose, "FPlayerControlRotationEvaluationService: unbinding from input actions");
 	WeakInputComponent.Reset();
 	AxisBindings.Reset();
 }

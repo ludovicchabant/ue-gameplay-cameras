@@ -84,7 +84,7 @@ void FBlueprintCameraDirectorEvaluator::OnInitialize(const FCameraDirectorInitia
 	}
 	else
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("No Blueprint class set on camera director for '%s'."), *CameraAsset->GetPathName());
+		UE_LOGF(LogCameraSystem, Error, "No Blueprint class set on camera director for '%ls'.", *CameraAsset->GetPathName());
 	}
 }
 
@@ -101,7 +101,7 @@ void FBlueprintCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	}
 	else
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate Blueprint camera director, no Blueprint class was set!"));
+		UE_LOGF(LogCameraSystem, Error, "Can't activate Blueprint camera director, no Blueprint class was set!");
 	}
 }
 

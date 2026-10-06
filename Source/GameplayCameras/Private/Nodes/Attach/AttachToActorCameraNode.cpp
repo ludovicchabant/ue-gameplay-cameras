@@ -65,8 +65,8 @@ void FAttachToActorCameraNodeEvaluator::OnRun(const FCameraNodeEvaluationParams&
 		// If we just became invalid, log a warning.
 		if (bWasAttachValid)
 		{
-			UE_LOG(LogCameraSystem, Warning, 
-					TEXT("AttachToActorCameraNode: Couldn't resolve attachment! The camera will stay in place."));
+			UE_LOGF(LogCameraSystem, Warning, 
+					"AttachToActorCameraNode: Couldn't resolve attachment! The camera will stay in place.");
 		}
 
 		// Stay in the last known place, if any, otherwise completely bail out.

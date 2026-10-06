@@ -95,8 +95,8 @@ void FOcclusionMaterialCameraNodeEvaluator::OnInitialize(const FCameraNodeEvalua
 	}
 	else
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("OcclusionMaterialCameraNode: no occlusion transparency material set on '%s'"),
+		UE_LOGF(LogCameraSystem, Error, 
+				"OcclusionMaterialCameraNode: no occlusion transparency material set on '%ls'",
 				*GetNameSafe(OcclusionMaterialNode));
 	}
 }

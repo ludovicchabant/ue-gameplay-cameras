@@ -254,7 +254,7 @@ void FCameraObjectInterfaceBuilder::BuildInterface(UBaseCameraObject* InCameraOb
 		const int32 NumStrayCameraNodes = (CameraNodesToGather.Num() - InHierarchy.Num());
 		if (NumStrayCameraNodes > 0)
 		{
-			UE_LOG(LogCameraSystem, Verbose, TEXT("Collected %d stray camera nodes while building camera rig '%s'."),
+			UE_LOGF(LogCameraSystem, Verbose, "Collected %d stray camera nodes while building camera rig '%ls'.",
 					NumStrayCameraNodes, *GetPathNameSafe(CameraObject));
 		}
 	}

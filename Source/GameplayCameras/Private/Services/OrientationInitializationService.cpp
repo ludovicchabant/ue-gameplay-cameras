@@ -115,13 +115,13 @@ void FOrientationInitializationService::TryInitializeContextYawPitch(const FCame
 {
 	if (!CameraRigInfo.CameraRig)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize orientation on invalid camera rig."));
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize orientation on invalid camera rig.");
 		return;
 	}
 
 	if (!CameraRigInfo.EvaluationContext)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize orientation on camera rig '%s' with invalid evaluation context."),
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize orientation on camera rig '%ls' with invalid evaluation context.",
 				*CameraRigInfo.CameraRig->GetPathName());
 		return;
 	}
@@ -129,7 +129,7 @@ void FOrientationInitializationService::TryInitializeContextYawPitch(const FCame
 	const FCameraNodeEvaluationResult& InitialResult = CameraRigInfo.EvaluationContext->GetInitialResult();
 	if (!InitialResult.bIsValid)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize orientation on camera rig '%s' with invalid initial context result."),
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize orientation on camera rig '%ls' with invalid initial context result.",
 				*CameraRigInfo.CameraRig->GetPathName());
 		return;
 	}
@@ -143,13 +143,13 @@ void FOrientationInitializationService::TryPreserveYawPitch(const FCameraRigEval
 	const FCameraSystemEvaluationResult& LastResult = Evaluator->GetEvaluatedResult();
 	if (!LastResult.bIsValid)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize camera rig orientation when previous camera result is invalid."));
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize camera rig orientation when previous camera result is invalid.");
 		return;
 	}
 
 	if (!CameraRigInfo.CameraRig)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize camera rig orientation with invalid camera rig."));
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize camera rig orientation with invalid camera rig.");
 		return;
 	}
 	
@@ -165,7 +165,7 @@ void FOrientationInitializationService::TryInitializeYawPitch(const FCameraRigEv
 {
 	if (!CameraRigInfo.RootEvaluator)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize orientation on camera rig '%s' because it has no evaluator."),
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize orientation on camera rig '%ls' because it has no evaluator.",
 				*CameraRigInfo.CameraRig->GetPathName());
 		return;
 	}
@@ -200,13 +200,13 @@ void FOrientationInitializationService::TryPreserveTarget(const FCameraRigEvalua
 
 	if (!CameraRigInfo.CameraRig)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize camera rig orientation with invalid camera rig."));
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize camera rig orientation with invalid camera rig.");
 		return;
 	}
 	
 	if (!CameraRigInfo.RootEvaluator)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't initialize orientation on camera rig '%s' because it has no evaluator."),
+		UE_LOGF(LogCameraSystem, Error, "Can't initialize orientation on camera rig '%ls' because it has no evaluator.",
 				*CameraRigInfo.CameraRig->GetPathName());
 		return;
 	}

@@ -23,7 +23,7 @@ static FAutoConsoleVariableRef CVarGameplayCamerasDebugTrace(
 	TEXT("(Default: false. Enables background tracing of GamplayCameras system debug info."));
 
 // Channel "CameraSystemChannel".
-UE_TRACE_CHANNEL(CameraSystemChannel)
+UE_TRACE_CHANNEL(CameraSystemChannel, "Per-frame Gameplay Cameras evaluation data (pose, FOV, evaluator/blend hierarchy).");
 
 // Log name "CameraSystem", event name "CameraSystemEvaluation".
 UE_TRACE_EVENT_BEGIN(CameraSystem, CameraSystemEvaluation)

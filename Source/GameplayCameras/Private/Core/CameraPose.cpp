@@ -134,15 +134,15 @@ double FCameraPose::GetEffectiveFieldOfView(float FocalLength, float FieldOfView
 
 	if (!bValidFocalLength && !bValidFieldOfView && GEmitZeroFocalLenthAndFieldOfViewWarning)
 	{
-		UE_LOG(LogCameraSystem, Warning,
-				TEXT("Both FocalLength and FieldOfView have a zero or negative value! Using default FocalLength."));
+		UE_LOGF(LogCameraSystem, Warning,
+				"Both FocalLength and FieldOfView have a zero or negative value! Using default FocalLength.");
 		GEmitZeroFocalLenthAndFieldOfViewWarning = false;
 	}
 
 	if (bValidFocalLength && bValidFieldOfView && GEmitFocalLengthPrioritizationWarning)
 	{
-		UE_LOG(LogCameraSystem, Warning,
-				TEXT("Both FocalLength and FieldOfView are specified on a camera pose! Using FocalLength first."));
+		UE_LOGF(LogCameraSystem, Warning,
+				"Both FocalLength and FieldOfView are specified on a camera pose! Using FocalLength first.");
 		GEmitFocalLengthPrioritizationWarning = false;
 	}
 #endif  // NO_LOGGING	

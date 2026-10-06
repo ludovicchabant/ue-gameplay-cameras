@@ -22,7 +22,7 @@ void UCameraVariableCollection::PostLoad()
 	{
 		if (!Variable->HasAnyFlags(RF_Public))
 		{
-			UE_LOG(LogCameraSystem, Warning, TEXT("Adding missing RF_Public flag on variable '%s'."), *GetPathNameSafe(Variable));
+			UE_LOGF(LogCameraSystem, Warning, "Adding missing RF_Public flag on variable '%ls'.", *GetPathNameSafe(Variable));
 			Variable->SetFlags(RF_Public);
 		}
 	}
@@ -77,8 +77,8 @@ void UCameraVariableCollection::CleanUpStrayObjects()
 			}
 		}
 
-		UE_LOG(LogCameraSystem, Warning,
-				TEXT("Cleaned up %d stray camera variables in camera variable collection '%s'. Please resave the asset."),
+		UE_LOGF(LogCameraSystem, Warning,
+				"Cleaned up %d stray camera variables in camera variable collection '%ls'. Please resave the asset.",
 				StrayObjects.Num(), *GetPathNameSafe(this));
 	}
 }

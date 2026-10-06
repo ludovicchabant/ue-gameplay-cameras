@@ -87,14 +87,14 @@ void AGameplayCamerasPlayerCameraManager::ActivateGameplayCamera(UGameplayCamera
 
 	if (!GameplayCamera)
 	{
-		UE_LOG(LogCameraSystem, Error, TEXT("Can't activate a null Gameplay Camera!"));
+		UE_LOGF(LogCameraSystem, Error, "Can't activate a null Gameplay Camera!");
 		return;
 	}
 
 	if (GameplayCamera->bRunStandaloneCameraSystem)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't activate Gameplay Camera '%s.%s': it is set to run in 'standalone' mode. Please disable 'Run Standalone Camera System' on it."),
+		UE_LOGF(LogCameraSystem, Error, 
+				"Can't activate Gameplay Camera '%ls.%ls': it is set to run in 'standalone' mode. Please disable 'Run Standalone Camera System' on it.",
 				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
 		return;
 	}
@@ -112,15 +112,15 @@ void AGameplayCamerasPlayerCameraManager::ActivateGameplayCamera(UGameplayCamera
 	}
 	if (!GameplayCameraContext.IsValid())
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't activate Gameplay Camera '%s.%s': can't create an evaluation context!"),
+		UE_LOGF(LogCameraSystem, Error, 
+				"Can't activate Gameplay Camera '%ls.%ls': can't create an evaluation context!",
 				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
 		return;
 	}
 	if (GameplayCameraContext->IsActive())
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't activate Gameplay Camera '%s.%s': its evaluation context is already active!"),
+		UE_LOGF(LogCameraSystem, Error, 
+				"Can't activate Gameplay Camera '%ls.%ls': its evaluation context is already active!",
 				*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera));
 		return;
 	}
@@ -150,9 +150,9 @@ void AGameplayCamerasPlayerCameraManager::ActivateGameplayCamera(UGameplayCamera
 					if (!bSuccess)
 					{
 						UObject* ActiveContextOwner = ActiveContext->GetOwner();
-						UE_LOG(LogCameraSystem, Error,
-								TEXT("Couldn't insert camera director for '%s.%s' inside camera director for '%s'. "
-									 "Activation failed."),
+						UE_LOGF(LogCameraSystem, Error,
+								"Couldn't insert camera director for '%ls.%ls' inside camera director for '%ls'. "
+									 "Activation failed.",
 								*GetNameSafe(GameplayCamera->GetOwner()), *GetNameSafe(GameplayCamera),
 								*GetNameSafe(ActiveContextOwner));
 					}

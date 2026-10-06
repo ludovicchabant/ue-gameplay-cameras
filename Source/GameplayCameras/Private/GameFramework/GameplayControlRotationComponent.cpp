@@ -82,16 +82,16 @@ void UGameplayControlRotationComponent::InitializeControlRotationService(APlayer
 
 	if (ControlRotationService)
 	{
-		UE_LOG(LogCameraSystem, Error,
-				TEXT("GameplayControlRotationComponent '%s' has already been activated"),
+		UE_LOGF(LogCameraSystem, Error,
+				"GameplayControlRotationComponent '%ls' has already been activated",
 				*GetNameSafe(this));
 		return;
 	}
 
 	if (!InPlayerController)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("GameplayControlRotationComponent '%s' can't activate: no player controller given or found!"),
+		UE_LOGF(LogCameraSystem, Error, 
+				"GameplayControlRotationComponent '%ls' can't activate: no player controller given or found!",
 				*GetNameSafe(this));
 		return;
 	}
@@ -99,9 +99,9 @@ void UGameplayControlRotationComponent::InitializeControlRotationService(APlayer
 	IGameplayCameraSystemHost* FoundHost = IGameplayCameraSystemHost::FindActiveHost(InPlayerController);
 	if (!FoundHost)
 	{
-		UE_LOG(LogCameraSystem, Error, 
-				TEXT("Can't find camera system host on the player controller. "
-				 	 "UGameplayControlRotationComponent requires using AGameplayCamerasPlayerCameraManager, or similar, as a camera manager."));
+		UE_LOGF(LogCameraSystem, Error, 
+				"Can't find camera system host on the player controller. "
+				 	 "UGameplayControlRotationComponent requires using AGameplayCamerasPlayerCameraManager, or similar, as a camera manager.");
 		return;
 	}
 
@@ -130,8 +130,8 @@ void UGameplayControlRotationComponent::TeardownControlRotationService(bool bAll
 	{
 		if (!bAllowUninitialized)
 		{
-			UE_LOG(LogCameraSystem, Error,
-					TEXT("GameplayCameraComponent '%s' isn't active"),
+			UE_LOGF(LogCameraSystem, Error,
+					"GameplayCameraComponent '%ls' isn't active",
 					*GetNameSafe(this));
 		}
 		return;

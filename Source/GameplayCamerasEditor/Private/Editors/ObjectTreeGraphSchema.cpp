@@ -1303,8 +1303,8 @@ FString UObjectTreeGraphSchema::ExportNodesToText(const FGraphPanelSelectionSet&
 		UObject* ThisOuter = ObjectToExport->GetOuter();
 		if (LastOuter != nullptr && ThisOuter != LastOuter)
 		{
-			UE_LOG(LogCameraSystemEditor, Warning,
-					TEXT("Cannot copy objects from different outers. Only copying from %s"), *LastOuter->GetName());
+			UE_LOGF(LogCameraSystemEditor, Warning,
+					"Cannot copy objects from different outers. Only copying from %ls", *LastOuter->GetName());
 			continue;
 		}
 		LastOuter = ThisOuter;

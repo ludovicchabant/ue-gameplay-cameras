@@ -23,25 +23,25 @@
 namespace UE::Cameras
 {
 
-float GFramingIdealReachedEpsilon = 0.001;
+float GFramingIdealReachedEpsilon = 0.001f;
 static FAutoConsoleVariableRef CVarFramingUnlockRadiusEpsilon(
 	TEXT("GameplayCameras.Framing.IdealReachedEpsilon"),
 	GFramingIdealReachedEpsilon,
 	TEXT("(Default: 0.001) The epsilon to determine whether we have reached ideal screen framing."));
 
-float GFramingExtrapolationEpsilon = 0.001;
+float GFramingExtrapolationEpsilon = 0.001f;
 static FAutoConsoleVariableRef CVarFramingExtrapolationEpsilon(
 	TEXT("GameplayCameras.Framing.ExtrapolationEpsilon"),
 	GFramingExtrapolationEpsilon,
 	TEXT("(Default: 0.001) The epsilon to determine whether target movement extrapolation should be included."));
 
-float GFramingMinDampingFactor = 0.0001;
+float GFramingMinDampingFactor = 0.0001f;
 static FAutoConsoleVariableRef CVarFramingMinDampingFactor(
 	TEXT("GameplayCameras.Framing.MinDampingFactor"),
 	GFramingMinDampingFactor,
 	TEXT("(Default: 0.0001) The minimimum reframe damping factor possible once all factors have been taken into account."));
 
-float GFramingTargetRestEpsilon = 0.001;
+float GFramingTargetRestEpsilon = 0.001f;
 static FAutoConsoleVariableRef CVarFramingTargetRestEpsilon(
 	TEXT("GameplayCameras.Framing.TargetRestEpsilon"),
 	GFramingTargetRestEpsilon,

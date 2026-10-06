@@ -87,7 +87,7 @@ void SDeleteCameraObjectDialog::Construct(const FArguments& InArgs)
 				[
 					SNew(SBorder)
 					.BorderImage(FAppStyle::GetBrush("DetailsView.CategoryTop"))
-					.BorderBackgroundColor(FLinearColor(.6, .6, .6, 1.0f))
+					.BorderBackgroundColor(FLinearColor(.6f, .6f, .6f, 1.0f))
 					.Padding(3.0f)
 					[
 						SNew(STextBlock)

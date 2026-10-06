@@ -31,7 +31,7 @@ protected:
 public:
 
 	/** The StateTree to execute. Must have been created with the CameraDirectorStateTreeSchema. */
-	UPROPERTY(EditAnywhere, Category="StateTree",
+	UPROPERTY(EditAnywhere, Category="StateTree", DisplayName="State Tree",
 			meta=(Schema="/Script/GameplayCameras.CameraDirectorStateTreeSchema"))
 	FStateTreeReference StateTreeReference;
 };

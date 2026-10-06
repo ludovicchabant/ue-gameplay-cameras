@@ -59,8 +59,8 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 
 	if (!StateTree)
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't activate camera director '%s': it doesn't have a valid StateTree asset specified."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't activate camera director '%ls': it doesn't have a valid StateTree asset specified.",
 			*GetNameSafe(StateTreeDirector));
 		return;
 	}
@@ -68,8 +68,8 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	UObject* ContextOwner = GetEvaluationContext()->GetOwner();
 	if (!ContextOwner)
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't activate camera director '%s': the evaluation context doesn't have a valid owner."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't activate camera director '%ls': the evaluation context doesn't have a valid owner.",
 			*GetNameSafe(StateTreeDirector));
 		return;
 	}
@@ -78,9 +78,9 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 
 	if (!StateTreeContext.IsValid())
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't activate camera director '%s': initialization of execution context for StateTree asset '%s' "
-				"and context owner '%s' failed."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't activate camera director '%ls': initialization of execution context for StateTree asset '%ls' "
+				"and context owner '%ls' failed.",
 			*GetNameSafe(StateTreeDirector), *GetNameSafe(StateTree), *GetNameSafe(ContextOwner));
 		return;
 	}
@@ -89,8 +89,8 @@ void FStateTreeCameraDirectorEvaluator::OnActivate(const FCameraDirectorActivate
 	
 	if (!SetContextRequirements(GetEvaluationContext(), StateTreeContext))
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't activate camera director '%s': failed to setup external data views for StateTree asset '%s'."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't activate camera director '%ls': failed to setup external data views for StateTree asset '%ls'.",
 			*GetNameSafe(StateTreeDirector), *GetNameSafe(StateTree));
 		return;
 	}
@@ -111,16 +111,16 @@ void FStateTreeCameraDirectorEvaluator::OnDeactivate(const FCameraDirectorDeacti
 	UObject* ContextOwner = GetEvaluationContext()->GetOwner();
 	if (!ContextOwner)
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't deactivate camera director '%s': the evaluation context doesn't have a valid owner."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't deactivate camera director '%ls': the evaluation context doesn't have a valid owner.",
 			*GetNameSafe(StateTreeDirector));
 		return;
 	}
 
 	if (!StateTree)
 	{
-		UE_LOG(LogCameraSystem, Error,
-			TEXT("Can't deactivate camera director '%s': it doesn't have a valid StateTree asset specified."),
+		UE_LOGF(LogCameraSystem, Error,
+			"Can't deactivate camera director '%ls': it doesn't have a valid StateTree asset specified.",
 			*GetNameSafe(StateTreeDirector));
 		return;
 	}
@@ -161,7 +161,7 @@ void FStateTreeCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 			}
 			else
 			{
-				UE_LOG(LogCameraSystem, Error, TEXT("Null camera rig specified in camera director '%s'."), 
+				UE_LOGF(LogCameraSystem, Error, "Null camera rig specified in camera director '%ls'.", 
 						*StateTree->GetPathName());
 			}
 		}
@@ -174,7 +174,7 @@ void FStateTreeCameraDirectorEvaluator::OnRun(const FCameraDirectorEvaluationPar
 			}
 			else
 			{
-				UE_LOG(LogCameraSystem, Error, TEXT("Null camera rig proxy specified in camera director '%s'."),
+				UE_LOGF(LogCameraSystem, Error, "Null camera rig proxy specified in camera director '%ls'.",
 						*StateTree->GetPathName());
 			}
 		}
