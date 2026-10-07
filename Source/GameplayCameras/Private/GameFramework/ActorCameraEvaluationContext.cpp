@@ -72,6 +72,7 @@ void FActorCameraEvaluationContext::ApplyMinimalViewInfo(const FMinimalViewInfo&
 	CameraPose.SetFocalLength(-1.f);
 	CameraPose.SetNearClippingPlane(ViewInfo.PerspectiveNearClipPlane);
 	CameraPose.SetSensorWidth(CameraPose.GetSensorHeight() * ViewInfo.AspectRatio);
+	CameraPose.SetOverrideAspectRatioAxisConstraint(ViewInfo.AspectRatioAxisConstraint.IsSet());
 	CameraPose.SetAspectRatioAxisConstraint(ViewInfo.AspectRatioAxisConstraint.Get(CameraPose.GetAspectRatioAxisConstraint()));
 	CameraPose.SetConstrainAspectRatio(ViewInfo.bConstrainAspectRatio);
 
