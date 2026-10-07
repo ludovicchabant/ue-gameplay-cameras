@@ -479,10 +479,16 @@ void AGameplayCamerasPlayerCameraManager::OnContextStackChanged()
 		FCameraEvaluationContextStack& ContextStack = CameraSystemEvaluator->GetEvaluationContextStack();
 		if (TSharedPtr<FCameraEvaluationContext> ActiveContext = ContextStack.GetActiveContext())
 		{
-			UObject* ActiveContextOwner = ActiveContext->GetOwner();
-			if (ActiveContextOwner)
+			if (UObject* ActiveContextOwner = ActiveContext->GetOwner())
 			{
-				NewViewTarget = ActiveContextOwner->GetTypedOuter<AActor>();
+				if (AActor* ActiveContextActor = Cast<AActor>(ActiveContextOwner))
+				{
+					NewViewTarget = ActiveContextActor;
+				}
+				else if (AActor* ActiveContextActorOwner = ActiveContextOwner->GetTypedOuter<AActor>())
+				{
+					NewViewTarget = ActiveContextActorOwner;
+				}
 			}
 		}
 		ViewTarget.SetNewTarget(NewViewTarget);
