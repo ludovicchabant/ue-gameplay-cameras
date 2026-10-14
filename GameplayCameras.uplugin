@@ -1,32 +1,32 @@
 {
 	"FileVersion" : 1,
-	"Version" : 1,
-	"VersionName" : "0.1",
+	"Version" : 2000,
+	"VersionName" : "0.2.0",
 	"FriendlyName" : "Gameplay Cameras (Revived)",
 	"Description" : "A modular and data-driven camera system for Unreal",
 	"Category" : "Cameras",
-	"CreatedBy" : "Brutal Baguette",
-	"CreatedByURL" : "https://brutalbaguette.com",
-	"DocsURL" : "",
+	"CreatedBy" : "Epic Games, Inc. & Brutal Baguette Technologies, Ltd.",
+	"CreatedByURL" : "https://epicgames.com",
+	"DocsURL" : "https://brutalbaguette.com/gameplay-cameras/",
 	"MarketplaceURL" : "",
-	"SupportURL" : "",
+	"SupportURL" : "https://brutalbaguette.com/support/",
 	"EnabledByDefault" : true,
 	"CanContainContent" : true,
 	"IsExperimentalVersion" : true,
 	"Installed" : false,
-	"Plugins":
+	"Plugins" :
 	[
 		{
-			"Name": "EnhancedInput",
-			"Enabled": true
+			"Name" : "EnhancedInput",
+			"Enabled" : true
 		},
 		{
-			"Name": "StateTree",
-			"Enabled": true
+			"Name" : "StateTree",
+			"Enabled" : true
 		},
 		{
-			"Name": "TemplateSequence",
-			"Enabled": true
+			"Name" : "TemplateSequence",
+			"Enabled" : true
 		}
 	],
 	"Modules" :
@@ -42,9 +42,9 @@
 			"LoadingPhase" : "Default"
 		},
 		{
-			"Name": "GameplayCamerasEditor",
-			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
+			"Name" : "GameplayCamerasEditor",
+			"Type" : "Editor",
+			"LoadingPhase" : "PostEngineInit"
 		}
 	]
 }
